@@ -22,17 +22,23 @@ var validFactions = map[string]bool{
 func GetCharacters(w http.ResponseWriter, r *http.Request) {
 	// TODO 1: Extract the "faction" query parameter from the request URL.
 	//         Hint: r.URL.Query().Get("faction")
-	faction := ""
+	faction := r.URL.Query().Get("faction")
 
 	// TODO 2: Validate the faction value.
 	//         If faction is empty or not present in validFactions,
 	//         write an HTTP 400 response with JSON: {"error": "invalid or missing faction"}
 	//         then return early.
-	_ = validFactions
+	if !validFactions[faction] {
+		http.Error(w, `{"error": "invalid or missing faction"}`, 400)
+		return
+	}
 
 	// TODO 3: Call db.GetCharactersByFaction(faction) to fetch matching characters.
 	//         If the call returns an error, write an HTTP 500 response and return.
-	characters, _ := db.GetCharactersByFaction(faction)
+	characters, err := db.GetCharactersByFaction(faction)
+	if err != nil {
+		http.Error(w, `{"error": "invalid or missing faction"}`, 500)
+	}
 
 	// TODO 4: Compute threat_score for each character and build the response slice.
 	//         Rule:
@@ -41,7 +47,13 @@ func GetCharacters(w http.ResponseWriter, r *http.Request) {
 	var results []models.CharacterResponse
 	for _, c := range characters {
 		// TODO: replace 0 with the correct threat_score calculation
-		results = append(results, models.CharacterResponse{Character: c, ThreatScore: 0})
+		var threatScore int
+		if c.ForceSensitive {
+			threatScore = c.PowerLevel * 2
+		} else {
+			threatScore = c.PowerLevel * 1
+		}
+		results = append(results, models.CharacterResponse{Character: c, ThreatScore: threatScore})
 	}
 
 	// TODO 5: Write a JSON response.
