@@ -37,7 +37,8 @@ func GetCharacters(w http.ResponseWriter, r *http.Request) {
 	//         If the call returns an error, write an HTTP 500 response and return.
 	characters, err := db.GetCharactersByFaction(faction)
 	if err != nil {
-		http.Error(w, `{"error": "invalid or missing faction"}`, 500)
+		http.Error(w, `{"error": Call returned an error"}`, 500)
+		return
 	}
 
 	// TODO 4: Compute threat_score for each character and build the response slice.
