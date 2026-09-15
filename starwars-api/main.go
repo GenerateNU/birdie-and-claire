@@ -18,7 +18,7 @@ func main() {
 	//       Hint: http.HandleFunc("/your/path", handlers.GetCharacters)
 	//
 	// Replace the placeholder below with your chosen path:
-	http.HandleFunc("/", handlers.GetCharacters)
+	http.HandleFunc("/api/characters", handlers.GetCharacters)
 
 	log.Println("Server starting on :8080...")
 	log.Fatal(http.ListenAndServe(":8080", nil))

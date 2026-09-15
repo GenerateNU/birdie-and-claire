@@ -37,7 +37,7 @@ func GetCharacters(w http.ResponseWriter, r *http.Request) {
 	//         If the call returns an error, write an HTTP 500 response and return.
 	characters, err := db.GetCharactersByFaction(faction)
 	if err != nil {
-		http.Error(w, `{"error": Call returned an error"}`, 500)
+		http.Error(w, `{"error: Call returned an error"}`, 500)
 		return
 	}
 
