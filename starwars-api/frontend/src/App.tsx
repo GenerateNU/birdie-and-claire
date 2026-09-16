@@ -38,6 +38,12 @@ export default function App() {
       //   2. If the response is not ok (res.ok === false), throw an Error
       //   3. Parse the body as JSON with res.json()
       //   4. Call setCharacters(...) with the result
+      const response = await fetch(`/api/characters?faction=${faction}`)
+      const data = await response.json()
+      if (response.ok === false) {
+        throw new Error("Could not fetch characters")
+      }
+      setCharacters(data)
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -80,7 +86,7 @@ export default function App() {
 
       {/* Results */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {characters.map((c) => (
+        {characters.map((c) => {
           // TODO 2: Render a card for each character.
           //
           // Each character object has these fields:
@@ -94,10 +100,20 @@ export default function App() {
           //
           // Hint: replace the <p> below with your full card markup.
           //       key={c.id} must stay on the outermost element.
-          <div key={c.id} className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-            <p className="font-semibold">{c.name}</p>
-          </div>
-        ))}
+          const threat = c.threat_score > 150 ? "high" : c.threat_score >= 75 ? "medium" : "low"
+          const borderColor = threat === "high" ? "border-red-500" : threat === "medium" ? "border-yellow-500" : "border-green-500"
+          const badgeColor = threat === "high" ? "bg-red-500" : threat === "medium" ? "bg-yellow-500" : "bg-green-500"
+          return (
+            <div key={c.id} className={`bg-gray-800 rounded-lg p-4 border ${borderColor}`}>
+              <span className={`text-xs text-white rounded inline-block px-2 py-1 ${badgeColor}`}>{threat} threat</span>
+              {c.force_sensitive && <span className="text-xs text-blue-500">Force Sensitive</span>}
+              <p className="font-semibold">{c.name}</p>
+              <p className="text-sm text-gray-400">Faction: {c.faction}</p>
+              <p className="text-sm text-gray-400">Power Level: {c.power_level}</p>
+              <p className="text-sm text-gray-400">Threat Score: {c.threat_score}</p>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

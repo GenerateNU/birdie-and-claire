@@ -4,7 +4,7 @@
 You are free to structure your respective repository(ies) as you wish. However we recommend keeping everything in a
 _monorepo_ so that deployments are easier to handle.
 
-## Builds and Deployments 
+## Builds and Deployments
 It is sometimes recommended to have multiple _[Dockerfiles](https://docs.docker.com/reference/dockerfile/)_. I.e. one
 for your backend, frontend, and any other services that you guys will rely on. Using a docker-compose file to
 orchestrate building all your services in conjunction. For further development, you can choose to seperate out
