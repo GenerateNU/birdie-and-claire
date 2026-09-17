@@ -114,18 +114,6 @@ description = "Generate the tracked OpenAPI YAML"
 dir = "backend"
 run = "go run ./cmd/openapi"
 
-# Run against whatever DATABASE_URL is set, without the dev stack. The db:dev:*
-# tasks below drive the same command through Compose.
-[tasks."db:migrate:up"]
-description = "Apply migrations to $DATABASE_URL"
-dir = "backend"
-run = "go run ./cmd/migrate up"
-
-[tasks."db:migrate:status"]
-description = "Show migration status for $DATABASE_URL"
-dir = "backend"
-run = "go run ./cmd/migrate status"
-
 [tasks."db:dev:migrate:create"]
 description = "Create a development Goose migration"
 run = "go -C backend run ./cmd/tasks db migrate create"
