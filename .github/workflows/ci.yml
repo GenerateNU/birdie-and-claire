@@ -1,12 +1,5 @@
 name: CI
 
-# Each job is its own check in the PR UI, and every check with a mise task runs
-# that task, so CI and a laptop cannot drift apart.
-#
-# Everything needs build, because lint, test, the OpenAPI generator, and the
-# migration command all compile the package first. Without the dependency one
-# broken build reports the same compile error as five separate failures.
-
 on:
   pull_request:
   push:
@@ -30,8 +23,6 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     strategy:
-      # Past build these are independent, so report all of them. Cancelling
-      # siblings would mean fixing one failure per push.
       fail-fast: false
       matrix:
         include:
@@ -52,8 +43,6 @@ jobs:
     name: backend / migrations
     needs: build
     runs-on: ubuntu-latest
-    # Kept out of the matrix: services are declared per job, so every other leg
-    # would start a Postgres it never touches.
     services:
       postgres:
         image: postgres:17.6
@@ -73,9 +62,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-go
-      # Inlined rather than a mise task: locally you migrate through Compose
-      # with db:dev:migrate:up, so a task for this would have had no other
-      # caller. Both paths run the same ./cmd/migrate binary.
       - name: Apply
         run: go run ./cmd/migrate up
         working-directory: backend
