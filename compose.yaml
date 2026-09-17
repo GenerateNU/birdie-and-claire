@@ -1,9 +1,5 @@
 name: example_project
 
-# Every variable below comes from the process environment. Docker Compose also
-# reads a .env file in this directory, so the stack runs with a plain .env, an
-# exported shell environment, or any secret injector. See .env.example.
-
 services:
   db:
     image: postgres:17.6

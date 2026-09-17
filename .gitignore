@@ -1,6 +1,5 @@
 .env
 .mise.local.toml
-.example_project-stack.lock
 
 backend/tmp/
 frontend/node_modules/

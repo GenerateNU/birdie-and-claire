@@ -38,8 +38,10 @@ environment.
 ## Development
 
 `mise run dev` runs the frontend with Bun and the API plus PostgreSQL in
-Compose. Pressing Ctrl+C stops the application containers and frontend. The
-PostgreSQL volume remains in place.
+Compose. It starts PostgreSQL only if it is not already running, so a database
+left over from an earlier task is reused. Ctrl+C stops the frontend and removes
+the API container. PostgreSQL keeps running; stop it with
+`mise run db:dev:stop`.
 
 Run only one part when needed:
 

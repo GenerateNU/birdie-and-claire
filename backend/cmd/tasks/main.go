@@ -99,26 +99,24 @@ func setup(root string) error {
 }
 
 func backend(root string) error {
-	owner, err := claimStack(root)
-	if err != nil {
+	if err := ensureDatabase(root); err != nil {
 		return err
 	}
 	ctx, stop := signalContext()
 	defer stop()
-	defer releaseStack(root, owner)
-	return composeContext(ctx, root, "up", "--build", "--abort-on-container-exit", "--exit-code-from", "api").Run()
+	defer removeAPI(root)
+	return commandError(ctx, apiCommand(ctx, root).Run())
 }
 
 func dev(root string) error {
-	owner, err := claimStack(root)
-	if err != nil {
+	if err := ensureDatabase(root); err != nil {
 		return err
 	}
 	ctx, stop := signalContext()
 	defer stop()
-	defer releaseStack(root, owner)
+	defer removeAPI(root)
 
-	backendCommand := composeContext(ctx, root, "up", "--build", "--abort-on-container-exit", "--exit-code-from", "api")
+	backendCommand := apiCommand(ctx, root)
 	frontendCommand := commandContext(ctx, filepath.Join(root, "frontend"), "bun", "run", "dev")
 	if err := backendCommand.Start(); err != nil {
 		return err
@@ -193,9 +191,6 @@ func resetDatabase(root string) error {
 	if err != nil {
 		return err
 	}
-	if err := os.Remove(stackLock(root)); err != nil && !errors.Is(err, os.ErrNotExist) {
-		return fmt.Errorf("release development stack: %w", err)
-	}
 	if err := compose(root, "down", "--remove-orphans").Run(); err != nil {
 		return err
 	}
@@ -239,25 +234,29 @@ func floci(root string, args []string) error {
 	return command(root, "docker", arguments...).Run()
 }
 
-func claimStack(root string) (string, error) {
-	owner := fmt.Sprint(os.Getpid())
-	if err := os.WriteFile(stackLock(root), []byte(owner), 0o600); err != nil {
-		return "", fmt.Errorf("claim development stack: %w", err)
-	}
-	return owner, nil
+// apiCommand runs the API attached with --no-deps, so the database container it
+// depends on is neither recreated nor torn down along with it.
+func apiCommand(ctx context.Context, root string) *exec.Cmd {
+	return composeContext(ctx, root, "up", "--build", "--no-deps", "--abort-on-container-exit", "--exit-code-from", "api", "api")
 }
 
-func releaseStack(root, owner string) {
-	contents, err := os.ReadFile(stackLock(root))
-	if err != nil || string(contents) != owner {
-		return
-	}
-	_ = os.Remove(stackLock(root))
-	_ = compose(root, "down", "--remove-orphans").Run()
+// removeAPI deletes the API container when a run ends. The database keeps
+// running so the next start reuses it.
+func removeAPI(root string) {
+	_ = compose(root, "rm", "--force", "--stop", "api").Run()
 }
 
-func stackLock(root string) string {
-	return filepath.Join(root, ".example_project-stack.lock")
+// ensureDatabase starts the database only when it is not already up, so a
+// database left running by an earlier task is reused rather than recreated.
+func ensureDatabase(root string) error {
+	running, err := serviceRunning(root, "db")
+	if err != nil {
+		return err
+	}
+	if running {
+		return nil
+	}
+	return compose(root, "up", "-d", "--wait", "db").Run()
 }
 
 func requireDatabase(root string) error {

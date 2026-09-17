@@ -15,47 +15,44 @@ import (
 // request line that produced them.
 type requestIDHandler struct {
 	slog.Handler
-	short bool
 }
 
 func (h requestIDHandler) Handle(ctx context.Context, record slog.Record) error {
 	if id := RequestID(ctx); id != "" {
-		if h.short && len(id) > shortIDLength {
-			id = id[:shortIDLength]
-		}
 		record.AddAttrs(slog.String("id", id))
 	}
 	return h.Handler.Handle(ctx, record)
 }
 
 func (h requestIDHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	return requestIDHandler{Handler: h.Handler.WithAttrs(attrs), short: h.short}
+	return requestIDHandler{Handler: h.Handler.WithAttrs(attrs)}
 }
 
 func (h requestIDHandler) WithGroup(name string) slog.Handler {
-	return requestIDHandler{Handler: h.Handler.WithGroup(name), short: h.short}
+	return requestIDHandler{Handler: h.Handler.WithGroup(name)}
 }
 
 // Install builds the process logger and makes it the slog default, which is
 // what the package-level Info, Warn, and Error call through.
+//
+// Only JSON output is wrapped in requestIDHandler. Terminal output leaves the
+// ID off entirely: it is a correlation key for an aggregator, and on a console
+// line nobody greps it is noise. The X-Request-Id response header still carries
+// it in both formats.
 func Install(format config.LogFormat) *slog.Logger {
-	var (
-		handler slog.Handler
-		short   bool
-	)
+	var handler slog.Handler
 
 	if format == config.LogFormatJSON {
-		handler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})
+		handler = requestIDHandler{Handler: slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})}
 	} else {
 		handler = tint.NewHandler(os.Stdout, &tint.Options{
 			Level:       slog.LevelInfo,
 			TimeFormat:  "15:04:05",
 			ReplaceAttr: dropRequestLineAttrs,
 		})
-		short = true
 	}
 
-	logger := slog.New(requestIDHandler{Handler: handler, short: short})
+	logger := slog.New(handler)
 	slog.SetDefault(logger)
 	return logger
 }

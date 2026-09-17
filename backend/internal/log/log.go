@@ -10,10 +10,6 @@ import (
 
 type requestIDKey struct{}
 
-// shortIDLength keeps the terminal line readable. The full UUID still goes to
-// the X-Request-Id header and to JSON output.
-const shortIDLength = 8
-
 // WithRequestID is called by the request-logging middleware.
 func WithRequestID(ctx context.Context, id string) context.Context {
 	return context.WithValue(ctx, requestIDKey{}, id)

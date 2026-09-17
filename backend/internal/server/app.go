@@ -62,5 +62,12 @@ func apiConfig(cfg *config.Configuration) huma.Config {
 	humaConfig := huma.DefaultConfig(cfg.App.Name, "1.0.0")
 	humaConfig.DocsPath = "/docs"
 	humaConfig.DocsRenderer = huma.DocsRendererScalar
+
+	// DefaultConfig's only create hook installs huma's schema-link transformer,
+	// which adds a $schema field and a Link header to every response. The
+	// humafiber adapter reports the host without its port, so both came out
+	// pointing at the wrong URL. Dropping the hook drops the feature.
+	humaConfig.CreateHooks = nil
+
 	return humaConfig
 }
