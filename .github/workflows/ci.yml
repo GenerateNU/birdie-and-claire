@@ -1,5 +1,8 @@
 name: Backend CI
 
+# Every job runs a mise task, the same one an engineer runs locally, so CI and
+# a laptop cannot drift apart. Each job is its own check in the PR UI.
+
 on:
   pull_request:
   push:
@@ -18,8 +21,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-go
-      - run: test -z "$(gofmt -l .)"
-        working-directory: backend
+      - run: mise run fmt:backend
 
   lint:
     name: lint
@@ -27,8 +29,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-go
-      - run: golangci-lint run ./...
-        working-directory: backend
+      - run: mise run lint:backend
 
   build:
     name: build
@@ -36,8 +37,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-go
-      - run: go build ./...
-        working-directory: backend
+      - run: mise run build:backend
 
   test:
     name: test
@@ -45,8 +45,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-go
-      - run: go test ./...
-        working-directory: backend
+      - run: mise run test:backend
 
   openapi:
     name: openapi
@@ -80,9 +79,5 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-go
-      - name: Apply
-        run: go run ./cmd/migrate up
-        working-directory: backend
-      - name: Status
-        run: go run ./cmd/migrate status
-        working-directory: backend
+      - run: mise run db:migrate:up
+      - run: mise run db:migrate:status
