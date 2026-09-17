@@ -1,48 +1,159 @@
 [tools]
-go = "1.25.6"
-node = "26.8.2"
+go = "1.27.1"
+bun = "1.4.2"
+jq = "1.8.2"
+aws-cli = "2.36.47"
+golangci-lint = "2.13.2"
+"aqua:pressly/goose" = "3.28.0"
+"aqua:air-verse/air" = "1.67.4"
 
-[tasks.lint]
-alias = "lint:check"
-description = "Run linters for all languages (non-destructive)"
-run = [{ tasks = ["lint:frontend"] }]
+[tasks.bootstrap]
+description = "Install pinned development tools"
+run = "go -C backend run ./cmd/tasks bootstrap"
 
-[tasks."lint:fix"]
-description = "Fix lint issues for all languages"
-run = [{ tasks = ["lint:frontend:fix"] }]
+[tasks.setup]
+description = "Install project dependencies and validate prerequisites"
+run = "go -C backend run ./cmd/tasks setup"
+
+[tasks.backend]
+description = "Run the API and Postgres in attached Compose"
+run = "go -C backend run ./cmd/tasks backend"
+
+[tasks.frontend]
+description = "Run the frontend with Bun"
+dir = "frontend"
+run = "bun run dev"
+
+[tasks.dev]
+description = "Run the frontend and backend together"
+run = "go -C backend run ./cmd/tasks dev"
+
+[tasks."build:backend"]
+description = "Build the Go backend"
+dir = "backend"
+run = "go build ./..."
+
+[tasks."build:frontend"]
+description = "Build the frontend"
+dir = "frontend"
+run = "bun run build"
+
+[tasks.build]
+description = "Build backend and frontend"
+run = [{ tasks = ["build:backend", "build:frontend"] }]
+
+[tasks."test:backend"]
+description = "Run Go unit tests"
+dir = "backend"
+run = "go test ./..."
+
+[tasks.test]
+description = "Run all unit tests"
+run = [{ tasks = ["test:backend"] }]
+
+[tasks."lint:backend"]
+description = "Lint Go code"
+dir = "backend"
+run = "golangci-lint run ./..."
 
 [tasks."lint:frontend"]
 alias = "lint:frontend:check"
 description = "Lint frontend code (oxlint)"
-dir = "starwars-api/frontend"
-run = "npm run lint"
+dir = "frontend"
+run = "bun run lint"
 
 [tasks."lint:frontend:fix"]
 description = "Fix frontend lint issues"
-dir = "starwars-api/frontend"
-run = "npm run lint:fix"
+dir = "frontend"
+run = "bun run lint:fix"
 
-# =============================================================================
-# Format tasks
-# =============================================================================
+[tasks.lint]
+alias = "lint:check"
+description = "Run linters for all languages"
+run = [{ tasks = ["lint:backend", "lint:frontend"] }]
 
-[tasks.fmt]
-alias = ["format", "fmt:check", "format:check"]
-description = "Check formatting for all languages (non-destructive)"
-run = [{ tasks = ["fmt:frontend"] }]
+[tasks."lint:fix"]
+description = "Fix frontend lint issues"
+run = [{ tasks = ["lint:frontend:fix"] }]
 
-[tasks."fmt:fix"]
-alias = "format:fix"
-description = "Fix formatting for all languages"
-run = [{ tasks = ["fmt:frontend:fix"] }]
+[tasks."fmt:backend"]
+description = "Check Go formatting"
+dir = "backend"
+run = "test -z \"$(gofmt -l .)\""
+run_windows = "if ((gofmt -l .).Length -ne 0) { throw 'Go files are not formatted' }"
+
+[tasks."fmt:backend:fix"]
+description = "Format Go code"
+dir = "backend"
+run = "for file in $(git -C .. ls-files '*.go'); do [ -f ../$file ] && gofmt -w ../$file; done"
+run_windows = "Get-ChildItem -Recurse -Filter *.go | ForEach-Object { gofmt -w $_.FullName }"
 
 [tasks."fmt:frontend"]
 alias = "fmt:frontend:check"
 description = "Check frontend formatting (oxfmt)"
-dir = "starwars-api/frontend"
-run = "npm run format"
+dir = "frontend"
+run = "bun run format"
 
 [tasks."fmt:frontend:fix"]
 description = "Fix frontend formatting"
-dir = "starwars-api/frontend"
-run = "npm run format:fix"
+dir = "frontend"
+run = "bun run format:fix"
+
+[tasks.fmt]
+alias = ["format", "fmt:check", "format:check"]
+description = "Check formatting for all languages"
+run = [{ tasks = ["fmt:backend", "fmt:frontend"] }]
+
+[tasks."fmt:fix"]
+alias = "format:fix"
+description = "Fix formatting for all languages"
+run = [{ tasks = ["fmt:backend:fix", "fmt:frontend:fix"] }]
+
+[tasks."api:generate"]
+description = "Generate the tracked OpenAPI YAML"
+dir = "backend"
+run = "go run ./cmd/openapi"
+
+[tasks."db:dev:migrate:create"]
+description = "Create a development Goose migration"
+run = "go -C backend run ./cmd/tasks db migrate create"
+
+[tasks."db:dev:start"]
+description = "Start the development database"
+run = "go -C backend run ./cmd/tasks db start"
+
+[tasks."db:dev:stop"]
+description = "Stop the development database"
+run = "go -C backend run ./cmd/tasks db stop"
+
+[tasks."db:dev:migrate:up"]
+description = "Apply development migrations"
+run = "go -C backend run ./cmd/tasks db migrate up"
+
+[tasks."db:dev:migrate:down"]
+description = "Roll back the latest development migration"
+run = "go -C backend run ./cmd/tasks db migrate down"
+
+[tasks."db:dev:migrate:status"]
+description = "Show development migration status"
+run = "go -C backend run ./cmd/tasks db migrate status"
+
+[tasks."db:dev:reset"]
+description = "Recreate the development database and seed it"
+run = "go -C backend run ./cmd/tasks db reset"
+
+[tasks."floci:start"]
+description = "Start Floci in the background"
+run = "go -C backend run ./cmd/tasks floci start"
+
+[tasks."floci:stop"]
+description = "Stop Floci"
+run = "go -C backend run ./cmd/tasks floci stop"
+
+[tasks."floci:status"]
+description = "Show Floci status"
+run = "go -C backend run ./cmd/tasks floci status"
+
+[tasks."floci:reset"]
+description = "Remove the Floci container and state"
+run = "go -C backend run ./cmd/tasks floci reset"

@@ -1,0 +1,43 @@
+version: 2
+
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - staticcheck
+    - revive
+    # errorlint catches err == ErrNotFound and type switches on error, both of
+    # which stop matching once an error is wrapped. internal/errs sentinels are
+    # load-bearing, so this one is not optional.
+    - errorlint
+    - unparam
+    - gocognit
+    - nestif
+  settings:
+    revive:
+      rules:
+        - name: atomic
+        - name: unhandled-error
+          severity: error
+        - name: var-naming
+        - name: receiver-naming
+        - name: indent-error-flow
+        - name: bare-return
+        - name: if-return
+        - name: range-val-in-closure
+    gocognit:
+      min-complexity: 20
+    nestif:
+      min-complexity: 4
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+formatters:
+  enable:
+    - gofmt

@@ -1,0 +1,65 @@
+name: Backend CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17.6
+        env:
+          POSTGRES_DB: app
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U app -d app"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: jdx/mise-action@v2
+        with:
+          install: true
+
+      - name: Check Go formatting
+        working-directory: backend
+        run: test -z "$(gofmt -l .)"
+
+      - name: Lint Go
+        working-directory: backend
+        run: golangci-lint run ./...
+
+      - name: Build Go
+        working-directory: backend
+        run: go build ./...
+
+      - name: Test Go
+        working-directory: backend
+        run: go test ./...
+
+      - name: Generate OpenAPI
+        run: mise run api:generate
+
+      - name: Check OpenAPI drift
+        run: git diff --exit-code -- backend/openapi.yaml
+
+      - name: Apply database migrations
+        working-directory: backend
+        env:
+          DATABASE_URL: postgres://app:app@localhost:5432/app?sslmode=disable
+        run: go run ./cmd/migrate up
+
+      - name: Check database migrations
+        working-directory: backend
+        env:
+          DATABASE_URL: postgres://app:app@localhost:5432/app?sslmode=disable
+        run: go run ./cmd/migrate status

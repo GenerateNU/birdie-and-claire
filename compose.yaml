@@ -1,0 +1,51 @@
+name: example_project
+
+# Every variable below comes from the process environment. Docker Compose also
+# reads a .env file in this directory, so the stack runs with a plain .env, an
+# exported shell environment, or any secret injector. See .env.example.
+
+services:
+  db:
+    image: postgres:17.6
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:?POSTGRES_PORT is required}:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: dev.Dockerfile
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@db:5432/${POSTGRES_DB:?POSTGRES_DB is required}?sslmode=disable
+    ports:
+      - "127.0.0.1:${API_PORT:?API_PORT is required}:8080"
+    volumes:
+      - ./backend:/app
+      - go_build_cache:/go/pkg/mod
+    depends_on:
+      db:
+        condition: service_healthy
+
+  floci:
+    image: floci/floci:2.1.0@sha256:f5aa8c18302cedb4f2385f5c4e455b3efc77fee6bf7b6e5d1712b2817ba102db
+    profiles: ["floci"]
+    ports:
+      - "127.0.0.1:4566:4566"
+    environment:
+      FLOCI_STORAGE_MODE: memory
+      FLOCI_SERVICES_UI_ENABLED: "false"
+
+volumes:
+  db_data:
+    name: example_project-postgres-data
+  go_build_cache:
