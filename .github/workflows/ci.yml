@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  sql_changes:
+    name: backend / sql changes
+    runs-on: ubuntu-latest
+    outputs:
+      migrations: ${{ steps.filter.outputs.migrations }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - id: filter
+        run: |
+          changed=$(git diff --name-only HEAD^1 HEAD)
+          if grep -qE '^(backend/internal/database/|backend/cmd/migrate/|backend/go\.(mod|sum)$|\.github/workflows/ci\.yml$)' <<<"$changed"; then
+            echo "migrations=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "migrations=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "$changed"
+
+  build:
+    name: backend / build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-go
+      - run: mise run build:backend
+
+  checks:
+    name: backend / ${{ matrix.name }}
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: format
+            run: mise run fmt:backend
+          - name: lint
+            run: mise run lint:backend
+          - name: test
+            run: mise run test:backend
+          - name: openapi
+            run: mise run api:generate && git diff --exit-code -- backend/openapi.yaml
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-go
+      - run: ${{ matrix.run }}
+
+  migrations:
+    name: backend / migrations
+    needs: sql_changes
+    if: >-
+      github.event_name == 'push' ||
+      needs.sql_changes.outputs.migrations == 'true'
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17.6
+        env:
+          POSTGRES_DB: app
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U app -d app"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 15
+    env:
+      DATABASE_URL: postgres://app:app@localhost:5432/app?sslmode=disable
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-go
+      - name: Apply
+        run: go run ./cmd/migrate up
+        working-directory: backend
+      - name: Status
+        run: go run ./cmd/migrate status
+        working-directory: backend
