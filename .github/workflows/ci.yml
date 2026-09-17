@@ -5,8 +5,61 @@ on:
   push:
     branches: [main]
 
+# A new push supersedes the run before it. Without this, six jobs per run adds
+# up quickly on a branch that gets pushed to often.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
-  backend:
+  format:
+    name: format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-go
+      - run: test -z "$(gofmt -l .)"
+        working-directory: backend
+
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-go
+      - run: golangci-lint run ./...
+        working-directory: backend
+
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-go
+      - run: go build ./...
+        working-directory: backend
+
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-go
+      - run: go test ./...
+        working-directory: backend
+
+  openapi:
+    name: openapi
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-go
+      - run: mise run api:generate
+      - name: Check for drift
+        run: git diff --exit-code -- backend/openapi.yaml
+
+  migrations:
+    name: migrations
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -22,44 +75,14 @@ jobs:
           --health-interval 2s
           --health-timeout 5s
           --health-retries 15
-
+    env:
+      DATABASE_URL: postgres://app:app@localhost:5432/app?sslmode=disable
     steps:
       - uses: actions/checkout@v4
-
-      - uses: jdx/mise-action@v2
-        with:
-          install: true
-
-      - name: Check Go formatting
-        working-directory: backend
-        run: test -z "$(gofmt -l .)"
-
-      - name: Lint Go
-        working-directory: backend
-        run: golangci-lint run ./...
-
-      - name: Build Go
-        working-directory: backend
-        run: go build ./...
-
-      - name: Test Go
-        working-directory: backend
-        run: go test ./...
-
-      - name: Generate OpenAPI
-        run: mise run api:generate
-
-      - name: Check OpenAPI drift
-        run: git diff --exit-code -- backend/openapi.yaml
-
-      - name: Apply database migrations
-        working-directory: backend
-        env:
-          DATABASE_URL: postgres://app:app@localhost:5432/app?sslmode=disable
+      - uses: ./.github/actions/setup-go
+      - name: Apply
         run: go run ./cmd/migrate up
-
-      - name: Check database migrations
         working-directory: backend
-        env:
-          DATABASE_URL: postgres://app:app@localhost:5432/app?sslmode=disable
+      - name: Status
         run: go run ./cmd/migrate status
+        working-directory: backend

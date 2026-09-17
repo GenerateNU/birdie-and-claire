@@ -1,0 +1,22 @@
+name: Set up toolchain
+description: Installs the mise-pinned tools and restores the Go build caches.
+
+# Every CI job is a fresh runner, so without these caches splitting one job into
+# six would mean downloading modules and rebuilding from scratch six times.
+
+runs:
+  using: composite
+  steps:
+    - uses: jdx/mise-action@v2
+      with:
+        install: true
+
+    - uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+          ~/.cache/golangci-lint
+        key: ${{ runner.os }}-go-${{ hashFiles('backend/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
