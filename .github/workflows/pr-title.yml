@@ -1,4 +1,4 @@
-name: CI / PR
+name: CI / pull request
 
 # Squash is the only merge method here and squash_merge_commit_title is
 # PR_TITLE, so the pull request title is what lands on main verbatim.
