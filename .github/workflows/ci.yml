@@ -1,4 +1,11 @@
-name: Backend CI
+name: CI
+
+# Each job is its own check in the PR UI, and every check with a mise task runs
+# that task, so CI and a laptop cannot drift apart.
+#
+# Everything needs build, because lint, test, the OpenAPI generator, and the
+# migration command all compile the package first. Without the dependency one
+# broken build reports the same compile error as five separate failures.
 
 on:
   pull_request:
@@ -10,51 +17,43 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  format:
-    name: format
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-go
-      - run: mise run fmt:backend
-
-  lint:
-    name: lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-go
-      - run: mise run lint:backend
-
   build:
-    name: build
+    name: backend / build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-go
       - run: mise run build:backend
 
-  test:
-    name: test
+  checks:
+    name: backend / ${{ matrix.name }}
+    needs: build
     runs-on: ubuntu-latest
+    strategy:
+      # Past build these are independent, so report all of them. Cancelling
+      # siblings would mean fixing one failure per push.
+      fail-fast: false
+      matrix:
+        include:
+          - name: format
+            run: mise run fmt:backend
+          - name: lint
+            run: mise run lint:backend
+          - name: test
+            run: mise run test:backend
+          - name: openapi
+            run: mise run api:generate && git diff --exit-code -- backend/openapi.yaml
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-go
-      - run: mise run test:backend
-
-  openapi:
-    name: openapi
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-go
-      - run: mise run api:generate
-      - name: Check for drift
-        run: git diff --exit-code -- backend/openapi.yaml
+      - run: ${{ matrix.run }}
 
   migrations:
-    name: migrations
+    name: backend / migrations
+    needs: build
     runs-on: ubuntu-latest
+    # Kept out of the matrix: services are declared per job, so every other leg
+    # would start a Postgres it never touches.
     services:
       postgres:
         image: postgres:17.6
