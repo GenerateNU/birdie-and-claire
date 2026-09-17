@@ -7,6 +7,8 @@ const FACTIONS = ["rebel", "empire", "jedi", "sith", "neutral"];
 //   threat_score 75–150 → medium threat → yellow
 //   threat_score < 75   → low threat    → green
 
+
+
 interface Character {
   id: number;
   name: string;
@@ -38,6 +40,14 @@ export default function App() {
       //   2. If the response is not ok (res.ok === false), throw an Error
       //   3. Parse the body as JSON with res.json()
       //   4. Call setCharacters(...) with the result
+
+            const res = await fetch(`/api/characters?faction=${faction}`);
+            if (res.ok === false) {
+              throw new Error(`error: ${res.status}`);
+            }
+            const result = await res.json();
+
+            setCharacters(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -50,13 +60,17 @@ export default function App() {
       <h1 className="text-3xl font-bold text-yellow-400 mb-2 tracking-wide">
         Rebel Alliance Intelligence Database
       </h1>
-      <p className="text-gray-400 mb-8 text-sm">Select a faction and scan for known operatives.</p>
+      <p className="text-gray-400 mb-8 text-sm">
+        Select a faction and scan for known operatives.
+      </p>
 
       {/* Controls */}
       <div className="flex gap-3 mb-8 items-center">
         <select
           value={faction}
-          onChange={(e: ChangeEvent<HTMLSelectElement>) => setFaction(e.target.value)}
+          onChange={(e: ChangeEvent<HTMLSelectElement>) =>
+            setFaction(e.target.value)
+          }
           className="bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
         >
           {FACTIONS.map((f) => (
@@ -76,11 +90,18 @@ export default function App() {
       </div>
 
       {/* Error state */}
-      {error && <p className="text-red-400 mb-6 text-sm">Intel error: {error}</p>}
+      {error && (
+        <p className="text-red-400 mb-6 text-sm">Intel error: {error}</p>
+      )}
 
       {/* Results */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {characters.map((c) => (
+          // Tip for TODO 2: use threat_score to pick a badge color
+          //   threat_score > 150  → high threat   → red
+          //   threat_score 75–150 → medium threat → yellow
+          //   threat_score < 75   → low threat    → green
+
           // TODO 2: Render a card for each character.
           //
           // Each character object has these fields:
@@ -94,11 +115,35 @@ export default function App() {
           //
           // Hint: replace the <p> below with your full card markup.
           //       key={c.id} must stay on the outermost element.
-          <div key={c.id} className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+          <div
+            key={c.id}
+            className="bg-gray-800 rounded-lg p-4 border border-gray-700"
+          >
             <p className="font-semibold">{c.name}</p>
+            <p className="text-sm text-gray-400">
+              {c.species}, {c.faction}
+            </p>
+
+            {c.force_sensitive && (
+              <span className="text-xs text-blue-400 block mt-1">
+                Force Sensitive
+              </span>
+            )}
+
+            <span
+              className={`inline-block mt-2 text-xs px-2 py-1 rounded ${getThreatColor(c.threat_score)}`}
+            >
+              Threat: {c.threat_score}
+            </span>
           </div>
         ))}
       </div>
     </div>
   );
+}
+
+function getThreatColor(threat_score: number ) {
+  if (threat_score > 150) return "bg-red-500";
+  if (threat_score >= 75) return "bg-yellow-500"
+  return "bg-green-500"
 }
