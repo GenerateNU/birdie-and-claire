@@ -60,7 +60,7 @@ jobs:
 
   migrations:
     name: backend / migrations
-    needs: [build, changes]
+    needs: changes
     if: >-
       github.event_name == 'push' ||
       needs.changes.outputs.database == 'true'
