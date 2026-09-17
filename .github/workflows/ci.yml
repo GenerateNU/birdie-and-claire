@@ -10,11 +10,11 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  changes:
-    name: backend / changes
+  sql_changes:
+    name: backend / sql changes
     runs-on: ubuntu-latest
     outputs:
-      database: ${{ steps.filter.outputs.database }}
+      migrations: ${{ steps.filter.outputs.migrations }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -23,9 +23,9 @@ jobs:
         run: |
           changed=$(git diff --name-only HEAD^1 HEAD)
           if grep -qE '^(backend/internal/database/|backend/cmd/migrate/|backend/go\.(mod|sum)$|\.github/workflows/ci\.yml$)' <<<"$changed"; then
-            echo "database=true" >> "$GITHUB_OUTPUT"
+            echo "migrations=true" >> "$GITHUB_OUTPUT"
           else
-            echo "database=false" >> "$GITHUB_OUTPUT"
+            echo "migrations=false" >> "$GITHUB_OUTPUT"
           fi
           echo "$changed"
 
@@ -60,10 +60,10 @@ jobs:
 
   migrations:
     name: backend / migrations
-    needs: changes
+    needs: sql_changes
     if: >-
       github.event_name == 'push' ||
-      needs.changes.outputs.database == 'true'
+      needs.sql_changes.outputs.migrations == 'true'
     runs-on: ubuntu-latest
     services:
       postgres:
