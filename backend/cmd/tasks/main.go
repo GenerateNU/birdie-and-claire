@@ -325,7 +325,10 @@ func ensureDatabase(root string) error {
 	if running {
 		return nil
 	}
-	return compose(root, "up", "-d", "--wait", "db").Run()
+	if err := compose(root, "up", "-d", "--wait", "db").Run(); err != nil {
+		return fmt.Errorf("start the development database: %w", err)
+	}
+	return nil
 }
 
 func requireDatabase(root string) error {
@@ -344,7 +347,7 @@ func serviceRunning(root, service string) (bool, error) {
 	cmd.Dir = root
 	output, err := cmd.Output()
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("list running Compose services: %w", withStderr(err))
 	}
 	return strings.TrimSpace(string(output)) == service || strings.Contains("\n"+strings.TrimSpace(string(output))+"\n", "\n"+service+"\n"), nil
 }
@@ -383,6 +386,17 @@ func stopProcess(cmd *exec.Cmd) {
 		_ = exec.Command("pkill", "-TERM", "-P", fmt.Sprint(cmd.Process.Pid)).Run()
 		_ = cmd.Process.Kill()
 	}
+}
+
+// withStderr makes a failed command say why it failed. exec.Cmd.Output()
+// captures stderr into the ExitError instead of printing it, so without this
+// a stopped Docker daemon reports nothing but "exit status 1".
+func withStderr(err error) error {
+	var exitError *exec.ExitError
+	if !errors.As(err, &exitError) || len(exitError.Stderr) == 0 {
+		return err
+	}
+	return fmt.Errorf("%w: %s", err, strings.TrimSpace(string(exitError.Stderr)))
 }
 
 func commandError(ctx context.Context, err error) error {

@@ -61,7 +61,10 @@ func injectSecrets(root string, args []string) (bool, error) {
 	)
 	cmd := command(root, "kfl", commandArgs...)
 	cmd.Env = append(os.Environ(), "NODE_NO_WARNINGS=1", secretsLoaded+"=1")
-	return true, cmd.Run()
+	if err := cmd.Run(); err != nil {
+		return true, fmt.Errorf("run %q with secrets from %s/%s: %w", strings.Join(args, " "), keyflareProject, environment, err)
+	}
+	return true, nil
 }
 
 // checkSecretsTooling verifies the injector is installed at the pinned version
@@ -75,7 +78,7 @@ func checkSecretsTooling(root string) error {
 	versionCmd.Dir = root
 	version, err := versionCmd.Output()
 	if err != nil {
-		return fmt.Errorf("check Keyflare version: %w", err)
+		return fmt.Errorf("check Keyflare version: %w", withStderr(err))
 	}
 	if strings.TrimSpace(string(version)) != keyflareVersion {
 		return fmt.Errorf("keyflare CLI %s is required; install it with: npm install -g @keyflare/cli@%s", keyflareVersion, keyflareVersion)
