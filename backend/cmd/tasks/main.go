@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -28,7 +30,7 @@ func main() {
 
 func run() error {
 	if len(os.Args) < 2 {
-		return errors.New("usage: go run ./cmd/tasks <bootstrap|setup|backend|dev|db|floci>")
+		return errors.New("usage: go run ./cmd/tasks <bootstrap|setup|backend|frontend|dev|db|floci>")
 	}
 
 	root, err := repositoryRoot()
@@ -51,6 +53,8 @@ func run() error {
 		return setup(root)
 	case "backend":
 		return backend(root)
+	case "frontend":
+		return frontend(root)
 	case "dev":
 		return dev(root)
 	case "db":
@@ -108,6 +112,15 @@ func backend(root string) error {
 	return commandError(ctx, apiCommand(ctx, root).Run())
 }
 
+// frontend runs Vite on its own. It goes through this command rather than
+// calling bun directly from mise so that it gets the same injected secrets as
+// dev; Vite reads VITE_-prefixed variables out of the process environment.
+func frontend(root string) error {
+	ctx, stop := signalContext()
+	defer stop()
+	return commandError(ctx, commandContext(ctx, filepath.Join(root, "frontend"), "bun", "run", "dev").Run())
+}
+
 func dev(root string) error {
 	if err := ensureDatabase(root); err != nil {
 		return err
@@ -146,9 +159,11 @@ func dev(root string) error {
 
 func database(root string, args []string) error {
 	if len(args) == 0 {
-		return errors.New("usage: db <start|stop|reset|migrate>")
+		return errors.New("usage: db <start|stop|reset|migrate|prod>")
 	}
 	switch args[0] {
+	case "prod":
+		return productionDatabase(root, args[1:])
 	case "start":
 		return compose(root, "up", "-d", "--wait", "db").Run()
 	case "stop":
@@ -184,6 +199,60 @@ func migrate(root string, args []string) error {
 		return err
 	}
 	return compose(root, "run", "--rm", "--no-deps", "api", "go", "run", "./cmd/migrate", action).Run()
+}
+
+// productionDatabase runs the embedded migrations against Supabase from the
+// host rather than inside the api container, which is wired to the Compose
+// database.
+func productionDatabase(root string, args []string) error {
+	if len(args) != 2 || args[0] != "migrate" {
+		return errors.New("usage: db prod migrate <up|down|status>")
+	}
+
+	action := args[1]
+	if action != "up" && action != "down" && action != "status" {
+		return fmt.Errorf("unknown migration action %q", action)
+	}
+
+	databaseURL, err := productionDatabaseURL()
+	if err != nil {
+		return err
+	}
+
+	cmd := command(filepath.Join(root, "backend"), "go", "run", "./cmd/migrate", action)
+	cmd.Env = append(os.Environ(), "DATABASE_URL="+databaseURL)
+	return cmd.Run()
+}
+
+// productionDatabaseURL assembles the connection string from the parts held in
+// the Keyflare prod environment. net/url escapes the password, which routinely
+// contains characters that would otherwise end the userinfo section early.
+//
+// DB_PORT must be 5432, the session-mode pooler. The transaction pooler on 6543
+// hands each statement a different backend, and goose takes a session-scoped
+// advisory lock it would then never release.
+func productionDatabaseURL() (string, error) {
+	parts := map[string]string{}
+	missing := make([]string, 0)
+	for _, name := range []string{"DB_HOST", "DB_PORT", "DB_USER", "DB_PASSWORD", "DB_NAME"} {
+		value := os.Getenv(name)
+		if value == "" {
+			missing = append(missing, name)
+		}
+		parts[name] = value
+	}
+	if len(missing) > 0 {
+		return "", fmt.Errorf("missing in the Keyflare prod environment: %s", strings.Join(missing, ", "))
+	}
+
+	databaseURL := url.URL{
+		Scheme:   "postgres",
+		User:     url.UserPassword(parts["DB_USER"], parts["DB_PASSWORD"]),
+		Host:     net.JoinHostPort(parts["DB_HOST"], parts["DB_PORT"]),
+		Path:     "/" + parts["DB_NAME"],
+		RawQuery: "sslmode=require",
+	}
+	return databaseURL.String(), nil
 }
 
 func resetDatabase(root string) error {

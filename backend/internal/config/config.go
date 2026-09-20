@@ -5,6 +5,7 @@ package config
 type Configuration struct {
 	App      AppConfig
 	Database DatabaseConfig
+	Supabase SupabaseConfig
 }
 
 // Load fails on the first missing or malformed variable, so a bad environment
@@ -20,5 +21,10 @@ func Load() (*Configuration, error) {
 		return nil, err
 	}
 
-	return &Configuration{App: app, Database: database}, nil
+	supabase, err := loadSupabase()
+	if err != nil {
+		return nil, err
+	}
+
+	return &Configuration{App: app, Database: database, Supabase: supabase}, nil
 }
