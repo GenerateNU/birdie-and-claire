@@ -21,8 +21,7 @@ run = "go -C backend run ./cmd/tasks backend"
 
 [tasks.frontend]
 description = "Run the frontend with Bun"
-dir = "frontend"
-run = "bun run dev"
+run = "go -C backend run ./cmd/tasks frontend"
 
 [tasks.dev]
 description = "Run the frontend and backend together"
@@ -141,6 +140,18 @@ run = "go -C backend run ./cmd/tasks db migrate status"
 [tasks."db:dev:reset"]
 description = "Recreate the development database and seed it"
 run = "go -C backend run ./cmd/tasks db reset"
+
+[tasks."db:prod:migrate:up"]
+description = "Apply migrations to the Supabase database"
+run = "go -C backend run ./cmd/tasks db prod migrate up"
+
+[tasks."db:prod:migrate:down"]
+description = "Roll back the latest migration on the Supabase database"
+run = "go -C backend run ./cmd/tasks db prod migrate down"
+
+[tasks."db:prod:migrate:status"]
+description = "Show migration status for the Supabase database"
+run = "go -C backend run ./cmd/tasks db prod migrate status"
 
 [tasks."floci:start"]
 description = "Start Floci in the background"
