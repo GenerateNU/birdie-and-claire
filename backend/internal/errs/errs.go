@@ -12,9 +12,10 @@ import (
 // controller use these instead of HTTP errors so that non-HTTP callers, such as
 // background workers, can consume the same services.
 var (
-	ErrNotFound  = errors.New("not found")
-	ErrDuplicate = errors.New("already exists")
-	ErrConflict  = errors.New("conflicting state")
+	ErrNotFound     = errors.New("not found")
+	ErrDuplicate    = errors.New("already exists")
+	ErrConflict     = errors.New("conflicting state")
+	ErrInvalidInput = errors.New("invalid input")
 )
 
 // ToHuma converts an error from the service layer into the HTTP error Huma
@@ -26,6 +27,8 @@ func ToHuma(err error) error {
 		return nil
 	case errors.Is(err, ErrNotFound):
 		return huma.Error404NotFound(ErrNotFound.Error())
+	case errors.Is(err, ErrInvalidInput):
+		return huma.Error400BadRequest(ErrInvalidInput.Error())
 	case errors.Is(err, ErrDuplicate):
 		return huma.Error409Conflict(ErrDuplicate.Error())
 	case errors.Is(err, ErrConflict):
