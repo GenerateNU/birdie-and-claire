@@ -6,6 +6,7 @@ type Configuration struct {
 	App      AppConfig
 	Database DatabaseConfig
 	Supabase SupabaseConfig
+	Storage  StorageConfig
 }
 
 // Load fails on the first missing or malformed variable, so a bad environment
@@ -26,5 +27,10 @@ func Load() (*Configuration, error) {
 		return nil, err
 	}
 
-	return &Configuration{App: app, Database: database, Supabase: supabase}, nil
+	storage, err := loadStorage()
+	if err != nil {
+		return nil, err
+	}
+
+	return &Configuration{App: app, Database: database, Supabase: supabase, Storage: storage}, nil
 }
