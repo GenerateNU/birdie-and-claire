@@ -3,40 +3,27 @@ package config
 import (
 	"fmt"
 	"os"
-	"time"
 )
 
-// Connection pool defaults. Postgres allows 100 connections by default, so
-// these leave room for migrations, psql sessions, and a second replica.
-const (
-	defaultMaxOpenConns    = 25
-	defaultMaxIdleConns    = 5
-	defaultConnMaxLifetime = 5 * time.Minute
-	defaultConnMaxIdleTime = 2 * time.Minute
-	defaultPingTimeout     = 10 * time.Second
-)
-
-type DatabaseConfig struct {
-	URL             string
-	MaxOpenConns    int
-	MaxIdleConns    int
-	ConnMaxLifetime time.Duration
-	ConnMaxIdleTime time.Duration
-	PingTimeout     time.Duration
+type StorageConfig struct {
+	Endpoint string // "" => real AWS
+	Bucket   string
 }
 
-func loadDatabase() (DatabaseConfig, error) {
-	url := os.Getenv("DATABASE_URL")
-	if url == "" {
-		return DatabaseConfig{}, fmt.Errorf("DATABASE_URL is required")
+func loadStorage() (StorageConfig, error) {
+	bucket := os.Getenv("S3_BUCKET")
+	if bucket == "" {
+		return StorageConfig{}, fmt.Errorf("S3_BUCKET is required")
 	}
 
-	return DatabaseConfig{
-		URL:             url,
-		MaxOpenConns:    defaultMaxOpenConns,
-		MaxIdleConns:    defaultMaxIdleConns,
-		ConnMaxLifetime: defaultConnMaxLifetime,
-		ConnMaxIdleTime: defaultConnMaxIdleTime,
-		PingTimeout:     defaultPingTimeout,
+	// credentials themselves are read by the SDK's default chain (AWS_* env);
+	// we only require that SOME are present so the SDK doesn't error later.
+	if os.Getenv("AWS_ACCESS_KEY_ID") == "" || os.Getenv("AWS_SECRET_ACCESS_KEY") == "" {
+		return StorageConfig{}, fmt.Errorf("AWS credentials missing (use test/test for Floci)")
+	}
+
+	return StorageConfig{
+		Endpoint: os.Getenv("S3_ENDPOINT"), // may be empty => real AWS
+		Bucket:   bucket,
 	}, nil
 }
