@@ -8,6 +8,7 @@ import (
 
 	"example_project/internal/errs"
 	"example_project/internal/models"
+	"example_project/internal/pagination"
 	"example_project/internal/services"
 )
 
@@ -21,17 +22,35 @@ func NewCharacterController(service services.CharacterService) *CharacterControl
 
 type ListCharactersInput struct {
 	Faction string `query:"faction" required:"true" enum:"rebel,empire,jedi,sith,neutral" doc:"Faction to filter by"`
+	pagination.Params
 }
 
 type ListCharactersOutput struct {
-	Body []models.CharacterResponse
+	Body pagination.Page[models.CharacterResponse]
 }
 
-// List returns every character in a faction, each with a computed threat score.
+// List returns a page of characters in a faction, each with a threat score.
 func (c *CharacterController) List(ctx context.Context, input *ListCharactersInput) (*ListCharactersOutput, error) {
-	characters, err := c.service.ListByFaction(ctx, input.Faction)
+	page, err := c.service.ListByFaction(ctx, input.Faction, input.Params)
 	if err != nil {
 		return nil, errs.ToHuma(err)
 	}
-	return &ListCharactersOutput{Body: characters}, nil
+	return &ListCharactersOutput{Body: page}, nil
+}
+
+type ListRankedCharactersInput struct {
+	pagination.Params
+}
+
+type ListRankedCharactersOutput struct {
+	Body pagination.Page[models.CharacterResponse]
+}
+
+// Ranked returns a page of characters across every faction, strongest first.
+func (c *CharacterController) Ranked(ctx context.Context, input *ListRankedCharactersInput) (*ListRankedCharactersOutput, error) {
+	page, err := c.service.ListRanked(ctx, input.Params)
+	if err != nil {
+		return nil, errs.ToHuma(err)
+	}
+	return &ListRankedCharactersOutput{Body: page}, nil
 }

@@ -6,10 +6,16 @@ import (
 	"fmt"
 
 	"example_project/internal/models"
+	"example_project/internal/pagination"
 )
 
 type CharacterRepository interface {
-	FindByFaction(ctx context.Context, faction string) ([]models.Character, error)
+	// FindByFaction returns up to Limit+1 characters in faction, ordered by id.
+	// The extra row is how the caller learns hasMore; trim it with pagination.Split.
+	FindByFaction(ctx context.Context, faction string, params pagination.Params) ([]models.Character, error)
+
+	// FindRanked returns up to Limit+1 characters across all factions, strongest first.
+	FindRanked(ctx context.Context, params pagination.Params) ([]models.Character, error)
 }
 
 var _ CharacterRepository = (*characterRepository)(nil)
@@ -22,16 +28,55 @@ func NewCharacterRepository(database *sql.DB) CharacterRepository {
 	return &characterRepository{db: database}
 }
 
-func (r *characterRepository) FindByFaction(ctx context.Context, faction string) ([]models.Character, error) {
+// FindByFaction implements CharacterRepository; id alone orders rows.
+func (r *characterRepository) FindByFaction(ctx context.Context, faction string, params pagination.Params) ([]models.Character, error) {
+	afterID, err := params.After().Int64("id")
+	if err != nil {
+		return nil, err
+	}
+
 	rows, err := r.db.QueryContext(ctx, `
 		SELECT id, name, species, faction, force_sensitive, power_level
 		FROM characters
 		WHERE faction = $1
+		  AND ($2::bigint IS NULL OR id > $2::bigint)
 		ORDER BY id
-	`, faction)
+		LIMIT $3
+	`, faction, afterID, params.Limit+1)
 	if err != nil {
-		return nil, fmt.Errorf("query characters: %w", err)
+		return nil, fmt.Errorf("query characters by faction: %w", err)
 	}
+	return scanCharacters(rows)
+}
+
+// FindRanked implements CharacterRepository. power_level repeats, so id breaks
+// ties and the cursor carries both, compared as a row value.
+func (r *characterRepository) FindRanked(ctx context.Context, params pagination.Params) ([]models.Character, error) {
+	after := params.After()
+	afterPowerLevel, err := after.Int64("power_level")
+	if err != nil {
+		return nil, err
+	}
+	afterID, err := after.Int64("id")
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT id, name, species, faction, force_sensitive, power_level
+		FROM characters
+		WHERE $1::integer IS NULL
+		   OR (power_level, id) < ($1::integer, $2::bigint)
+		ORDER BY power_level DESC, id DESC
+		LIMIT $3
+	`, afterPowerLevel, afterID, params.Limit+1)
+	if err != nil {
+		return nil, fmt.Errorf("query ranked characters: %w", err)
+	}
+	return scanCharacters(rows)
+}
+
+func scanCharacters(rows *sql.Rows) ([]models.Character, error) {
 	defer func() { _ = rows.Close() }()
 
 	characters := make([]models.Character, 0)

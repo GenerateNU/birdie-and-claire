@@ -91,6 +91,26 @@ components:
       required:
         - status
       type: object
+    PageCharacterResponse:
+      additionalProperties: false
+      properties:
+        has_more:
+          type: boolean
+        items:
+          items:
+            $ref: "#/components/schemas/CharacterResponse"
+          type:
+            - array
+            - "null"
+        next_cursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - next_cursor
+        - has_more
+      type: object
 info:
   title: Example Project API
   version: 1.0.0
@@ -114,16 +134,30 @@ paths:
               - sith
               - neutral
             type: string
+        - description: Max items to return
+          explode: false
+          in: query
+          name: limit
+          schema:
+            default: 20
+            description: Max items to return
+            format: int64
+            maximum: 100
+            minimum: 1
+            type: integer
+        - description: Opaque cursor from a previous page's next_cursor
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: Opaque cursor from a previous page's next_cursor
+            type: string
       responses:
         "200":
           content:
             application/json:
               schema:
-                items:
-                  $ref: "#/components/schemas/CharacterResponse"
-                type:
-                  - array
-                  - "null"
+                $ref: "#/components/schemas/PageCharacterResponse"
           description: OK
         default:
           content:
@@ -132,6 +166,45 @@ paths:
                 $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: List characters by faction
+      tags:
+        - characters
+  /api/v1/characters/ranked:
+    get:
+      description: Ranks every faction together. Power levels repeat, so id breaks ties.
+      operationId: list-ranked-characters
+      parameters:
+        - description: Max items to return
+          explode: false
+          in: query
+          name: limit
+          schema:
+            default: 20
+            description: Max items to return
+            format: int64
+            maximum: 100
+            minimum: 1
+            type: integer
+        - description: Opaque cursor from a previous page's next_cursor
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: Opaque cursor from a previous page's next_cursor
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageCharacterResponse"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: List characters by power level, strongest first
       tags:
         - characters
   /health:

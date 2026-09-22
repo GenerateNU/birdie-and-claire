@@ -21,4 +21,13 @@ func CharacterRoutes(api huma.API, params types.RouteParams) {
 		Summary:     "List characters by faction",
 		Tags:        []string{"characters"},
 	}, controller.List)
+
+	huma.Register(api, huma.Operation{
+		OperationID: "list-ranked-characters",
+		Method:      http.MethodGet,
+		Path:        "/api/v1/characters/ranked",
+		Summary:     "List characters by power level, strongest first",
+		Description: "Ranks every faction together. Power levels repeat, so id breaks ties.",
+		Tags:        []string{"characters"},
+	}, controller.Ranked)
 }
