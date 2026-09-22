@@ -3,7 +3,11 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
+
+	"example_project/internal/errs"
+	"example_project/internal/models"
 
 	"github.com/google/uuid"
 )
@@ -11,6 +15,8 @@ import (
 // UserRepository owns the users table. Rows are created by the application on registration.
 type UserRepository interface {
 	EnsureExists(ctx context.Context, id uuid.UUID) error
+	GetByID(ctx context.Context, id uuid.UUID) (models.User, error)
+	SetAvatarKey(ctx context.Context, id uuid.UUID, key string) error
 }
 
 var _ UserRepository = (*userRepository)(nil)
@@ -33,6 +39,49 @@ func (r *userRepository) EnsureExists(ctx context.Context, id uuid.UUID) error {
 	`, id)
 	if err != nil {
 		return fmt.Errorf("ensure user %s: %w", id, err)
+	}
+	return nil
+}
+
+func (r *userRepository) GetByID(ctx context.Context, id uuid.UUID) (models.User, error) {
+	var (
+		u    models.User
+		name sql.NullString
+		key  sql.NullString
+	)
+	err := r.db.QueryRowContext(ctx, `
+		SELECT id, name, avatar_key
+		FROM users
+		WHERE id = $1
+	`, id).Scan(&u.ID, &name, &key)
+	if errors.Is(err, sql.ErrNoRows) {
+		return models.User{}, errs.ErrNotFound
+	}
+	if err != nil {
+		return models.User{}, fmt.Errorf("get user %s: %w", id, err)
+	}
+	u.Name = name.String
+	if key.Valid {
+		u.AvatarKey = &key.String
+	}
+	return u, nil
+}
+
+func (r *userRepository) SetAvatarKey(ctx context.Context, id uuid.UUID, key string) error {
+	result, err := r.db.ExecContext(ctx, `
+		UPDATE users
+		SET avatar_key = $1, updated_at = now()
+		WHERE id = $2
+	`, key, id)
+	if err != nil {
+		return fmt.Errorf("set avatar key for user %s: %w", id, err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("set avatar key for user %s: %w", id, err)
+	}
+	if affected == 0 {
+		return errs.ErrNotFound
 	}
 	return nil
 }
