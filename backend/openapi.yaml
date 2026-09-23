@@ -91,6 +91,41 @@ components:
       required:
         - status
       type: object
+    PresignedUpload:
+      additionalProperties: false
+      properties:
+        Headers:
+          additionalProperties:
+            type: string
+          type: object
+        Key:
+          type: string
+        Method:
+          type: string
+        URL:
+          type: string
+      required:
+        - URL
+        - Method
+        - Headers
+        - Key
+      type: object
+    UserView:
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        profile_picture_url:
+          type:
+            - string
+            - "null"
+      required:
+        - id
+        - name
+        - profile_picture_url
+      type: object
 info:
   title: Example Project API
   version: 1.0.0
@@ -134,6 +169,91 @@ paths:
       summary: List characters by faction
       tags:
         - characters
+  /api/v1/users/{id}:
+    get:
+      operationId: get-user
+      parameters:
+        - description: User ID
+          in: path
+          name: id
+          required: true
+          schema:
+            description: User ID
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserView"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Get a user
+      tags:
+        - users
+  /api/v1/users/{id}/avatar-upload-url:
+    get:
+      operationId: create-user-avatar-upload-url
+      parameters:
+        - description: User ID
+          in: path
+          name: id
+          required: true
+          schema:
+            description: User ID
+            type: string
+        - description: MIME type of the image to upload
+          explode: false
+          in: query
+          name: content_type
+          required: true
+          schema:
+            description: MIME type of the image to upload
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PresignedUpload"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Get a presigned URL to upload a profile picture
+      tags:
+        - users
+  /api/v1/users/{id}/avatar/confirm:
+    post:
+      operationId: confirm-user-avatar
+      parameters:
+        - description: User ID
+          in: path
+          name: id
+          required: true
+          schema:
+            description: User ID
+            type: string
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Confirm a profile picture upload
+      tags:
+        - users
   /health:
     get:
       description: Reports only that the process is running. Never checks dependencies, because a failing liveness probe gets the process killed.

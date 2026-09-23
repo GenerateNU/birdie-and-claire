@@ -8,6 +8,7 @@ import (
 	"example_project/internal/repository"
 	"example_project/internal/server/middlewares"
 	"example_project/internal/server/routers"
+	"example_project/internal/storage"
 	"example_project/internal/types"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -30,6 +31,7 @@ func New(cfg *config.Configuration, database *sql.DB) (*fiber.App, huma.API) {
 		ServiceParams: &types.ServiceParams{
 			Repository: repository.New(database),
 			Config:     cfg,
+			Storage:    storage.NewStub(cfg.Storage),
 		},
 	})
 
@@ -53,6 +55,7 @@ func Spec(cfg *config.Configuration) huma.API {
 		ServiceParams: &types.ServiceParams{
 			Repository: repository.New(nil),
 			Config:     cfg,
+			Storage:    storage.NewStub(cfg.Storage),
 		},
 	})
 	return api
