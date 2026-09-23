@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"example_project/internal/auth"
 	"example_project/internal/config"
 	"example_project/internal/database"
 	"example_project/internal/log"
@@ -46,7 +47,13 @@ func run() error {
 		return err
 	}
 
-	app, _ := server.New(cfg, db)
+	// ctx stops the background key refresh on shutdown.
+	verifier, err := auth.NewVerifier(ctx, cfg.Supabase)
+	if err != nil {
+		return err
+	}
+
+	app, _ := server.New(cfg, db, verifier)
 
 	serverErr := make(chan error, 1)
 	go func() {
