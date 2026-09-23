@@ -14,6 +14,7 @@ import (
 	"example_project/internal/database"
 	"example_project/internal/log"
 	"example_project/internal/server"
+	"example_project/internal/storage"
 )
 
 const shutdownTimeout = 10 * time.Second
@@ -46,7 +47,16 @@ func run() error {
 		return err
 	}
 
-	app, _ := server.New(cfg, db)
+	store, err := storage.New(ctx, cfg.Storage)
+	if err != nil {
+		return err
+	}
+
+	if err := store.HeadBucket(ctx); err != nil {
+		return err
+	}
+
+	app, _ := server.New(cfg, db, store)
 
 	serverErr := make(chan error, 1)
 	go func() {
