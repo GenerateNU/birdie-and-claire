@@ -10,6 +10,7 @@ func UserID(ctx context.Context) string {
 	return id
 }
 
+// Can write userId to context
 func withUserID(ctx context.Context, id string) context.Context {
 	return context.WithValue(ctx, userIDKey{}, id)
 }
