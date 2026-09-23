@@ -37,20 +37,3 @@ func (c *CharacterController) List(ctx context.Context, input *ListCharactersInp
 	}
 	return &ListCharactersOutput{Body: page}, nil
 }
-
-type ListRankedCharactersInput struct {
-	pagination.Params
-}
-
-type ListRankedCharactersOutput struct {
-	Body pagination.Page[models.CharacterResponse]
-}
-
-// Ranked returns a page of characters across every faction, strongest first.
-func (c *CharacterController) Ranked(ctx context.Context, input *ListRankedCharactersInput) (*ListRankedCharactersOutput, error) {
-	page, err := c.service.ListRanked(ctx, input.Params)
-	if err != nil {
-		return nil, errs.ToHuma(err)
-	}
-	return &ListRankedCharactersOutput{Body: page}, nil
-}

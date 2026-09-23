@@ -15,7 +15,6 @@ import (
 // CharacterService reads characters and derives their threat scores.
 type CharacterService interface {
 	ListByFaction(ctx context.Context, faction string, params pagination.Params) (pagination.Page[models.CharacterResponse], error)
-	ListRanked(ctx context.Context, params pagination.Params) (pagination.Page[models.CharacterResponse], error)
 }
 
 var _ CharacterService = (*characterService)(nil)
@@ -37,40 +36,15 @@ func (s *characterService) ListByFaction(ctx context.Context, faction string, pa
 	rows, hasMore := pagination.Split(characters, params.Limit)
 	log.Info(ctx, "listed characters", "faction", faction, "count", len(rows))
 
-	return characterPage(rows, hasMore, func(last models.Character) pagination.Fields {
-		return pagination.Fields{"id": last.ID}
-	})
-}
-
-func (s *characterService) ListRanked(ctx context.Context, params pagination.Params) (pagination.Page[models.CharacterResponse], error) {
-	characters, err := s.repo.Character.FindRanked(ctx, params)
-	if err != nil {
-		return pagination.Page[models.CharacterResponse]{}, err
-	}
-
-	rows, hasMore := pagination.Split(characters, params.Limit)
-	log.Info(ctx, "listed ranked characters", "count", len(rows))
-
-	return characterPage(rows, hasMore, func(last models.Character) pagination.Fields {
-		return pagination.Fields{"power_level": last.PowerLevel, "id": last.ID}
-	})
-}
-
-// characterPage wraps a trimmed page in the response shape. Each listing supplies
-// only the columns its own sort key uses, from the last row on the page.
-func characterPage(
-	rows []models.Character,
-	hasMore bool,
-	cursorFor func(last models.Character) pagination.Fields,
-) (pagination.Page[models.CharacterResponse], error) {
 	responses := make([]models.CharacterResponse, 0, len(rows))
 	for _, character := range rows {
 		responses = append(responses, models.CharacterResponse{Character: character, ThreatScore: character.ThreatScore()})
 	}
 
+	// The cursor names the last row on the page, which is where the next resumes.
 	var nextCursor *string
 	if hasMore {
-		cursor, err := cursorFor(rows[len(rows)-1]).Encode()
+		cursor, err := pagination.Fields{"id": rows[len(rows)-1].ID}.Encode()
 		if err != nil {
 			return pagination.Page[models.CharacterResponse]{}, err
 		}

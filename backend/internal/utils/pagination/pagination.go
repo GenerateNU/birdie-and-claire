@@ -1,5 +1,6 @@
 // Package pagination provides cursor-based pagination for list endpoints.
 // A cursor is the last row's sort-column values, JSON then base64 encoded.
+// GET /api/v1/characters is the only caller today.
 package pagination
 
 import (
