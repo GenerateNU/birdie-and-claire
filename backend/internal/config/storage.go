@@ -7,6 +7,7 @@ import (
 
 type StorageConfig struct {
 	Endpoint string // "" => real AWS
+	Region   string
 	Bucket   string
 }
 
@@ -16,14 +17,18 @@ func loadStorage() (StorageConfig, error) {
 		return StorageConfig{}, fmt.Errorf("S3_BUCKET is required")
 	}
 
-	// credentials themselves are read by the SDK's default chain (AWS_* env);
-	// we only require that SOME are present so the SDK doesn't error later.
+	region := os.Getenv("S3_REGION")
+	if region == "" {
+		return StorageConfig{}, fmt.Errorf("S3_REGION is required")
+	}
+
 	if os.Getenv("AWS_ACCESS_KEY_ID") == "" || os.Getenv("AWS_SECRET_ACCESS_KEY") == "" {
 		return StorageConfig{}, fmt.Errorf("AWS credentials missing (use test/test for Floci)")
 	}
 
 	return StorageConfig{
-		Endpoint: os.Getenv("S3_ENDPOINT"), // may be empty => real AWS
+		Endpoint: os.Getenv("S3_ENDPOINT"),
+		Region:   region,
 		Bucket:   bucket,
 	}, nil
 }
