@@ -23,7 +23,7 @@ type State<T> = {
   error: string | null;
 };
 
-function emptyState<T>(): State<T> {
+function loadingState<T>(): State<T> {
   return { items: [], cursor: null, hasMore: false, isLoading: true, error: null };
 }
 
@@ -41,7 +41,7 @@ export function usePagination<T>(
     Object.entries(filters).sort(([left], [right]) => left.localeCompare(right)),
   ).toString();
 
-  const [state, setState] = useState<State<T>>(emptyState<T>);
+  const [state, setState] = useState<State<T>>(loadingState<T>);
 
   // A response from a stale generation belongs to filters already moved off; drop it.
   const generation = useRef(0);
@@ -49,7 +49,7 @@ export function usePagination<T>(
   const abort = useRef<AbortController | null>(null);
 
   const fetchPage = useCallback(
-    async (cursor: string | null, requested: number) => {
+    async (cursor: string | null, requestGeneration: number) => {
       const query = new URLSearchParams(filterKey);
 
       query.set("limit", String(limit));
@@ -73,7 +73,7 @@ export function usePagination<T>(
 
         const page: Page<T> = await response.json();
 
-        if (requested !== generation.current) {
+        if (requestGeneration !== generation.current) {
           return;
         }
 
@@ -85,7 +85,7 @@ export function usePagination<T>(
           error: null,
         }));
       } catch (cause) {
-        if (requested !== generation.current || controller.signal.aborted) {
+        if (requestGeneration !== generation.current || controller.signal.aborted) {
           return;
         }
 
@@ -95,7 +95,7 @@ export function usePagination<T>(
           error: cause instanceof Error ? cause.message : "request failed",
         }));
       } finally {
-        if (requested === generation.current) {
+        if (requestGeneration === generation.current) {
           inFlight.current = false;
         }
       }
@@ -107,7 +107,7 @@ export function usePagination<T>(
     generation.current += 1;
     abort.current?.abort();
     inFlight.current = false;
-    setState(emptyState<T>());
+    setState(loadingState<T>());
 
     void fetchPage(null, generation.current);
 

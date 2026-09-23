@@ -1,4 +1,4 @@
-// Package pagination provides cursor-based pagination for every list endpoint.
+// Package pagination provides cursor-based pagination for list endpoints.
 // A cursor is the last row's sort-column values, JSON then base64 encoded.
 package pagination
 

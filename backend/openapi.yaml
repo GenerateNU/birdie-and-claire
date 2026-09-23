@@ -168,6 +168,45 @@ paths:
       summary: List characters by faction
       tags:
         - characters
+  /api/v1/characters/ranked:
+    get:
+      description: Ranks every faction together. Power levels repeat, so id breaks ties.
+      operationId: list-ranked-characters
+      parameters:
+        - description: Max items to return
+          explode: false
+          in: query
+          name: limit
+          schema:
+            default: 20
+            description: Max items to return
+            format: int64
+            maximum: 100
+            minimum: 1
+            type: integer
+        - description: Opaque cursor from a previous page's next_cursor
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: Opaque cursor from a previous page's next_cursor
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageCharacterResponse"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: List characters by power level, strongest first
+      tags:
+        - characters
   /health:
     get:
       description: Reports only that the process is running. Never checks dependencies, because a failing liveness probe gets the process killed.

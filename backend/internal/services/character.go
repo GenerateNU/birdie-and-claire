@@ -15,6 +15,7 @@ import (
 // CharacterService reads characters and derives their threat scores.
 type CharacterService interface {
 	ListByFaction(ctx context.Context, faction string, params pagination.Params) (pagination.Page[models.CharacterResponse], error)
+	ListRanked(ctx context.Context, params pagination.Params) (pagination.Page[models.CharacterResponse], error)
 }
 
 var _ CharacterService = (*characterService)(nil)
@@ -33,18 +34,43 @@ func (s *characterService) ListByFaction(ctx context.Context, faction string, pa
 		return pagination.Page[models.CharacterResponse]{}, err
 	}
 
-	page, hasMore := pagination.Split(characters, params.Limit)
-	log.Info(ctx, "listed characters", "faction", faction, "count", len(page))
+	rows, hasMore := pagination.Split(characters, params.Limit)
+	log.Info(ctx, "listed characters", "faction", faction, "count", len(rows))
 
-	responses := make([]models.CharacterResponse, 0, len(page))
-	for _, character := range page {
+	return characterPage(rows, hasMore, func(last models.Character) pagination.Fields {
+		return pagination.Fields{"id": last.ID}
+	})
+}
+
+func (s *characterService) ListRanked(ctx context.Context, params pagination.Params) (pagination.Page[models.CharacterResponse], error) {
+	characters, err := s.repo.Character.FindRanked(ctx, params)
+	if err != nil {
+		return pagination.Page[models.CharacterResponse]{}, err
+	}
+
+	rows, hasMore := pagination.Split(characters, params.Limit)
+	log.Info(ctx, "listed ranked characters", "count", len(rows))
+
+	return characterPage(rows, hasMore, func(last models.Character) pagination.Fields {
+		return pagination.Fields{"power_level": last.PowerLevel, "id": last.ID}
+	})
+}
+
+// characterPage wraps a trimmed page in the response shape. Each listing supplies
+// only the columns its own sort key uses, from the last row on the page.
+func characterPage(
+	rows []models.Character,
+	hasMore bool,
+	cursorFor func(last models.Character) pagination.Fields,
+) (pagination.Page[models.CharacterResponse], error) {
+	responses := make([]models.CharacterResponse, 0, len(rows))
+	for _, character := range rows {
 		responses = append(responses, models.CharacterResponse{Character: character, ThreatScore: character.ThreatScore()})
 	}
 
-	// The cursor names the last row on the page, which is where the next resumes.
 	var nextCursor *string
 	if hasMore {
-		cursor, err := pagination.Fields{"id": page[len(page)-1].ID}.Encode()
+		cursor, err := cursorFor(rows[len(rows)-1]).Encode()
 		if err != nil {
 			return pagination.Page[models.CharacterResponse]{}, err
 		}
