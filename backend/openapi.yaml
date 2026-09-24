@@ -94,21 +94,21 @@ components:
     PresignedUpload:
       additionalProperties: false
       properties:
-        Headers:
+        headers:
           additionalProperties:
             type: string
           type: object
-        Key:
+        key:
           type: string
-        Method:
+        method:
           type: string
-        URL:
+        url:
           type: string
       required:
-        - URL
-        - Method
-        - Headers
-        - Key
+        - url
+        - method
+        - headers
+        - key
       type: object
     UserView:
       additionalProperties: false

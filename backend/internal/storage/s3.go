@@ -2,15 +2,18 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"example_project/internal/config"
+	"example_project/internal/errs"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/smithy-go"
 )
 
 const presignExpiry = 15 * time.Minute
@@ -91,6 +94,11 @@ func (s *s3Store) HeadObject(ctx context.Context, key string) (ObjectInfo, error
 		Key:    aws.String(key),
 	})
 	if err != nil {
+		// A missing object is a domain not-found; every other error (outage,
+		// credentials, timeout) surfaces so it is not mistaken for one.
+		if isNotFound(err) {
+			return ObjectInfo{}, errs.ErrNotFound
+		}
 		return ObjectInfo{}, fmt.Errorf("head object %s: %w", key, err)
 	}
 
@@ -98,6 +106,17 @@ func (s *s3Store) HeadObject(ctx context.Context, key string) (ObjectInfo, error
 		ContentType: aws.ToString(out.ContentType),
 		Size:        aws.ToInt64(out.ContentLength),
 	}, nil
+}
+
+func isNotFound(err error) bool {
+	var apiErr smithy.APIError
+	if errors.As(err, &apiErr) {
+		switch apiErr.ErrorCode() {
+		case "NotFound", "NoSuchKey", "404":
+			return true
+		}
+	}
+	return false
 }
 
 func (s *s3Store) URLFor(key string) string {

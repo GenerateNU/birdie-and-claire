@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"example_project/internal/errs"
@@ -77,9 +78,12 @@ func (s *userService) ConfirmAvatar(ctx context.Context, id uuid.UUID) error {
 
 	key := avatarKey(id)
 	info, err := s.store.HeadObject(ctx, key)
-	if err != nil {
-		// A missing object means the client never uploaded to the presigned URL.
+	if errors.Is(err, errs.ErrNotFound) {
+		// No object at the key means the client never uploaded to the presigned URL.
 		return errs.ErrInvalidInput
+	}
+	if err != nil {
+		return err
 	}
 	if !allowedAvatarTypes[info.ContentType] || info.Size <= 0 || info.Size > s.maxUploadBytes {
 		return errs.ErrInvalidInput

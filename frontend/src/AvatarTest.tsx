@@ -22,6 +22,9 @@ export default function AvatarTest() {
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<UserView | null>(null);
+  // Bumped after each upload so the <img> refetches; the avatar key is fixed, so
+  // its URL is identical every time and the browser would otherwise cache it.
+  const [cacheBust, setCacheBust] = useState(0);
 
   async function fetchUser(id: string) {
     const res = await fetch(`/api/v1/users/${id}`);
@@ -76,6 +79,7 @@ export default function AvatarTest() {
     try {
       await upload(userId, file);
       await fetchUser(userId);
+      setCacheBust(Date.now());
       setStatus("Done");
     } catch (err) {
       setStatus(null);
@@ -124,7 +128,7 @@ export default function AvatarTest() {
             <p className="text-gray-400 text-xs break-all">{user.id}</p>
             {user.profile_picture_url ? (
               <img
-                src={user.profile_picture_url}
+                src={`${user.profile_picture_url}?t=${cacheBust}`}
                 alt="profile"
                 className="mt-3 h-32 w-32 rounded-full object-cover"
               />
