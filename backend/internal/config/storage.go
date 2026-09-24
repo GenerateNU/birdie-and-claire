@@ -9,10 +9,8 @@ import (
 const defaultMaxUploadBytes = 5 << 20 // 5 MiB
 
 type StorageConfig struct {
-	Endpoint string // "" => real AWS
-	// PublicEndpoint is the same storage as the browser reaches it. It differs
-	// from Endpoint when the API runs in a container (floci:4566 vs localhost:4566).
-	PublicEndpoint string
+	Endpoint string // API uses (floci:4566 in-container); "" = real AWS
+	PublicEndpoint string // browser uses (localhost:4566); presigned URLs sign to this
 	Region         string
 	Bucket         string
 	MaxUploadBytes int64

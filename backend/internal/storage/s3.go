@@ -26,17 +26,12 @@ type s3Store struct {
 	bucket         string
 }
 
-// New builds an S3-backed Store. When cfg.Endpoint is set (Floci locally) the
-// client targets it instead of AWS. Credentials come from the AWS_* environment.
 func New(ctx context.Context, cfg config.StorageConfig) (Store, error) {
 	awsCfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(cfg.Region))
 	if err != nil {
 		return nil, fmt.Errorf("load AWS config: %w", err)
 	}
 
-	// The host is part of the signature, so presigned URLs must be signed for the
-	// address the browser uses, not the one this process reaches storage on.
-	// Presigning makes no network call, so the public client never dials out.
 	publicClient := newS3Client(awsCfg, cfg.PublicEndpoint)
 
 	return &s3Store{
@@ -50,12 +45,9 @@ func New(ctx context.Context, cfg config.StorageConfig) (Store, error) {
 
 func newS3Client(awsCfg aws.Config, endpoint string) *s3.Client {
 	return s3.NewFromConfig(awsCfg, func(o *s3.Options) {
-		// The SDK's default checksum is computed over the empty body at presign
-		// time and signed into the URL, so the client's real upload would fail.
 		o.RequestChecksumCalculation = aws.RequestChecksumCalculationWhenRequired
-		if endpoint != "" {
+		if endpoint != "" { //uses localhost
 			o.BaseEndpoint = aws.String(endpoint)
-			// Floci serves buckets at endpoint/bucket; bucket.localhost does not resolve.
 			o.UsePathStyle = true
 		}
 	})
@@ -73,7 +65,6 @@ func (s *s3Store) PresignPut(ctx context.Context, key, contentType string) (Pres
 
 	headers := make(map[string]string, len(request.SignedHeader))
 	for name, values := range request.SignedHeader {
-		// Browsers forbid setting Host and send it themselves.
 		if strings.EqualFold(name, "Host") {
 			continue
 		}
@@ -94,8 +85,6 @@ func (s *s3Store) HeadObject(ctx context.Context, key string) (ObjectInfo, error
 		Key:    aws.String(key),
 	})
 	if err != nil {
-		// A missing object is a domain not-found; every other error (outage,
-		// credentials, timeout) surfaces so it is not mistaken for one.
 		if isNotFound(err) {
 			return ObjectInfo{}, errs.ErrNotFound
 		}

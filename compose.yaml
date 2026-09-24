@@ -28,10 +28,6 @@ services:
       DATABASE_URL: postgres://${DB_USER:?DB_USER is required}:${DB_PASSWORD:?DB_PASSWORD is required}@${DB_HOST:?DB_HOST is required}:5432/${DB_NAME:?DB_NAME is required}?sslmode=disable
       SUPABASE_URL: ${SUPABASE_URL:?SUPABASE_URL is required}
       S3_BUCKET: ${S3_BUCKET:?S3_BUCKET is required}
-      # S3_ENDPOINT is the host's view of storage (localhost:4566), which is what
-      # the browser needs. Inside this container localhost is the container
-      # itself, so the API reaches Floci by service name. When S3_ENDPOINT is
-      # empty (real AWS), ":+" leaves both empty.
       S3_ENDPOINT: ${S3_ENDPOINT:+http://floci:4566}
       S3_PUBLIC_ENDPOINT: ${S3_ENDPOINT}
       S3_REGION: ${S3_REGION:?S3_REGION is required}

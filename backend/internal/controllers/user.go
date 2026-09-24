@@ -27,7 +27,6 @@ type GetUserOutput struct {
 	Body models.UserView
 }
 
-// Get returns a user with their profile picture URL, or null when unset.
 func (c *UserController) Get(ctx context.Context, input *GetUserInput) (*GetUserOutput, error) {
 	view, err := c.service.Get(ctx, input.ID)
 	if err != nil {
@@ -45,7 +44,6 @@ type AvatarUploadURLOutput struct {
 	Body storage.PresignedUpload
 }
 
-// AvatarUploadURL returns a short-lived URL the client uploads the image to directly.
 func (c *UserController) AvatarUploadURL(ctx context.Context, input *AvatarUploadURLInput) (*AvatarUploadURLOutput, error) {
 	upload, err := c.service.CreateAvatarUploadURL(ctx, input.ID, input.ContentType)
 	if err != nil {
@@ -60,7 +58,6 @@ type ConfirmAvatarInput struct {
 
 type ConfirmAvatarOutput struct{}
 
-// ConfirmAvatar verifies the uploaded object and records it against the user.
 func (c *UserController) ConfirmAvatar(ctx context.Context, input *ConfirmAvatarInput) (*ConfirmAvatarOutput, error) {
 	if err := c.service.ConfirmAvatar(ctx, input.ID); err != nil {
 		return nil, errs.ToHuma(err)

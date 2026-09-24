@@ -20,9 +20,6 @@ var allowedAvatarTypes = map[string]bool{
 	"image/webp": true,
 }
 
-// UserService reads users and manages their profile pictures. Uploads are
-// presigned: the client uploads straight to storage, then confirms so the service
-// can verify the object landed before recording it.
 type UserService interface {
 	Get(ctx context.Context, id uuid.UUID) (models.UserView, error)
 	CreateAvatarUploadURL(ctx context.Context, id uuid.UUID, contentType string) (storage.PresignedUpload, error)
@@ -96,8 +93,6 @@ func (s *userService) ConfirmAvatar(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-// avatarKey is the fixed object key for a user's avatar, so re-uploads overwrite
-// rather than orphaning objects.
 func avatarKey(id uuid.UUID) string {
 	return fmt.Sprintf("users/%s/avatar", id)
 }

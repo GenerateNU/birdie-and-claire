@@ -2,8 +2,6 @@ package models
 
 import "github.com/google/uuid"
 
-// User is a row from the users table. AvatarKey is the object storage key for the
-// profile picture, nil when the user has none.
 type User struct {
 	ID        uuid.UUID
 	Name      string

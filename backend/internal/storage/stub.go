@@ -7,13 +7,15 @@ import (
 	"example_project/internal/config"
 )
 
-// stubStore fakes object storage for local dev before the real S3 client exists
+// stubStore is a no-network Store used only for offline OpenAPI generation
+// (server.Spec), so `api:generate` needs no S3 credentials or connection. The
+// running server uses the real S3 store, never this.
 type stubStore struct {
 	endpoint string
 	bucket   string
 }
 
-// NewStub mirrors the real constructor's signature so wiring is unchanged on swap.
+// NewStub mirrors the real constructor's signature so the Spec wiring matches New.
 func NewStub(cfg config.StorageConfig) Store {
 	return &stubStore{endpoint: cfg.Endpoint, bucket: cfg.Bucket}
 }
