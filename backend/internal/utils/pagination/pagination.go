@@ -13,18 +13,18 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 )
 
-// Params is embedded in a controller's input struct, validated before the handler runs.
-type Params struct {
+// CursorParams is embedded in a controller's input struct, validated before the handler runs.
+type CursorParams struct {
 	Limit  int    `query:"limit" default:"20" minimum:"1" maximum:"100" doc:"Max items to return"`
 	Cursor string `query:"cursor" doc:"Opaque cursor from a previous page's next_cursor"`
 
-	after Fields
+	after CursorFields
 }
 
-var _ huma.Resolver = (*Params)(nil)
+var _ huma.Resolver = (*CursorParams)(nil)
 
 // Resolve decodes the cursor at the boundary, so no layer below sees the raw value.
-func (p *Params) Resolve(huma.Context) []error {
+func (p *CursorParams) Resolve(huma.Context) []error {
 	after, err := Decode(p.Cursor)
 	if err != nil {
 		return []error{huma.Error400BadRequest(err.Error())}
@@ -34,7 +34,7 @@ func (p *Params) Resolve(huma.Context) []error {
 }
 
 // After returns the sort-column values this page starts after; empty on the first page.
-func (p *Params) After() Fields {
+func (p *CursorParams) After() CursorFields {
 	return p.after
 }
 
@@ -45,13 +45,13 @@ type Page[T any] struct {
 	HasMore    bool    `json:"has_more"`
 }
 
-// Fields is a cursor's sort-column values, keyed by column name. Empty means first page.
-type Fields map[string]any
+// CursorFields is a cursor's sort-column values, keyed by column name. Empty means first page.
+type CursorFields map[string]any
 
 // Decode reads a cursor's sort-column values. An empty string is the first page.
-func Decode(cursor string) (Fields, error) {
+func Decode(cursor string) (CursorFields, error) {
 	if cursor == "" {
-		return Fields{}, nil
+		return CursorFields{}, nil
 	}
 	raw, err := base64.RawURLEncoding.DecodeString(cursor)
 	if err != nil {
@@ -62,7 +62,7 @@ func Decode(cursor string) (Fields, error) {
 	// float64 rounds past 2^53; ids are BIGSERIAL and must round-trip exactly.
 	decoder.UseNumber()
 
-	var fields Fields
+	var fields CursorFields
 	if err := decoder.Decode(&fields); err != nil {
 		return nil, errs.ErrBadCursor
 	}
@@ -74,7 +74,7 @@ func Decode(cursor string) (Fields, error) {
 }
 
 // Encode turns a page's last row into the opaque cursor for the next one.
-func (f Fields) Encode() (string, error) {
+func (f CursorFields) Encode() (string, error) {
 	raw, err := json.Marshal(f)
 	if err != nil {
 		return "", err
@@ -83,7 +83,7 @@ func (f Fields) Encode() (string, error) {
 }
 
 // Int64 returns key's value as a nullable SQL parameter, nil on the first page.
-func (f Fields) Int64(key string) (*int64, error) {
+func (f CursorFields) Int64(key string) (*int64, error) {
 	if len(f) == 0 {
 		return nil, nil
 	}

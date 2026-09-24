@@ -14,7 +14,7 @@ import (
 
 // Locks the wire format; changing these bytes breaks clients mid-page.
 func TestEncodeMatchesPublishedCursor(t *testing.T) {
-	cursor, err := pagination.Fields{"id": 2}.Encode()
+	cursor, err := pagination.CursorFields{"id": 2}.Encode()
 	if err != nil {
 		t.Fatalf("Encode() error = %v", err)
 	}
@@ -60,7 +60,7 @@ func TestDecodeRejects(t *testing.T) {
 }
 
 func TestDecodeRoundTrip(t *testing.T) {
-	cursor, err := pagination.Fields{"power_level": 92, "id": 7}.Encode()
+	cursor, err := pagination.CursorFields{"power_level": 92, "id": 7}.Encode()
 	if err != nil {
 		t.Fatalf("Encode() error = %v", err)
 	}
@@ -85,7 +85,7 @@ func TestDecodeRoundTrip(t *testing.T) {
 func TestInt64PreservesLargeIDs(t *testing.T) {
 	const want int64 = 9007199254740993
 
-	cursor, err := pagination.Fields{"id": want}.Encode()
+	cursor, err := pagination.CursorFields{"id": want}.Encode()
 	if err != nil {
 		t.Fatalf("Encode() error = %v", err)
 	}
@@ -152,7 +152,7 @@ func TestSplit(t *testing.T) {
 }
 
 type paginationProbeInput struct {
-	pagination.Params
+	pagination.CursorParams
 }
 
 type paginationProbeOutput struct {
@@ -162,7 +162,7 @@ type paginationProbeOutput struct {
 	}
 }
 
-// paginationProbe reports what Params resolved to, through the real Huma pipeline:
+// paginationProbe reports what CursorParams resolved to, through the real Huma pipeline:
 // whether Huma reaches a resolver on an embedded struct is the thing being pinned.
 func paginationProbe(t *testing.T) humatest.TestAPI {
 	t.Helper()

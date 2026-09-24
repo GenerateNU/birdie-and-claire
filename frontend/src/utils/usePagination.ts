@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useInfiniteQuery } from "@tanstack/react-query";
 
 /** The wrapper every paginated list endpoint returns, in wire field names. */
 export type Page<T> = {
@@ -7,129 +7,35 @@ export type Page<T> = {
   has_more: boolean;
 };
 
-export type Pagination<T> = {
-  items: T[];
-  hasMore: boolean;
-  isLoading: boolean;
-  error: string | null;
-  loadMore: () => void;
-};
+type Cursor = string | null;
 
-type State<T> = {
-  items: T[];
-  cursor: string | null;
-  hasMore: boolean;
-  isLoading: boolean;
-  error: string | null;
-};
-
-function loadingState<T>(): State<T> {
-  return { items: [], cursor: null, hasMore: false, isLoading: true, error: null };
-}
+const FIRST_PAGE: Cursor = null;
 
 /**
- * Drives any endpoint returning the Page wrapper; knows nothing about the resource.
- * Pages accumulate, and changing the path or filters starts over.
+ * Pages any endpoint returning the Page wrapper, on TanStack Query.
+ * POST request: range and multi-select filters encode badly as query
+ * params. Returns TanStack's own shape, so callers use data.pages directly.
  */
-export function usePagination<T>(
-  path: string,
-  filters: Record<string, string>,
-  limit = 20,
-): Pagination<T> {
-  // Values decide the reset, not object identity; sorting makes key order irrelevant.
-  const filterKey = new URLSearchParams(
-    Object.entries(filters).sort(([left], [right]) => left.localeCompare(right)),
-  ).toString();
+export function usePagination<TItem, TFilters>(path: string, filters: TFilters, limit = 20) {
+  return useInfiniteQuery({
+    // Hashed structurally, so a rebuilt filters object is not a change.
+    queryKey: [path, filters, limit],
+    initialPageParam: FIRST_PAGE,
+    queryFn: async ({ pageParam, signal }): Promise<Page<TItem>> => {
+      const response = await fetch(path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ limit, cursor: pageParam, filters }),
+        signal,
+      });
 
-  const [state, setState] = useState<State<T>>(loadingState<T>);
-
-  // A response from a stale generation belongs to filters already moved off; drop it.
-  const generation = useRef(0);
-  const inFlight = useRef(false);
-  const abort = useRef<AbortController | null>(null);
-
-  const fetchPage = useCallback(
-    async (cursor: string | null, requestGeneration: number) => {
-      const query = new URLSearchParams(filterKey);
-
-      query.set("limit", String(limit));
-
-      if (cursor !== null) {
-        query.set("cursor", cursor);
+      if (!response.ok) {
+        throw new Error(`${response.status} ${response.statusText}`);
       }
 
-      const controller = new AbortController();
-
-      abort.current = controller;
-      inFlight.current = true;
-      setState((previous) => ({ ...previous, isLoading: true, error: null }));
-
-      try {
-        const response = await fetch(`${path}?${query.toString()}`, { signal: controller.signal });
-
-        if (!response.ok) {
-          throw new Error(`${response.status} ${response.statusText}`);
-        }
-
-        const page: Page<T> = await response.json();
-
-        if (requestGeneration !== generation.current) {
-          return;
-        }
-
-        setState((previous) => ({
-          items: [...previous.items, ...page.items],
-          cursor: page.next_cursor,
-          hasMore: page.has_more,
-          isLoading: false,
-          error: null,
-        }));
-      } catch (cause) {
-        if (requestGeneration !== generation.current || controller.signal.aborted) {
-          return;
-        }
-
-        setState((previous) => ({
-          ...previous,
-          isLoading: false,
-          error: cause instanceof Error ? cause.message : "request failed",
-        }));
-      } finally {
-        if (requestGeneration === generation.current) {
-          inFlight.current = false;
-        }
-      }
+      return await response.json();
     },
-    [path, filterKey, limit],
-  );
-
-  useEffect(() => {
-    generation.current += 1;
-    abort.current?.abort();
-    inFlight.current = false;
-    setState(loadingState<T>());
-
-    void fetchPage(null, generation.current);
-
-    return () => {
-      abort.current?.abort();
-    };
-  }, [fetchPage]);
-
-  const loadMore = useCallback(() => {
-    // The ref, not state: a setState from the first click has not landed yet.
-    if (inFlight.current || !state.hasMore || state.cursor === null) {
-      return;
-    }
-
-    void fetchPage(state.cursor, generation.current);
-  }, [fetchPage, state.hasMore, state.cursor]);
-
-  return {
-    items: state.items,
-    hasMore: state.hasMore,
-    isLoading: state.isLoading,
-    error: state.error,
-    loadMore,
-  };
+    // null ends the list, which is what the wrapper already sends on the last page.
+    getNextPageParam: (lastPage: Page<TItem>) => lastPage.next_cursor,
+  });
 }
