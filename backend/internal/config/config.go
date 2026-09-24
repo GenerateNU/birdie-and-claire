@@ -17,7 +17,7 @@ func Load() (*Configuration, error) {
 		return nil, err
 	}
 
-	database, err := loadDatabase()
+	database, err := LoadDatabase()
 	if err != nil {
 		return nil, err
 	}

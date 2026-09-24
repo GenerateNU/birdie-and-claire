@@ -26,10 +26,6 @@ type DatabaseConfig struct {
 }
 
 func LoadDatabase() (DatabaseConfig, error) {
-	return loadDatabase()
-}
-
-func loadDatabase() (DatabaseConfig, error) {
 	url := os.Getenv("DATABASE_URL")
 	if url == "" {
 		return DatabaseConfig{}, fmt.Errorf("DATABASE_URL is required")
