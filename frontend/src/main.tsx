@@ -4,8 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "./index.css";
 
 // usePagination is a TanStack query, so any caller needs a client above it in
-// the tree. Nothing renders a list yet: the characters UI that used to live in
-// App.tsx was removed along with its endpoint.
+// the tree.
 const queryClient = new QueryClient();
 
 createRoot(document.getElementById("root")!).render(
