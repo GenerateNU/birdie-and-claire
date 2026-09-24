@@ -70,7 +70,7 @@ func NewVerifier(ctx context.Context, cfg config.SupabaseConfig) (*Verifier, err
 func (v *Verifier) Verify(token string) (string, error) {
 	var claims jwt.RegisteredClaims
 	if _, err := v.parser.ParseWithClaims(token, &claims, v.keys.Keyfunc); err != nil {
-		return "", fmt.Errorf("%w: %v", ErrInvalidToken, err)
+		return "", fmt.Errorf("%w: %w", ErrInvalidToken, err)
 	}
 
 	// rejects a token that has no user ID
