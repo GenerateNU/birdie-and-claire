@@ -19,10 +19,6 @@ var allowedAvatarTypes = map[string]bool{
 	"image/webp": true,
 }
 
-// maxAvatarBytes caps a profile picture, checked on confirm.
-// TODO: move to StorageConfig once it carries a configurable limit.
-const maxAvatarBytes = 5 << 20 // 5 MiB
-
 // UserService reads users and manages their profile pictures. Uploads are
 // presigned: the client uploads straight to storage, then confirms so the service
 // can verify the object landed before recording it.
@@ -35,12 +31,13 @@ type UserService interface {
 var _ UserService = (*userService)(nil)
 
 type userService struct {
-	repo  *repository.Repository
-	store storage.Store
+	repo           *repository.Repository
+	store          storage.Store
+	maxUploadBytes int64
 }
 
-func NewUserService(repo *repository.Repository, store storage.Store) UserService {
-	return &userService{repo: repo, store: store}
+func NewUserService(repo *repository.Repository, store storage.Store, maxUploadBytes int64) UserService {
+	return &userService{repo: repo, store: store, maxUploadBytes: maxUploadBytes}
 }
 
 func (s *userService) Get(ctx context.Context, id uuid.UUID) (models.UserView, error) {
@@ -84,7 +81,7 @@ func (s *userService) ConfirmAvatar(ctx context.Context, id uuid.UUID) error {
 		// A missing object means the client never uploaded to the presigned URL.
 		return errs.ErrInvalidInput
 	}
-	if !allowedAvatarTypes[info.ContentType] || info.Size <= 0 || info.Size > maxAvatarBytes {
+	if !allowedAvatarTypes[info.ContentType] || info.Size <= 0 || info.Size > s.maxUploadBytes {
 		return errs.ErrInvalidInput
 	}
 

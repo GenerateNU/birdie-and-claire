@@ -7,10 +7,10 @@ import "context"
 // PresignedUpload is a short-lived upload target: the client PUTs the file to URL
 // using Method, replaying every header in Headers.
 type PresignedUpload struct {
-	URL     string
-	Method  string
-	Headers map[string]string
-	Key     string
+	URL     string            `json:"url"`
+	Method  string            `json:"method"`
+	Headers map[string]string `json:"headers"`
+	Key     string            `json:"key"`
 }
 
 type ObjectInfo struct {

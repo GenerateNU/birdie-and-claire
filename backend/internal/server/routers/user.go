@@ -11,7 +11,11 @@ import (
 )
 
 func UserRoutes(api huma.API, params types.RouteParams) {
-	service := services.NewUserService(params.ServiceParams.Repository, params.ServiceParams.Storage)
+	service := services.NewUserService(
+		params.ServiceParams.Repository,
+		params.ServiceParams.Storage,
+		params.ServiceParams.Config.Storage.MaxUploadBytes,
+	)
 	controller := controllers.NewUserController(service)
 
 	huma.Register(api, huma.Operation{

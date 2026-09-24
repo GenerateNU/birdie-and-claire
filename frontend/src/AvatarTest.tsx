@@ -1,5 +1,9 @@
 import { useState, type ChangeEvent } from "react";
 
+// Must match the backend allow-list. HEIC (iPhone default) is excluded because
+// most browsers can't render it in an <img>.
+const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
 interface UserView {
   id: string;
   name: string;
@@ -60,6 +64,12 @@ export default function AvatarTest() {
       return;
     }
 
+    if (!ACCEPTED_TYPES.includes(file.type)) {
+      setStatus(null);
+      setError(`Unsupported format${file.type ? ` (${file.type})` : ""} — use JPEG, PNG, or WebP.`);
+      return;
+    }
+
     setError(null);
     setStatus("Uploading...");
 
@@ -98,7 +108,7 @@ export default function AvatarTest() {
           Image
           <input
             type="file"
-            accept="image/*"
+            accept={ACCEPTED_TYPES.join(",")}
             disabled={!userId}
             onChange={handleFile}
             className="text-sm file:mr-3 file:rounded file:border-0 file:bg-blue-500 file:px-3 file:py-2 file:text-white disabled:opacity-50"
