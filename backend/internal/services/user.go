@@ -47,7 +47,7 @@ func (s *userService) Get(ctx context.Context, id uuid.UUID) (models.UserView, e
 	view := models.UserView{ID: user.ID, Name: user.Name}
 	if user.AvatarKey != nil {
 		url := s.store.URLFor(*user.AvatarKey)
-		view.ProfilePictureURL = &url
+		view.AvatarURL = &url
 	}
 	return view, nil
 }

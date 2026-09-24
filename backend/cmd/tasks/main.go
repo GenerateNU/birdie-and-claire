@@ -306,7 +306,7 @@ func floci(root string, args []string) error {
 	return command(root, "docker", arguments...).Run()
 }
 
-// provisionBucket creates the local Floci bucket and its CORS rule. 
+// provisionBucket creates the local Floci bucket and its CORS rule.
 func provisionBucket(root string) error {
 	endpoint := os.Getenv("S3_ENDPOINT")
 	if endpoint == "" {

@@ -46,7 +46,7 @@ func New(ctx context.Context, cfg config.StorageConfig) (Store, error) {
 func newS3Client(awsCfg aws.Config, endpoint string) *s3.Client {
 	return s3.NewFromConfig(awsCfg, func(o *s3.Options) {
 		o.RequestChecksumCalculation = aws.RequestChecksumCalculationWhenRequired
-		if endpoint != "" { //uses localhost
+		if endpoint != "" {
 			o.BaseEndpoint = aws.String(endpoint)
 			o.UsePathStyle = true
 		}

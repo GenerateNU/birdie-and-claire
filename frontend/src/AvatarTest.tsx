@@ -42,12 +42,12 @@ export default function AvatarTest() {
     if (!presignRes.ok) {
       throw new Error(`presign failed: ${presignRes.status}`);
     }
-    const upload = (await presignRes.json()) as PresignedUpload;
+    const presigned = (await presignRes.json()) as PresignedUpload;
 
     // 2. PUT the bytes straight to storage, replaying the signed headers
-    const putRes = await fetch(upload.url, {
-      method: upload.method,
-      headers: upload.headers,
+    const putRes = await fetch(presigned.url, {
+      method: presigned.method,
+      headers: presigned.headers,
       body: file,
     });
     if (!putRes.ok) {

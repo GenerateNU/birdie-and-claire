@@ -1,5 +1,24 @@
 components:
   schemas:
+    AvatarUpload:
+      additionalProperties: false
+      properties:
+        headers:
+          additionalProperties:
+            type: string
+          type: object
+        key:
+          type: string
+        method:
+          type: string
+        url:
+          type: string
+      required:
+        - url
+        - method
+        - headers
+        - key
+      type: object
     CharacterResponse:
       additionalProperties: false
       properties:
@@ -90,25 +109,6 @@ components:
           type: string
       required:
         - status
-      type: object
-    PresignedUpload:
-      additionalProperties: false
-      properties:
-        headers:
-          additionalProperties:
-            type: string
-          type: object
-        key:
-          type: string
-        method:
-          type: string
-        url:
-          type: string
-      required:
-        - url
-        - method
-        - headers
-        - key
       type: object
     UserView:
       additionalProperties: false
@@ -214,13 +214,17 @@ paths:
           required: true
           schema:
             description: MIME type of the image to upload
+            enum:
+              - image/jpeg
+              - image/png
+              - image/webp
             type: string
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PresignedUpload"
+                $ref: "#/components/schemas/AvatarUpload"
           description: OK
         default:
           content:

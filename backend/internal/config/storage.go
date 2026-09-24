@@ -9,7 +9,7 @@ import (
 const defaultMaxUploadBytes = 5 << 20 // 5 MiB
 
 type StorageConfig struct {
-	Endpoint string // API uses (floci:4566 in-container); "" = real AWS
+	Endpoint       string // API uses (floci:4566 in-container); "" = real AWS
 	PublicEndpoint string // browser uses (localhost:4566); presigned URLs sign to this
 	Region         string
 	Bucket         string

@@ -9,7 +9,7 @@ type User struct {
 }
 
 type UserView struct {
-	ID                uuid.UUID `json:"id"`
-	Name              string    `json:"name"`
-	ProfilePictureURL *string   `json:"profile_picture_url"`
+	ID        uuid.UUID `json:"id"`
+	Name      string    `json:"name"`
+	AvatarURL *string   `json:"profile_picture_url"`
 }
