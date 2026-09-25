@@ -4,11 +4,12 @@ services:
   db:
     image: pgvector/pgvector:pg17
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
-      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      # The image's own interface, fed from the DB_* names used everywhere else.
+      POSTGRES_DB: ${DB_NAME:?DB_NAME is required}
+      POSTGRES_USER: ${DB_USER:?DB_USER is required}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
     ports:
-      - "127.0.0.1:${POSTGRES_PORT:?POSTGRES_PORT is required}:5432"
+      - "127.0.0.1:${DB_PORT:?DB_PORT is required}:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
     healthcheck:
@@ -22,7 +23,10 @@ services:
       context: ./backend
       dockerfile: dev.Dockerfile
     environment:
-      DATABASE_URL: postgres://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@db:5432/${POSTGRES_DB:?POSTGRES_DB is required}?sslmode=disable
+      # Port 5432 is the container's own, not DB_PORT, which only says which
+      # host port the database is published on.
+      DATABASE_URL: postgres://${DB_USER:?DB_USER is required}:${DB_PASSWORD:?DB_PASSWORD is required}@${DB_HOST:?DB_HOST is required}:5432/${DB_NAME:?DB_NAME is required}?sslmode=disable
+      SUPABASE_URL: ${SUPABASE_URL:?SUPABASE_URL is required}
     ports:
       - "127.0.0.1:${API_PORT:?API_PORT is required}:8080"
     volumes:

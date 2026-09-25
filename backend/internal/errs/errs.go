@@ -15,6 +15,7 @@ var (
 	ErrNotFound  = errors.New("not found")
 	ErrDuplicate = errors.New("already exists")
 	ErrConflict  = errors.New("conflicting state")
+	ErrBadCursor = errors.New("invalid cursor")
 )
 
 // ToHuma converts an error from the service layer into the HTTP error Huma
@@ -30,6 +31,8 @@ func ToHuma(err error) error {
 		return huma.Error409Conflict(ErrDuplicate.Error())
 	case errors.Is(err, ErrConflict):
 		return huma.Error409Conflict(ErrConflict.Error())
+	case errors.Is(err, ErrBadCursor):
+		return huma.Error400BadRequest(ErrBadCursor.Error())
 	default:
 		return huma.Error500InternalServerError("internal server error")
 	}

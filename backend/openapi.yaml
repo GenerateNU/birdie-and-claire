@@ -154,3 +154,22 @@ paths:
       summary: Liveness probe
       tags:
         - meta
+  /health/supabase:
+    get:
+      description: Fetches the Supabase project's public JWKS document and returns it. Separate from /health because a liveness probe must not fail on a dependency.
+      operationId: health-supabase
+      responses:
+        "200":
+          content:
+            application/json:
+              schema: {}
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Supabase reachability check
+      tags:
+        - meta

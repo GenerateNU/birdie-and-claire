@@ -4,14 +4,14 @@ package repository
 
 import "database/sql"
 
-// Repository aggregates the per-resource repositories so callers take one
-// dependency instead of one per table.
 type Repository struct {
 	Character CharacterRepository
+	User      UserRepository
 }
 
 func New(database *sql.DB) *Repository {
 	return &Repository{
 		Character: NewCharacterRepository(database),
+		User:      NewUserRepository(database),
 	}
 }

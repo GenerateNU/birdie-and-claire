@@ -1,6 +1,7 @@
 .env
 .mise.local.toml
 
+backend/cmd/tasks/tasks
 backend/tmp/
 **/node_modules/
 **/dist/

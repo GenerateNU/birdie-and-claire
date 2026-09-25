@@ -15,7 +15,8 @@ import (
 const (
 	keyflareVersion = "0.1.1"
 	keyflareProject = "test_project"
-	keyflareEnv     = "dev"
+	keyflareEnvDev  = "dev"
+	keyflareEnvProd = "prod"
 
 	// secretsLoaded marks a process that is already running inside the
 	// injector, so re-execution does not recurse.
@@ -23,27 +24,47 @@ const (
 )
 
 var secretsRequired = map[string]bool{
-	"backend": true,
-	"dev":     true,
-	"db":      true,
-	"floci":   true,
+	"backend":  true,
+	"frontend": true,
+	"dev":      true,
+	"db":       true,
+	"floci":    true,
+}
+
+// secretsEnv reports which Keyflare environment a task reads from. The second
+// result is false when the task needs no secrets at all.
+func secretsEnv(args []string) (string, bool) {
+	if len(args) == 0 {
+		return "", false
+	}
+	if args[0] == "db" && len(args) > 1 && args[1] == "prod" {
+		return keyflareEnvProd, true
+	}
+	if secretsRequired[args[0]] {
+		return keyflareEnvDev, true
+	}
+	return "", false
 }
 
 // injectSecrets re-runs this command with secrets in its environment. It
 // reports whether the command was handled, which is false when the task needs
 // no secrets or the process is already inside the injector.
 func injectSecrets(root string, args []string) (bool, error) {
-	if len(args) == 0 || !secretsRequired[args[0]] || os.Getenv(secretsLoaded) != "" {
+	environment, required := secretsEnv(args)
+	if !required || os.Getenv(secretsLoaded) != "" {
 		return false, nil
 	}
 
 	commandArgs := append(
-		[]string{"run", "--project", keyflareProject, "--env", keyflareEnv, "--", "go", "-C", "backend", "run", "./cmd/tasks"},
+		[]string{"run", "--project", keyflareProject, "--env", environment, "--", "go", "-C", "backend", "run", "./cmd/tasks"},
 		args...,
 	)
 	cmd := command(root, "kfl", commandArgs...)
 	cmd.Env = append(os.Environ(), "NODE_NO_WARNINGS=1", secretsLoaded+"=1")
-	return true, cmd.Run()
+	if err := cmd.Run(); err != nil {
+		return true, fmt.Errorf("run %q with secrets from %s/%s: %w", strings.Join(args, " "), keyflareProject, environment, err)
+	}
+	return true, nil
 }
 
 // checkSecretsTooling verifies the injector is installed at the pinned version
@@ -57,16 +78,16 @@ func checkSecretsTooling(root string) error {
 	versionCmd.Dir = root
 	version, err := versionCmd.Output()
 	if err != nil {
-		return fmt.Errorf("check Keyflare version: %w", err)
+		return fmt.Errorf("check Keyflare version: %w", withStderr(err))
 	}
 	if strings.TrimSpace(string(version)) != keyflareVersion {
 		return fmt.Errorf("keyflare CLI %s is required; install it with: npm install -g @keyflare/cli@%s", keyflareVersion, keyflareVersion)
 	}
 
-	access := command(root, "kfl", "run", "--project", keyflareProject, "--env", keyflareEnv, "--", "go", "version")
+	access := command(root, "kfl", "run", "--project", keyflareProject, "--env", keyflareEnvDev, "--", "go", "version")
 	access.Env = append(os.Environ(), "NODE_NO_WARNINGS=1")
 	if err := access.Run(); err != nil {
-		return fmt.Errorf("validate Keyflare access to %s/%s: %w", keyflareProject, keyflareEnv, err)
+		return fmt.Errorf("validate Keyflare access to %s/%s: %w", keyflareProject, keyflareEnvDev, err)
 	}
 	return nil
 }
