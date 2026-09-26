@@ -21,35 +21,33 @@ var allowedAvatarTypes = map[string]bool{
 }
 
 type UserService interface {
-	Get(ctx context.Context, id uuid.UUID) (models.UserView, error)
+	Get(ctx context.Context, id uuid.UUID) (models.UserResponse, error)
 	CreateAvatarUploadURL(ctx context.Context, id uuid.UUID, contentType string) (storage.PresignedUpload, error)
 	ConfirmAvatar(ctx context.Context, id uuid.UUID) error
 }
 
-var _ UserService = (*userService)(nil)
-
 type userService struct {
 	repo           *repository.Repository
-	store          storage.Store
+	store          storage.ObjectStore
 	maxUploadBytes int64
 }
 
-func NewUserService(repo *repository.Repository, store storage.Store, maxUploadBytes int64) UserService {
+func NewUserService(repo *repository.Repository, store storage.ObjectStore, maxUploadBytes int64) UserService {
 	return &userService{repo: repo, store: store, maxUploadBytes: maxUploadBytes}
 }
 
-func (s *userService) Get(ctx context.Context, id uuid.UUID) (models.UserView, error) {
+func (s *userService) Get(ctx context.Context, id uuid.UUID) (models.UserResponse, error) {
 	user, err := s.repo.User.GetByID(ctx, id)
 	if err != nil {
-		return models.UserView{}, err
+		return models.UserResponse{}, err
 	}
 
-	view := models.UserView{ID: user.ID, Name: user.Name}
+	response := models.UserResponse{ID: user.ID, Name: user.Name}
 	if user.AvatarKey != nil {
-		url := s.store.URLFor(*user.AvatarKey)
-		view.AvatarURL = &url
+		url := s.store.PublicURL(*user.AvatarKey)
+		response.AvatarURL = &url
 	}
-	return view, nil
+	return response, nil
 }
 
 func (s *userService) CreateAvatarUploadURL(ctx context.Context, id uuid.UUID, contentType string) (storage.PresignedUpload, error) {

@@ -45,26 +45,24 @@ func (r *userRepository) EnsureExists(ctx context.Context, id uuid.UUID) error {
 
 func (r *userRepository) GetByID(ctx context.Context, id uuid.UUID) (models.User, error) {
 	var (
-		u    models.User
-		name sql.NullString
+		user models.User
 		key  sql.NullString
 	)
 	err := r.db.QueryRowContext(ctx, `
-		SELECT id, name, avatar_key
+		SELECT id, COALESCE(name, ''), avatar_key
 		FROM users
 		WHERE id = $1
-	`, id).Scan(&u.ID, &name, &key)
+	`, id).Scan(&user.ID, &user.Name, &key)
 	if errors.Is(err, sql.ErrNoRows) {
 		return models.User{}, errs.ErrNotFound
 	}
 	if err != nil {
 		return models.User{}, fmt.Errorf("get user %s: %w", id, err)
 	}
-	u.Name = name.String
 	if key.Valid {
-		u.AvatarKey = &key.String
+		user.AvatarKey = &key.String
 	}
-	return u, nil
+	return user, nil
 }
 
 func (r *userRepository) SetAvatarKey(ctx context.Context, id uuid.UUID, key string) error {

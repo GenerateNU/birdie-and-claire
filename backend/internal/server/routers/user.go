@@ -32,7 +32,7 @@ func UserRoutes(api huma.API, params types.RouteParams) {
 		Path:        "/api/v1/users/{id}/avatar-upload-url",
 		Summary:     "Get a presigned URL to upload a profile picture",
 		Tags:        []string{"users"},
-	}, controller.AvatarUploadURL)
+	}, controller.CreateAvatarUploadURL)
 
 	huma.Register(api, huma.Operation{
 		OperationID: "confirm-user-avatar",

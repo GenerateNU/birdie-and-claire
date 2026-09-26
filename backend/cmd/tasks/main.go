@@ -321,8 +321,14 @@ func provisionBucket(root string) error {
 		region = "us-east-1"
 	}
 
-	_ = command(root, "aws", "--endpoint-url", endpoint, "--region", region,
-		"s3", "mb", "s3://"+bucket).Run()
+	// Create the bucket only when it is missing. 
+	if command(root, "aws", "--endpoint-url", endpoint, "--region", region,
+		"s3api", "head-bucket", "--bucket", bucket).Run() != nil {
+		if err := command(root, "aws", "--endpoint-url", endpoint, "--region", region,
+			"s3", "mb", "s3://"+bucket).Run(); err != nil {
+			return fmt.Errorf("create bucket %s: %w", bucket, err)
+		}
+	}
 
 	// Floci needs an explicit cors rule
 	const cors = `{"CORSRules":[{"AllowedOrigins":["http://localhost:5173"],` +

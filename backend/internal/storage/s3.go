@@ -19,14 +19,13 @@ import (
 const presignExpiry = 15 * time.Minute
 
 type s3Store struct {
-	client         *s3.Client
-	presigner      *s3.PresignClient
-	publicEndpoint string
-	region         string
-	bucket         string
+	client          *s3.Client
+	presigner       *s3.PresignClient
+	bucket          string
+	publicBucketURL string
 }
 
-func New(ctx context.Context, cfg config.StorageConfig) (Store, error) {
+func New(ctx context.Context, cfg config.StorageConfig) (ObjectStore, error) {
 	awsCfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(cfg.Region))
 	if err != nil {
 		return nil, fmt.Errorf("load AWS config: %w", err)
@@ -35,12 +34,19 @@ func New(ctx context.Context, cfg config.StorageConfig) (Store, error) {
 	publicClient := newS3Client(awsCfg, cfg.PublicEndpoint)
 
 	return &s3Store{
-		client:         newS3Client(awsCfg, cfg.Endpoint),
-		presigner:      s3.NewPresignClient(publicClient, s3.WithPresignExpires(presignExpiry)),
-		publicEndpoint: cfg.PublicEndpoint,
-		region:         cfg.Region,
-		bucket:         cfg.Bucket,
+		client:          newS3Client(awsCfg, cfg.Endpoint),
+		presigner:       s3.NewPresignClient(publicClient, s3.WithPresignExpires(presignExpiry)),
+		bucket:          cfg.Bucket,
+		publicBucketURL: publicBucketURL(cfg),
 	}, nil
+}
+
+// publicBucketURL is the browser-facing base URL for the bucket: the Floci host
+func publicBucketURL(cfg config.StorageConfig) string {
+	if cfg.PublicEndpoint != "" {
+		return fmt.Sprintf("%s/%s", cfg.PublicEndpoint, cfg.Bucket)
+	}
+	return fmt.Sprintf("https://%s.s3.%s.amazonaws.com", cfg.Bucket, cfg.Region)
 }
 
 func newS3Client(awsCfg aws.Config, endpoint string) *s3.Client {
@@ -99,20 +105,15 @@ func (s *s3Store) HeadObject(ctx context.Context, key string) (ObjectInfo, error
 
 func isNotFound(err error) bool {
 	var apiErr smithy.APIError
-	if errors.As(err, &apiErr) {
-		switch apiErr.ErrorCode() {
-		case "NotFound", "NoSuchKey", "404":
-			return true
-		}
+	if !errors.As(err, &apiErr) {
+		return false
 	}
-	return false
+	code := apiErr.ErrorCode()
+	return code == "NotFound" || code == "NoSuchKey" || code == "404"
 }
 
-func (s *s3Store) URLFor(key string) string {
-	if s.publicEndpoint != "" {
-		return fmt.Sprintf("%s/%s/%s", s.publicEndpoint, s.bucket, key)
-	}
-	return fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", s.bucket, s.region, key)
+func (s *s3Store) PublicURL(key string) string {
+	return fmt.Sprintf("%s/%s", s.publicBucketURL, key)
 }
 
 func (s *s3Store) HeadBucket(ctx context.Context) error {

@@ -23,7 +23,7 @@ type GetUserInput struct {
 }
 
 type GetUserOutput struct {
-	Body models.UserView
+	Body models.UserResponse
 }
 
 func (c *UserController) Get(ctx context.Context, input *GetUserInput) (*GetUserOutput, error) {
@@ -39,9 +39,7 @@ type AvatarUploadURLInput struct {
 	ContentType string    `query:"content_type" required:"true" enum:"image/jpeg,image/png,image/webp" doc:"MIME type of the image to upload"`
 }
 
-// AvatarUpload is the API shape of a presigned upload, owned by the controller so
-// the wire contract can change without touching the storage layer.
-type AvatarUpload struct {
+type AvatarUploadResponse struct {
 	URL     string            `json:"url"`
 	Method  string            `json:"method"`
 	Headers map[string]string `json:"headers"`
@@ -49,15 +47,15 @@ type AvatarUpload struct {
 }
 
 type AvatarUploadURLOutput struct {
-	Body AvatarUpload
+	Body AvatarUploadResponse
 }
 
-func (c *UserController) AvatarUploadURL(ctx context.Context, input *AvatarUploadURLInput) (*AvatarUploadURLOutput, error) {
+func (c *UserController) CreateAvatarUploadURL(ctx context.Context, input *AvatarUploadURLInput) (*AvatarUploadURLOutput, error) {
 	upload, err := c.service.CreateAvatarUploadURL(ctx, input.ID, input.ContentType)
 	if err != nil {
 		return nil, errs.ToHuma(err)
 	}
-	return &AvatarUploadURLOutput{Body: AvatarUpload{
+	return &AvatarUploadURLOutput{Body: AvatarUploadResponse{
 		URL:     upload.URL,
 		Method:  upload.Method,
 		Headers: upload.Headers,

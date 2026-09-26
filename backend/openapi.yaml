@@ -1,6 +1,6 @@
 components:
   schemas:
-    AvatarUpload:
+    AvatarUploadResponse:
       additionalProperties: false
       properties:
         headers:
@@ -110,7 +110,7 @@ components:
       required:
         - status
       type: object
-    UserView:
+    UserResponse:
       additionalProperties: false
       properties:
         id:
@@ -185,7 +185,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UserView"
+                $ref: "#/components/schemas/UserResponse"
           description: OK
         default:
           content:
@@ -224,7 +224,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AvatarUpload"
+                $ref: "#/components/schemas/AvatarUploadResponse"
           description: OK
         default:
           content:

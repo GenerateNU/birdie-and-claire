@@ -11,7 +11,7 @@ import (
 type ServiceParams struct {
 	Repository *repository.Repository
 	Config     *config.Configuration
-	Storage    storage.Store
+	Storage    storage.ObjectStore
 }
 
 type RouteParams struct {
