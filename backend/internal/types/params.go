@@ -3,6 +3,7 @@
 package types
 
 import (
+	"example_project/internal/auth"
 	"example_project/internal/config"
 	"example_project/internal/repository"
 )
@@ -14,4 +15,6 @@ type ServiceParams struct {
 
 type RouteParams struct {
 	ServiceParams *ServiceParams
+	// Verifier is nil when building the spec, where no handler runs.
+	Verifier *auth.Verifier
 }

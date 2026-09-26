@@ -3,7 +3,9 @@ package server
 
 import (
 	"database/sql"
+	"strings"
 
+	"example_project/internal/auth"
 	"example_project/internal/config"
 	"example_project/internal/repository"
 	"example_project/internal/server/middlewares"
@@ -17,13 +19,13 @@ import (
 
 // New returns the huma.API alongside the app because cmd/openapi renders the
 // tracked spec from it.
-func New(cfg *config.Configuration, database *sql.DB) (*fiber.App, huma.API) {
+func New(cfg *config.Configuration, database *sql.DB, verifier *auth.Verifier) (*fiber.App, huma.API) {
 	app := fiber.New(fiber.Config{
 		ServerHeader: cfg.App.Name,
 		AppName:      cfg.App.Name,
 	})
 
-	middlewares.Setup(app)
+	middlewares.Setup(app, verifier)
 
 	api := humafiber.New(app, apiConfig(cfg))
 	routers.Setup(api, types.RouteParams{
@@ -31,6 +33,7 @@ func New(cfg *config.Configuration, database *sql.DB) (*fiber.App, huma.API) {
 			Repository: repository.New(database),
 			Config:     cfg,
 		},
+		Verifier: verifier,
 	})
 
 	return app, api
@@ -46,7 +49,7 @@ func ListenConfig(cfg *config.Configuration) fiber.ListenConfig {
 }
 
 // Spec builds the API for cmd/openapi. No handler runs, so the nil database
-// is never read.
+// and nil verifier are never read.
 func Spec(cfg *config.Configuration) huma.API {
 	api := humafiber.New(fiber.New(), apiConfig(cfg))
 	routers.Setup(api, types.RouteParams{
@@ -58,6 +61,8 @@ func Spec(cfg *config.Configuration) huma.API {
 	return api
 }
 
+const bearerScheme = "bearer"
+
 func apiConfig(cfg *config.Configuration) huma.Config {
 	humaConfig := huma.DefaultConfig(cfg.App.Name, "1.0.0")
 	humaConfig.DocsPath = "/docs"
@@ -68,6 +73,17 @@ func apiConfig(cfg *config.Configuration) huma.Config {
 	// humafiber adapter reports the host without its port, so both came out
 	// pointing at the wrong URL. Dropping the hook drops the feature.
 	humaConfig.CreateHooks = nil
+
+	// The auth middleware guards /api/v1 by path, so mark the same routes in the
+	// spec: the docs then show a lock and can send a token.
+	humaConfig.Components.SecuritySchemes = map[string]*huma.SecurityScheme{
+		bearerScheme: {Type: "http", Scheme: "bearer", BearerFormat: "JWT"},
+	}
+	humaConfig.OnAddOperation = append(humaConfig.OnAddOperation, func(_ *huma.OpenAPI, op *huma.Operation) {
+		if strings.HasPrefix(op.Path, "/api/v1/") {
+			op.Security = []map[string][]string{{bearerScheme: {}}}
+		}
+	})
 
 	return humaConfig
 }
