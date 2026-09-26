@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"example_project/internal/auth"
 	"example_project/internal/config"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -16,10 +17,23 @@ const supabaseTimeout = 5 * time.Second
 
 type HealthController struct {
 	supabase config.SupabaseConfig
+	verifier *auth.Verifier
 }
 
-func NewHealthController(supabase config.SupabaseConfig) *HealthController {
-	return &HealthController{supabase: supabase}
+func NewHealthController(supabase config.SupabaseConfig, verifier *auth.Verifier) *HealthController {
+	return &HealthController{supabase: supabase, verifier: verifier}
+}
+
+type AuthOutput struct {
+	Body struct {
+		KeysLoaded bool `json:"keys_loaded" example:"true"`
+	}
+}
+
+func (c *HealthController) Auth(ctx context.Context, _ *struct{}) (*AuthOutput, error) {
+	out := &AuthOutput{}
+	out.Body.KeysLoaded = c.verifier.KeysLoaded(ctx)
+	return out, nil
 }
 
 type LivenessOutput struct {

@@ -2,7 +2,7 @@ name: example_project
 
 services:
   db:
-    image: postgres:17.6
+    image: pgvector/pgvector:pg17
     environment:
       # The image's own interface, fed from the DB_* names used everywhere else.
       POSTGRES_DB: ${DB_NAME:?DB_NAME is required}

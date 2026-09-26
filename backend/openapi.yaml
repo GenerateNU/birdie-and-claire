@@ -1,5 +1,15 @@
 components:
   schemas:
+    AuthOutputBody:
+      additionalProperties: false
+      properties:
+        keys_loaded:
+          examples:
+            - true
+          type: boolean
+      required:
+        - keys_loaded
+      type: object
     CharacterResponse:
       additionalProperties: false
       properties:
@@ -135,6 +145,11 @@ components:
         - name
         - profile_picture_url
       type: object
+  securitySchemes:
+    bearer:
+      bearerFormat: JWT
+      scheme: bearer
+      type: http
 info:
   title: Example Project API
   version: 1.0.0
@@ -175,6 +190,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorModel"
           description: Error
+      security:
+        - bearer: []
       summary: List characters by faction
       tags:
         - characters
@@ -202,6 +219,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorModel"
           description: Error
+      security:
+        - bearer: []
       summary: Get a user
       tags:
         - users
@@ -231,6 +250,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorModel"
           description: Error
+      security:
+        - bearer: []
       summary: Confirm a profile picture upload
       tags:
         - users
@@ -270,6 +291,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorModel"
           description: Error
+      security:
+        - bearer: []
       summary: Get a presigned URL to upload a profile picture
       tags:
         - users
@@ -291,6 +314,26 @@ paths:
                 $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Liveness probe
+      tags:
+        - meta
+  /health/auth:
+    get:
+      description: Reports whether Supabase's signing keys are loaded. While keys_loaded is false, every /api/v1 request is rejected. Always 200, so it informs without failing a probe.
+      operationId: health-auth
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Token verifier status
       tags:
         - meta
   /health/supabase:
