@@ -168,3 +168,7 @@ run = "go -C backend run ./cmd/tasks floci status"
 [tasks."floci:reset"]
 description = "Remove the Floci container and state"
 run = "go -C backend run ./cmd/tasks floci reset"
+
+[tasks."floci:bucket"]
+description = "Create the Floci bucket and CORS rule (rerun after every floci start)"
+run = "go -C backend run ./cmd/tasks floci bucket"

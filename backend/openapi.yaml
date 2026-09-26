@@ -39,6 +39,15 @@ components:
         - force_sensitive
         - power_level
       type: object
+    ConfirmProfilePictureInputBody:
+      additionalProperties: false
+      properties:
+        key:
+          description: Upload key returned by the upload-URL endpoint
+          type: string
+      required:
+        - key
+      type: object
     ErrorDetail:
       additionalProperties: false
       properties:
@@ -101,6 +110,41 @@ components:
       required:
         - status
       type: object
+    ProfilePictureUploadResponse:
+      additionalProperties: false
+      properties:
+        headers:
+          additionalProperties:
+            type: string
+          type: object
+        key:
+          type: string
+        method:
+          type: string
+        url:
+          type: string
+      required:
+        - url
+        - method
+        - headers
+        - key
+      type: object
+    UserResponse:
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        profile_picture_url:
+          type:
+            - string
+            - "null"
+      required:
+        - id
+        - name
+        - profile_picture_url
+      type: object
   securitySchemes:
     bearer:
       bearerFormat: JWT
@@ -151,6 +195,107 @@ paths:
       summary: List characters by faction
       tags:
         - characters
+  /api/v1/users/{id}:
+    get:
+      operationId: get-user
+      parameters:
+        - description: User ID
+          in: path
+          name: id
+          required: true
+          schema:
+            description: User ID
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Get a user
+      tags:
+        - users
+  /api/v1/users/{id}/profile-picture/confirm:
+    post:
+      operationId: confirm-user-profile-picture
+      parameters:
+        - description: User ID
+          in: path
+          name: id
+          required: true
+          schema:
+            description: User ID
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfirmProfilePictureInputBody"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Confirm a profile picture upload
+      tags:
+        - users
+  /api/v1/users/{id}/profile-picture/upload:
+    get:
+      operationId: create-user-profile-picture-upload-url
+      parameters:
+        - description: User ID
+          in: path
+          name: id
+          required: true
+          schema:
+            description: User ID
+            type: string
+        - description: MIME type of the image to upload
+          explode: false
+          in: query
+          name: content_type
+          required: true
+          schema:
+            description: MIME type of the image to upload
+            enum:
+              - image/jpeg
+              - image/png
+              - image/webp
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfilePictureUploadResponse"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Get a presigned URL to upload a profile picture
+      tags:
+        - users
   /health:
     get:
       description: Reports only that the process is running. Never checks dependencies, because a failing liveness probe gets the process killed.
