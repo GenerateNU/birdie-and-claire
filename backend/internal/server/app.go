@@ -80,7 +80,7 @@ func apiConfig(cfg *config.Configuration) huma.Config {
 		bearerScheme: {Type: "http", Scheme: "bearer", BearerFormat: "JWT"},
 	}
 	humaConfig.OnAddOperation = append(humaConfig.OnAddOperation, func(_ *huma.OpenAPI, op *huma.Operation) {
-		if op.Path == "/api/v1" || strings.HasPrefix(op.Path, "/api/v1/") {
+		if strings.HasPrefix(op.Path, "/api/v1/") {
 			op.Security = []map[string][]string{{bearerScheme: {}}}
 		}
 	})
