@@ -3,5 +3,5 @@
 
 backend/cmd/tasks/tasks
 backend/tmp/
-frontend/node_modules/
-frontend/dist/
+**/node_modules/
+**/dist/
