@@ -21,6 +21,11 @@ func (s SupabaseConfig) JWKSURL() string {
 	return s.URL + "/auth/v1/.well-known/jwks.json"
 }
 
+// Issuer is the "iss" claim Supabase puts in every access token it signs.
+func (s SupabaseConfig) Issuer() string {
+	return s.URL + "/auth/v1"
+}
+
 func loadSupabase() (SupabaseConfig, error) {
 	raw := strings.TrimSuffix(os.Getenv("SUPABASE_URL"), "/")
 	if raw == "" {
