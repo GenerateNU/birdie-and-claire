@@ -321,7 +321,7 @@ func provisionBucket(root string) error {
 		region = "us-east-1"
 	}
 
-	// Create the bucket only when it is missing. 
+	// Create the bucket only when it is missing.
 	if command(root, "aws", "--endpoint-url", endpoint, "--region", region,
 		"s3api", "head-bucket", "--bucket", bucket).Run() != nil {
 		if err := command(root, "aws", "--endpoint-url", endpoint, "--region", region,

@@ -1,8 +1,8 @@
-import AvatarTest from "./AvatarTest";
+import ProfilePictureTest from "./ProfilePictureTest";
 
 export default function App() {
-  if (window.location.pathname === "/avatar-test") {
-    return <AvatarTest />;
+  if (window.location.pathname === "/profile-picture-test") {
+    return <ProfilePictureTest />;
   }
 
   return (
@@ -15,7 +15,7 @@ export default function App() {
         </a>
         .
       </p>
-      <a className="underline hover:text-white text-sm" href="/avatar-test">
+      <a className="underline hover:text-white text-sm" href="/profile-picture-test">
         Profile picture test →
       </a>
     </div>

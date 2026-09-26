@@ -17,6 +17,7 @@ type ObjectInfo struct {
 type ObjectStore interface {
 	PresignPut(ctx context.Context, key, contentType string) (PresignedUpload, error)
 	HeadObject(ctx context.Context, key string) (ObjectInfo, error)
+	DeleteObject(ctx context.Context, key string) error
 	PublicURL(key string) string
 	HeadBucket(ctx context.Context) error
 }

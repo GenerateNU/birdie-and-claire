@@ -4,7 +4,7 @@ import { useState, type ChangeEvent } from "react";
 // most browsers can't render it in an <img>.
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
-interface UserView {
+interface UserResponse {
   id: string;
   name: string;
   profile_picture_url: string | null;
@@ -17,27 +17,24 @@ interface PresignedUpload {
   key: string;
 }
 
-export default function AvatarTest() {
+export default function ProfilePictureTest() {
   const [userId, setUserId] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [user, setUser] = useState<UserView | null>(null);
-  // Bumped after each upload so the <img> refetches; the avatar key is fixed, so
-  // its URL is identical every time and the browser would otherwise cache it.
-  const [cacheBust, setCacheBust] = useState(0);
+  const [user, setUser] = useState<UserResponse | null>(null);
 
   async function fetchUser(id: string) {
     const res = await fetch(`/api/v1/users/${id}`);
     if (!res.ok) {
       throw new Error(`GET user failed: ${res.status}`);
     }
-    setUser((await res.json()) as UserView);
+    setUser((await res.json()) as UserResponse);
   }
 
   async function upload(id: string, file: File) {
     // 1. ask the backend for a short-lived upload URL
     const presignRes = await fetch(
-      `/api/v1/users/${id}/avatar-upload-url?content_type=${encodeURIComponent(file.type)}`,
+      `/api/v1/users/${id}/profile-picture/upload?content_type=${encodeURIComponent(file.type)}`,
     );
     if (!presignRes.ok) {
       throw new Error(`presign failed: ${presignRes.status}`);
@@ -54,8 +51,13 @@ export default function AvatarTest() {
       throw new Error(`storage upload failed: ${putRes.status}`);
     }
 
-    // 3. confirm so the backend verifies and records the object
-    const confirmRes = await fetch(`/api/v1/users/${id}/avatar/confirm`, { method: "POST" });
+    // 3. confirm the specific upload so the backend verifies it and points the
+    // profile at it
+    const confirmRes = await fetch(`/api/v1/users/${id}/profile-picture/confirm`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key: presigned.key }),
+    });
     if (!confirmRes.ok) {
       throw new Error(`confirm failed: ${confirmRes.status}`);
     }
@@ -79,7 +81,6 @@ export default function AvatarTest() {
     try {
       await upload(userId, file);
       await fetchUser(userId);
-      setCacheBust(Date.now());
       setStatus("Done");
     } catch (err) {
       setStatus(null);
@@ -128,7 +129,7 @@ export default function AvatarTest() {
             <p className="text-gray-400 text-xs break-all">{user.id}</p>
             {user.profile_picture_url ? (
               <img
-                src={`${user.profile_picture_url}?t=${cacheBust}`}
+                src={user.profile_picture_url}
                 alt="profile"
                 className="mt-3 h-32 w-32 rounded-full object-cover"
               />

@@ -16,7 +16,7 @@ import (
 type UserRepository interface {
 	EnsureExists(ctx context.Context, id uuid.UUID) error
 	GetByID(ctx context.Context, id uuid.UUID) (models.User, error)
-	SetAvatarKey(ctx context.Context, id uuid.UUID, key string) error
+	SetProfilePictureKey(ctx context.Context, id uuid.UUID, key string) error
 }
 
 var _ UserRepository = (*userRepository)(nil)
@@ -49,7 +49,7 @@ func (r *userRepository) GetByID(ctx context.Context, id uuid.UUID) (models.User
 		key  sql.NullString
 	)
 	err := r.db.QueryRowContext(ctx, `
-		SELECT id, COALESCE(name, ''), avatar_key
+		SELECT id, COALESCE(name, ''), profile_picture_key
 		FROM users
 		WHERE id = $1
 	`, id).Scan(&user.ID, &user.Name, &key)
@@ -60,23 +60,23 @@ func (r *userRepository) GetByID(ctx context.Context, id uuid.UUID) (models.User
 		return models.User{}, fmt.Errorf("get user %s: %w", id, err)
 	}
 	if key.Valid {
-		user.AvatarKey = &key.String
+		user.ProfilePictureKey = &key.String
 	}
 	return user, nil
 }
 
-func (r *userRepository) SetAvatarKey(ctx context.Context, id uuid.UUID, key string) error {
+func (r *userRepository) SetProfilePictureKey(ctx context.Context, id uuid.UUID, key string) error {
 	result, err := r.db.ExecContext(ctx, `
 		UPDATE users
-		SET avatar_key = $1, updated_at = now()
+		SET profile_picture_key = $1, updated_at = now()
 		WHERE id = $2
 	`, key, id)
 	if err != nil {
-		return fmt.Errorf("set avatar key for user %s: %w", id, err)
+		return fmt.Errorf("set profile picture key for user %s: %w", id, err)
 	}
 	affected, err := result.RowsAffected()
 	if err != nil {
-		return fmt.Errorf("set avatar key for user %s: %w", id, err)
+		return fmt.Errorf("set profile picture key for user %s: %w", id, err)
 	}
 	if affected == 0 {
 		return errs.ErrNotFound

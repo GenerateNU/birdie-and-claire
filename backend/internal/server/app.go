@@ -47,7 +47,7 @@ func ListenConfig(cfg *config.Configuration) fiber.ListenConfig {
 	}
 }
 
-// Spec builds the API for cmd/openapi. 
+// Spec builds the API for cmd/openapi.
 func Spec(cfg *config.Configuration) huma.API {
 	api := humafiber.New(fiber.New(), apiConfig(cfg))
 	routers.Setup(api, types.RouteParams{

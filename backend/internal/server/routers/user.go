@@ -27,18 +27,18 @@ func UserRoutes(api huma.API, params types.RouteParams) {
 	}, controller.Get)
 
 	huma.Register(api, huma.Operation{
-		OperationID: "create-user-avatar-upload-url",
+		OperationID: "create-user-profile-picture-upload-url",
 		Method:      http.MethodGet,
-		Path:        "/api/v1/users/{id}/avatar-upload-url",
+		Path:        "/api/v1/users/{id}/profile-picture/upload",
 		Summary:     "Get a presigned URL to upload a profile picture",
 		Tags:        []string{"users"},
-	}, controller.CreateAvatarUploadURL)
+	}, controller.CreateProfilePictureUploadURL)
 
 	huma.Register(api, huma.Operation{
-		OperationID: "confirm-user-avatar",
+		OperationID: "confirm-user-profile-picture",
 		Method:      http.MethodPost,
-		Path:        "/api/v1/users/{id}/avatar/confirm",
+		Path:        "/api/v1/users/{id}/profile-picture/confirm",
 		Summary:     "Confirm a profile picture upload",
 		Tags:        []string{"users"},
-	}, controller.ConfirmAvatar)
+	}, controller.ConfirmProfilePicture)
 }

@@ -1,24 +1,5 @@
 components:
   schemas:
-    AvatarUploadResponse:
-      additionalProperties: false
-      properties:
-        headers:
-          additionalProperties:
-            type: string
-          type: object
-        key:
-          type: string
-        method:
-          type: string
-        url:
-          type: string
-      required:
-        - url
-        - method
-        - headers
-        - key
-      type: object
     CharacterResponse:
       additionalProperties: false
       properties:
@@ -47,6 +28,15 @@ components:
         - faction
         - force_sensitive
         - power_level
+      type: object
+    ConfirmProfilePictureInputBody:
+      additionalProperties: false
+      properties:
+        key:
+          description: Upload key returned by the upload-URL endpoint
+          type: string
+      required:
+        - key
       type: object
     ErrorDetail:
       additionalProperties: false
@@ -109,6 +99,25 @@ components:
           type: string
       required:
         - status
+      type: object
+    ProfilePictureUploadResponse:
+      additionalProperties: false
+      properties:
+        headers:
+          additionalProperties:
+            type: string
+          type: object
+        key:
+          type: string
+        method:
+          type: string
+        url:
+          type: string
+      required:
+        - url
+        - method
+        - headers
+        - key
       type: object
     UserResponse:
       additionalProperties: false
@@ -196,9 +205,38 @@ paths:
       summary: Get a user
       tags:
         - users
-  /api/v1/users/{id}/avatar-upload-url:
+  /api/v1/users/{id}/profile-picture/confirm:
+    post:
+      operationId: confirm-user-profile-picture
+      parameters:
+        - description: User ID
+          in: path
+          name: id
+          required: true
+          schema:
+            description: User ID
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfirmProfilePictureInputBody"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Confirm a profile picture upload
+      tags:
+        - users
+  /api/v1/users/{id}/profile-picture/upload:
     get:
-      operationId: create-user-avatar-upload-url
+      operationId: create-user-profile-picture-upload-url
       parameters:
         - description: User ID
           in: path
@@ -224,7 +262,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AvatarUploadResponse"
+                $ref: "#/components/schemas/ProfilePictureUploadResponse"
           description: OK
         default:
           content:
@@ -233,29 +271,6 @@ paths:
                 $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Get a presigned URL to upload a profile picture
-      tags:
-        - users
-  /api/v1/users/{id}/avatar/confirm:
-    post:
-      operationId: confirm-user-avatar
-      parameters:
-        - description: User ID
-          in: path
-          name: id
-          required: true
-          schema:
-            description: User ID
-            type: string
-      responses:
-        "204":
-          description: No Content
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      summary: Confirm a profile picture upload
       tags:
         - users
   /health:

@@ -112,6 +112,16 @@ func isNotFound(err error) bool {
 	return code == "NotFound" || code == "NoSuchKey" || code == "404"
 }
 
+func (s *s3Store) DeleteObject(ctx context.Context, key string) error {
+	if _, err := s.client.DeleteObject(ctx, &s3.DeleteObjectInput{
+		Bucket: aws.String(s.bucket),
+		Key:    aws.String(key),
+	}); err != nil {
+		return fmt.Errorf("delete object %s: %w", key, err)
+	}
+	return nil
+}
+
 func (s *s3Store) PublicURL(key string) string {
 	return fmt.Sprintf("%s/%s", s.publicBucketURL, key)
 }

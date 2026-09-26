@@ -27,35 +27,35 @@ type GetUserOutput struct {
 }
 
 func (c *UserController) Get(ctx context.Context, input *GetUserInput) (*GetUserOutput, error) {
-	view, err := c.service.Get(ctx, input.ID)
+	response, err := c.service.Get(ctx, input.ID)
 	if err != nil {
 		return nil, errs.ToHuma(err)
 	}
-	return &GetUserOutput{Body: view}, nil
+	return &GetUserOutput{Body: response}, nil
 }
 
-type AvatarUploadURLInput struct {
+type ProfilePictureUploadURLInput struct {
 	ID          uuid.UUID `path:"id" doc:"User ID"`
 	ContentType string    `query:"content_type" required:"true" enum:"image/jpeg,image/png,image/webp" doc:"MIME type of the image to upload"`
 }
 
-type AvatarUploadResponse struct {
+type ProfilePictureUploadResponse struct {
 	URL     string            `json:"url"`
 	Method  string            `json:"method"`
 	Headers map[string]string `json:"headers"`
 	Key     string            `json:"key"`
 }
 
-type AvatarUploadURLOutput struct {
-	Body AvatarUploadResponse
+type ProfilePictureUploadURLOutput struct {
+	Body ProfilePictureUploadResponse
 }
 
-func (c *UserController) CreateAvatarUploadURL(ctx context.Context, input *AvatarUploadURLInput) (*AvatarUploadURLOutput, error) {
-	upload, err := c.service.CreateAvatarUploadURL(ctx, input.ID, input.ContentType)
+func (c *UserController) CreateProfilePictureUploadURL(ctx context.Context, input *ProfilePictureUploadURLInput) (*ProfilePictureUploadURLOutput, error) {
+	upload, err := c.service.CreateProfilePictureUploadURL(ctx, input.ID, input.ContentType)
 	if err != nil {
 		return nil, errs.ToHuma(err)
 	}
-	return &AvatarUploadURLOutput{Body: AvatarUploadResponse{
+	return &ProfilePictureUploadURLOutput{Body: ProfilePictureUploadResponse{
 		URL:     upload.URL,
 		Method:  upload.Method,
 		Headers: upload.Headers,
@@ -63,15 +63,18 @@ func (c *UserController) CreateAvatarUploadURL(ctx context.Context, input *Avata
 	}}, nil
 }
 
-type ConfirmAvatarInput struct {
-	ID uuid.UUID `path:"id" doc:"User ID"`
+type ConfirmProfilePictureInput struct {
+	ID   uuid.UUID `path:"id" doc:"User ID"`
+	Body struct {
+		Key string `json:"key" doc:"Upload key returned by the upload-URL endpoint"`
+	}
 }
 
-type ConfirmAvatarOutput struct{}
+type ConfirmProfilePictureOutput struct{}
 
-func (c *UserController) ConfirmAvatar(ctx context.Context, input *ConfirmAvatarInput) (*ConfirmAvatarOutput, error) {
-	if err := c.service.ConfirmAvatar(ctx, input.ID); err != nil {
+func (c *UserController) ConfirmProfilePicture(ctx context.Context, input *ConfirmProfilePictureInput) (*ConfirmProfilePictureOutput, error) {
+	if err := c.service.ConfirmProfilePicture(ctx, input.ID, input.Body.Key); err != nil {
 		return nil, errs.ToHuma(err)
 	}
-	return &ConfirmAvatarOutput{}, nil
+	return &ConfirmProfilePictureOutput{}, nil
 }
