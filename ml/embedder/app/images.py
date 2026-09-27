@@ -33,7 +33,9 @@ def load_image(index: int, item: ImageUrlInput | ImageBase64Input) -> Image.Imag
         httpx.HTTPError,
         Image.DecompressionBombError,
     ) as error:
-        raise HTTPException(status_code=422, detail=f"inputs[{index}]: {error}") from error
+        raise HTTPException(
+            status_code=422, detail=f"inputs[{index}]: {error}"
+        ) from error
 
 
 def fetch_image(url: HttpUrl) -> bytes:

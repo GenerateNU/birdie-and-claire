@@ -29,6 +29,47 @@ jobs:
           fi
           echo "$changed"
 
+  embedder_changes:
+    name: ml / embedder / changes
+    runs-on: ubuntu-latest
+    outputs:
+      embedder: ${{ steps.filter.outputs.embedder }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - id: filter
+        run: |
+          changed=$(git diff --name-only HEAD^1 HEAD)
+          if grep -qE '^(ml/embedder/|\.github/workflows/ci\.yml$)' <<<"$changed"; then
+            echo "embedder=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "embedder=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "$changed"
+
+  embedder_checks:
+    name: ml / embedder / ${{ matrix.name }}
+    needs: embedder_changes
+    if: needs.embedder_changes.outputs.embedder == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: format
+            run: mise run fmt:ml:embedder
+          - name: lint
+            run: mise run lint:ml:embedder
+    steps:
+      - uses: actions/checkout@v4
+      # Ruff is the only tool these checks need, so skip installing the rest.
+      - uses: jdx/mise-action@v2
+        with:
+          install: true
+          install_args: ruff
+      - run: ${{ matrix.run }}
+
   build:
     name: backend / build
     runs-on: ubuntu-latest

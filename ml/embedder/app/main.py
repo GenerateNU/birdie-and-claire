@@ -15,7 +15,7 @@ from app.schemas import (
 )
 
 MODEL_ID = "patrickjohncyh/fashion-clip"
-CLIP_MAX_TOKENS = 77 # limit for this model
+CLIP_MAX_TOKENS = 77  # limit for this model
 
 container_image = (
     modal.Image.debian_slim(python_version="3.13")
@@ -89,11 +89,15 @@ class Embedder:
                     max_length=CLIP_MAX_TOKENS,
                 )
                 features = self.model.get_text_features(**batch).pooler_output
-                vectors_by_index.update(zip(text_indexes, normalize(features)))
+                vectors_by_index.update(
+                    zip(text_indexes, normalize(features), strict=True)
+                )
             if images:
                 batch = self.processor(images=images, return_tensors="pt")
                 features = self.model.get_image_features(**batch).pooler_output
-                vectors_by_index.update(zip(image_indexes, normalize(features)))
+                vectors_by_index.update(
+                    zip(image_indexes, normalize(features), strict=True)
+                )
 
         return EmbedResponse(
             embeddings=[vectors_by_index[index] for index in range(len(request.inputs))]

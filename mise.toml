@@ -5,6 +5,7 @@ jq = "1.8.2"
 aws-cli = "2.36.47"
 golangci-lint = "2.13.2"
 uv = "0.12.19"
+ruff = "0.16.9"
 "aqua:pressly/goose" = "3.28.0"
 "aqua:air-verse/air" = "1.67.4"
 
@@ -67,14 +68,25 @@ description = "Fix frontend lint issues"
 dir = "frontend"
 run = "bun run lint:fix"
 
+[tasks."lint:ml:embedder"]
+alias = "lint:ml:embedder:check"
+description = "Lint the embedder's Python code (ruff)"
+dir = "ml/embedder"
+run = "ruff check ."
+
+[tasks."lint:ml:embedder:fix"]
+description = "Fix the embedder's Python lint issues"
+dir = "ml/embedder"
+run = "ruff check --fix ."
+
 [tasks.lint]
 alias = "lint:check"
 description = "Run linters for all languages"
-run = [{ tasks = ["lint:backend", "lint:frontend"] }]
+run = [{ tasks = ["lint:backend", "lint:frontend", "lint:ml:embedder"] }]
 
 [tasks."lint:fix"]
-description = "Fix frontend lint issues"
-run = [{ tasks = ["lint:frontend:fix"] }]
+description = "Fix frontend and Python lint issues"
+run = [{ tasks = ["lint:frontend:fix", "lint:ml:embedder:fix"] }]
 
 [tasks."fmt:backend"]
 description = "Check Go formatting"
@@ -99,15 +111,26 @@ description = "Fix frontend formatting"
 dir = "frontend"
 run = "bun run format:fix"
 
+[tasks."fmt:ml:embedder"]
+alias = "fmt:ml:embedder:check"
+description = "Check the embedder's Python formatting (ruff)"
+dir = "ml/embedder"
+run = "ruff format --check ."
+
+[tasks."fmt:ml:embedder:fix"]
+description = "Format the embedder's Python code"
+dir = "ml/embedder"
+run = "ruff format ."
+
 [tasks.fmt]
 alias = ["format", "fmt:check", "format:check"]
 description = "Check formatting for all languages"
-run = [{ tasks = ["fmt:backend", "fmt:frontend"] }]
+run = [{ tasks = ["fmt:backend", "fmt:frontend", "fmt:ml:embedder"] }]
 
 [tasks."fmt:fix"]
 alias = "format:fix"
 description = "Fix formatting for all languages"
-run = [{ tasks = ["fmt:backend:fix", "fmt:frontend:fix"] }]
+run = [{ tasks = ["fmt:backend:fix", "fmt:frontend:fix", "fmt:ml:embedder:fix"] }]
 
 [tasks."api:generate"]
 description = "Generate the tracked OpenAPI YAML"
