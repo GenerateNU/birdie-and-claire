@@ -7,3 +7,4 @@ backend/tmp/
 **/__pycache__/
 **/node_modules/
 **/dist/
+**/.ruff_cache/
