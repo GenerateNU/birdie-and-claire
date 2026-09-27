@@ -62,7 +62,7 @@ func (s *userService) CreateProfilePictureUploadURL(ctx context.Context, id uuid
 	// A fresh key per upload: each PUT lands on its own immutable object, so
 	// validation and publication act on exactly the bytes that were uploaded, and
 	// concurrent uploads never collide. The client returns this key to confirm.
-	upload, err := s.store.PresignPut(ctx, newProfilePictureKey(id), contentType)
+	upload, err := s.store.PresignPut(ctx, uploadPrefix(id)+uuid.NewString(), contentType)
 	if err != nil {
 		return storage.PresignedUpload{}, err
 	}
@@ -99,22 +99,20 @@ func (s *userService) ConfirmProfilePicture(ctx context.Context, id uuid.UUID, k
 	if err := s.repo.User.SetProfilePictureKey(ctx, id, key); err != nil {
 		return err
 	}
-
-	// Delete the picture this one replaced. Best-effort: a failed delete only
-	// leaves a stray object, never affects what is served.
-	if user.ProfilePictureKey != nil && *user.ProfilePictureKey != key {
-		if err := s.store.DeleteObject(ctx, *user.ProfilePictureKey); err != nil {
-			log.Warn(ctx, "delete replaced profile picture failed", "user", id, "error", err)
-		}
-	}
 	log.Info(ctx, "confirmed profile picture upload", "user", id)
+
+	// Best-effort delete of the picture this one replaced; a failed delete only
+	// leaves a stray object, never affects what is served.
+	replaced := user.ProfilePictureKey
+	if replaced == nil || *replaced == key {
+		return nil
+	}
+	if err := s.store.DeleteObject(ctx, *replaced); err != nil {
+		log.Warn(ctx, "delete replaced profile picture failed", "user", id, "error", err)
+	}
 	return nil
 }
 
 func uploadPrefix(id uuid.UUID) string {
 	return fmt.Sprintf("users/%s/pictures/", id)
-}
-
-func newProfilePictureKey(id uuid.UUID) string {
-	return uploadPrefix(id) + uuid.NewString()
 }

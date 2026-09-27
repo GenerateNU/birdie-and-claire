@@ -44,42 +44,34 @@ func (r *userRepository) EnsureExists(ctx context.Context, id uuid.UUID) error {
 }
 
 func (r *userRepository) GetByID(ctx context.Context, id uuid.UUID) (models.User, error) {
-	var (
-		user models.User
-		key  sql.NullString
-	)
+	var user models.User
 	err := r.db.QueryRowContext(ctx, `
 		SELECT id, COALESCE(name, ''), profile_picture_key
 		FROM users
 		WHERE id = $1
-	`, id).Scan(&user.ID, &user.Name, &key)
+	`, id).Scan(&user.ID, &user.Name, &user.ProfilePictureKey)
 	if errors.Is(err, sql.ErrNoRows) {
 		return models.User{}, errs.ErrNotFound
 	}
 	if err != nil {
 		return models.User{}, fmt.Errorf("get user %s: %w", id, err)
 	}
-	if key.Valid {
-		user.ProfilePictureKey = &key.String
-	}
 	return user, nil
 }
 
 func (r *userRepository) SetProfilePictureKey(ctx context.Context, id uuid.UUID, key string) error {
-	result, err := r.db.ExecContext(ctx, `
+	var updated uuid.UUID
+	err := r.db.QueryRowContext(ctx, `
 		UPDATE users
 		SET profile_picture_key = $1, updated_at = now()
 		WHERE id = $2
-	`, key, id)
-	if err != nil {
-		return fmt.Errorf("set profile picture key for user %s: %w", id, err)
-	}
-	affected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("set profile picture key for user %s: %w", id, err)
-	}
-	if affected == 0 {
+		RETURNING id
+	`, key, id).Scan(&updated)
+	if errors.Is(err, sql.ErrNoRows) {
 		return errs.ErrNotFound
+	}
+	if err != nil {
+		return fmt.Errorf("set profile picture key for user %s: %w", id, err)
 	}
 	return nil
 }
