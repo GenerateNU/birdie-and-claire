@@ -25,13 +25,13 @@ func run() error {
 		return errors.New("usage: migrate <up|down|status>")
 	}
 
-	cfg, err := config.Load()
+	dbCfg, err := config.LoadDatabase()
 	if err != nil {
 		return err
 	}
 
 	ctx := context.Background()
-	db, err := database.Open(ctx, cfg.Database)
+	db, err := database.Open(ctx, dbCfg)
 	if err != nil {
 		return err
 	}

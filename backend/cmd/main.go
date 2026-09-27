@@ -15,6 +15,7 @@ import (
 	"example_project/internal/database"
 	"example_project/internal/log"
 	"example_project/internal/server"
+	"example_project/internal/storage"
 )
 
 const shutdownTimeout = 10 * time.Second
@@ -47,13 +48,21 @@ func run() error {
 		return err
 	}
 
+	store, err := storage.New(ctx, cfg.Storage)
+	if err != nil {
+		return err
+	}
+	if err := store.HeadBucket(ctx); err != nil {
+		return err
+	}
+
 	// ctx stops the background key refresh on shutdown.
 	verifier, err := auth.NewVerifier(ctx, cfg.Supabase)
 	if err != nil {
 		return err
 	}
 
-	app, _ := server.New(cfg, db, verifier)
+	app, _ := server.New(cfg, db, store, verifier)
 
 	serverErr := make(chan error, 1)
 	go func() {

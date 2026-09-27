@@ -6,11 +6,13 @@ import (
 	"example_project/internal/auth"
 	"example_project/internal/config"
 	"example_project/internal/repository"
+	"example_project/internal/storage"
 )
 
 type ServiceParams struct {
 	Repository *repository.Repository
 	Config     *config.Configuration
+	Storage    storage.ObjectStore
 }
 
 type RouteParams struct {

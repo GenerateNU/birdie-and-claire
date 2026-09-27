@@ -25,7 +25,7 @@ type DatabaseConfig struct {
 	PingTimeout     time.Duration
 }
 
-func loadDatabase() (DatabaseConfig, error) {
+func LoadDatabase() (DatabaseConfig, error) {
 	url := os.Getenv("DATABASE_URL")
 	if url == "" {
 		return DatabaseConfig{}, fmt.Errorf("DATABASE_URL is required")

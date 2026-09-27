@@ -10,6 +10,7 @@ import (
 	"example_project/internal/repository"
 	"example_project/internal/server/middlewares"
 	"example_project/internal/server/routers"
+	"example_project/internal/storage"
 	"example_project/internal/types"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -19,7 +20,7 @@ import (
 
 // New returns the huma.API alongside the app because cmd/openapi renders the
 // tracked spec from it.
-func New(cfg *config.Configuration, database *sql.DB, verifier *auth.Verifier) (*fiber.App, huma.API) {
+func New(cfg *config.Configuration, database *sql.DB, store storage.ObjectStore, verifier *auth.Verifier) (*fiber.App, huma.API) {
 	app := fiber.New(fiber.Config{
 		ServerHeader: cfg.App.Name,
 		AppName:      cfg.App.Name,
@@ -32,6 +33,7 @@ func New(cfg *config.Configuration, database *sql.DB, verifier *auth.Verifier) (
 		ServiceParams: &types.ServiceParams{
 			Repository: repository.New(database),
 			Config:     cfg,
+			Storage:    store,
 		},
 		Verifier: verifier,
 	})
@@ -48,14 +50,15 @@ func ListenConfig(cfg *config.Configuration) fiber.ListenConfig {
 	}
 }
 
-// Spec builds the API for cmd/openapi. No handler runs, so the nil database
-// and nil verifier are never read.
+// Spec builds the API for cmd/openapi. No handler runs, so the nil database,
+// store, and verifier are never read.
 func Spec(cfg *config.Configuration) huma.API {
 	api := humafiber.New(fiber.New(), apiConfig(cfg))
 	routers.Setup(api, types.RouteParams{
 		ServiceParams: &types.ServiceParams{
 			Repository: repository.New(nil),
 			Config:     cfg,
+			Storage:    nil,
 		},
 	})
 	return api
