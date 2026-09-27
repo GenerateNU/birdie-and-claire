@@ -1,0 +1,25 @@
+[project]
+name = "birdie-and-claire-embedder"
+version = "0.1.0"
+description = "FashionCLIP text and image embeddings served on Modal"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi[standard]>=0.141.1",
+    "httpx>=0.28.1",
+    "modal>=1.5.5",
+    "pillow>=12.3.0",
+    "pydantic>=2.13.5",
+    "torch>=2.14.0",
+    "transformers>=5.17.0",
+]
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.ruff.lint]
+extend-select = ["I", "UP", "B"]

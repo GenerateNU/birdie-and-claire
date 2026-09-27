@@ -99,6 +99,9 @@ func setup(root string) error {
 	if err := checkSecretsTooling(root); err != nil {
 		return err
 	}
+	if err := command(filepath.Join(root, "ml", "embedder"), "uv", "sync", "--frozen").Run(); err != nil {
+		return err
+	}
 	return command(root, "bun", "install", "--cwd", "frontend", "--frozen-lockfile").Run()
 }
 
