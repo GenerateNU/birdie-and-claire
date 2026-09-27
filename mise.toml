@@ -4,6 +4,7 @@ bun = "1.4.2"
 jq = "1.8.2"
 aws-cli = "2.36.47"
 golangci-lint = "2.13.2"
+uv = "0.12.19"
 "aqua:pressly/goose" = "3.28.0"
 "aqua:air-verse/air" = "1.67.4"
 
@@ -172,3 +173,8 @@ run = "go -C backend run ./cmd/tasks floci reset"
 [tasks."floci:bucket"]
 description = "Create the Floci bucket and CORS rule (rerun after every floci start)"
 run = "go -C backend run ./cmd/tasks floci bucket"
+
+[tasks."ml:embedder:deploy"]
+description = "Deploy the embedding API to Modal (do not run this without TL approval)"
+dir = "ml/embedder"
+run = "uv run modal deploy --env birdie-and-claire -m app.main"

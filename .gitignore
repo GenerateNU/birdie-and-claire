@@ -3,5 +3,7 @@
 
 backend/cmd/tasks/tasks
 backend/tmp/
+**/.venv/
+**/__pycache__/
 **/node_modules/
 **/dist/
