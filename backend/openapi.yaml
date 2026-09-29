@@ -110,6 +110,46 @@ components:
       required:
         - status
       type: object
+    ProductImageResponse:
+      additionalProperties: false
+      properties:
+        alt_text:
+          type:
+            - string
+            - "null"
+        created_at:
+          format: date-time
+          type: string
+        height:
+          format: int64
+          type:
+            - integer
+            - "null"
+        id:
+          type: string
+        position:
+          format: int64
+          type: integer
+        updated_at:
+          format: date-time
+          type: string
+        url:
+          type: string
+        width:
+          format: int64
+          type:
+            - integer
+            - "null"
+      required:
+        - id
+        - url
+        - alt_text
+        - width
+        - height
+        - position
+        - created_at
+        - updated_at
+      type: object
     ProfilePictureUploadResponse:
       additionalProperties: false
       properties:
@@ -195,6 +235,39 @@ paths:
       summary: List characters by faction
       tags:
         - characters
+  /api/v1/products/{product_id}/images:
+    get:
+      operationId: list-product-images
+      parameters:
+        - description: Product ID
+          in: path
+          name: product_id
+          required: true
+          schema:
+            description: Product ID
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/ProductImageResponse"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: List a product's images
+      tags:
+        - products
   /api/v1/users/{id}:
     get:
       operationId: get-user

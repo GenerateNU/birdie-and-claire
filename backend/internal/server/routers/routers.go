@@ -11,4 +11,5 @@ func Setup(api huma.API, params types.RouteParams) {
 	HealthRoutes(api, params)
 	CharacterRoutes(api, params)
 	UserRoutes(api, params)
+	ProductImageRoutes(api, params)
 }
