@@ -15,7 +15,7 @@ type Outfit struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-type OutfitWithProducts struct {
+type OutfitResponse struct {
 	Outfit
-	Products []Product `json:"products"`
+	Products []Product `json:"products" nullable:"false"`
 }

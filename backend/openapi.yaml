@@ -23,8 +23,12 @@ components:
       additionalProperties: false
       properties:
         name:
+          description: Display name for the outfit
+          maxLength: 100
+          minLength: 1
           type: string
         product_ids:
+          description: IDs of the products in the outfit
           items:
             type: string
           minItems: 1
@@ -96,7 +100,7 @@ components:
       required:
         - status
       type: object
-    OutfitWithProducts:
+    OutfitResponse:
       additionalProperties: false
       properties:
         created_at:
@@ -109,9 +113,7 @@ components:
         products:
           items:
             $ref: "#/components/schemas/Product"
-          type:
-            - array
-            - "null"
+          type: array
         updated_at:
           format: date-time
           type: string
@@ -145,9 +147,7 @@ components:
         tags:
           items:
             type: string
-          type:
-            - array
-            - "null"
+          type: array
         title:
           type: string
         updated_at:
@@ -222,7 +222,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/OutfitWithProducts"
+                $ref: "#/components/schemas/OutfitResponse"
           description: Created
         default:
           content:
@@ -239,17 +239,19 @@ paths:
     get:
       operationId: get-outfit
       parameters:
-        - in: path
+        - description: Outfit ID
+          in: path
           name: id
           required: true
           schema:
+            description: Outfit ID
             type: string
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/OutfitWithProducts"
+                $ref: "#/components/schemas/OutfitResponse"
           description: OK
         default:
           content:

@@ -17,8 +17,8 @@ import (
 const foreignKeyViolation = "23503"
 
 type OutfitRepository interface {
-	Create(ctx context.Context, name string, userID uuid.UUID, productIDs []uuid.UUID) (models.Outfit, error)
-	FindByID(ctx context.Context, id uuid.UUID) (models.OutfitWithProducts, error)
+	Create(ctx context.Context, name string, userID uuid.UUID, productIDs []uuid.UUID) (models.OutfitResponse, error)
+	GetByID(ctx context.Context, id uuid.UUID) (models.OutfitResponse, error)
 }
 
 var _ OutfitRepository = (*outfitRepository)(nil)
@@ -31,15 +31,20 @@ func NewOutfitRepository(database *sql.DB) OutfitRepository {
 	return &outfitRepository{db: database}
 }
 
-func (r *outfitRepository) Create(ctx context.Context, name string, userID uuid.UUID, productIDs []uuid.UUID) (models.Outfit, error) {
+// queryer is satisfied by both *sql.DB and *sql.Tx.
+type queryer interface {
+	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
+}
+
+func (r *outfitRepository) Create(ctx context.Context, name string, userID uuid.UUID, productIDs []uuid.UUID) (models.OutfitResponse, error) {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
-		return models.Outfit{}, fmt.Errorf("begin outfit transaction: %w", err)
+		return models.OutfitResponse{}, fmt.Errorf("begin outfit transaction: %w", err)
 	}
 	// A no-op once Commit succeeds.
 	defer func() { _ = tx.Rollback() }()
 
-	var outfit models.Outfit
+	var outfit models.OutfitResponse
 	if err := tx.QueryRowContext(ctx, `
 		INSERT INTO outfits (user_id, name)
 		VALUES ($1, $2)
@@ -51,7 +56,7 @@ func (r *outfitRepository) Create(ctx context.Context, name string, userID uuid.
 		&outfit.CreatedAt,
 		&outfit.UpdatedAt,
 	); err != nil {
-		return models.Outfit{}, fmt.Errorf("insert outfit: %w", err)
+		return models.OutfitResponse{}, fmt.Errorf("insert outfit: %w", err)
 	}
 
 	_, err = tx.ExecContext(ctx, `
@@ -60,20 +65,25 @@ func (r *outfitRepository) Create(ctx context.Context, name string, userID uuid.
 	`, outfit.ID, productIDs)
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) && pgErr.Code == foreignKeyViolation {
-		return models.Outfit{}, fmt.Errorf("insert outfit products: unknown product: %w", errs.ErrConflict)
+		return models.OutfitResponse{}, fmt.Errorf("insert outfit products: unknown product: %w", errs.ErrConflict)
 	}
 	if err != nil {
-		return models.Outfit{}, fmt.Errorf("insert outfit products: %w", err)
+		return models.OutfitResponse{}, fmt.Errorf("insert outfit products: %w", err)
+	}
+
+	outfit.Products, err = findOutfitProducts(ctx, tx, outfit.ID)
+	if err != nil {
+		return models.OutfitResponse{}, err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return models.Outfit{}, fmt.Errorf("commit outfit: %w", err)
+		return models.OutfitResponse{}, fmt.Errorf("commit outfit: %w", err)
 	}
 	return outfit, nil
 }
 
-func (r *outfitRepository) FindByID(ctx context.Context, id uuid.UUID) (models.OutfitWithProducts, error) {
-	var outfit models.OutfitWithProducts
+func (r *outfitRepository) GetByID(ctx context.Context, id uuid.UUID) (models.OutfitResponse, error) {
+	var outfit models.OutfitResponse
 	err := r.db.QueryRowContext(ctx, `
 		SELECT id, user_id, name, created_at, updated_at
 		FROM outfits
@@ -86,28 +96,37 @@ func (r *outfitRepository) FindByID(ctx context.Context, id uuid.UUID) (models.O
 		&outfit.UpdatedAt,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
-		return models.OutfitWithProducts{}, fmt.Errorf("find outfit %s: %w", id, errs.ErrNotFound)
+		return models.OutfitResponse{}, fmt.Errorf("find outfit %s: %w", id, errs.ErrNotFound)
 	}
 	if err != nil {
-		return models.OutfitWithProducts{}, fmt.Errorf("find outfit %s: %w", id, err)
+		return models.OutfitResponse{}, fmt.Errorf("find outfit %s: %w", id, err)
 	}
 
-	rows, err := r.db.QueryContext(ctx, `
+	outfit.Products, err = findOutfitProducts(ctx, r.db, id)
+	if err != nil {
+		return models.OutfitResponse{}, err
+	}
+	return outfit, nil
+}
+
+func findOutfitProducts(ctx context.Context, q queryer, outfitID uuid.UUID) ([]models.Product, error) {
+	rows, err := q.QueryContext(ctx, `
 		SELECT p.id, p.shopify_id, p.handle, p.title, p.product_type, p.tags, p.created_at, p.updated_at
 		FROM products p
 		JOIN outfit_products op ON op.product_id = p.id
 		WHERE op.outfit_id = $1
 		ORDER BY p.id
-	`, id)
+	`, outfitID)
 	if err != nil {
-		return models.OutfitWithProducts{}, fmt.Errorf("query outfit products: %w", err)
+		return nil, fmt.Errorf("query outfit products: %w", err)
 	}
 	defer func() { _ = rows.Close() }()
 
-	outfit.Products = make([]models.Product, 0)
+	products := make([]models.Product, 0)
 	for rows.Next() {
 		var product models.Product
-		// Scan text[] straight into a []string.
+		// pgx's stdlib driver implements Go 1.27's driver.RowsColumnScanner, so
+		// text[] scans into []string without pq.Array or pgtype.Array.
 		if err := rows.Scan(
 			&product.ID,
 			&product.ShopifyID,
@@ -118,12 +137,12 @@ func (r *outfitRepository) FindByID(ctx context.Context, id uuid.UUID) (models.O
 			&product.CreatedAt,
 			&product.UpdatedAt,
 		); err != nil {
-			return models.OutfitWithProducts{}, fmt.Errorf("scan outfit product: %w", err)
+			return nil, fmt.Errorf("scan outfit product: %w", err)
 		}
-		outfit.Products = append(outfit.Products, product)
+		products = append(products, product)
 	}
 	if err := rows.Err(); err != nil {
-		return models.OutfitWithProducts{}, fmt.Errorf("iterate outfit products: %w", err)
+		return nil, fmt.Errorf("iterate outfit products: %w", err)
 	}
-	return outfit, nil
+	return products, nil
 }
