@@ -29,7 +29,7 @@ internal/
 
 ## Adding an endpoint
 
-A resource is five files. Copy `character.go` in each of these:
+A resource is five files. Copy `user.go` in each of these:
 
 ```
 routers/      path, method, and operation metadata -> controller method
@@ -52,17 +52,17 @@ or CLI can call the same service. Controllers end with `errs.ToHuma(err)`.
 is how the request ID reaches the record; Go has no ambient per-request state.
 
 ```go
-log.Info(ctx, "listed characters", "faction", faction, "count", len(characters))
+log.Info(ctx, "presigned profile picture upload", "user", id)
 log.Warn(ctx, "retrying payment", "attempt", attempt)
-log.Error(ctx, "create character failed", "error", err)
+log.Error(ctx, "confirm profile picture failed", "error", err)
 ```
 
 The middleware puts the request ID on the context, so an application line and
 the request line that produced it share an `id` and can be grouped:
 
 ```
-INF listed characters faction=jedi count=2 id=127ed3f6
-INF 200 GET /api/v1/characters id=127ed3f6
+INF presigned profile picture upload user=3f0c9a1e-5b7d-4e2a-9c61-8d2b7f4a1c05 id=127ed3f6
+INF 200 GET /api/v1/users/me/profile-picture/upload id=127ed3f6
 ```
 
 `LOG_FORMAT=text` (the default) renders coloured lines with a shortened ID.
@@ -75,8 +75,8 @@ field someone adds later, which is how credentials reach log storage. When a
 type does need a log form, give it a `LogValue`:
 
 ```go
-func (c Character) LogValue() slog.Value {
-    return slog.GroupValue(slog.Int("id", c.ID), slog.String("faction", c.Faction))
+func (u User) LogValue() slog.Value {
+    return slog.GroupValue(slog.String("id", u.ID.String()))
 }
 ```
 

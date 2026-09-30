@@ -5,13 +5,11 @@ package repository
 import "database/sql"
 
 type Repository struct {
-	Character CharacterRepository
-	User      UserRepository
+	User UserRepository
 }
 
 func New(database *sql.DB) *Repository {
 	return &Repository{
-		Character: NewCharacterRepository(database),
-		User:      NewUserRepository(database),
+		User: NewUserRepository(database),
 	}
 }

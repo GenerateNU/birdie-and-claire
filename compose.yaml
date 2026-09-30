@@ -1,4 +1,4 @@
-name: example_project
+name: birdie-and-claire
 
 services:
   db:
@@ -54,5 +54,5 @@ services:
 
 volumes:
   db_data:
-    name: example_project-postgres-data
+    name: birdie-and-claire-postgres-data
   go_build_cache:

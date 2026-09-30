@@ -1,7 +1,6 @@
 # Contributing
 
-This repository contains a Go API and a React frontend. The Go module name
-(`example_project`) is temporary.
+This repository contains a Go API and a React frontend.
 
 The API is Fiber v3 with Huma generating OpenAPI 3.1 and Scalar docs from the
 handler types. See `backend/README.md` for the backend layout and how to add an
