@@ -74,8 +74,6 @@ func (v *Verifier) Verify(token string) (uuid.UUID, error) {
 		return uuid.Nil, fmt.Errorf("%w: %w", ErrInvalidToken, err)
 	}
 
-	// Supabase's sub is the auth.users UUID, which is also users.id. Parsing it
-	// here means nothing past the middleware has to.
 	userID, err := uuid.Parse(claims.Subject)
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("%w: sub claim is not a UUID: %w", ErrInvalidToken, err)

@@ -6,7 +6,6 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
     data: { session },
   } = await supabase.auth.getSession();
 
-  // Every /api/v1 route rejects a request without a token, so don't send one.
   if (!session) {
     throw new Error("not signed in");
   }

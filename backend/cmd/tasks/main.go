@@ -374,11 +374,6 @@ func ensureDatabase(root string) error {
 	return nil
 }
 
-// ensureStorage starts Floci and provisions its bucket when S3_ENDPOINT points
-// at it; the API exits at startup if the bucket is missing. An empty
-// S3_ENDPOINT means real S3, so there is nothing local to start. Floci keeps
-// buckets in memory, so provisioning runs on every start, and is a no-op when
-// the bucket already exists.
 func ensureStorage(root string) error {
 	if os.Getenv("S3_ENDPOINT") == "" {
 		return nil
