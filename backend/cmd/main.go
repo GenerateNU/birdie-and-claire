@@ -13,6 +13,7 @@ import (
 	"example_project/internal/auth"
 	"example_project/internal/config"
 	"example_project/internal/database"
+	"example_project/internal/embedder"
 	"example_project/internal/log"
 	"example_project/internal/server"
 	"example_project/internal/storage"
@@ -62,7 +63,9 @@ func run() error {
 		return err
 	}
 
-	app, _ := server.New(cfg, db, store, verifier)
+	emb := embedder.New(cfg.Embedder)
+
+	app, _ := server.New(cfg, db, store, emb, verifier)
 
 	serverErr := make(chan error, 1)
 	go func() {
