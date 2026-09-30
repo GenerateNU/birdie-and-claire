@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"time"
 
-	"example_project/internal/auth"
-	"example_project/internal/config"
+	"birdie-and-claire/internal/auth"
+	"birdie-and-claire/internal/config"
 
 	"github.com/danielgtaylor/huma/v2"
 )

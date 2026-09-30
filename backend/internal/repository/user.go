@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 
-	"example_project/internal/errs"
-	"example_project/internal/models"
+	"birdie-and-claire/internal/errs"
+	"birdie-and-claire/internal/models"
 
 	"github.com/google/uuid"
 )

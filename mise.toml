@@ -18,7 +18,7 @@ description = "Install project dependencies and validate prerequisites"
 run = "go -C backend run ./cmd/tasks setup"
 
 [tasks.backend]
-description = "Run the API and Postgres in attached Compose"
+description = "Run the API, Postgres, and Floci in attached Compose"
 run = "go -C backend run ./cmd/tasks backend"
 
 [tasks.frontend]

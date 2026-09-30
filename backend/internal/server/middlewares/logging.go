@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"example_project/internal/log"
+	"birdie-and-claire/internal/log"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
