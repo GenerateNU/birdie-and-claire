@@ -16,6 +16,7 @@ import (
 
 const (
 	embedPath     = "/embed"
+	warmPath      = "/warm"
 	embeddingSize = 512
 	// Long enough for a cold Modal container to boot and load the model.
 	requestTimeout    = 90 * time.Second
@@ -75,13 +76,11 @@ func (c *modalClient) embed(ctx context.Context, input embedInput) ([]float32, e
 		return nil, fmt.Errorf("embedder: encode request: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.url+embedPath, bytes.NewReader(body))
+	req, err := c.newRequest(ctx, http.MethodPost, embedPath, bytes.NewReader(body))
 	if err != nil {
-		return nil, fmt.Errorf("embedder: build request: %w", err)
+		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Modal-Key", c.key)
-	req.Header.Set("Modal-Secret", c.secret)
 
 	resp, err := c.http.Do(req)
 	if err != nil {
@@ -105,6 +104,35 @@ func (c *modalClient) embed(ctx context.Context, input embedInput) ([]float32, e
 		return nil, fmt.Errorf("embedder: expected %d dimensions, got %d", embeddingSize, len(vector))
 	}
 	return vector, nil
+}
+
+func (c *modalClient) Warm(ctx context.Context) error {
+	req, err := c.newRequest(ctx, http.MethodGet, warmPath, nil)
+	if err != nil {
+		return err
+	}
+
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return fmt.Errorf("embedder: warm: %w", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusNoContent {
+		return statusError(resp)
+	}
+	return nil
+}
+
+// newRequest sets the proxy-auth headers every Modal endpoint requires.
+func (c *modalClient) newRequest(ctx context.Context, method, path string, body io.Reader) (*http.Request, error) {
+	req, err := http.NewRequestWithContext(ctx, method, c.url+path, body)
+	if err != nil {
+		return nil, fmt.Errorf("embedder: build request: %w", err)
+	}
+	req.Header.Set("Modal-Key", c.key)
+	req.Header.Set("Modal-Secret", c.secret)
+	return req, nil
 }
 
 // statusError keeps Modal's body in the message because its 422 detail names

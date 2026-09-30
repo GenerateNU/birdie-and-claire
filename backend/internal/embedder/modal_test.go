@@ -84,6 +84,51 @@ func TestEmbedImageSendsImageURLKind(t *testing.T) {
 	}
 }
 
+func TestWarmSendsRequest(t *testing.T) {
+	client := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet || r.URL.Path != "/warm" {
+			t.Errorf("got %s %s, want GET /warm", r.Method, r.URL.Path)
+		}
+		if got := r.Header.Get("Modal-Key"); got != "test-key" {
+			t.Errorf("Modal-Key = %q, want test-key", got)
+		}
+		if got := r.Header.Get("Modal-Secret"); got != "test-secret" {
+			t.Errorf("Modal-Secret = %q, want test-secret", got)
+		}
+		w.WriteHeader(http.StatusNoContent)
+	})
+
+	if err := client.Warm(context.Background()); err != nil {
+		t.Fatalf("Warm: %v", err)
+	}
+}
+
+func TestWarmErrorStatus(t *testing.T) {
+	tests := []struct {
+		name   string
+		status int
+		body   string
+	}{
+		{"200 is not the 204 Modal promises", http.StatusOK, `{"status":"ok"}`},
+		{"401 bad credentials", http.StatusUnauthorized, `missing credentials`},
+		{"500", http.StatusInternalServerError, `internal error`},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client := newTestClient(t, respondWith(tt.status, tt.body))
+
+			err := client.Warm(context.Background())
+			if err == nil {
+				t.Fatal("expected an error")
+			}
+			if !strings.Contains(err.Error(), tt.body) {
+				t.Errorf("error %q does not contain body %q", err, tt.body)
+			}
+		})
+	}
+}
+
 func TestEmbedErrorStatus(t *testing.T) {
 	tests := []struct {
 		name             string

@@ -48,6 +48,22 @@ components:
       required:
         - key
       type: object
+    EmbedderOutputBody:
+      additionalProperties: false
+      properties:
+        elapsed_ms:
+          examples:
+            - 41250
+          format: int64
+          type: integer
+        warm:
+          examples:
+            - true
+          type: boolean
+      required:
+        - warm
+        - elapsed_ms
+      type: object
     ErrorDetail:
       additionalProperties: false
       properties:
@@ -334,6 +350,26 @@ paths:
                 $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Token verifier status
+      tags:
+        - meta
+  /health/embedder:
+    get:
+      description: "Calls the Modal embedder's /warm and reports how long it took: tens of seconds on a cold start, well under one when a container is already up. Modal keeps the container warm for about 60 seconds. Separate from /health because a liveness probe must not fail on a dependency."
+      operationId: health-embedder
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmbedderOutputBody"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Warm the embedding service
       tags:
         - meta
   /health/supabase:
