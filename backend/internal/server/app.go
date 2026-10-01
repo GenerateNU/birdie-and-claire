@@ -26,12 +26,13 @@ func New(cfg *config.Configuration, database *sql.DB, store storage.ObjectStore,
 		AppName:      cfg.App.Name,
 	})
 
-	middlewares.Setup(app, verifier)
+	repo := repository.New(database)
+	middlewares.Setup(app, verifier, repo.User)
 
 	api := humafiber.New(app, apiConfig(cfg))
 	routers.Setup(api, types.RouteParams{
 		ServiceParams: &types.ServiceParams{
-			Repository: repository.New(database),
+			Repository: repo,
 			Config:     cfg,
 			Storage:    store,
 		},

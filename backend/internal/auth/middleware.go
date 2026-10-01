@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"birdie-and-claire/internal/log"
+	"birdie-and-claire/internal/repository"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/gofiber/fiber/v3"
@@ -12,9 +13,9 @@ import (
 const problemJSON = "application/problem+json"
 
 // Middleware returns Fiber middleware that rejects requests without a valid
-// bearer token and stores the verified user ID on the request context for
-// UserID to read.
-func Middleware(v *Verifier) fiber.Handler {
+// bearer token, makes sure the user has a users row, and stores the verified
+// user ID on the request context for UserID to read.
+func Middleware(v *Verifier, users repository.UserRepository) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		// The auth scheme is case-insensitive, so "bearer" and "BEARER" count too.
 		scheme, token, ok := strings.Cut(c.Get(fiber.HeaderAuthorization), " ")
@@ -26,6 +27,12 @@ func Middleware(v *Verifier) fiber.Handler {
 		if err != nil {
 			log.Info(c.Context(), "auth: token rejected", "error", err)
 			return unauthorized(c, "invalid token")
+		}
+
+		// Tables that reference users need the row before any handler writes to them.
+		if err := users.EnsureExists(c.Context(), userID); err != nil {
+			log.Error(c.Context(), "auth: ensure user row", "error", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(huma.Error500InternalServerError("internal server error"), problemJSON)
 		}
 
 		c.SetContext(withUserID(c.Context(), userID))

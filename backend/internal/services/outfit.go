@@ -13,7 +13,7 @@ import (
 
 // OutfitService saves outfits for the authenticated user and reads them back.
 type OutfitService interface {
-	Create(ctx context.Context, name string, productIDs []uuid.UUID) (models.OutfitResponse, error)
+	Create(ctx context.Context, params models.CreateOutfitParams) (models.OutfitResponse, error)
 	Get(ctx context.Context, id uuid.UUID) (models.OutfitResponse, error)
 }
 
@@ -27,12 +27,12 @@ func NewOutfitService(repo *repository.Repository) OutfitService {
 	return &outfitService{repo: repo}
 }
 
-func (s *outfitService) Create(ctx context.Context, name string, productIDs []uuid.UUID) (models.OutfitResponse, error) {
-	outfit, err := s.repo.Outfit.Create(ctx, name, auth.UserID(ctx), productIDs)
+func (s *outfitService) Create(ctx context.Context, params models.CreateOutfitParams) (models.OutfitResponse, error) {
+	outfit, err := s.repo.Outfit.Create(ctx, params, auth.UserID(ctx))
 	if err != nil {
 		return models.OutfitResponse{}, err
 	}
-	log.Info(ctx, "created outfit", "outfit_id", outfit.ID, "product_count", len(productIDs))
+	log.Info(ctx, "created outfit", "outfit_id", outfit.ID, "product_count", len(params.ProductIDs))
 	return outfit, nil
 }
 

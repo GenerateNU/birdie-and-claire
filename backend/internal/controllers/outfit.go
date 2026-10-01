@@ -47,7 +47,10 @@ type OutfitOutput struct {
 
 // Create saves an outfit for the authenticated user and returns it with its products.
 func (c *OutfitController) Create(ctx context.Context, input *CreateOutfitInput) (*OutfitOutput, error) {
-	outfit, err := c.service.Create(ctx, input.Body.Name, input.Body.ProductIDs)
+	outfit, err := c.service.Create(ctx, models.CreateOutfitParams{
+		Name:       input.Body.Name,
+		ProductIDs: input.Body.ProductIDs,
+	})
 	if err != nil {
 		return nil, errs.ToHuma(err)
 	}
