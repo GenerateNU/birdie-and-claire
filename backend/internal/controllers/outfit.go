@@ -22,14 +22,13 @@ func NewOutfitController(service services.OutfitService) *OutfitController {
 type CreateOutfitInput struct {
 	Body struct {
 		Name       string      `json:"name" required:"true" minLength:"1" maxLength:"100" doc:"Display name for the outfit"`
-		ProductIDs []uuid.UUID `json:"product_ids" required:"true" nullable:"false" minItems:"1" uniqueItems:"true" doc:"IDs of the products in the outfit"`
+		ProductIDs []uuid.UUID `json:"product_ids" required:"true" nullable:"false" minItems:"1" doc:"IDs of the products in the outfit"`
 	}
 }
 
 var _ huma.Resolver = (*CreateOutfitInput)(nil)
 
-// Resolve catches duplicates uniqueItems misses: it compares raw JSON strings, so
-// differently cased spellings of one UUID pass it but parse to the same value.
+// Resolve compares parsed UUIDs, so differently cased spellings of one ID still count as duplicates.
 func (input *CreateOutfitInput) Resolve(huma.Context) []error {
 	seen := make(map[uuid.UUID]bool, len(input.Body.ProductIDs))
 	for _, id := range input.Body.ProductIDs {

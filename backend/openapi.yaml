@@ -33,7 +33,6 @@ components:
             type: string
           minItems: 1
           type: array
-          uniqueItems: true
       required:
         - name
         - product_ids

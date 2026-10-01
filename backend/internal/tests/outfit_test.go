@@ -55,7 +55,7 @@ func createOutfitBody(name string, productIDs ...string) map[string]any {
 	return map[string]any{"name": name, "product_ids": productIDs}
 }
 
-// uniqueItems compares raw strings, so only Resolve sees these as the same UUID.
+// Different casing parses to the same UUID, so this is still a duplicate.
 func TestResolveRejectsCaseVariedDuplicateProductIDs(t *testing.T) {
 	response := outfitProbe(t).Post("/probe", createOutfitBody("fit", productIDUpper, productIDLower))
 	if response.Code != http.StatusBadRequest {
@@ -71,8 +71,9 @@ func TestProductIDUniqueness(t *testing.T) {
 		name       string
 		productIDs []string
 		want       int
+		wantBody   string
 	}{
-		{name: "exact duplicate", productIDs: []string{productIDLower, productIDLower}, want: http.StatusBadRequest},
+		{name: "exact duplicate", productIDs: []string{productIDLower, productIDLower}, want: http.StatusBadRequest, wantBody: "duplicate product id"},
 		{name: "two distinct ids", productIDs: []string{productIDLower, productIDOther}, want: http.StatusOK},
 	}
 
@@ -81,6 +82,9 @@ func TestProductIDUniqueness(t *testing.T) {
 			response := outfitProbe(t).Post("/probe", createOutfitBody("fit", test.productIDs...))
 			if response.Code != test.want {
 				t.Fatalf("status = %d, want %d: %s", response.Code, test.want, response.Body)
+			}
+			if !strings.Contains(response.Body.String(), test.wantBody) {
+				t.Fatalf("body = %s, want it to contain %s", response.Body, test.wantBody)
 			}
 		})
 	}

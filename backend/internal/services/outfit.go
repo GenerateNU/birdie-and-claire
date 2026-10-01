@@ -28,14 +28,24 @@ func NewOutfitService(repo *repository.Repository) OutfitService {
 }
 
 func (s *outfitService) Create(ctx context.Context, params models.CreateOutfitParams) (models.OutfitResponse, error) {
-	outfit, err := s.repo.Outfit.Create(ctx, params, auth.UserID(ctx))
+	userID := auth.UserID(ctx)
+	// outfits.user_id references users, and nothing else creates that row yet.
+	if err := s.repo.User.EnsureExists(ctx, userID); err != nil {
+		return models.OutfitResponse{}, err
+	}
+
+	outfit, products, err := s.repo.Outfit.Create(ctx, params, userID)
 	if err != nil {
 		return models.OutfitResponse{}, err
 	}
-	log.Info(ctx, "created outfit", "outfit_id", outfit.ID, "product_count", len(params.ProductIDs))
-	return outfit, nil
+	log.Info(ctx, "created outfit", "outfit_id", outfit.ID, "product_count", len(products))
+	return models.OutfitResponse{Outfit: outfit, Products: products}, nil
 }
 
 func (s *outfitService) Get(ctx context.Context, id uuid.UUID) (models.OutfitResponse, error) {
-	return s.repo.Outfit.GetByID(ctx, id)
+	outfit, products, err := s.repo.Outfit.GetByID(ctx, id)
+	if err != nil {
+		return models.OutfitResponse{}, err
+	}
+	return models.OutfitResponse{Outfit: outfit, Products: products}, nil
 }
