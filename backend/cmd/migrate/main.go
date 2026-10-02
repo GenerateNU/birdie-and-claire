@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"os"
 
-	"example_project/internal/config"
-	"example_project/internal/database"
+	"birdie-and-claire/internal/config"
+	"birdie-and-claire/internal/database"
 )
 
 func main() {

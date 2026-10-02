@@ -7,9 +7,8 @@ import (
 	"net/http"
 	"time"
 
-	"example_project/internal/auth"
-	"example_project/internal/config"
-	"example_project/internal/embedder"
+	"birdie-and-claire/internal/auth"
+	"birdie-and-claire/internal/config"
 
 	"github.com/danielgtaylor/huma/v2"
 )
@@ -19,11 +18,10 @@ const supabaseTimeout = 5 * time.Second
 type HealthController struct {
 	supabase config.SupabaseConfig
 	verifier *auth.Verifier
-	embedder embedder.Embedder
 }
 
-func NewHealthController(supabase config.SupabaseConfig, verifier *auth.Verifier, emb embedder.Embedder) *HealthController {
-	return &HealthController{supabase: supabase, verifier: verifier, embedder: emb}
+func NewHealthController(supabase config.SupabaseConfig, verifier *auth.Verifier) *HealthController {
+	return &HealthController{supabase: supabase, verifier: verifier}
 }
 
 type AuthOutput struct {
@@ -80,23 +78,4 @@ func (c *HealthController) Supabase(ctx context.Context, _ *struct{}) (*Supabase
 		return nil, huma.Error502BadGateway(fmt.Sprintf("decode %s: %v", url, err))
 	}
 	return &SupabaseOutput{Body: body}, nil
-}
-
-type EmbedderOutput struct {
-	Body struct {
-		Warm      bool  `json:"warm" example:"true"`
-		ElapsedMS int64 `json:"elapsed_ms" example:"41250"`
-	}
-}
-
-func (c *HealthController) Embedder(ctx context.Context, _ *struct{}) (*EmbedderOutput, error) {
-	start := time.Now()
-	if err := c.embedder.Warm(ctx); err != nil {
-		return nil, huma.Error502BadGateway(err.Error())
-	}
-
-	out := &EmbedderOutput{}
-	out.Body.Warm = true
-	out.Body.ElapsedMS = time.Since(start).Milliseconds()
-	return out, nil
 }

@@ -10,35 +10,6 @@ components:
       required:
         - keys_loaded
       type: object
-    CharacterResponse:
-      additionalProperties: false
-      properties:
-        faction:
-          type: string
-        force_sensitive:
-          type: boolean
-        id:
-          format: int64
-          type: integer
-        name:
-          type: string
-        power_level:
-          format: int64
-          type: integer
-        species:
-          type: string
-        threat_score:
-          format: int64
-          type: integer
-      required:
-        - threat_score
-        - id
-        - name
-        - species
-        - faction
-        - force_sensitive
-        - power_level
-      type: object
     ConfirmProfilePictureInputBody:
       additionalProperties: false
       properties:
@@ -47,22 +18,6 @@ components:
           type: string
       required:
         - key
-      type: object
-    EmbedderOutputBody:
-      additionalProperties: false
-      properties:
-        elapsed_ms:
-          examples:
-            - 41250
-          format: int64
-          type: integer
-        warm:
-          examples:
-            - true
-          type: boolean
-      required:
-        - warm
-        - elapsed_ms
       type: object
     ErrorDetail:
       additionalProperties: false
@@ -161,44 +116,42 @@ components:
         - name
         - profile_picture_url
       type: object
+    WarmOutputBody:
+      additionalProperties: false
+      properties:
+        elapsed_ms:
+          examples:
+            - 41250
+          format: int64
+          type: integer
+        warm:
+          examples:
+            - true
+          type: boolean
+      required:
+        - warm
+        - elapsed_ms
+      type: object
   securitySchemes:
     bearer:
       bearerFormat: JWT
       scheme: bearer
       type: http
 info:
-  title: Example Project API
+  title: Birdie & Claire API
   version: 1.0.0
 openapi: 3.1.0
 paths:
-  /api/v1/characters:
-    get:
-      operationId: list-characters
-      parameters:
-        - description: Faction to filter by
-          explode: false
-          in: query
-          name: faction
-          required: true
-          schema:
-            description: Faction to filter by
-            enum:
-              - rebel
-              - empire
-              - jedi
-              - sith
-              - neutral
-            type: string
+  /api/v1/embedder/warm:
+    post:
+      description: "Boots a Modal container ahead of an embed call and reports how long it took: tens of seconds on a cold start, well under one when a container is already up. Modal keeps the container warm for about 60 seconds."
+      operationId: warm-embedder
       responses:
         "200":
           content:
             application/json:
               schema:
-                items:
-                  $ref: "#/components/schemas/CharacterResponse"
-                type:
-                  - array
-                  - "null"
+                $ref: "#/components/schemas/WarmOutputBody"
           description: OK
         default:
           content:
@@ -208,49 +161,12 @@ paths:
           description: Error
       security:
         - bearer: []
-      summary: List characters by faction
+      summary: Warm the embedding service
       tags:
-        - characters
-  /api/v1/users/{id}:
-    get:
-      operationId: get-user
-      parameters:
-        - description: User ID
-          in: path
-          name: id
-          required: true
-          schema:
-            description: User ID
-            type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/UserResponse"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearer: []
-      summary: Get a user
-      tags:
-        - users
-  /api/v1/users/{id}/profile-picture/confirm:
+        - embedder
+  /api/v1/users/me/profile-picture/confirm:
     post:
       operationId: confirm-user-profile-picture
-      parameters:
-        - description: User ID
-          in: path
-          name: id
-          required: true
-          schema:
-            description: User ID
-            type: string
       requestBody:
         content:
           application/json:
@@ -268,20 +184,13 @@ paths:
           description: Error
       security:
         - bearer: []
-      summary: Confirm a profile picture upload
+      summary: Confirm the caller's profile picture upload
       tags:
         - users
-  /api/v1/users/{id}/profile-picture/upload:
+  /api/v1/users/me/profile-picture/upload:
     get:
       operationId: create-user-profile-picture-upload-url
       parameters:
-        - description: User ID
-          in: path
-          name: id
-          required: true
-          schema:
-            description: User ID
-            type: string
         - description: MIME type of the image to upload
           explode: false
           in: query
@@ -309,7 +218,36 @@ paths:
           description: Error
       security:
         - bearer: []
-      summary: Get a presigned URL to upload a profile picture
+      summary: Get a presigned URL to upload the caller's profile picture
+      tags:
+        - users
+  /api/v1/users/{id}:
+    get:
+      operationId: get-user
+      parameters:
+        - description: User ID
+          in: path
+          name: id
+          required: true
+          schema:
+            description: User ID
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Get a user
       tags:
         - users
   /health:
@@ -350,26 +288,6 @@ paths:
                 $ref: "#/components/schemas/ErrorModel"
           description: Error
       summary: Token verifier status
-      tags:
-        - meta
-  /health/embedder:
-    get:
-      description: "Calls the Modal embedder's /warm and reports how long it took: tens of seconds on a cold start, well under one when a container is already up. Modal keeps the container warm for about 60 seconds. Separate from /health because a liveness probe must not fail on a dependency."
-      operationId: health-embedder
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/EmbedderOutputBody"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      summary: Warm the embedding service
       tags:
         - meta
   /health/supabase:

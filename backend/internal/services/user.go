@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"strings"
 
-	"example_project/internal/errs"
-	"example_project/internal/log"
-	"example_project/internal/models"
-	"example_project/internal/repository"
-	"example_project/internal/storage"
+	"birdie-and-claire/internal/auth"
+	"birdie-and-claire/internal/errs"
+	"birdie-and-claire/internal/log"
+	"birdie-and-claire/internal/models"
+	"birdie-and-claire/internal/repository"
+	"birdie-and-claire/internal/storage"
 
 	"github.com/google/uuid"
 )
@@ -23,8 +24,8 @@ var allowedProfilePictureTypes = map[string]bool{
 
 type UserService interface {
 	Get(ctx context.Context, id uuid.UUID) (models.UserResponse, error)
-	CreateProfilePictureUploadURL(ctx context.Context, id uuid.UUID, contentType string) (storage.PresignedUpload, error)
-	ConfirmProfilePicture(ctx context.Context, id uuid.UUID, key string) error
+	CreateProfilePictureUploadURL(ctx context.Context, contentType string) (storage.PresignedUpload, error)
+	ConfirmProfilePicture(ctx context.Context, key string) error
 }
 
 type userService struct {
@@ -51,7 +52,8 @@ func (s *userService) Get(ctx context.Context, id uuid.UUID) (models.UserRespons
 	return response, nil
 }
 
-func (s *userService) CreateProfilePictureUploadURL(ctx context.Context, id uuid.UUID, contentType string) (storage.PresignedUpload, error) {
+func (s *userService) CreateProfilePictureUploadURL(ctx context.Context, contentType string) (storage.PresignedUpload, error) {
+	id := auth.UserID(ctx)
 	if !allowedProfilePictureTypes[contentType] {
 		return storage.PresignedUpload{}, errs.ErrInvalidInput
 	}
@@ -70,7 +72,9 @@ func (s *userService) CreateProfilePictureUploadURL(ctx context.Context, id uuid
 	return upload, nil
 }
 
-func (s *userService) ConfirmProfilePicture(ctx context.Context, id uuid.UUID, key string) error {
+func (s *userService) ConfirmProfilePicture(ctx context.Context, key string) error {
+	id := auth.UserID(ctx)
+
 	// The key comes from the client, so it must be one this user could have been
 	// handed — an object under their own upload prefix.
 	if !strings.HasPrefix(key, uploadPrefix(id)) {

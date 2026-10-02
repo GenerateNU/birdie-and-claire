@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"example_project/internal/config"
-	"example_project/internal/errs"
+	"birdie-and-claire/internal/config"
+	"birdie-and-claire/internal/errs"
 )
 
 const (
@@ -24,26 +24,29 @@ const (
 )
 
 type modalClient struct {
-	http   *http.Client
-	url    string
-	key    string
-	secret string
+	config.EmbedderConfig
+	http *http.Client
 }
 
 // New returns an Embedder backed by the FashionCLIP Modal web app.
 func New(cfg config.EmbedderConfig) Embedder {
 	return &modalClient{
-		http:   &http.Client{Timeout: requestTimeout},
-		url:    cfg.URL,
-		key:    cfg.ProxyKey,
-		secret: cfg.ProxySecret,
+		EmbedderConfig: cfg,
+		http:           &http.Client{Timeout: requestTimeout},
 	}
 }
 
 // Wire types match ml/embedder/app/schemas.py.
+type inputKind string
+
+const (
+	kindText     inputKind = "text"
+	kindImageURL inputKind = "image_url"
+)
+
 type embedInput struct {
-	Kind  string `json:"kind"`
-	Value string `json:"value"`
+	Kind  inputKind `json:"kind"`
+	Value string    `json:"value"`
 }
 
 type embedRequest struct {
@@ -58,7 +61,7 @@ func (c *modalClient) EmbedText(ctx context.Context, text string) ([]float32, er
 	if strings.TrimSpace(text) == "" {
 		return nil, fmt.Errorf("embedder: empty text: %w", errs.ErrInvalidInput)
 	}
-	return c.embed(ctx, embedInput{Kind: "text", Value: text})
+	return c.embed(ctx, embedInput{Kind: kindText, Value: text})
 }
 
 // EmbedImage passes the URL through untouched. Modal enforces https, public
@@ -67,7 +70,7 @@ func (c *modalClient) EmbedImage(ctx context.Context, imageURL string) ([]float3
 	if strings.TrimSpace(imageURL) == "" {
 		return nil, fmt.Errorf("embedder: empty image url: %w", errs.ErrInvalidInput)
 	}
-	return c.embed(ctx, embedInput{Kind: "image_url", Value: imageURL})
+	return c.embed(ctx, embedInput{Kind: kindImageURL, Value: imageURL})
 }
 
 func (c *modalClient) embed(ctx context.Context, input embedInput) ([]float32, error) {
@@ -126,12 +129,12 @@ func (c *modalClient) Warm(ctx context.Context) error {
 
 // newRequest sets the proxy-auth headers every Modal endpoint requires.
 func (c *modalClient) newRequest(ctx context.Context, method, path string, body io.Reader) (*http.Request, error) {
-	req, err := http.NewRequestWithContext(ctx, method, c.url+path, body)
+	req, err := http.NewRequestWithContext(ctx, method, c.URL+path, body)
 	if err != nil {
 		return nil, fmt.Errorf("embedder: build request: %w", err)
 	}
-	req.Header.Set("Modal-Key", c.key)
-	req.Header.Set("Modal-Secret", c.secret)
+	req.Header.Set("Modal-Key", c.ProxyKey)
+	req.Header.Set("Modal-Secret", c.ProxySecret)
 	return req, nil
 }
 

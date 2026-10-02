@@ -10,13 +10,13 @@ import (
 	"syscall"
 	"time"
 
-	"example_project/internal/auth"
-	"example_project/internal/config"
-	"example_project/internal/database"
-	"example_project/internal/embedder"
-	"example_project/internal/log"
-	"example_project/internal/server"
-	"example_project/internal/storage"
+	"birdie-and-claire/internal/auth"
+	"birdie-and-claire/internal/config"
+	"birdie-and-claire/internal/database"
+	"birdie-and-claire/internal/embedder"
+	"birdie-and-claire/internal/log"
+	"birdie-and-claire/internal/server"
+	"birdie-and-claire/internal/storage"
 )
 
 const shutdownTimeout = 10 * time.Second

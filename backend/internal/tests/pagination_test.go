@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"example_project/internal/utils/pagination"
+	"birdie-and-claire/internal/utils/pagination"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/humatest"

@@ -15,7 +15,7 @@ const (
 )
 
 const (
-	defaultName = "Example Project API"
+	defaultName = "Birdie & Claire API"
 	defaultPort = 8080
 )
 

@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"example_project/internal/config"
-	"example_project/internal/errs"
+	"birdie-and-claire/internal/config"
+	"birdie-and-claire/internal/errs"
 )
 
 // vectorJSON builds a JSON array of n numbers, all 0.1.

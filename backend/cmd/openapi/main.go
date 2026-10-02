@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"os"
 
-	"example_project/internal/config"
-	"example_project/internal/server"
+	"birdie-and-claire/internal/config"
+	"birdie-and-claire/internal/server"
 )
 
 const specPath = "openapi.yaml"
@@ -21,7 +21,7 @@ func main() {
 }
 
 func run() error {
-	document, err := server.Spec(&config.Configuration{App: config.AppConfig{Name: "Example Project API"}}).
+	document, err := server.Spec(&config.Configuration{App: config.AppConfig{Name: "Birdie & Claire API"}}).
 		OpenAPI().
 		YAML()
 	if err != nil {
