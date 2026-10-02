@@ -13,6 +13,7 @@ import (
 	"birdie-and-claire/internal/auth"
 	"birdie-and-claire/internal/config"
 	"birdie-and-claire/internal/database"
+	"birdie-and-claire/internal/embedder"
 	"birdie-and-claire/internal/log"
 	"birdie-and-claire/internal/server"
 	"birdie-and-claire/internal/storage"
@@ -62,7 +63,9 @@ func run() error {
 		return err
 	}
 
-	app, _ := server.New(cfg, db, store, verifier)
+	emb := embedder.New(cfg.Embedder)
+
+	app, _ := server.New(cfg, db, store, emb, verifier)
 
 	serverErr := make(chan error, 1)
 	go func() {
