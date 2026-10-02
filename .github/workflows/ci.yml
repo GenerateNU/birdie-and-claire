@@ -48,8 +48,6 @@ jobs:
           fi
           echo "$changed"
 
-  # Separate jobs instead of a matrix: a job skipped by `if` never expands its
-  # matrix, so GitHub would show the raw `${{ matrix.name }}` as the check name.
   embedder_format:
     name: ml / embedder / format
     needs: embedder_changes
