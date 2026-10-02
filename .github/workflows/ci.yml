@@ -48,19 +48,13 @@ jobs:
           fi
           echo "$changed"
 
-  embedder_checks:
-    name: ml / embedder / ${{ matrix.name }}
+  # Separate jobs instead of a matrix: a job skipped by `if` never expands its
+  # matrix, so GitHub would show the raw `${{ matrix.name }}` as the check name.
+  embedder_format:
+    name: ml / embedder / format
     needs: embedder_changes
     if: needs.embedder_changes.outputs.embedder == 'true'
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: format
-            run: mise run fmt:ml:embedder
-          - name: lint
-            run: mise run lint:ml:embedder
     steps:
       - uses: actions/checkout@v7
       # Ruff is the only tool these checks need, so skip installing the rest.
@@ -68,7 +62,21 @@ jobs:
         with:
           install: true
           install_args: ruff
-      - run: ${{ matrix.run }}
+      - run: mise run fmt:ml:embedder
+
+  embedder_lint:
+    name: ml / embedder / lint
+    needs: embedder_changes
+    if: needs.embedder_changes.outputs.embedder == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      # Ruff is the only tool these checks need, so skip installing the rest.
+      - uses: jdx/mise-action@v4
+        with:
+          install: true
+          install_args: ruff
+      - run: mise run lint:ml:embedder
 
   build:
     name: backend / build
