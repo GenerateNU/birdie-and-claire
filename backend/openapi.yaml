@@ -19,6 +19,24 @@ components:
       required:
         - key
       type: object
+    CreateOutfitInputBody:
+      additionalProperties: false
+      properties:
+        name:
+          description: Display name for the outfit
+          maxLength: 100
+          minLength: 1
+          type: string
+        product_ids:
+          description: IDs of the products in the outfit
+          items:
+            type: string
+          minItems: 1
+          type: array
+      required:
+        - name
+        - product_ids
+      type: object
     ErrorDetail:
       additionalProperties: false
       properties:
@@ -80,6 +98,69 @@ components:
           type: string
       required:
         - status
+      type: object
+    OutfitResponse:
+      additionalProperties: false
+      properties:
+        created_at:
+          format: date-time
+          type: string
+        id:
+          type: string
+        name:
+          type: string
+        products:
+          items:
+            $ref: "#/components/schemas/Product"
+          type: array
+        updated_at:
+          format: date-time
+          type: string
+        user_id:
+          type: string
+      required:
+        - products
+        - id
+        - user_id
+        - name
+        - created_at
+        - updated_at
+      type: object
+    Product:
+      additionalProperties: false
+      properties:
+        created_at:
+          format: date-time
+          type: string
+        handle:
+          type: string
+        id:
+          type: string
+        product_type:
+          type:
+            - string
+            - "null"
+        shopify_id:
+          format: int64
+          type: integer
+        tags:
+          items:
+            type: string
+          type: array
+        title:
+          type: string
+        updated_at:
+          format: date-time
+          type: string
+      required:
+        - id
+        - shopify_id
+        - handle
+        - title
+        - product_type
+        - tags
+        - created_at
+        - updated_at
       type: object
     ProfilePictureUploadResponse:
       additionalProperties: false
@@ -164,6 +245,62 @@ paths:
       summary: Warm the embedding service
       tags:
         - embedder
+  /api/v1/outfits:
+    post:
+      operationId: create-outfit
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOutfitInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OutfitResponse"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Create an outfit
+      tags:
+        - outfits
+  /api/v1/outfits/{id}:
+    get:
+      operationId: get-outfit
+      parameters:
+        - description: Outfit ID
+          in: path
+          name: id
+          required: true
+          schema:
+            description: Outfit ID
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OutfitResponse"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Get an outfit with its products
+      tags:
+        - outfits
   /api/v1/users/me/profile-picture/confirm:
     post:
       operationId: confirm-user-profile-picture
