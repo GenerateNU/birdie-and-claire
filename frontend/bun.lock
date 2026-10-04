@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "frontend",
+      "name": "birdie-and-claire-frontend",
       "dependencies": {
         "@supabase/supabase-js": "^2.116.0",
         "@tanstack/react-query": "^5.103.2",

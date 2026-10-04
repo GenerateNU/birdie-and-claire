@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"example_project/internal/config"
-	"example_project/internal/errs"
+	"birdie-and-claire/internal/config"
+	"birdie-and-claire/internal/errs"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"

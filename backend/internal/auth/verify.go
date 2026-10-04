@@ -9,9 +9,10 @@ import (
 
 	"github.com/MicahParks/keyfunc/v3"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"golang.org/x/time/rate"
 
-	"example_project/internal/config"
+	"birdie-and-claire/internal/config"
 )
 
 const (
@@ -67,18 +68,18 @@ func NewVerifier(ctx context.Context, cfg config.SupabaseConfig) (*Verifier, err
 }
 
 // checks a token and returns the user ID inside it
-func (v *Verifier) Verify(token string) (string, error) {
+func (v *Verifier) Verify(token string) (uuid.UUID, error) {
 	var claims jwt.RegisteredClaims
 	if _, err := v.parser.ParseWithClaims(token, &claims, v.keys.Keyfunc); err != nil {
-		return "", fmt.Errorf("%w: %w", ErrInvalidToken, err)
+		return uuid.Nil, fmt.Errorf("%w: %w", ErrInvalidToken, err)
 	}
 
-	// rejects a token that has no user ID
-	if claims.Subject == "" {
-		return "", fmt.Errorf("%w: missing sub claim", ErrInvalidToken)
+	userID, err := uuid.Parse(claims.Subject)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("%w: sub claim is not a UUID: %w", ErrInvalidToken, err)
 	}
 
-	return claims.Subject, nil
+	return userID, nil
 }
 
 // reports whether at least one public key is saved in memory

@@ -3,9 +3,9 @@ package controllers
 import (
 	"context"
 
-	"example_project/internal/errs"
-	"example_project/internal/models"
-	"example_project/internal/services"
+	"birdie-and-claire/internal/errs"
+	"birdie-and-claire/internal/models"
+	"birdie-and-claire/internal/services"
 
 	"github.com/google/uuid"
 )
@@ -35,8 +35,7 @@ func (c *UserController) Get(ctx context.Context, input *GetUserInput) (*GetUser
 }
 
 type ProfilePictureUploadURLInput struct {
-	ID          uuid.UUID `path:"id" doc:"User ID"`
-	ContentType string    `query:"content_type" required:"true" enum:"image/jpeg,image/png,image/webp" doc:"MIME type of the image to upload"`
+	ContentType string `query:"content_type" required:"true" enum:"image/jpeg,image/png,image/webp" doc:"MIME type of the image to upload"`
 }
 
 type ProfilePictureUploadResponse struct {
@@ -51,7 +50,7 @@ type ProfilePictureUploadURLOutput struct {
 }
 
 func (c *UserController) CreateProfilePictureUploadURL(ctx context.Context, input *ProfilePictureUploadURLInput) (*ProfilePictureUploadURLOutput, error) {
-	upload, err := c.service.CreateProfilePictureUploadURL(ctx, input.ID, input.ContentType)
+	upload, err := c.service.CreateProfilePictureUploadURL(ctx, input.ContentType)
 	if err != nil {
 		return nil, errs.ToHuma(err)
 	}
@@ -64,7 +63,6 @@ func (c *UserController) CreateProfilePictureUploadURL(ctx context.Context, inpu
 }
 
 type ConfirmProfilePictureInput struct {
-	ID   uuid.UUID `path:"id" doc:"User ID"`
 	Body struct {
 		Key string `json:"key" doc:"Upload key returned by the upload-URL endpoint"`
 	}
@@ -73,7 +71,7 @@ type ConfirmProfilePictureInput struct {
 type ConfirmProfilePictureOutput struct{}
 
 func (c *UserController) ConfirmProfilePicture(ctx context.Context, input *ConfirmProfilePictureInput) (*ConfirmProfilePictureOutput, error) {
-	if err := c.service.ConfirmProfilePicture(ctx, input.ID, input.Body.Key); err != nil {
+	if err := c.service.ConfirmProfilePicture(ctx, input.Body.Key); err != nil {
 		return nil, errs.ToHuma(err)
 	}
 	return &ConfirmProfilePictureOutput{}, nil

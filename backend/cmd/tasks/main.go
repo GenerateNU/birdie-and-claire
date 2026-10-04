@@ -109,6 +109,9 @@ func backend(root string) error {
 	if err := ensureDatabase(root); err != nil {
 		return err
 	}
+	if err := ensureStorage(root); err != nil {
+		return err
+	}
 	ctx, stop := signalContext()
 	defer stop()
 	defer removeAPI(root)
@@ -126,6 +129,9 @@ func frontend(root string) error {
 
 func dev(root string) error {
 	if err := ensureDatabase(root); err != nil {
+		return err
+	}
+	if err := ensureStorage(root); err != nil {
 		return err
 	}
 	ctx, stop := signalContext()
@@ -267,10 +273,10 @@ func resetDatabase(root string) error {
 		return err
 	}
 
-	volume := exec.Command("docker", "volume", "inspect", "example_project-postgres-data")
+	volume := exec.Command("docker", "volume", "inspect", "birdie-and-claire-postgres-data")
 	volume.Dir = root
 	if err := volume.Run(); err == nil {
-		if err := command(root, "docker", "volume", "rm", "example_project-postgres-data").Run(); err != nil {
+		if err := command(root, "docker", "volume", "rm", "birdie-and-claire-postgres-data").Run(); err != nil {
 			return fmt.Errorf("remove development database volume: %w", err)
 		}
 	}
@@ -366,6 +372,16 @@ func ensureDatabase(root string) error {
 		return fmt.Errorf("start the development database: %w", err)
 	}
 	return nil
+}
+
+func ensureStorage(root string) error {
+	if os.Getenv("S3_ENDPOINT") == "" {
+		return nil
+	}
+	if err := compose(root, "--profile", "floci", "up", "-d", "--wait", "floci").Run(); err != nil {
+		return fmt.Errorf("start Floci: %w", err)
+	}
+	return provisionBucket(root)
 }
 
 func requireDatabase(root string) error {

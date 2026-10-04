@@ -3,7 +3,7 @@ package auth
 import (
 	"strings"
 
-	"example_project/internal/log"
+	"birdie-and-claire/internal/log"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/gofiber/fiber/v3"

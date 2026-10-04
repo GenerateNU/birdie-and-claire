@@ -6,7 +6,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"example_project/internal/config"
+	"birdie-and-claire/internal/config"
 
 	_ "github.com/jackc/pgx/v5/stdlib" // registers the "pgx" database/sql driver
 )

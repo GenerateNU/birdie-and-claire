@@ -1,6 +1,5 @@
 // Package pagination provides cursor-based pagination for list endpoints.
 // A cursor is the last row's sort-column values, JSON then base64 encoded.
-// GET /api/v1/characters is the only caller today.
 package pagination
 
 import (
@@ -8,7 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 
-	"example_project/internal/errs"
+	"birdie-and-claire/internal/errs"
 
 	"github.com/danielgtaylor/huma/v2"
 )

@@ -2,14 +2,14 @@
 package routers
 
 import (
-	"example_project/internal/types"
+	"birdie-and-claire/internal/types"
 
 	"github.com/danielgtaylor/huma/v2"
 )
 
 func Setup(api huma.API, params types.RouteParams) {
 	HealthRoutes(api, params)
-	CharacterRoutes(api, params)
 	UserRoutes(api, params)
 	OutfitReactionRoutes(api, params)
+	EmbedderRoutes(api, params)
 }

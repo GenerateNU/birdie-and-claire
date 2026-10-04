@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"os"
 
-	"example_project/internal/config"
+	"birdie-and-claire/internal/config"
 
 	"github.com/lmittmann/tint"
 )

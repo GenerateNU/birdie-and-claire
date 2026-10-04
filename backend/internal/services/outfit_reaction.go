@@ -3,12 +3,11 @@ package services
 import (
 	"context"
 	"errors"
-	"fmt" 
 
-	"example_project/internal/auth"
-	"example_project/internal/errs"
-	"example_project/internal/models"
-	"example_project/internal/repository"
+	"birdie-and-claire/internal/auth"
+	"birdie-and-claire/internal/errs"
+	"birdie-and-claire/internal/models"
+	"birdie-and-claire/internal/repository"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -35,10 +34,7 @@ func NewOutfitReactionService(repo *repository.Repository) OutfitReactionService
 // Create records a reaction from the authenticated user. The outfit's
 // existence is enforced by the database's foreign key, not checked here.
 func (s *outfitReactionService) Create(ctx context.Context, outfitID uuid.UUID, kind models.ReactionKind) error {
-	userID, err := uuid.Parse(auth.UserID(ctx))
-	if err != nil {
-				return fmt.Errorf("parse authenticated user id: %w", err)
-	}
+	userID := auth.UserID(ctx)
 
 	if err := s.repo.OutfitReaction.Create(ctx, userID, outfitID, kind); err != nil {
 		var pgErr *pgconn.PgError

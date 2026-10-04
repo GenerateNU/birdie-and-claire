@@ -1,4 +1,4 @@
-module example_project
+module birdie-and-claire
 
 go 1.27.1
 

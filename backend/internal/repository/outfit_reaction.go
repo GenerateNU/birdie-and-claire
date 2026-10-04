@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"example_project/internal/models"
+	"birdie-and-claire/internal/models"
 
 	"github.com/google/uuid"
 )
