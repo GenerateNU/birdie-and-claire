@@ -21,7 +21,7 @@ func NewOutfitReactionController(service services.OutfitReactionService) *Outfit
 type CreateReactionInput struct {
 	ID   uuid.UUID `path:"id" doc:"Outfit ID"`
 	Body struct {
-		Kind models.ReactionKind `json:"kind" doc:"Reaction kind: like, dislike, or save"`
+		Kind models.ReactionKind `json:"kind" enum:"like,dislike,save" doc:"Reaction kind: like, dislike, or save"`
 	}
 }
 

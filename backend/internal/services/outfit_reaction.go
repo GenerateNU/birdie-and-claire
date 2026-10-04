@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt" 
 
 	"example_project/internal/auth"
 	"example_project/internal/errs"
@@ -13,11 +14,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-var allowedReactionKinds = map[models.ReactionKind]bool{
-	models.ReactionLike:    true,
-	models.ReactionDislike: true,
-	models.ReactionSave:    true,
-}
+
 
 // OutfitReactionService records reactions and reports aggregate counts.
 type OutfitReactionService interface {
@@ -38,13 +35,9 @@ func NewOutfitReactionService(repo *repository.Repository) OutfitReactionService
 // Create records a reaction from the authenticated user. The outfit's
 // existence is enforced by the database's foreign key, not checked here.
 func (s *outfitReactionService) Create(ctx context.Context, outfitID uuid.UUID, kind models.ReactionKind) error {
-	if !allowedReactionKinds[kind] {
-		return errs.ErrInvalidInput
-	}
-
 	userID, err := uuid.Parse(auth.UserID(ctx))
 	if err != nil {
-		return errs.ErrInvalidInput
+				return fmt.Errorf("parse authenticated user id: %w", err)
 	}
 
 	if err := s.repo.OutfitReaction.Create(ctx, userID, outfitID, kind); err != nil {
