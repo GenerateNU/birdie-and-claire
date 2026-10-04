@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"birdie-and-claire/internal/auth"
-	"birdie-and-claire/internal/log"
 	"birdie-and-claire/internal/models"
 	"birdie-and-claire/internal/repository"
 
@@ -38,7 +37,6 @@ func (s *outfitService) Create(ctx context.Context, params models.CreateOutfitPa
 	if err != nil {
 		return models.OutfitResponse{}, err
 	}
-	log.Info(ctx, "created outfit", "outfit_id", outfit.ID, "product_count", len(products))
 	return models.OutfitResponse{Outfit: outfit, Products: products}, nil
 }
 

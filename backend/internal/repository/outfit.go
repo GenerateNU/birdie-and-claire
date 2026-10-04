@@ -79,60 +79,75 @@ func (r *outfitRepository) Create(ctx context.Context, params models.CreateOutfi
 }
 
 func (r *outfitRepository) GetByID(ctx context.Context, id uuid.UUID) (models.Outfit, []models.Product, error) {
-	var outfit models.Outfit
-	err := r.db.QueryRowContext(ctx, `
-		SELECT id, user_id, name, created_at, updated_at
-		FROM outfits
-		WHERE id = $1
-	`, id).Scan(
-		&outfit.ID,
-		&outfit.UserID,
-		&outfit.Name,
-		&outfit.CreatedAt,
-		&outfit.UpdatedAt,
-	)
-	if errors.Is(err, sql.ErrNoRows) {
-		return models.Outfit{}, nil, fmt.Errorf("get outfit %s: %w", id, errs.ErrNotFound)
-	}
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT o.id, o.user_id, o.name, o.created_at, o.updated_at,
+			p.id, p.shopify_id, p.handle, p.title, p.product_type, p.tags, p.created_at, p.updated_at
+		FROM outfits o
+		LEFT JOIN outfit_products op ON op.outfit_id = o.id
+		LEFT JOIN products p ON p.id = op.product_id
+		WHERE o.id = $1
+		ORDER BY p.id
+	`, id)
 	if err != nil {
 		return models.Outfit{}, nil, fmt.Errorf("get outfit %s: %w", id, err)
 	}
+	defer func() { _ = rows.Close() }()
 
-	products, err := r.findOutfitProducts(ctx, id)
-	if err != nil {
-		return models.Outfit{}, nil, err
+	var outfit models.Outfit
+	found := false
+	products := make([]models.Product, 0)
+	for rows.Next() {
+		found = true
+		var (
+			productID            uuid.NullUUID
+			shopifyID            sql.NullInt64
+			handle, title        sql.NullString
+			productType          *string
+			tags                 []string
+			createdAt, updatedAt sql.NullTime
+		)
+		if err := rows.Scan(
+			&outfit.ID,
+			&outfit.UserID,
+			&outfit.Name,
+			&outfit.CreatedAt,
+			&outfit.UpdatedAt,
+			&productID,
+			&shopifyID,
+			&handle,
+			&title,
+			&productType,
+			&tags,
+			&createdAt,
+			&updatedAt,
+		); err != nil {
+			return models.Outfit{}, nil, fmt.Errorf("scan outfit %s: %w", id, err)
+		}
+		// A NULL product id is the LEFT JOIN's row for an outfit with no products.
+		if !productID.Valid {
+			continue
+		}
+		products = append(products, models.Product{
+			ID:          productID.UUID,
+			ShopifyID:   shopifyID.Int64,
+			Handle:      handle.String,
+			Title:       title.String,
+			ProductType: productType,
+			Tags:        tags,
+			CreatedAt:   createdAt.Time,
+			UpdatedAt:   updatedAt.Time,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		return models.Outfit{}, nil, fmt.Errorf("iterate outfit %s: %w", id, err)
+	}
+	if !found {
+		return models.Outfit{}, nil, fmt.Errorf("get outfit %s: %w", id, errs.ErrNotFound)
 	}
 	return outfit, products, nil
 }
 
-func (r *outfitRepository) findOutfitProducts(ctx context.Context, outfitID uuid.UUID) ([]models.Product, error) {
-	rows, err := r.db.QueryContext(ctx, `
-		SELECT p.id, p.shopify_id, p.handle, p.title, p.product_type, p.tags, p.created_at, p.updated_at
-		FROM products p
-		JOIN outfit_products op ON op.product_id = p.id
-		WHERE op.outfit_id = $1
-		ORDER BY p.id
-	`, outfitID)
-	if err != nil {
-		return nil, fmt.Errorf("query outfit products: %w", err)
-	}
-	defer func() { _ = rows.Close() }()
-
-	products := make([]models.Product, 0)
-	for rows.Next() {
-		var product models.Product
-		if err := rows.Scan(productScanTargets(&product)...); err != nil {
-			return nil, fmt.Errorf("scan outfit product: %w", err)
-		}
-		products = append(products, product)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate outfit products: %w", err)
-	}
-	return products, nil
-}
-
-// productScanTargets matches the p.id through p.updated_at column order both queries select.
+// productScanTargets matches the p.id through p.updated_at column order Create selects.
 func productScanTargets(product *models.Product) []any {
 	return []any{
 		&product.ID,
