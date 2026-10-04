@@ -11,4 +11,5 @@ func Setup(api huma.API, params types.RouteParams) {
 	HealthRoutes(api, params)
 	UserRoutes(api, params)
 	OutfitRoutes(api, params)
+	EmbedderRoutes(api, params)
 }
