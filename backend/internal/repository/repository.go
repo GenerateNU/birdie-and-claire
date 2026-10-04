@@ -6,12 +6,14 @@ import "database/sql"
 
 type Repository struct {
 	User           UserRepository
+	Outfit         OutfitRepository
 	OutfitReaction OutfitReactionRepository
 }
 
 func New(database *sql.DB) *Repository {
 	return &Repository{
 		User:           NewUserRepository(database),
+		Outfit:         NewOutfitRepository(database),
 		OutfitReaction: NewOutfitReactionRepository(database),
 	}
 }
