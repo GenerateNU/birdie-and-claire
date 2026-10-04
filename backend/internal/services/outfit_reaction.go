@@ -13,8 +13,6 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-
-
 // OutfitReactionService records reactions and reports aggregate counts.
 type OutfitReactionService interface {
 	Create(ctx context.Context, outfitID uuid.UUID, kind models.ReactionKind) error

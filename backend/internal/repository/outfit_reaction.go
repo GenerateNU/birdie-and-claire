@@ -10,13 +10,10 @@ import (
 	"github.com/google/uuid"
 )
 
-
 type OutfitReactionRepository interface {
 	Create(ctx context.Context, userID, outfitID uuid.UUID, kind models.ReactionKind) error
 	CountByOutfit(ctx context.Context, outfitID uuid.UUID) (models.ReactionCounts, error)
 }
-
-
 
 type outfitReactionRepository struct {
 	db *sql.DB
@@ -25,7 +22,6 @@ type outfitReactionRepository struct {
 func NewOutfitReactionRepository(database *sql.DB) OutfitReactionRepository {
 	return &outfitReactionRepository{db: database}
 }
-
 
 func (r *outfitReactionRepository) Create(ctx context.Context, userID, outfitID uuid.UUID, kind models.ReactionKind) error {
 	_, err := r.db.ExecContext(ctx, `

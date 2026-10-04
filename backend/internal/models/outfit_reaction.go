@@ -1,7 +1,5 @@
 package models
 
-
-
 // ReactionKind is one of the fixed values a reaction can hold.
 type ReactionKind string
 
@@ -10,7 +8,6 @@ const (
 	ReactionDislike ReactionKind = "dislike"
 	ReactionSave    ReactionKind = "save"
 )
-
 
 // ReactionCounts is the aggregate response for GET .../reactions.
 type ReactionCounts struct {
