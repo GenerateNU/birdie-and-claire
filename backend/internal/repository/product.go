@@ -14,8 +14,6 @@ type ProductRepository interface {
 	FindSimilar(ctx context.Context, embedding []float32, limit int) ([]models.Product, error)
 }
 
-var _ ProductRepository = (*productRepository)(nil)
-
 type productRepository struct {
 	db *sql.DB
 }
@@ -26,7 +24,7 @@ func NewProductRepository(database *sql.DB) ProductRepository {
 
 func (r *productRepository) FindSimilar(ctx context.Context, embedding []float32, limit int) ([]models.Product, error) {
 	rows, err := r.db.QueryContext(ctx, `
-		SELECT `+productColumns+`
+		SELECT p.id, p.shopify_id, p.handle, p.title, p.product_type, p.tags, p.created_at, p.updated_at
 		FROM products p
 		WHERE p.embedding IS NOT NULL
 		-- <=> is pgvector's cosine distance, so smaller means more similar.
@@ -51,8 +49,6 @@ func (r *productRepository) FindSimilar(ctx context.Context, embedding []float32
 	}
 	return products, nil
 }
-
-const productColumns = "p.id, p.shopify_id, p.handle, p.title, p.product_type, p.tags, p.created_at, p.updated_at"
 
 // productScanTargets scans productColumns, in order.
 func productScanTargets(product *models.Product) []any {

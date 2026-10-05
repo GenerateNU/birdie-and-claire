@@ -46,7 +46,7 @@ func (r *outfitRepository) Create(ctx context.Context, params models.CreateOutfi
 			RETURNING outfit_id, product_id
 		)
 		SELECT o.id, o.user_id, o.name, o.created_at, o.updated_at,
-			`+productColumns+`
+			p.id, p.shopify_id, p.handle, p.title, p.product_type, p.tags, p.created_at, p.updated_at
 		-- A WITH's parts share one snapshot, so the outfit_products table can't see these rows yet.
 		FROM new_outfit_products op
 		JOIN new_outfit o ON o.id = op.outfit_id
@@ -81,7 +81,7 @@ func (r *outfitRepository) Create(ctx context.Context, params models.CreateOutfi
 func (r *outfitRepository) GetByID(ctx context.Context, id uuid.UUID) (models.Outfit, []models.Product, error) {
 	rows, err := r.db.QueryContext(ctx, `
 		SELECT o.id, o.user_id, o.name, o.created_at, o.updated_at,
-			`+productColumns+`
+			p.id, p.shopify_id, p.handle, p.title, p.product_type, p.tags, p.created_at, p.updated_at
 		FROM outfits o
 		LEFT JOIN outfit_products op ON op.outfit_id = o.id
 		LEFT JOIN products p ON p.id = op.product_id
