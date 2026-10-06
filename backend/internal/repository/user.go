@@ -10,11 +10,15 @@ import (
 	"birdie-and-claire/internal/models"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
-// UserRepository owns the users table. EnsureExists creates a row the first time one is needed.
+// Postgres SQLSTATE for a unique violation.
+const uniqueViolation = "23505"
+
+// UserRepository owns the users table. Create is the only way a row is written.
 type UserRepository interface {
-	EnsureExists(ctx context.Context, id uuid.UUID) error
+	Create(ctx context.Context, id uuid.UUID, name string) (models.User, error)
 	GetByID(ctx context.Context, id uuid.UUID) (models.User, error)
 	SetProfilePictureKey(ctx context.Context, id uuid.UUID, key string) error
 }
@@ -29,18 +33,22 @@ func NewUserRepository(database *sql.DB) UserRepository {
 	return &userRepository{db: database}
 }
 
-// EnsureExists creates the row for a supabase user missing from our users table.
-// The id is the sub claim that supabase uses
-func (r *userRepository) EnsureExists(ctx context.Context, id uuid.UUID) error {
-	_, err := r.db.ExecContext(ctx, `
-		INSERT INTO users (id)
-		VALUES ($1)
-		ON CONFLICT (id) DO NOTHING
-	`, id)
-	if err != nil {
-		return fmt.Errorf("ensure user %s: %w", id, err)
+// Create inserts the row for a Supabase user. The id is the sub claim of a verified token.
+func (r *userRepository) Create(ctx context.Context, id uuid.UUID, name string) (models.User, error) {
+	var user models.User
+	err := r.db.QueryRowContext(ctx, `
+		INSERT INTO users (id, name)
+		VALUES ($1, $2)
+		RETURNING id, name, profile_picture_key
+	`, id, name).Scan(&user.ID, &user.Name, &user.ProfilePictureKey)
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == uniqueViolation {
+		return models.User{}, fmt.Errorf("create user %s: %w", id, errs.ErrDuplicate)
 	}
-	return nil
+	if err != nil {
+		return models.User{}, fmt.Errorf("create user %s: %w", id, err)
+	}
+	return user, nil
 }
 
 func (r *userRepository) GetByID(ctx context.Context, id uuid.UUID) (models.User, error) {

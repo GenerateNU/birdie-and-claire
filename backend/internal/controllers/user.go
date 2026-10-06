@@ -2,11 +2,14 @@ package controllers
 
 import (
 	"context"
+	"strings"
 
+	"birdie-and-claire/internal/auth"
 	"birdie-and-claire/internal/errs"
 	"birdie-and-claire/internal/models"
 	"birdie-and-claire/internal/services"
 
+	"github.com/danielgtaylor/huma/v2"
 	"github.com/google/uuid"
 )
 
@@ -28,6 +31,39 @@ type GetUserOutput struct {
 
 func (c *UserController) Get(ctx context.Context, input *GetUserInput) (*GetUserOutput, error) {
 	response, err := c.service.Get(ctx, input.ID)
+	if err != nil {
+		return nil, errs.ToHuma(err)
+	}
+	return &GetUserOutput{Body: response}, nil
+}
+
+func (c *UserController) GetMe(ctx context.Context, _ *struct{}) (*GetUserOutput, error) {
+	response, err := c.service.Get(ctx, auth.UserID(ctx))
+	if err != nil {
+		return nil, errs.ToHuma(err)
+	}
+	return &GetUserOutput{Body: response}, nil
+}
+
+type CreateUserInput struct {
+	Body struct {
+		Name string `json:"name" required:"true" minLength:"1" maxLength:"100" doc:"Display name; leading and trailing whitespace is removed"`
+	}
+}
+
+var _ huma.Resolver = (*CreateUserInput)(nil)
+
+// Resolve trims the name so a whitespace-only name is rejected instead of stored.
+func (input *CreateUserInput) Resolve(huma.Context) []error {
+	input.Body.Name = strings.TrimSpace(input.Body.Name)
+	if input.Body.Name == "" {
+		return []error{&huma.ErrorDetail{Location: "body.name", Message: "name must not be blank"}}
+	}
+	return nil
+}
+
+func (c *UserController) Create(ctx context.Context, input *CreateUserInput) (*GetUserOutput, error) {
+	response, err := c.service.Create(ctx, input.Body.Name)
 	if err != nil {
 		return nil, errs.ToHuma(err)
 	}

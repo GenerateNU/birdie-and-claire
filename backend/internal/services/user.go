@@ -24,6 +24,7 @@ var allowedProfilePictureTypes = map[string]bool{
 
 type UserService interface {
 	Get(ctx context.Context, id uuid.UUID) (models.UserResponse, error)
+	Create(ctx context.Context, name string) (models.UserResponse, error)
 	CreateProfilePictureUploadURL(ctx context.Context, contentType string) (storage.PresignedUpload, error)
 	ConfirmProfilePicture(ctx context.Context, key string) error
 }
@@ -50,6 +51,16 @@ func (s *userService) Get(ctx context.Context, id uuid.UUID) (models.UserRespons
 		response.ProfilePictureURL = &url
 	}
 	return response, nil
+}
+
+func (s *userService) Create(ctx context.Context, name string) (models.UserResponse, error) {
+	id := auth.UserID(ctx)
+	user, err := s.repo.User.Create(ctx, id, name)
+	if err != nil {
+		return models.UserResponse{}, err
+	}
+	log.Info(ctx, "created user", "user", id)
+	return models.UserResponse{ID: user.ID, Name: user.Name}, nil
 }
 
 func (s *userService) CreateProfilePictureUploadURL(ctx context.Context, contentType string) (storage.PresignedUpload, error) {

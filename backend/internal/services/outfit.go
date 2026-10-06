@@ -28,8 +28,8 @@ func NewOutfitService(repo *repository.Repository) OutfitService {
 
 func (s *outfitService) Create(ctx context.Context, params models.CreateOutfitParams) (models.OutfitResponse, error) {
 	userID := auth.UserID(ctx)
-	// outfits.user_id references users, and nothing else creates that row yet.
-	if err := s.repo.User.EnsureExists(ctx, userID); err != nil {
+	// outfits.user_id references users; POST /api/v1/users/me creates that row.
+	if _, err := s.repo.User.GetByID(ctx, userID); err != nil {
 		return models.OutfitResponse{}, err
 	}
 

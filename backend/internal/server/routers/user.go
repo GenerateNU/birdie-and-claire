@@ -18,6 +18,24 @@ func UserRoutes(api huma.API, params types.RouteParams) {
 	)
 	controller := controllers.NewUserController(service)
 
+	// Registered before /users/{id}: Fiber matches in registration order, so {id} would capture "me".
+	huma.Register(api, huma.Operation{
+		OperationID: "get-current-user",
+		Method:      http.MethodGet,
+		Path:        "/api/v1/users/me",
+		Summary:     "Get the caller's user",
+		Tags:        []string{"users"},
+	}, controller.GetMe)
+
+	huma.Register(api, huma.Operation{
+		OperationID:   "create-current-user",
+		Method:        http.MethodPost,
+		Path:          "/api/v1/users/me",
+		DefaultStatus: http.StatusCreated,
+		Summary:       "Create the caller's user",
+		Tags:          []string{"users"},
+	}, controller.Create)
+
 	huma.Register(api, huma.Operation{
 		OperationID: "get-user",
 		Method:      http.MethodGet,
