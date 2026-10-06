@@ -356,34 +356,7 @@ paths:
       tags:
         - embedder
   /api/v1/outfits:
-    post:
-      operationId: create-outfit
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CreateOutfitInputBody"
-        required: true
-      responses:
-        "201":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/OutfitResponse"
-          description: Created
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearer: []
-      summary: Create an outfit
-      tags:
-        - outfits
-  /api/v1/outfits/list:
-    post:
+    get:
       operationId: list-outfits
       parameters:
         - description: Max items to return
@@ -420,6 +393,32 @@ paths:
       security:
         - bearer: []
       summary: List the authenticated user's outfits
+      tags:
+        - outfits
+    post:
+      operationId: create-outfit
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOutfitInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OutfitResponse"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Create an outfit
       tags:
         - outfits
   /api/v1/outfits/{id}:

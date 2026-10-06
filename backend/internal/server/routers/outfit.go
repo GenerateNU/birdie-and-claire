@@ -33,8 +33,8 @@ func OutfitRoutes(api huma.API, params types.RouteParams) {
 
 	huma.Register(api, huma.Operation{
 		OperationID: "list-outfits",
-		Method:      http.MethodPost,
-		Path:        "/api/v1/outfits/list",
+		Method:      http.MethodGet,
+		Path:        "/api/v1/outfits",
 		Summary:     "List the authenticated user's outfits",
 		Tags:        []string{"outfits"},
 	}, controller.List)

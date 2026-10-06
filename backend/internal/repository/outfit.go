@@ -151,11 +151,11 @@ func (r *outfitRepository) GetByID(ctx context.Context, id uuid.UUID) (models.Ou
 func (r *outfitRepository) List(ctx context.Context, userID uuid.UUID, params pagination.CursorParams) ([]models.Outfit, error) {
 	afterCreatedAt, err := params.After().Time("created_at")
 	if err != nil {
-		return nil, fmt.Errorf("list outfits: after cursor: %w", err)
+		return nil, fmt.Errorf("list outfits for user %s: after cursor created_at: %w", userID, err)
 	}
 	afterID, err := params.After().UUID("id")
 	if err != nil {
-		return nil, fmt.Errorf("list outfits: after cursor: %w", err)
+		return nil, fmt.Errorf("list outfits for user %s: after cursor id: %w", userID, err)
 	}
 
 	// No products join: under LIMIT it would count joined rows, not outfits.
@@ -168,7 +168,7 @@ func (r *outfitRepository) List(ctx context.Context, userID uuid.UUID, params pa
 		LIMIT $4
 	`, userID, afterCreatedAt, afterID, params.Limit+1)
 	if err != nil {
-		return nil, fmt.Errorf("list outfits: %w", err)
+		return nil, fmt.Errorf("list outfits for user %s: %w", userID, err)
 	}
 	defer func() { _ = rows.Close() }()
 
@@ -177,12 +177,12 @@ func (r *outfitRepository) List(ctx context.Context, userID uuid.UUID, params pa
 	for rows.Next() {
 		var outfit models.Outfit
 		if err := rows.Scan(&outfit.ID, &outfit.UserID, &outfit.Name, &outfit.CreatedAt, &outfit.UpdatedAt); err != nil {
-			return nil, fmt.Errorf("list outfits: scan: %w", err)
+			return nil, fmt.Errorf("list outfits for user %s: scan: %w", userID, err)
 		}
 		outfits = append(outfits, outfit)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("list outfits: iterate: %w", err)
+		return nil, fmt.Errorf("list outfits for user %s: iterate: %w", userID, err)
 	}
 	return outfits, nil
 }

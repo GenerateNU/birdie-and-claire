@@ -12,7 +12,7 @@ export default function OutfitsPage() {
     hasNextPage,
     isFetchingNextPage,
     isFetchNextPageError,
-  } = usePagination<Outfit, Record<string, never>>("/api/v1/outfits/list", {});
+  } = usePagination<Outfit>("/api/v1/outfits");
 
   // The cursor is unused because usePagination already tracks the next page param.
   const onLoadMore = useCallback(() => {
