@@ -38,8 +38,8 @@ Read the diff, every file it touches in full, and grep for related code: other
 places doing the same thing, existing helpers this reinvents, the layer this
 code sits in and the layers on either side. Work from the files.
 
-Read `AGENTS.md` and any nested `AGENTS.md` covering the changed files
-(`backend/AGENTS.md` for Go). A broken rule there is a finding. Yours are the
+Read `AGENTS.md`, and `.agents/rules/backend.md` when the diff touches
+`backend/`. A broken rule there is a finding. Yours are the
 structural ones: queries in the wrong repository, validation the framework
 already does, work in Go that SQL should do, shared column constants, and
 unused code.

@@ -1,6 +1,11 @@
+---
+paths:
+  - "backend/**"
+---
+
 # Backend conventions
 
-Go-specific rules for `backend/`. The root `AGENTS.md` still applies. Each rule
+Go-specific rules for `backend/`, on top of the root `AGENTS.md`. Each rule
 here is something that keeps getting flagged in review. Treat a violation as a
 review finding, not a preference.
 

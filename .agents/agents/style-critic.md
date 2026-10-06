@@ -25,8 +25,8 @@ has not adopted.
 
 ## Then, read the conventions
 
-Read `AGENTS.md` and any nested `AGENTS.md` covering the changed files
-(`backend/AGENTS.md` for Go). A broken rule there is a finding. Yours are
+Read `AGENTS.md`, and `.agents/rules/backend.md` when the diff touches
+`backend/`. A broken rule there is a finding. Yours are
 naming, comments, error message wording, and log levels.
 
 ## Then, report problems as questions

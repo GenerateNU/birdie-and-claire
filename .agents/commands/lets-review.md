@@ -31,7 +31,7 @@ you are reviewing.
 `mise tasks`, then lint and format in check mode. Capture the counts. Fix
 nothing. If mise or the task is missing, record `not configured`.
 
-Then check the pre-PR list in `backend/AGENTS.md`, read-only:
+Then check the pre-PR list in `.agents/rules/backend.md`, read-only:
 
 - `git fetch origin main`, then `git rev-list --count HEAD..origin/main`. If
   the branch is behind, say so. If
@@ -54,15 +54,15 @@ style-critic           mise lint/format, naming, comments, readability
 
 Each one gets: the scope, the diff, an instruction to read the actual files
 rather than this conversation, an instruction to read `AGENTS.md` and
-`backend/AGENTS.md` first, and `do not edit files`.
+`.agents/rules/backend.md` first, and `do not edit files`.
 
 **4. Synthesize.**
 
 Resolve disagreements yourself by reading the code, do not just concatenate.
 Drop duplicates and anything the diff already handles.
 
-`backend/AGENTS.md` beats existing code. Drop any finding that asks the author
-to copy a pattern the conventions forbid, such as adding a
+`.agents/rules/backend.md` beats existing code. Drop any finding that asks
+the author to copy a pattern the conventions forbid, such as adding a
 `var _ Interface = (*impl)(nil)` assertion because other files have one.
 
 Keep:

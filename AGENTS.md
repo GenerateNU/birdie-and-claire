@@ -2,8 +2,8 @@
 
 Rules for anyone writing code in this repo, human or agent. Read them before you
 change anything. Where `docs/` says something more specific, `docs/` wins.
-A nested `AGENTS.md` (such as `backend/AGENTS.md`) adds rules for its directory
-and wins where it is more specific.
+Before changing anything in `backend/`, read `.agents/rules/backend.md`. It
+wins where it is more specific.
 
 ## Before you change anything
 
@@ -110,7 +110,7 @@ Prose is right for things with no structure. Do not draw a box around a list.
 - Run the project's checks through mise. `mise tasks` lists them, typically
   `mise run lint`, `mise run format`, `mise run test`. Fix what they flag.
 - Before opening a pull request, work through the checklist at the end of
-  `backend/AGENTS.md`.
+  `.agents/rules/backend.md`.
 - Report what you ran and what you did not.
 - Do not commit, push, or open a pull request unless asked.
 
