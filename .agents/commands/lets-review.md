@@ -31,17 +31,8 @@ you are reviewing.
 `mise tasks`, then lint and format in check mode. Capture the counts. Fix
 nothing. If mise or the task is missing, record `not configured`.
 
-Then check the pre-PR list in `.agents/rules/backend.md`, read-only:
-
-- `git fetch origin main`, then `git rev-list --count HEAD..origin/main`. If
-  the branch is behind, say so. If
-  `git merge-tree --write-tree origin/main HEAD` reports conflicts, that is a
-  High finding.
-- For each migration the branch adds, compare its timestamp with the newest
-  migration on `origin/main`. A migration that sorts before main's newest, or
-  creates a table main already creates, is a High finding.
-- If the diff touches routes or controller types, check whether
-  `backend/openapi.yaml` changed too. If not, report it. CI will fail.
+If the diff touches routes or controller types, check whether
+`backend/openapi.yaml` changed too. If not, report it. CI will fail.
 
 **3. Fan out three reviewers, in parallel, in a single message.**
 
