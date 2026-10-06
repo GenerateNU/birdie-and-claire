@@ -55,8 +55,14 @@ When a rule names an example file, copy that file's shape.
 ## Validation
 
 - Use huma struct tags for anything huma can check: `enum:"like,dislike,save"`,
-  `required:"true"`, `minimum`, `maxLength`. See `controllers/user.go:38`. Do not
-  repeat that check in the service.
+  `required:"true"`, `minimum`, `maxLength`. Do not repeat that check in the
+  service.
+
+  ```go
+  type ProfilePictureUploadURLInput struct {
+      ContentType string `query:"content_type" required:"true" enum:"image/jpeg,image/png,image/webp"`
+  }
+  ```
 
 ## Naming
 
