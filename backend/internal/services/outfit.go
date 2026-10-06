@@ -18,8 +18,6 @@ type OutfitService interface {
 	List(ctx context.Context, params pagination.CursorParams) (pagination.Page[models.Outfit], error)
 }
 
-var _ OutfitService = (*outfitService)(nil)
-
 type outfitService struct {
 	repo *repository.Repository
 }

@@ -26,8 +26,6 @@ type OutfitRepository interface {
 	List(ctx context.Context, userID uuid.UUID, params pagination.CursorParams) ([]models.Outfit, error)
 }
 
-var _ OutfitRepository = (*outfitRepository)(nil)
-
 type outfitRepository struct {
 	db *sql.DB
 }
