@@ -1,16 +1,21 @@
 package auth
 
-import "context"
+import (
+	"context"
+
+	"github.com/google/uuid"
+)
 
 type userIDKey struct{}
 
-// UserID returns the authenticated user's ID, or "" outside a request.
-func UserID(ctx context.Context) string {
-	id, _ := ctx.Value(userIDKey{}).(string)
+// UserID returns the authenticated user's ID, or uuid.Nil outside a request
+// that passed Middleware.
+func UserID(ctx context.Context) uuid.UUID {
+	id, _ := ctx.Value(userIDKey{}).(uuid.UUID)
 	return id
 }
 
 // Can write userId to context
-func withUserID(ctx context.Context, id string) context.Context {
+func withUserID(ctx context.Context, id uuid.UUID) context.Context {
 	return context.WithValue(ctx, userIDKey{}, id)
 }

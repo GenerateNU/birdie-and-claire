@@ -3,8 +3,8 @@ package routers
 import (
 	"net/http"
 
-	"example_project/internal/controllers"
-	"example_project/internal/types"
+	"birdie-and-claire/internal/controllers"
+	"birdie-and-claire/internal/types"
 
 	"github.com/danielgtaylor/huma/v2"
 )

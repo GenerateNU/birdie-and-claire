@@ -3,16 +3,14 @@ package services
 import (
 	"context"
 
-	"example_project/internal/errs"
-	"example_project/internal/log"
-	"example_project/internal/models"
-	"example_project/internal/repository"
+	"birdie-and-claire/internal/errs"
+	"birdie-and-claire/internal/log"
+	"birdie-and-claire/internal/models"
+	"birdie-and-claire/internal/repository"
 
 	"github.com/google/uuid"
 )
 
-// ProductImageService lists a product's images. Population from Shopify is a
-// separate job; this service only reads what that job has written.
 type ProductImageService interface {
 	ListByProductID(ctx context.Context, productID uuid.UUID) ([]models.ProductImageResponse, error)
 }
@@ -28,7 +26,7 @@ func NewProductImageService(repo *repository.Repository) ProductImageService {
 }
 
 func (s *productImageService) ListByProductID(ctx context.Context, productID uuid.UUID) ([]models.ProductImageResponse, error) {
-	exists, err := s.repo.ProductImage.ProductExists(ctx, productID)
+	exists, err := s.repo.Product.Exists(ctx, productID)
 	if err != nil {
 		return nil, err
 	}
@@ -40,7 +38,7 @@ func (s *productImageService) ListByProductID(ctx context.Context, productID uui
 	if err != nil {
 		return nil, err
 	}
-	log.Info(ctx, "listed product images", "product_id", productID, "count", len(images))
+	log.Debug(ctx, "listed product images", "product_id", productID, "count", len(images))
 
 	responses := make([]models.ProductImageResponse, 0, len(images))
 	for _, image := range images {

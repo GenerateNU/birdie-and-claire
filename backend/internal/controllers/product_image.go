@@ -3,9 +3,9 @@ package controllers
 import (
 	"context"
 
-	"example_project/internal/errs"
-	"example_project/internal/models"
-	"example_project/internal/services"
+	"birdie-and-claire/internal/errs"
+	"birdie-and-claire/internal/models"
+	"birdie-and-claire/internal/services"
 
 	"github.com/google/uuid"
 )

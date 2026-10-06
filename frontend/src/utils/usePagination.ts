@@ -1,5 +1,7 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 
+import { apiFetch } from "../api";
+
 /** The wrapper every paginated list endpoint returns, in wire field names. */
 export type Page<T> = {
   items: T[];
@@ -20,7 +22,7 @@ export function usePagination<TItem, TFilters>(path: string, filters: TFilters, 
     // Avoid refetching a page just from paging forward and back.
     staleTime: 60_000,
     queryFn: async ({ pageParam, signal }): Promise<Page<TItem>> => {
-      const response = await fetch(path, {
+      const response = await apiFetch(path, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ limit, cursor: pageParam, filters }),

@@ -20,7 +20,7 @@ const (
 
 	// secretsLoaded marks a process that is already running inside the
 	// injector, so re-execution does not recurse.
-	secretsLoaded = "EXAMPLE_PROJECT_SECRETS_LOADED"
+	secretsLoaded = "BIRDIE_AND_CLAIRE_SECRETS_LOADED"
 )
 
 var secretsRequired = map[string]bool{

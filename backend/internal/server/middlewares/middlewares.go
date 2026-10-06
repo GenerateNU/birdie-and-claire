@@ -3,7 +3,7 @@
 package middlewares
 
 import (
-	"example_project/internal/auth"
+	"birdie-and-claire/internal/auth"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/recover"

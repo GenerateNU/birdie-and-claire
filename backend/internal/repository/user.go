@@ -6,13 +6,13 @@ import (
 	"errors"
 	"fmt"
 
-	"example_project/internal/errs"
-	"example_project/internal/models"
+	"birdie-and-claire/internal/errs"
+	"birdie-and-claire/internal/models"
 
 	"github.com/google/uuid"
 )
 
-// UserRepository owns the users table. Rows are created by the application on registration.
+// UserRepository owns the users table. EnsureExists creates a row the first time one is needed.
 type UserRepository interface {
 	EnsureExists(ctx context.Context, id uuid.UUID) error
 	GetByID(ctx context.Context, id uuid.UUID) (models.User, error)

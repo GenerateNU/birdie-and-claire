@@ -3,9 +3,9 @@ package routers
 import (
 	"net/http"
 
-	"example_project/internal/controllers"
-	"example_project/internal/services"
-	"example_project/internal/types"
+	"birdie-and-claire/internal/controllers"
+	"birdie-and-claire/internal/services"
+	"birdie-and-claire/internal/types"
 
 	"github.com/danielgtaylor/huma/v2"
 )
@@ -29,16 +29,16 @@ func UserRoutes(api huma.API, params types.RouteParams) {
 	huma.Register(api, huma.Operation{
 		OperationID: "create-user-profile-picture-upload-url",
 		Method:      http.MethodGet,
-		Path:        "/api/v1/users/{id}/profile-picture/upload",
-		Summary:     "Get a presigned URL to upload a profile picture",
+		Path:        "/api/v1/users/me/profile-picture/upload",
+		Summary:     "Get a presigned URL to upload the caller's profile picture",
 		Tags:        []string{"users"},
 	}, controller.CreateProfilePictureUploadURL)
 
 	huma.Register(api, huma.Operation{
 		OperationID: "confirm-user-profile-picture",
 		Method:      http.MethodPost,
-		Path:        "/api/v1/users/{id}/profile-picture/confirm",
-		Summary:     "Confirm a profile picture upload",
+		Path:        "/api/v1/users/me/profile-picture/confirm",
+		Summary:     "Confirm the caller's profile picture upload",
 		Tags:        []string{"users"},
 	}, controller.ConfirmProfilePicture)
 }

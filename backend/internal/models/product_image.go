@@ -6,7 +6,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// ProductImage struct for internal/backend use.
 type ProductImage struct {
 	ID        uuid.UUID
 	ShopifyID int64
@@ -20,7 +19,6 @@ type ProductImage struct {
 	UpdatedAt time.Time
 }
 
-// ProductImageResponse is the response struct for serving to frontend.
 type ProductImageResponse struct {
 	ID        uuid.UUID `json:"id"`
 	URL       string    `json:"url"`
