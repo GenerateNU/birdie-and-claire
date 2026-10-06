@@ -99,6 +99,28 @@ components:
       required:
         - status
       type: object
+    Outfit:
+      additionalProperties: false
+      properties:
+        created_at:
+          format: date-time
+          type: string
+        id:
+          type: string
+        name:
+          type: string
+        updated_at:
+          format: date-time
+          type: string
+        user_id:
+          type: string
+      required:
+        - id
+        - user_id
+        - name
+        - created_at
+        - updated_at
+      type: object
     OutfitResponse:
       additionalProperties: false
       properties:
@@ -125,6 +147,24 @@ components:
         - name
         - created_at
         - updated_at
+      type: object
+    PageOutfit:
+      additionalProperties: false
+      properties:
+        has_more:
+          type: boolean
+        items:
+          items:
+            $ref: "#/components/schemas/Outfit"
+          type: array
+        next_cursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - next_cursor
+        - has_more
       type: object
     Product:
       additionalProperties: false
@@ -270,6 +310,46 @@ paths:
       security:
         - bearer: []
       summary: Create an outfit
+      tags:
+        - outfits
+  /api/v1/outfits/list:
+    post:
+      operationId: list-outfits
+      parameters:
+        - description: Max items to return
+          explode: false
+          in: query
+          name: limit
+          schema:
+            default: 20
+            description: Max items to return
+            format: int64
+            maximum: 100
+            minimum: 1
+            type: integer
+        - description: Opaque cursor from a previous page's next_cursor
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: Opaque cursor from a previous page's next_cursor
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageOutfit"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: List the authenticated user's outfits
       tags:
         - outfits
   /api/v1/outfits/{id}:

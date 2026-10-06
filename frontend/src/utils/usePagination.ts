@@ -13,7 +13,7 @@ type Cursor = string | null;
 
 const FIRST_PAGE: Cursor = null;
 
-// POST, not GET: range and multi-select filters encode badly as query params.
+// Filters stay in a POST body: range and multi-select filters encode badly as query params.
 export function usePagination<TItem, TFilters>(path: string, filters: TFilters, limit = 20) {
   return useInfiniteQuery({
     // Hashed structurally, so a rebuilt filters object is not a change.
@@ -22,10 +22,16 @@ export function usePagination<TItem, TFilters>(path: string, filters: TFilters, 
     // Avoid refetching a page just from paging forward and back.
     staleTime: 60_000,
     queryFn: async ({ pageParam, signal }): Promise<Page<TItem>> => {
-      const response = await apiFetch(path, {
+      const query = new URLSearchParams({ limit: String(limit) });
+
+      if (pageParam !== null) {
+        query.set("cursor", pageParam);
+      }
+
+      const response = await apiFetch(`${path}?${query}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ limit, cursor: pageParam, filters }),
+        body: JSON.stringify({ filters }),
         signal,
       });
 

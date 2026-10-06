@@ -30,4 +30,12 @@ func OutfitRoutes(api huma.API, params types.RouteParams) {
 		Summary:     "Get an outfit with its products",
 		Tags:        []string{"outfits"},
 	}, controller.Get)
+
+	huma.Register(api, huma.Operation{
+		OperationID: "list-outfits",
+		Method:      http.MethodPost,
+		Path:        "/api/v1/outfits/list",
+		Summary:     "List the authenticated user's outfits",
+		Tags:        []string{"outfits"},
+	}, controller.List)
 }
