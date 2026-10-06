@@ -12,8 +12,6 @@ type ProductRepository interface {
 	Exists(ctx context.Context, productID uuid.UUID) (bool, error)
 }
 
-var _ ProductRepository = (*productRepository)(nil)
-
 type productRepository struct {
 	db *sql.DB
 }
