@@ -37,6 +37,12 @@ Read the diff, every file it touches in full, and grep for related code
 elsewhere: other callers of what changed, sibling handlers, existing helpers
 that do the same job. Work from the files, not from anything you were told.
 
+Read `AGENTS.md` and any nested `AGENTS.md` covering the changed files
+(`backend/AGENTS.md` for Go). A broken rule there is a finding. Yours are the
+ones that change behavior: stable `ORDER BY`, `ON DELETE` on foreign keys,
+which failures are a 500, and migrations that collide with or sort before
+main's.
+
 Run read-only commands to check your reasoning: `git log`, `git diff`, tests,
 searches. Do not run anything that writes.
 
