@@ -37,6 +37,19 @@ components:
         - name
         - product_ids
       type: object
+    CreateReactionInputBody:
+      additionalProperties: false
+      properties:
+        kind:
+          description: "Reaction kind: like, dislike, or save"
+          enum:
+            - like
+            - dislike
+            - save
+          type: string
+      required:
+        - kind
+      type: object
     ErrorDetail:
       additionalProperties: false
       properties:
@@ -221,6 +234,23 @@ components:
         - headers
         - key
       type: object
+    ReactionCounts:
+      additionalProperties: false
+      properties:
+        dislike:
+          format: int64
+          type: integer
+        like:
+          format: int64
+          type: integer
+        save:
+          format: int64
+          type: integer
+      required:
+        - like
+        - dislike
+        - save
+      type: object
     UserResponse:
       additionalProperties: false
       properties:
@@ -339,6 +369,65 @@ paths:
       security:
         - bearer: []
       summary: Get an outfit with its products
+      tags:
+        - outfits
+  /api/v1/outfits/{id}/reactions:
+    get:
+      operationId: get-outfit-reaction-counts
+      parameters:
+        - description: Outfit ID
+          in: path
+          name: id
+          required: true
+          schema:
+            description: Outfit ID
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReactionCounts"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Get aggregate reaction counts for an outfit
+      tags:
+        - outfits
+    post:
+      operationId: create-outfit-reaction
+      parameters:
+        - description: Outfit ID
+          in: path
+          name: id
+          required: true
+          schema:
+            description: Outfit ID
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateReactionInputBody"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: React to an outfit
       tags:
         - outfits
   /api/v1/products/{product_id}/images:
