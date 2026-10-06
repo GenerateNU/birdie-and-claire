@@ -16,8 +16,6 @@ type OutfitService interface {
 	Get(ctx context.Context, id uuid.UUID) (models.OutfitResponse, error)
 }
 
-var _ OutfitService = (*outfitService)(nil)
-
 type outfitService struct {
 	repo *repository.Repository
 }

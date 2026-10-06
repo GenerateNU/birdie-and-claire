@@ -24,8 +24,6 @@ type OutfitRepository interface {
 	GetByID(ctx context.Context, id uuid.UUID) (models.Outfit, []models.Product, error)
 }
 
-var _ OutfitRepository = (*outfitRepository)(nil)
-
 type outfitRepository struct {
 	db *sql.DB
 }

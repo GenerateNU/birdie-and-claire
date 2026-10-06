@@ -15,8 +15,6 @@ type ProductImageService interface {
 	ListByProductID(ctx context.Context, productID uuid.UUID) ([]models.ProductImageResponse, error)
 }
 
-var _ ProductImageService = (*productImageService)(nil)
-
 type productImageService struct {
 	repo *repository.Repository
 }
