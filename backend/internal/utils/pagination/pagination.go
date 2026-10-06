@@ -120,11 +120,11 @@ func (f CursorFields) Time(key string) (*time.Time, error) {
 }
 
 // cursorValue owns the first-page and missing-key rules; parse only converts the raw JSON value.
-func cursorValue[T any](f CursorFields, key string, parse func(raw any) (T, bool)) (*T, error) {
-	if len(f) == 0 {
+func cursorValue[T any](fields CursorFields, key string, parse func(raw any) (T, bool)) (*T, error) {
+	if len(fields) == 0 {
 		return nil, nil
 	}
-	raw, present := f[key]
+	raw, present := fields[key]
 	if !present {
 		return nil, errs.ErrBadCursor
 	}
