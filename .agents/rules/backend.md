@@ -25,18 +25,12 @@ When a rule names an example file, copy that file's shape.
 
 ## SQL
 
-- Let Postgres do the work. Prefer `COALESCE(name, '')` over `sql.NullString`,
-  `COUNT(*) FILTER (WHERE kind = 'like')` over counting rows in Go, and
-  `UPDATE ... RETURNING id` with `QueryRowContext(...).Scan(&id)` over checking
-  `RowsAffected`.
-- Scan nullable columns straight into the model field (`&user.ProfilePictureKey`
-  as a `*string`), not into a temporary that gets copied over.
-- Any `ORDER BY` a client sees ends in a unique column (`ORDER BY position, id`)
-  so the order is the same on every request.
-- Write each query's column list inline. Do not build SQL from a shared
-  `const columns = "..."`. The list drifts from the scan targets and nobody
-  notices.
-- Every foreign key states its `ON DELETE` behavior.
+- If SQL can do it, do it in SQL: filtering, counting, sorting, defaults for
+  nulls, returning the changed row. Postgres has had decades of optimization,
+  and a mediocre query still beats the Go you would write to post-process rows.
+- Scan straight into the target with `.Scan(&target.Field)`. No temporary
+  variables that get copied over afterward. If a value needs reshaping first,
+  reshape it in the query.
 
 ## Errors
 
