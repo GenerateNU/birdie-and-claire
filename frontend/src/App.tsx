@@ -1,7 +1,45 @@
+import type { Session } from "@supabase/supabase-js";
+import { useEffect, useState } from "react";
+
+import CreateAccount from "./CreateAccount";
+import Login from "./Login";
 import ProfilePictureTest from "./ProfilePictureTest";
+import { supabase } from "./supabase/client";
 
 export default function App() {
-  if (window.location.pathname === "/profile-picture-test") {
+  // undefined until the first auth event, so a signed-in reload doesn't redirect.
+  const [session, setSession] = useState<Session | null | undefined>(undefined);
+  const pathname = window.location.pathname;
+
+  useEffect(() => {
+    const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession);
+
+      if (!nextSession && window.location.pathname !== "/login") {
+        window.location.replace("/login");
+      }
+    });
+
+    return () => data.subscription.unsubscribe();
+  }, []);
+
+  if (session === undefined) {
+    return null;
+  }
+
+  if (pathname === "/login") {
+    return <Login />;
+  }
+
+  if (!session) {
+    return null;
+  }
+
+  if (pathname === "/create-account") {
+    return <CreateAccount />;
+  }
+
+  if (pathname === "/profile-picture-test") {
     return <ProfilePictureTest />;
   }
 
@@ -18,6 +56,15 @@ export default function App() {
       <a className="underline hover:text-white text-sm" href="/profile-picture-test">
         Profile picture test →
       </a>
+      <div className="mt-6">
+        <button
+          type="button"
+          onClick={() => supabase.auth.signOut()}
+          className="rounded bg-blue-500 px-3 py-2 text-sm text-white"
+        >
+          Sign out
+        </button>
+      </div>
     </div>
   );
 }
