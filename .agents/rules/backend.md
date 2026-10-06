@@ -31,6 +31,18 @@ When a rule names an example file, copy that file's shape.
 - Scan straight into the target with `.Scan(&target.Field)`. No temporary
   variables that get copied over afterward. If a value needs reshaping first,
   reshape it in the query.
+- End every `ORDER BY` with a unique column, usually `id`:
+  `ORDER BY position, id`, not `ORDER BY position`. When two rows tie on
+  `position`, Postgres can return them in any order, and the order can change
+  between identical requests as the table changes. The frontend then sees items
+  shuffle, and cursor pagination can skip or repeat rows at a page boundary.
+- Watch for drift. Any Go value that mirrors the schema, such as a
+  `const columns = "..."` string or a column name held in a variable, goes
+  stale silently when a migration changes the table. Write column lists inline
+  in the query that uses them, next to the `Scan` they have to match.
+- Every foreign key states its `ON DELETE` behavior (`CASCADE`, `SET NULL`, or
+  `RESTRICT`), so deleting a parent row doesn't leave orphans behind or fail
+  with an error nobody planned for.
 
 ## Errors
 
