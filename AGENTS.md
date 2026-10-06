@@ -113,6 +113,7 @@ Prose is right for things with no structure. Do not draw a box around a list.
   `.agents/rules/backend.md`.
 - Report what you ran and what you did not.
 - Do not commit, push, or open a pull request unless asked.
+- Do not add any commit description to your commits. Commit messages should be short and follow the conventional commits syntax.
 
 ## Attribution
 
