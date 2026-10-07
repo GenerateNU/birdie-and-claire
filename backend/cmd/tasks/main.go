@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	"errors"
 	"fmt"
 	"net"
@@ -12,7 +13,10 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
+
+	"github.com/google/uuid"
 )
 
 var migrationName = regexp.MustCompile(`^[a-z0-9_]+$`)
@@ -168,7 +172,7 @@ func dev(root string) error {
 
 func database(root string, args []string) error {
 	if len(args) == 0 {
-		return errors.New("usage: db <start|stop|reset|migrate|prod>")
+		return errors.New("usage: db <start|stop|reset|migrate|seed|prod>")
 	}
 	switch args[0] {
 	case "prod":
@@ -181,6 +185,8 @@ func database(root string, args []string) error {
 		return resetDatabase(root)
 	case "migrate":
 		return migrate(root, args[1:])
+	case "seed":
+		return seed(root, args[1:])
 	default:
 		return fmt.Errorf("unknown database task %q", args[0])
 	}
@@ -262,6 +268,59 @@ func productionDatabaseURL() (string, error) {
 		RawQuery: "sslmode=require",
 	}
 	return databaseURL.String(), nil
+}
+
+const seedOutfitsUsage = "usage: mise run db:dev:seed:outfits -- <user-id> [count]"
+
+const (
+	// More than two default API pages of 20, so the list ends on a partial page.
+	defaultSeedOutfits = 45
+	maxSeedOutfits     = 1000
+)
+
+//go:embed seeds/outfits.sql
+var outfitsSeed string
+
+func seed(root string, args []string) error {
+	if len(args) == 0 {
+		return errors.New(seedOutfitsUsage)
+	}
+	if args[0] != "outfits" {
+		return fmt.Errorf("unknown seed dataset %q", args[0])
+	}
+	return seedOutfits(root, args[1:])
+}
+
+// seedOutfits validates its arguments first, so bad input fails even with the database stopped.
+func seedOutfits(root string, args []string) error {
+	if len(args) < 1 || len(args) > 2 {
+		return errors.New(seedOutfitsUsage)
+	}
+	userID, err := uuid.Parse(args[0])
+	if err != nil {
+		return fmt.Errorf("user id %q is not a UUID", args[0])
+	}
+	count := defaultSeedOutfits
+	if len(args) == 2 {
+		count, err = strconv.Atoi(args[1])
+		if err != nil || count < 1 || count > maxSeedOutfits {
+			return fmt.Errorf("count %q must be an integer from 1 to %d", args[1], maxSeedOutfits)
+		}
+	}
+	if err := requireDatabase(root); err != nil {
+		return err
+	}
+
+	// The values go in as psql arguments, never into the sh -c string, so nothing is shell-interpolated.
+	cmd := compose(root, "exec", "-T", "db", "sh", "-c",
+		`psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 "$@"`, "sh",
+		"-v", "user_id="+userID.String(), "-v", "outfit_count="+strconv.Itoa(count))
+	cmd.Stdin = strings.NewReader(outfitsSeed)
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	_, _ = fmt.Printf("seeded %d outfits for user %s\n", count, userID)
+	return nil
 }
 
 func resetDatabase(root string) error {
