@@ -146,3 +146,18 @@ func (r *outfitRepository) GetByID(ctx context.Context, id uuid.UUID) (models.Ou
 	}
 	return outfit, products, nil
 }
+
+// productScanTargets matches the p.id through p.updated_at column order Create selects.
+func productScanTargets(product *models.Product) []any {
+	return []any{
+		&product.ID,
+		&product.ShopifyID,
+		&product.Handle,
+		&product.Title,
+		&product.ProductType,
+		// text[] scans into []string.
+		&product.Tags,
+		&product.CreatedAt,
+		&product.UpdatedAt,
+	}
+}

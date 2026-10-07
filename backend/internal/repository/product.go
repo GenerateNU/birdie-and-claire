@@ -7,10 +7,12 @@ import (
 
 	"birdie-and-claire/internal/models"
 
+	"github.com/google/uuid"
 	"github.com/pgvector/pgvector-go"
 )
 
 type ProductRepository interface {
+	Exists(ctx context.Context, productID uuid.UUID) (bool, error)
 	FindSimilar(ctx context.Context, embedding []float32, limit int) ([]models.Product, error)
 }
 
@@ -20,6 +22,17 @@ type productRepository struct {
 
 func NewProductRepository(database *sql.DB) ProductRepository {
 	return &productRepository{db: database}
+}
+
+func (r *productRepository) Exists(ctx context.Context, productID uuid.UUID) (bool, error) {
+	var exists bool
+	err := r.db.QueryRowContext(ctx, `
+		SELECT EXISTS(SELECT 1 FROM products WHERE id = $1)
+	`, productID).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("check product %s exists: %w", productID, err)
+	}
+	return exists, nil
 }
 
 func (r *productRepository) FindSimilar(ctx context.Context, embedding []float32, limit int) ([]models.Product, error) {
@@ -39,7 +52,16 @@ func (r *productRepository) FindSimilar(ctx context.Context, embedding []float32
 	products := make([]models.Product, 0)
 	for rows.Next() {
 		var product models.Product
-		if err := rows.Scan(productScanTargets(&product)...); err != nil {
+		if err := rows.Scan(
+			&product.ID,
+			&product.ShopifyID,
+			&product.Handle,
+			&product.Title,
+			&product.ProductType,
+			&product.Tags,
+			&product.CreatedAt,
+			&product.UpdatedAt,
+		); err != nil {
 			return nil, fmt.Errorf("scan similar product: %w", err)
 		}
 		products = append(products, product)
@@ -48,19 +70,4 @@ func (r *productRepository) FindSimilar(ctx context.Context, embedding []float32
 		return nil, fmt.Errorf("iterate similar products: %w", err)
 	}
 	return products, nil
-}
-
-// productScanTargets scans productColumns, in order.
-func productScanTargets(product *models.Product) []any {
-	return []any{
-		&product.ID,
-		&product.ShopifyID,
-		&product.Handle,
-		&product.Title,
-		&product.ProductType,
-		// text[] scans into []string.
-		&product.Tags,
-		&product.CreatedAt,
-		&product.UpdatedAt,
-	}
 }
