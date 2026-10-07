@@ -30,7 +30,7 @@ type CreateReactionOutput struct{}
 // Create records a reaction from the authenticated user against an outfit.
 func (c *OutfitReactionController) Create(ctx context.Context, input *CreateReactionInput) (*CreateReactionOutput, error) {
 	if err := c.service.Create(ctx, input.ID, input.Body.Kind); err != nil {
-		return nil, errs.ToHuma(err)
+		return nil, errs.ToHuma(ctx, err)
 	}
 	return &CreateReactionOutput{}, nil
 }
@@ -47,7 +47,7 @@ type GetReactionCountsOutput struct {
 func (c *OutfitReactionController) GetCounts(ctx context.Context, input *GetReactionCountsInput) (*GetReactionCountsOutput, error) {
 	counts, err := c.service.CountByOutfit(ctx, input.ID)
 	if err != nil {
-		return nil, errs.ToHuma(err)
+		return nil, errs.ToHuma(ctx, err)
 	}
 	return &GetReactionCountsOutput{Body: counts}, nil
 }

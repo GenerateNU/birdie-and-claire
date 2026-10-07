@@ -52,7 +52,7 @@ func (c *OutfitController) Create(ctx context.Context, input *CreateOutfitInput)
 		ProductIDs: input.Body.ProductIDs,
 	})
 	if err != nil {
-		return nil, errs.ToHuma(err)
+		return nil, errs.ToHuma(ctx, err)
 	}
 	return &OutfitOutput{Body: outfit}, nil
 }
@@ -65,7 +65,7 @@ type GetOutfitInput struct {
 func (c *OutfitController) Get(ctx context.Context, input *GetOutfitInput) (*OutfitOutput, error) {
 	outfit, err := c.service.Get(ctx, input.ID)
 	if err != nil {
-		return nil, errs.ToHuma(err)
+		return nil, errs.ToHuma(ctx, err)
 	}
 	return &OutfitOutput{Body: outfit}, nil
 }
@@ -82,7 +82,7 @@ type ListOutfitsOutput struct {
 func (c *OutfitController) List(ctx context.Context, input *ListOutfitsInput) (*ListOutfitsOutput, error) {
 	page, err := c.service.List(ctx, input.CursorParams)
 	if err != nil {
-		return nil, errs.ToHuma(err)
+		return nil, errs.ToHuma(ctx, err)
 	}
 	return &ListOutfitsOutput{Body: page}, nil
 }
