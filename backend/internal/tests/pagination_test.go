@@ -5,11 +5,13 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	"birdie-and-claire/internal/utils/pagination"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/humatest"
+	"github.com/google/uuid"
 )
 
 // Locks the wire format; changing these bytes breaks clients mid-page.
@@ -127,6 +129,104 @@ func TestInt64Rejects(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestUUIDAndTimeOnFirstPage(t *testing.T) {
+	fields, err := pagination.Decode("")
+	if err != nil {
+		t.Fatalf("Decode(\"\") error = %v", err)
+	}
+
+	id, err := fields.UUID("id")
+	if err != nil || id != nil {
+		t.Fatalf("UUID() = (%v, %v), want (nil, nil)", id, err)
+	}
+
+	createdAt, err := fields.Time("created_at")
+	if err != nil || createdAt != nil {
+		t.Fatalf("Time() = (%v, %v), want (nil, nil)", createdAt, err)
+	}
+}
+
+// Postgres timestamptz keeps microseconds; losing them would skip or repeat rows at a page boundary.
+func TestUUIDAndTimeRoundTrip(t *testing.T) {
+	wantID := uuid.MustParse("3f0c9a1e-5b7d-4e2a-9c61-8d2b7f4a1c05")
+	wantCreatedAt := time.Date(2026, 10, 5, 12, 30, 45, 123456000, time.UTC)
+
+	cursor, err := pagination.CursorFields{"created_at": wantCreatedAt, "id": wantID}.Encode()
+	if err != nil {
+		t.Fatalf("Encode() error = %v", err)
+	}
+
+	fields, err := pagination.Decode(cursor)
+	if err != nil {
+		t.Fatalf("Decode() error = %v", err)
+	}
+
+	id, err := fields.UUID("id")
+	if err != nil || id == nil || *id != wantID {
+		t.Fatalf("UUID(\"id\") = (%v, %v), want (%v, nil)", id, err, wantID)
+	}
+
+	createdAt, err := fields.Time("created_at")
+	if err != nil || createdAt == nil || !createdAt.Equal(wantCreatedAt) {
+		t.Fatalf("Time(\"created_at\") = (%v, %v), want (%v, nil)", createdAt, err, wantCreatedAt)
+	}
+}
+
+func TestUUIDRejects(t *testing.T) {
+	tests := []struct {
+		name   string
+		fields pagination.CursorFields
+	}{
+		{name: "missing key", fields: pagination.CursorFields{"created_at": "2026-10-05T12:30:45Z"}},
+		{name: "wrong type", fields: pagination.CursorFields{"id": 7}},
+		{name: "unparsable", fields: pagination.CursorFields{"id": "not-a-uuid"}},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			fields := decodeFields(t, test.fields)
+			if _, err := fields.UUID("id"); err == nil {
+				t.Fatalf("UUID(\"id\") error = nil, want ErrBadCursor")
+			}
+		})
+	}
+}
+
+func TestTimeRejects(t *testing.T) {
+	tests := []struct {
+		name   string
+		fields pagination.CursorFields
+	}{
+		{name: "missing key", fields: pagination.CursorFields{"id": "3f0c9a1e-5b7d-4e2a-9c61-8d2b7f4a1c05"}},
+		{name: "wrong type", fields: pagination.CursorFields{"created_at": 1759667445}},
+		{name: "unparsable", fields: pagination.CursorFields{"created_at": "yesterday"}},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			fields := decodeFields(t, test.fields)
+			if _, err := fields.Time("created_at"); err == nil {
+				t.Fatalf("Time(\"created_at\") error = nil, want ErrBadCursor")
+			}
+		})
+	}
+}
+
+// decodeFields sends fields through Encode and Decode, so values carry the types a real cursor has.
+func decodeFields(t *testing.T, fields pagination.CursorFields) pagination.CursorFields {
+	t.Helper()
+
+	cursor, err := fields.Encode()
+	if err != nil {
+		t.Fatalf("Encode() error = %v", err)
+	}
+	decoded, err := pagination.Decode(cursor)
+	if err != nil {
+		t.Fatalf("Decode() error = %v", err)
+	}
+	return decoded
 }
 
 func TestSplit(t *testing.T) {

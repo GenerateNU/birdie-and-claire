@@ -6,6 +6,7 @@ import (
 	"birdie-and-claire/internal/auth"
 	"birdie-and-claire/internal/models"
 	"birdie-and-claire/internal/repository"
+	"birdie-and-claire/internal/utils/pagination"
 
 	"github.com/google/uuid"
 )
@@ -14,9 +15,8 @@ import (
 type OutfitService interface {
 	Create(ctx context.Context, params models.CreateOutfitParams) (models.OutfitResponse, error)
 	Get(ctx context.Context, id uuid.UUID) (models.OutfitResponse, error)
+	List(ctx context.Context, params pagination.CursorParams) (pagination.Page[models.Outfit], error)
 }
-
-var _ OutfitService = (*outfitService)(nil)
 
 type outfitService struct {
 	repo *repository.Repository
@@ -46,4 +46,25 @@ func (s *outfitService) Get(ctx context.Context, id uuid.UUID) (models.OutfitRes
 		return models.OutfitResponse{}, err
 	}
 	return models.OutfitResponse{Outfit: outfit, Products: products}, nil
+}
+
+func (s *outfitService) List(ctx context.Context, params pagination.CursorParams) (pagination.Page[models.Outfit], error) {
+	rows, err := s.repo.Outfit.List(ctx, auth.UserID(ctx), params)
+	if err != nil {
+		return pagination.Page[models.Outfit]{}, err
+	}
+
+	outfits, hasMore := pagination.Split(rows, params.Limit)
+	page := pagination.Page[models.Outfit]{Items: outfits, HasMore: hasMore}
+	if !hasMore {
+		return page, nil
+	}
+
+	last := outfits[len(outfits)-1]
+	nextCursor, err := pagination.CursorFields{"created_at": last.CreatedAt, "id": last.ID}.Encode()
+	if err != nil {
+		return pagination.Page[models.Outfit]{}, err
+	}
+	page.NextCursor = &nextCursor
+	return page, nil
 }

@@ -1,8 +1,13 @@
+import OutfitsPage from "./OutfitsPage";
 import ProfilePictureTest from "./ProfilePictureTest";
 
 export default function App() {
   if (window.location.pathname === "/profile-picture-test") {
     return <ProfilePictureTest />;
+  }
+
+  if (window.location.pathname === "/outfits") {
+    return <OutfitsPage />;
   }
 
   return (
@@ -15,8 +20,11 @@ export default function App() {
         </a>
         .
       </p>
-      <a className="underline hover:text-white text-sm" href="/profile-picture-test">
+      <a className="block underline hover:text-white text-sm" href="/profile-picture-test">
         Profile picture test →
+      </a>
+      <a className="block underline hover:text-white text-sm" href="/outfits">
+        Outfits →
       </a>
     </div>
   );

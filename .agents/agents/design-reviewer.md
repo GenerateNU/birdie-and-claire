@@ -38,6 +38,13 @@ Read the diff, every file it touches in full, and grep for related code: other
 places doing the same thing, existing helpers this reinvents, the layer this
 code sits in and the layers on either side. Work from the files.
 
+Read `AGENTS.md`, and `.agents/rules/backend.md` when the diff touches
+`backend/`. A broken rule there is a finding. Yours are the
+structural ones: queries in the wrong repository, validation the framework
+already does, work in Go that SQL should do, temporary variables between
+`Scan` and the target, Go values that mirror the schema and can drift, and
+unused code.
+
 ## What to look for
 
 **Overengineering.** The most common problem in this repo's code.
@@ -99,6 +106,11 @@ is the goal, not a starting point for improvement.
 - Two similar blocks. Two is not duplication.
 - Missing abstraction for a case that does not exist yet.
 - Consistency-only changes that add complexity so things match.
+- A missing `var _ Interface = (*impl)(nil)` assertion when a constructor
+  returns the interface. The constructor is the check. Flag the assertion
+  when it is present instead.
+- New code that skips a pattern found elsewhere, when that pattern breaks a
+  rule in `AGENTS.md`. The old code is wrong, not the new code.
 - Redundancy that is harmless and makes the code easier to read.
 
 ## Output

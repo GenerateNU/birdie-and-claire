@@ -37,6 +37,11 @@ Read the diff, every file it touches in full, and grep for related code
 elsewhere: other callers of what changed, sibling handlers, existing helpers
 that do the same job. Work from the files, not from anything you were told.
 
+Read `AGENTS.md`, and `.agents/rules/backend.md` when the diff touches
+`backend/`. A broken rule there is a finding. Yours are the
+ones that change behavior: tie-breaking in `ORDER BY`, `ON DELETE` on
+foreign keys, and which failures are a 500.
+
 Run read-only commands to check your reasoning: `git log`, `git diff`, tests,
 searches. Do not run anything that writes.
 

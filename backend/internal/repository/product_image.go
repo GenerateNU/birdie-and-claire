@@ -14,8 +14,6 @@ type ProductImageRepository interface {
 	FindByProductID(ctx context.Context, productID uuid.UUID) ([]models.ProductImage, error)
 }
 
-var _ ProductImageRepository = (*productImageRepository)(nil)
-
 type productImageRepository struct {
 	db *sql.DB
 }

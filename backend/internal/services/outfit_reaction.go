@@ -19,8 +19,6 @@ type OutfitReactionService interface {
 	CountByOutfit(ctx context.Context, outfitID uuid.UUID) (models.ReactionCounts, error)
 }
 
-var _ OutfitReactionService = (*outfitReactionService)(nil)
-
 type outfitReactionService struct {
 	repo *repository.Repository
 }

@@ -23,6 +23,12 @@ If mise is not installed, or the task does not exist, record `not configured`
 and move on. Do not install anything. Do not run an ad-hoc linter the project
 has not adopted.
 
+## Then, read the conventions
+
+Read `AGENTS.md`, and `.agents/rules/backend.md` when the diff touches
+`backend/`. A broken rule there is a finding. Yours are
+naming, comments, error message wording, and log levels.
+
 ## Then, report problems as questions
 
 Every finding is a question. Not a suggestion phrased with a question mark.
@@ -48,7 +54,10 @@ Lint and format counts are the exception. Report those as plain numbers.
 - A name that says something the code does not do.
 
 **Comments.**
-- Comments that restate the line below them.
+- Comments that restate the line below them. This is the most common finding
+  in this repo's human reviews. Check every new comment.
+- Comments that name something that no longer exists, or describe code that
+  moved.
 - Commented-out code.
 - Stale `TODO` and `FIXME` with no owner or date.
 - The reverse: a constraint, workaround, or surprising decision with nothing
@@ -80,7 +89,8 @@ drop it.
 - Correctness, races, error handling. Someone else has that angle.
 - Abstraction and layering. Someone else has that angle.
 - Style that matches the surrounding code, even if you would write it
-  differently. Consistency with the codebase beats your preference.
+  differently. Consistency with the codebase beats your preference, but not
+  `AGENTS.md`. Code that copies a pattern the conventions forbid is a finding.
 - Nits with no readability cost.
 
 ## Output
