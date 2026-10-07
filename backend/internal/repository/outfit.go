@@ -8,6 +8,7 @@ import (
 
 	"birdie-and-claire/internal/errs"
 	"birdie-and-claire/internal/models"
+	"birdie-and-claire/internal/utils/pagination"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -22,6 +23,7 @@ const outfitProductFKey = "outfit_products_product_id_fkey"
 type OutfitRepository interface {
 	Create(ctx context.Context, params models.CreateOutfitParams, userID uuid.UUID) (models.Outfit, []models.Product, error)
 	GetByID(ctx context.Context, id uuid.UUID) (models.Outfit, []models.Product, error)
+	List(ctx context.Context, userID uuid.UUID, params pagination.CursorParams) ([]models.Outfit, error)
 }
 
 type outfitRepository struct {
@@ -143,6 +145,46 @@ func (r *outfitRepository) GetByID(ctx context.Context, id uuid.UUID) (models.Ou
 		return models.Outfit{}, nil, fmt.Errorf("get outfit %s: %w", id, errs.ErrNotFound)
 	}
 	return outfit, products, nil
+}
+
+// List returns up to params.Limit+1 of the user's outfits, newest first, so the caller can tell if more remain.
+func (r *outfitRepository) List(ctx context.Context, userID uuid.UUID, params pagination.CursorParams) ([]models.Outfit, error) {
+	afterCreatedAt, err := params.After().Time("created_at")
+	if err != nil {
+		return nil, fmt.Errorf("list outfits for user %s: after cursor created_at: %w", userID, err)
+	}
+	afterID, err := params.After().UUID("id")
+	if err != nil {
+		return nil, fmt.Errorf("list outfits for user %s: after cursor id: %w", userID, err)
+	}
+
+	// No products join: under LIMIT it would count joined rows, not outfits.
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT id, user_id, name, created_at, updated_at
+		FROM outfits
+		WHERE user_id = $1
+			AND ($2::timestamptz IS NULL OR (created_at, id) < ($2::timestamptz, $3::uuid))
+		ORDER BY created_at DESC, id DESC
+		LIMIT $4
+	`, userID, afterCreatedAt, afterID, params.Limit+1)
+	if err != nil {
+		return nil, fmt.Errorf("list outfits for user %s: %w", userID, err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	// Non-nil so an empty page encodes as [] rather than null.
+	outfits := make([]models.Outfit, 0, params.Limit+1)
+	for rows.Next() {
+		var outfit models.Outfit
+		if err := rows.Scan(&outfit.ID, &outfit.UserID, &outfit.Name, &outfit.CreatedAt, &outfit.UpdatedAt); err != nil {
+			return nil, fmt.Errorf("list outfits for user %s: scan: %w", userID, err)
+		}
+		outfits = append(outfits, outfit)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("list outfits for user %s: iterate: %w", userID, err)
+	}
+	return outfits, nil
 }
 
 // productScanTargets matches the p.id through p.updated_at column order Create selects.

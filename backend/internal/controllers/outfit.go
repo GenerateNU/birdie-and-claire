@@ -6,6 +6,7 @@ import (
 	"birdie-and-claire/internal/errs"
 	"birdie-and-claire/internal/models"
 	"birdie-and-claire/internal/services"
+	"birdie-and-claire/internal/utils/pagination"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/google/uuid"
@@ -51,7 +52,7 @@ func (c *OutfitController) Create(ctx context.Context, input *CreateOutfitInput)
 		ProductIDs: input.Body.ProductIDs,
 	})
 	if err != nil {
-		return nil, errs.ToHuma(err)
+		return nil, errs.ToHuma(ctx, err)
 	}
 	return &OutfitOutput{Body: outfit}, nil
 }
@@ -64,7 +65,24 @@ type GetOutfitInput struct {
 func (c *OutfitController) Get(ctx context.Context, input *GetOutfitInput) (*OutfitOutput, error) {
 	outfit, err := c.service.Get(ctx, input.ID)
 	if err != nil {
-		return nil, errs.ToHuma(err)
+		return nil, errs.ToHuma(ctx, err)
 	}
 	return &OutfitOutput{Body: outfit}, nil
+}
+
+type ListOutfitsInput struct {
+	pagination.CursorParams
+}
+
+type ListOutfitsOutput struct {
+	Body pagination.Page[models.Outfit]
+}
+
+// List returns a page of the authenticated user's outfits, newest first.
+func (c *OutfitController) List(ctx context.Context, input *ListOutfitsInput) (*ListOutfitsOutput, error) {
+	page, err := c.service.List(ctx, input.CursorParams)
+	if err != nil {
+		return nil, errs.ToHuma(ctx, err)
+	}
+	return &ListOutfitsOutput{Body: page}, nil
 }

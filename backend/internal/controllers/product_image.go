@@ -30,7 +30,7 @@ type ListProductImagesOutput struct {
 func (c *ProductImageController) List(ctx context.Context, input *ListProductImagesInput) (*ListProductImagesOutput, error) {
 	images, err := c.service.ListByProductID(ctx, input.ProductID)
 	if err != nil {
-		return nil, errs.ToHuma(err)
+		return nil, errs.ToHuma(ctx, err)
 	}
 	return &ListProductImagesOutput{Body: images}, nil
 }

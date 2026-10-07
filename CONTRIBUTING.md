@@ -77,6 +77,7 @@ mise run db:dev:migrate:up
 mise run db:dev:migrate:down
 mise run db:dev:migrate:status
 mise run db:dev:reset
+mise run db:dev:seed:outfits -- <user-id> [count]
 mise run db:dev:stop
 ```
 
@@ -85,8 +86,7 @@ the binary. The server checks at startup that they have all been applied and
 refuses to start otherwise; it never applies them itself.
 
 Do not edit a migration that has already been applied. Create a new migration
-instead. `db:dev:reset` deletes the local PostgreSQL volume and recreates the
-seed data.
+instead. `db:dev:reset` deletes the local PostgreSQL volume.
 
 ## Supabase
 
