@@ -6,10 +6,12 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"time"
 
 	"birdie-and-claire/internal/errs"
 
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/google/uuid"
 )
 
 // CursorParams is embedded in a controller's input struct, validated before the handler runs.
@@ -39,7 +41,7 @@ func (p *CursorParams) After() CursorFields {
 
 // Page is the response wrapper every list endpoint returns.
 type Page[T any] struct {
-	Items      []T     `json:"items"`
+	Items      []T     `json:"items" nullable:"false"`
 	NextCursor *string `json:"next_cursor"`
 	HasMore    bool    `json:"has_more"`
 }
@@ -83,19 +85,51 @@ func (f CursorFields) Encode() (string, error) {
 
 // Int64 returns key's value as a nullable SQL parameter, nil on the first page.
 func (f CursorFields) Int64(key string) (*int64, error) {
-	if len(f) == 0 {
+	return cursorValue(f, key, func(raw any) (int64, bool) {
+		number, isNumber := raw.(json.Number)
+		if !isNumber {
+			return 0, false
+		}
+		value, err := number.Int64()
+		return value, err == nil
+	})
+}
+
+// UUID returns key's value as a nullable SQL parameter, nil on the first page.
+func (f CursorFields) UUID(key string) (*uuid.UUID, error) {
+	return cursorValue(f, key, func(raw any) (uuid.UUID, bool) {
+		text, isString := raw.(string)
+		if !isString {
+			return uuid.UUID{}, false
+		}
+		value, err := uuid.Parse(text)
+		return value, err == nil
+	})
+}
+
+// Time returns key's RFC3339Nano value as a nullable SQL parameter, nil on the first page.
+func (f CursorFields) Time(key string) (*time.Time, error) {
+	return cursorValue(f, key, func(raw any) (time.Time, bool) {
+		text, isString := raw.(string)
+		if !isString {
+			return time.Time{}, false
+		}
+		value, err := time.Parse(time.RFC3339Nano, text)
+		return value, err == nil
+	})
+}
+
+// cursorValue owns the first-page and missing-key rules; parse only converts the raw JSON value.
+func cursorValue[T any](fields CursorFields, key string, parse func(raw any) (T, bool)) (*T, error) {
+	if len(fields) == 0 {
 		return nil, nil
 	}
-	raw, present := f[key]
+	raw, present := fields[key]
 	if !present {
 		return nil, errs.ErrBadCursor
 	}
-	number, isNumber := raw.(json.Number)
-	if !isNumber {
-		return nil, errs.ErrBadCursor
-	}
-	value, err := number.Int64()
-	if err != nil {
+	value, ok := parse(raw)
+	if !ok {
 		return nil, errs.ErrBadCursor
 	}
 	return &value, nil

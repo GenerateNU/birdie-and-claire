@@ -44,7 +44,7 @@ the input type before the handler runs, and the same tags produce the OpenAPI
 schema, so the documented contract and the enforced one cannot diverge.
 
 Services return `errs.ErrNotFound` and friends, never HTTP errors, so a worker
-or CLI can call the same service. Controllers end with `errs.ToHuma(err)`.
+or CLI can call the same service. Controllers end with `errs.ToHuma(ctx, err)`.
 
 ## Logging
 

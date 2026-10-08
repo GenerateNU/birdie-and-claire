@@ -59,7 +59,7 @@ func (s *userService) Create(ctx context.Context, name string) (models.UserRespo
 	if err != nil {
 		return models.UserResponse{}, err
 	}
-	log.Info(ctx, "created user", "user", id)
+	log.Debug(ctx, "created user", "user", id)
 	return models.UserResponse{ID: user.ID, Name: user.Name}, nil
 }
 
@@ -79,7 +79,7 @@ func (s *userService) CreateProfilePictureUploadURL(ctx context.Context, content
 	if err != nil {
 		return storage.PresignedUpload{}, err
 	}
-	log.Info(ctx, "presigned profile picture upload", "user", id)
+	log.Debug(ctx, "presigned profile picture upload", "user", id)
 	return upload, nil
 }
 
@@ -114,7 +114,7 @@ func (s *userService) ConfirmProfilePicture(ctx context.Context, key string) err
 	if err := s.repo.User.SetProfilePictureKey(ctx, id, key); err != nil {
 		return err
 	}
-	log.Info(ctx, "confirmed profile picture upload", "user", id)
+	log.Debug(ctx, "confirmed profile picture upload", "user", id)
 
 	// Best-effort delete of the picture this one replaced; a failed delete only
 	// leaves a stray object, never affects what is served.

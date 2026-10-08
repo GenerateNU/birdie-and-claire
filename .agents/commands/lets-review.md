@@ -31,6 +31,9 @@ you are reviewing.
 `mise tasks`, then lint and format in check mode. Capture the counts. Fix
 nothing. If mise or the task is missing, record `not configured`.
 
+If the diff touches routes or controller types, check whether
+`backend/openapi.yaml` changed too. If not, report it. CI will fail.
+
 **3. Fan out three reviewers, in parallel, in a single message.**
 
 ```
@@ -41,12 +44,17 @@ style-critic           mise lint/format, naming, comments, readability
 ```
 
 Each one gets: the scope, the diff, an instruction to read the actual files
-rather than this conversation, and `do not edit files`.
+rather than this conversation, an instruction to read `AGENTS.md` and
+`.agents/rules/backend.md` first, and `do not edit files`.
 
 **4. Synthesize.**
 
 Resolve disagreements yourself by reading the code, do not just concatenate.
 Drop duplicates and anything the diff already handles.
+
+`.agents/rules/backend.md` beats existing code. Drop any finding that asks
+the author to copy a pattern the conventions forbid, such as adding a
+`var _ Interface = (*impl)(nil)` assertion because other files have one.
 
 Keep:
 - every correctness finding at **medium or high**

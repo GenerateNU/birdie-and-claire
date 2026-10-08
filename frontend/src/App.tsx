@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 
 import CreateAccount from "./CreateAccount";
 import Login from "./Login";
+import OutfitsPage from "./OutfitsPage";
 import ProfilePictureTest from "./ProfilePictureTest";
 import { supabase } from "./supabase/client";
 
@@ -43,6 +44,10 @@ export default function App() {
     return <ProfilePictureTest />;
   }
 
+  if (pathname === "/outfits") {
+    return <OutfitsPage />;
+  }
+
   return (
     <div className="min-h-screen bg-gray-950 text-white p-8">
       <h1 className="text-3xl font-bold mb-2">Birdie &amp; Claire</h1>
@@ -53,8 +58,11 @@ export default function App() {
         </a>
         .
       </p>
-      <a className="underline hover:text-white text-sm" href="/profile-picture-test">
+      <a className="block underline hover:text-white text-sm" href="/profile-picture-test">
         Profile picture test →
+      </a>
+      <a className="block underline hover:text-white text-sm" href="/outfits">
+        Outfits →
       </a>
       <div className="mt-6">
         <button

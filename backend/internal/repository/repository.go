@@ -5,13 +5,19 @@ package repository
 import "database/sql"
 
 type Repository struct {
-	User   UserRepository
-	Outfit OutfitRepository
+	User           UserRepository
+	Outfit         OutfitRepository
+	OutfitReaction OutfitReactionRepository
+	Product        ProductRepository
+	ProductImage   ProductImageRepository
 }
 
 func New(database *sql.DB) *Repository {
 	return &Repository{
-		User:   NewUserRepository(database),
-		Outfit: NewOutfitRepository(database),
+		User:           NewUserRepository(database),
+		Outfit:         NewOutfitRepository(database),
+		OutfitReaction: NewOutfitReactionRepository(database),
+		Product:        NewProductRepository(database),
+		ProductImage:   NewProductImageRepository(database),
 	}
 }

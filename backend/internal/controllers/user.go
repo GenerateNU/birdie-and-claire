@@ -32,7 +32,7 @@ type GetUserOutput struct {
 func (c *UserController) Get(ctx context.Context, input *GetUserInput) (*GetUserOutput, error) {
 	response, err := c.service.Get(ctx, input.ID)
 	if err != nil {
-		return nil, errs.ToHuma(err)
+		return nil, errs.ToHuma(ctx, err)
 	}
 	return &GetUserOutput{Body: response}, nil
 }
@@ -40,7 +40,7 @@ func (c *UserController) Get(ctx context.Context, input *GetUserInput) (*GetUser
 func (c *UserController) GetMe(ctx context.Context, _ *struct{}) (*GetUserOutput, error) {
 	response, err := c.service.Get(ctx, auth.UserID(ctx))
 	if err != nil {
-		return nil, errs.ToHuma(err)
+		return nil, errs.ToHuma(ctx, err)
 	}
 	return &GetUserOutput{Body: response}, nil
 }
@@ -65,7 +65,7 @@ func (input *CreateUserInput) Resolve(huma.Context) []error {
 func (c *UserController) Create(ctx context.Context, input *CreateUserInput) (*GetUserOutput, error) {
 	response, err := c.service.Create(ctx, input.Body.Name)
 	if err != nil {
-		return nil, errs.ToHuma(err)
+		return nil, errs.ToHuma(ctx, err)
 	}
 	return &GetUserOutput{Body: response}, nil
 }
@@ -88,7 +88,7 @@ type ProfilePictureUploadURLOutput struct {
 func (c *UserController) CreateProfilePictureUploadURL(ctx context.Context, input *ProfilePictureUploadURLInput) (*ProfilePictureUploadURLOutput, error) {
 	upload, err := c.service.CreateProfilePictureUploadURL(ctx, input.ContentType)
 	if err != nil {
-		return nil, errs.ToHuma(err)
+		return nil, errs.ToHuma(ctx, err)
 	}
 	return &ProfilePictureUploadURLOutput{Body: ProfilePictureUploadResponse{
 		URL:     upload.URL,
@@ -108,7 +108,7 @@ type ConfirmProfilePictureOutput struct{}
 
 func (c *UserController) ConfirmProfilePicture(ctx context.Context, input *ConfirmProfilePictureInput) (*ConfirmProfilePictureOutput, error) {
 	if err := c.service.ConfirmProfilePicture(ctx, input.Body.Key); err != nil {
-		return nil, errs.ToHuma(err)
+		return nil, errs.ToHuma(ctx, err)
 	}
 	return &ConfirmProfilePictureOutput{}, nil
 }

@@ -3,7 +3,10 @@
 package errs
 
 import (
+	"context"
 	"errors"
+
+	"birdie-and-claire/internal/log"
 
 	"github.com/danielgtaylor/huma/v2"
 )
@@ -19,10 +22,9 @@ var (
 	ErrBadCursor    = errors.New("invalid cursor")
 )
 
-// ToHuma converts an error from the service layer into the HTTP error Huma
-// writes to the client. Unrecognised errors become a 500 so that internal
-// detail never reaches the response body.
-func ToHuma(err error) error {
+// ToHuma maps a service error to an HTTP error. An unrecognised error becomes a
+// generic 500 so its detail never reaches the client; the cause is logged.
+func ToHuma(ctx context.Context, err error) error {
 	switch {
 	case err == nil:
 		return nil
@@ -37,6 +39,7 @@ func ToHuma(err error) error {
 	case errors.Is(err, ErrBadCursor):
 		return huma.Error400BadRequest(ErrBadCursor.Error())
 	default:
+		log.Error(ctx, "request failed", "error", err)
 		return huma.Error500InternalServerError("internal server error")
 	}
 }

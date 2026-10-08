@@ -23,8 +23,6 @@ type UserRepository interface {
 	SetProfilePictureKey(ctx context.Context, id uuid.UUID, key string) error
 }
 
-var _ UserRepository = (*userRepository)(nil)
-
 type userRepository struct {
 	db *sql.DB
 }

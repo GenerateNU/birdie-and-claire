@@ -37,6 +37,19 @@ components:
         - name
         - product_ids
       type: object
+    CreateReactionInputBody:
+      additionalProperties: false
+      properties:
+        kind:
+          description: "Reaction kind: like, dislike, or save"
+          enum:
+            - like
+            - dislike
+            - save
+          type: string
+      required:
+        - kind
+      type: object
     CreateUserInputBody:
       additionalProperties: false
       properties:
@@ -110,6 +123,28 @@ components:
       required:
         - status
       type: object
+    Outfit:
+      additionalProperties: false
+      properties:
+        created_at:
+          format: date-time
+          type: string
+        id:
+          type: string
+        name:
+          type: string
+        updated_at:
+          format: date-time
+          type: string
+        user_id:
+          type: string
+      required:
+        - id
+        - user_id
+        - name
+        - created_at
+        - updated_at
+      type: object
     OutfitResponse:
       additionalProperties: false
       properties:
@@ -136,6 +171,24 @@ components:
         - name
         - created_at
         - updated_at
+      type: object
+    PageOutfit:
+      additionalProperties: false
+      properties:
+        has_more:
+          type: boolean
+        items:
+          items:
+            $ref: "#/components/schemas/Outfit"
+          type: array
+        next_cursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - next_cursor
+        - has_more
       type: object
     Product:
       additionalProperties: false
@@ -173,6 +226,46 @@ components:
         - created_at
         - updated_at
       type: object
+    ProductImageResponse:
+      additionalProperties: false
+      properties:
+        alt_text:
+          type:
+            - string
+            - "null"
+        created_at:
+          format: date-time
+          type: string
+        height:
+          format: int64
+          type:
+            - integer
+            - "null"
+        id:
+          type: string
+        position:
+          format: int64
+          type: integer
+        updated_at:
+          format: date-time
+          type: string
+        url:
+          type: string
+        width:
+          format: int64
+          type:
+            - integer
+            - "null"
+      required:
+        - id
+        - url
+        - alt_text
+        - width
+        - height
+        - position
+        - created_at
+        - updated_at
+      type: object
     ProfilePictureUploadResponse:
       additionalProperties: false
       properties:
@@ -191,6 +284,23 @@ components:
         - method
         - headers
         - key
+      type: object
+    ReactionCounts:
+      additionalProperties: false
+      properties:
+        dislike:
+          format: int64
+          type: integer
+        like:
+          format: int64
+          type: integer
+        save:
+          format: int64
+          type: integer
+      required:
+        - like
+        - dislike
+        - save
       type: object
     UserResponse:
       additionalProperties: false
@@ -257,6 +367,45 @@ paths:
       tags:
         - embedder
   /api/v1/outfits:
+    get:
+      operationId: list-outfits
+      parameters:
+        - description: Max items to return
+          explode: false
+          in: query
+          name: limit
+          schema:
+            default: 20
+            description: Max items to return
+            format: int64
+            maximum: 100
+            minimum: 1
+            type: integer
+        - description: Opaque cursor from a previous page's next_cursor
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: Opaque cursor from a previous page's next_cursor
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageOutfit"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: List the authenticated user's outfits
+      tags:
+        - outfits
     post:
       operationId: create-outfit
       requestBody:
@@ -312,6 +461,98 @@ paths:
       summary: Get an outfit with its products
       tags:
         - outfits
+  /api/v1/outfits/{id}/reactions:
+    get:
+      operationId: get-outfit-reaction-counts
+      parameters:
+        - description: Outfit ID
+          in: path
+          name: id
+          required: true
+          schema:
+            description: Outfit ID
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReactionCounts"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Get aggregate reaction counts for an outfit
+      tags:
+        - outfits
+    post:
+      operationId: create-outfit-reaction
+      parameters:
+        - description: Outfit ID
+          in: path
+          name: id
+          required: true
+          schema:
+            description: Outfit ID
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateReactionInputBody"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: React to an outfit
+      tags:
+        - outfits
+  /api/v1/products/{product_id}/images:
+    get:
+      operationId: list-product-images
+      parameters:
+        - description: Product ID
+          in: path
+          name: product_id
+          required: true
+          schema:
+            description: Product ID
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/ProductImageResponse"
+                type:
+                  - array
+                  - "null"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: List a product's images
+      tags:
+        - products
   /api/v1/users/me:
     get:
       operationId: get-current-user
