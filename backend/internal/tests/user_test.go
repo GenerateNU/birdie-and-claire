@@ -23,8 +23,6 @@ type userProbeOutput struct {
 	}
 }
 
-// userProbe echoes the name CreateUserInput let through, via the real Huma pipeline,
-// so struct-tag validation and Resolve both run without a database behind them.
 func userProbe(t *testing.T) humatest.TestAPI {
 	t.Helper()
 
@@ -44,27 +42,27 @@ func userProbe(t *testing.T) humatest.TestAPI {
 
 func TestCreateUserName(t *testing.T) {
 	tests := []struct {
-		name     string
-		body     map[string]any
-		want     int
-		wantName string
+		name       string
+		body       map[string]any
+		wantStatus int
+		wantName   string
 	}{
-		{name: "empty", body: map[string]any{"name": ""}, want: http.StatusUnprocessableEntity},
-		{name: "whitespace only", body: map[string]any{"name": "   "}, want: http.StatusUnprocessableEntity},
-		{name: "plain", body: map[string]any{"name": "Claire"}, want: http.StatusOK, wantName: "Claire"},
-		{name: "surrounding whitespace is trimmed", body: map[string]any{"name": "  Julie  "}, want: http.StatusOK, wantName: "Julie"},
-		{name: "maximum 100 characters", body: map[string]any{"name": strings.Repeat("n", 100)}, want: http.StatusOK, wantName: strings.Repeat("n", 100)},
-		{name: "above maximum 101 characters", body: map[string]any{"name": strings.Repeat("n", 101)}, want: http.StatusUnprocessableEntity},
-		{name: "missing", body: map[string]any{}, want: http.StatusUnprocessableEntity},
+		{name: "empty", body: map[string]any{"name": ""}, wantStatus: http.StatusUnprocessableEntity},
+		{name: "whitespace only", body: map[string]any{"name": "   "}, wantStatus: http.StatusUnprocessableEntity},
+		{name: "plain", body: map[string]any{"name": "Claire"}, wantStatus: http.StatusOK, wantName: "Claire"},
+		{name: "surrounding whitespace is trimmed", body: map[string]any{"name": "  Julie  "}, wantStatus: http.StatusOK, wantName: "Julie"},
+		{name: "maximum 100 characters", body: map[string]any{"name": strings.Repeat("n", 100)}, wantStatus: http.StatusOK, wantName: strings.Repeat("n", 100)},
+		{name: "above maximum 101 characters", body: map[string]any{"name": strings.Repeat("n", 101)}, wantStatus: http.StatusUnprocessableEntity},
+		{name: "missing", body: map[string]any{}, wantStatus: http.StatusUnprocessableEntity},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			response := userProbe(t).Post("/probe", test.body)
-			if response.Code != test.want {
-				t.Fatalf("status = %d, want %d: %s", response.Code, test.want, response.Body)
+			if response.Code != test.wantStatus {
+				t.Fatalf("status = %d, want %d: %s", response.Code, test.wantStatus, response.Body)
 			}
-			if test.want != http.StatusOK {
+			if test.wantStatus != http.StatusOK {
 				return
 			}
 

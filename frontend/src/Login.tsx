@@ -63,7 +63,7 @@ export default function Login() {
         return;
       }
 
-      throw new Error(`GET /users/me failed: ${res.status}`);
+      throw new Error(`GET /api/v1/users/me failed: ${res.status}`);
     } catch (err) {
       setStatus(null);
       setError(err instanceof Error ? err.message : String(err));

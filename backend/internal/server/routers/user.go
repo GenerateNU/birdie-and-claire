@@ -34,7 +34,7 @@ func UserRoutes(api huma.API, params types.RouteParams) {
 		DefaultStatus: http.StatusCreated,
 		Summary:       "Create the caller's user",
 		Tags:          []string{"users"},
-	}, controller.Create)
+	}, controller.CreateMe)
 
 	huma.Register(api, huma.Operation{
 		OperationID: "get-user",

@@ -53,7 +53,6 @@ type CreateUserInput struct {
 
 var _ huma.Resolver = (*CreateUserInput)(nil)
 
-// Resolve trims the name so a whitespace-only name is rejected instead of stored.
 func (input *CreateUserInput) Resolve(huma.Context) []error {
 	input.Body.Name = strings.TrimSpace(input.Body.Name)
 	if input.Body.Name == "" {
@@ -62,12 +61,16 @@ func (input *CreateUserInput) Resolve(huma.Context) []error {
 	return nil
 }
 
-func (c *UserController) Create(ctx context.Context, input *CreateUserInput) (*GetUserOutput, error) {
+type CreateUserOutput struct {
+	Body models.UserResponse
+}
+
+func (c *UserController) CreateMe(ctx context.Context, input *CreateUserInput) (*CreateUserOutput, error) {
 	response, err := c.service.Create(ctx, input.Body.Name)
 	if err != nil {
 		return nil, errs.ToHuma(ctx, err)
 	}
-	return &GetUserOutput{Body: response}, nil
+	return &CreateUserOutput{Body: response}, nil
 }
 
 type ProfilePictureUploadURLInput struct {

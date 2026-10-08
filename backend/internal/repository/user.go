@@ -13,10 +13,9 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-// Postgres SQLSTATE for a unique violation.
 const uniqueViolation = "23505"
 
-// UserRepository owns the users table. Create is the only way a row is written.
+// UserRepository owns the users table.
 type UserRepository interface {
 	Create(ctx context.Context, id uuid.UUID, name string) (models.User, error)
 	GetByID(ctx context.Context, id uuid.UUID) (models.User, error)
@@ -31,7 +30,6 @@ func NewUserRepository(database *sql.DB) UserRepository {
 	return &userRepository{db: database}
 }
 
-// Create inserts the row for a Supabase user. The id is the sub claim of a verified token.
 func (r *userRepository) Create(ctx context.Context, id uuid.UUID, name string) (models.User, error) {
 	var user models.User
 	err := r.db.QueryRowContext(ctx, `

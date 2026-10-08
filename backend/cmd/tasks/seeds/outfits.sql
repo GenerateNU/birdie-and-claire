@@ -2,8 +2,14 @@
 -- Reruns replace that user's seed outfits.
 BEGIN;
 
--- outfits.user_id references users, and a Supabase user only gets a row on their first API call.
-INSERT INTO users (id) VALUES (:'user_id'::uuid) ON CONFLICT DO NOTHING;
+-- psql doesn't substitute :'user_id' inside $$, so the DO block reads it from a setting.
+SET LOCAL seed.user_id = :'user_id';
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM users WHERE id = current_setting('seed.user_id')::uuid) THEN
+        RAISE EXCEPTION 'user % has no account; sign in and create it first', current_setting('seed.user_id');
+    END IF;
+END $$;
 
 DELETE FROM outfits WHERE user_id = :'user_id'::uuid AND name ~ '^Seed outfit [0-9]+$';
 

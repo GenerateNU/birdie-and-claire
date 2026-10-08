@@ -28,7 +28,7 @@ func NewOutfitService(repo *repository.Repository) OutfitService {
 
 func (s *outfitService) Create(ctx context.Context, params models.CreateOutfitParams) (models.OutfitResponse, error) {
 	userID := auth.UserID(ctx)
-	// outfits.user_id references users; POST /api/v1/users/me creates that row.
+	// Without this, a caller with no account gets a 500 from the outfits.user_id foreign key instead of a 404.
 	if _, err := s.repo.User.GetByID(ctx, userID); err != nil {
 		return models.OutfitResponse{}, err
 	}

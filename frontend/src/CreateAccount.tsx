@@ -19,13 +19,13 @@ export default function CreateAccount() {
         body: JSON.stringify({ name }),
       });
 
-      if (res.status === 201) {
+      if (res.status === 201 || res.status === 409) {
         window.location.assign("/");
 
         return;
       }
 
-      throw new Error(`POST /users/me failed: ${res.status}`);
+      throw new Error(`POST /api/v1/users/me failed: ${res.status}`);
     } catch (err) {
       setStatus(null);
       setError(err instanceof Error ? err.message : String(err));
@@ -34,7 +34,7 @@ export default function CreateAccount() {
 
   return (
     <div className="min-h-screen bg-gray-950 text-white p-8">
-      <h1 className="text-3xl font-bold mb-2">Account creation is coming soon</h1>
+      <h1 className="text-3xl font-bold mb-2">Create your account</h1>
       <p className="text-gray-400 text-sm mb-8">
         Placeholder form: it only sends a name to create your account.
       </p>
