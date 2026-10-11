@@ -1,3 +1,4 @@
+import { Button } from "@/design-system";
 import OutfitsPage from "./OutfitsPage";
 import ProfilePictureTest from "./ProfilePictureTest";
 
@@ -26,6 +27,7 @@ export default function App() {
       <a className="block underline hover:text-white text-sm" href="/outfits">
         Outfits →
       </a>
+      <Button label="Button" className="mt-md" />
     </div>
   );
 }
