@@ -17,7 +17,7 @@ const uniqueViolation = "23505"
 
 // UserRepository owns the users table.
 type UserRepository interface {
-	Create(ctx context.Context, id uuid.UUID, name string) (models.User, error)
+	CreateUser(ctx context.Context, id uuid.UUID, name string) (models.User, error)
 	GetByID(ctx context.Context, id uuid.UUID) (models.User, error)
 	SetProfilePictureKey(ctx context.Context, id uuid.UUID, key string) error
 }
@@ -30,7 +30,7 @@ func NewUserRepository(database *sql.DB) UserRepository {
 	return &userRepository{db: database}
 }
 
-func (r *userRepository) Create(ctx context.Context, id uuid.UUID, name string) (models.User, error) {
+func (r *userRepository) CreateUser(ctx context.Context, id uuid.UUID, name string) (models.User, error) {
 	var user models.User
 	err := r.db.QueryRowContext(ctx, `
 		INSERT INTO users (id, name)

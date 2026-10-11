@@ -25,7 +25,7 @@ func UserRoutes(api huma.API, params types.RouteParams) {
 		Path:        "/api/v1/users/me",
 		Summary:     "Get the caller's user",
 		Tags:        []string{"users"},
-	}, controller.GetMe)
+	}, controller.GetUser)
 
 	huma.Register(api, huma.Operation{
 		OperationID:   "create-current-user",
@@ -34,7 +34,7 @@ func UserRoutes(api huma.API, params types.RouteParams) {
 		DefaultStatus: http.StatusCreated,
 		Summary:       "Create the caller's user",
 		Tags:          []string{"users"},
-	}, controller.CreateMe)
+	}, controller.CreateUser)
 
 	huma.Register(api, huma.Operation{
 		OperationID: "get-user",
@@ -42,7 +42,7 @@ func UserRoutes(api huma.API, params types.RouteParams) {
 		Path:        "/api/v1/users/{id}",
 		Summary:     "Get a user",
 		Tags:        []string{"users"},
-	}, controller.Get)
+	}, controller.GetUserByID)
 
 	huma.Register(api, huma.Operation{
 		OperationID: "create-user-profile-picture-upload-url",

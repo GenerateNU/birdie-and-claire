@@ -23,8 +23,9 @@ var allowedProfilePictureTypes = map[string]bool{
 }
 
 type UserService interface {
-	Get(ctx context.Context, id uuid.UUID) (models.UserResponse, error)
-	Create(ctx context.Context, name string) (models.UserResponse, error)
+	GetUser(ctx context.Context) (models.UserResponse, error)
+	GetUserByID(ctx context.Context, id uuid.UUID) (models.UserResponse, error)
+	CreateUser(ctx context.Context, name string) (models.UserResponse, error)
 	CreateProfilePictureUploadURL(ctx context.Context, contentType string) (storage.PresignedUpload, error)
 	ConfirmProfilePicture(ctx context.Context, key string) error
 }
@@ -39,7 +40,11 @@ func NewUserService(repo *repository.Repository, store storage.ObjectStore, maxU
 	return &userService{repo: repo, store: store, maxUploadBytes: maxUploadBytes}
 }
 
-func (s *userService) Get(ctx context.Context, id uuid.UUID) (models.UserResponse, error) {
+func (s *userService) GetUser(ctx context.Context) (models.UserResponse, error) {
+	return s.GetUserByID(ctx, auth.UserID(ctx))
+}
+
+func (s *userService) GetUserByID(ctx context.Context, id uuid.UUID) (models.UserResponse, error) {
 	user, err := s.repo.User.GetByID(ctx, id)
 	if err != nil {
 		return models.UserResponse{}, err
@@ -53,9 +58,9 @@ func (s *userService) Get(ctx context.Context, id uuid.UUID) (models.UserRespons
 	return response, nil
 }
 
-func (s *userService) Create(ctx context.Context, name string) (models.UserResponse, error) {
+func (s *userService) CreateUser(ctx context.Context, name string) (models.UserResponse, error) {
 	id := auth.UserID(ctx)
-	user, err := s.repo.User.Create(ctx, id, name)
+	user, err := s.repo.User.CreateUser(ctx, id, name)
 	if err != nil {
 		return models.UserResponse{}, err
 	}

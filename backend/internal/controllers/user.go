@@ -4,7 +4,6 @@ import (
 	"context"
 	"strings"
 
-	"birdie-and-claire/internal/auth"
 	"birdie-and-claire/internal/errs"
 	"birdie-and-claire/internal/models"
 	"birdie-and-claire/internal/services"
@@ -21,7 +20,7 @@ func NewUserController(service services.UserService) *UserController {
 	return &UserController{service: service}
 }
 
-type GetUserInput struct {
+type GetUserByIDInput struct {
 	ID uuid.UUID `path:"id" doc:"User ID"`
 }
 
@@ -29,16 +28,16 @@ type GetUserOutput struct {
 	Body models.UserResponse
 }
 
-func (c *UserController) Get(ctx context.Context, input *GetUserInput) (*GetUserOutput, error) {
-	response, err := c.service.Get(ctx, input.ID)
+func (c *UserController) GetUserByID(ctx context.Context, input *GetUserByIDInput) (*GetUserOutput, error) {
+	response, err := c.service.GetUserByID(ctx, input.ID)
 	if err != nil {
 		return nil, errs.ToHuma(ctx, err)
 	}
 	return &GetUserOutput{Body: response}, nil
 }
 
-func (c *UserController) GetMe(ctx context.Context, _ *struct{}) (*GetUserOutput, error) {
-	response, err := c.service.Get(ctx, auth.UserID(ctx))
+func (c *UserController) GetUser(ctx context.Context, _ *struct{}) (*GetUserOutput, error) {
+	response, err := c.service.GetUser(ctx)
 	if err != nil {
 		return nil, errs.ToHuma(ctx, err)
 	}
@@ -65,8 +64,8 @@ type CreateUserOutput struct {
 	Body models.UserResponse
 }
 
-func (c *UserController) CreateMe(ctx context.Context, input *CreateUserInput) (*CreateUserOutput, error) {
-	response, err := c.service.Create(ctx, input.Body.Name)
+func (c *UserController) CreateUser(ctx context.Context, input *CreateUserInput) (*CreateUserOutput, error) {
+	response, err := c.service.CreateUser(ctx, input.Body.Name)
 	if err != nil {
 		return nil, errs.ToHuma(ctx, err)
 	}

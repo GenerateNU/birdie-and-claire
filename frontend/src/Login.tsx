@@ -1,6 +1,5 @@
 import { useState, type SyntheticEvent } from "react";
 
-import { apiFetch } from "./api";
 import { supabase } from "./supabase/client";
 
 type Step = "email" | "code";
@@ -11,10 +10,12 @@ export default function Login() {
   const [code, setCode] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Kept apart from status, which disables the buttons while a request is in flight.
+  const [notice, setNotice] = useState<string | null>(null);
 
-  async function sendCode(e: SyntheticEvent<HTMLFormElement>) {
-    e.preventDefault();
+  async function requestCode(): Promise<boolean> {
     setError(null);
+    setNotice(null);
     setStatus("Sending...");
 
     const { error: otpError } = await supabase.auth.signInWithOtp({ email });
@@ -24,15 +25,41 @@ export default function Login() {
     if (otpError) {
       setError(otpError.message);
 
+      return false;
+    }
+
+    return true;
+  }
+
+  async function sendCode(e: SyntheticEvent<HTMLFormElement>) {
+    e.preventDefault();
+
+    if (await requestCode()) {
+      setStep("code");
+    }
+  }
+
+  async function resendCode() {
+    if (!(await requestCode())) {
       return;
     }
 
-    setStep("code");
+    // The new code replaces the old one, so digits already typed can only fail.
+    setCode("");
+    setNotice("New code sent.");
+  }
+
+  function changeEmail() {
+    setStep("email");
+    setCode("");
+    setError(null);
+    setNotice(null);
   }
 
   async function verifyCode(e: SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
+    setNotice(null);
     setStatus("Verifying...");
 
     const { error: verifyError } = await supabase.auth.verifyOtp({
@@ -48,26 +75,8 @@ export default function Login() {
       return;
     }
 
-    try {
-      const res = await apiFetch("/api/v1/users/me");
-
-      if (res.status === 200) {
-        window.location.assign("/");
-
-        return;
-      }
-
-      if (res.status === 404) {
-        window.location.assign("/create-account");
-
-        return;
-      }
-
-      throw new Error(`GET /api/v1/users/me failed: ${res.status}`);
-    } catch (err) {
-      setStatus(null);
-      setError(err instanceof Error ? err.message : String(err));
-    }
+    // App checks for an account and sends the user to /create-account if there isn't one.
+    window.location.assign("/");
   }
 
   const busy = status !== null;
@@ -123,7 +132,26 @@ export default function Login() {
           >
             Verify
           </button>
+          <div className="flex gap-4 text-sm">
+            <button
+              type="button"
+              onClick={resendCode}
+              disabled={busy}
+              className="underline hover:text-white disabled:opacity-50"
+            >
+              Resend code
+            </button>
+            <button
+              type="button"
+              onClick={changeEmail}
+              disabled={busy}
+              className="underline hover:text-white disabled:opacity-50"
+            >
+              Change email
+            </button>
+          </div>
           {status && <p className="text-gray-400 text-sm">{status}</p>}
+          {notice && <p className="text-gray-400 text-sm">{notice}</p>}
           {error && <p className="text-red-400 text-sm">Error: {error}</p>}
         </form>
       )}
