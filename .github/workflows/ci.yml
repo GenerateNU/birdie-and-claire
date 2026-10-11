@@ -76,6 +76,73 @@ jobs:
           install_args: ruff
       - run: mise run lint:ml:embedder
 
+  frontend_changes:
+    name: frontend / changes
+    runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+      - id: filter
+        run: |
+          changed=$(git diff --name-only HEAD^1 HEAD)
+          if grep -qE '^(frontend/|\.github/workflows/ci\.yml$)' <<<"$changed"; then
+            echo "frontend=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "frontend=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "$changed"
+
+  frontend_format:
+    name: frontend / format
+    needs: frontend_changes
+    if: needs.frontend_changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      # Bun is the only tool these checks need, so skip installing the rest.
+      - uses: jdx/mise-action@v4
+        with:
+          install: true
+          install_args: bun
+      - run: bun install --frozen-lockfile
+        working-directory: frontend
+      - run: mise run fmt:frontend
+
+  frontend_lint:
+    name: frontend / lint
+    needs: frontend_changes
+    if: needs.frontend_changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      # Bun is the only tool these checks need, so skip installing the rest.
+      - uses: jdx/mise-action@v4
+        with:
+          install: true
+          install_args: bun
+      - run: bun install --frozen-lockfile
+        working-directory: frontend
+      - run: mise run lint:frontend
+
+  frontend_build:
+    name: frontend / build
+    needs: frontend_changes
+    if: needs.frontend_changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      # Bun is the only tool these checks need, so skip installing the rest.
+      - uses: jdx/mise-action@v4
+        with:
+          install: true
+          install_args: bun
+      - run: bun install --frozen-lockfile
+        working-directory: frontend
+      - run: mise run build:frontend
+
   build:
     name: backend / build
     runs-on: ubuntu-latest
