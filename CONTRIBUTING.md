@@ -135,9 +135,9 @@ project and migrations have to apply locally too. Nothing at the database level
 enforces that a row matches a real Supabase account, or removes it when one is
 deleted, so the application is the only thing keeping the table honest.
 
-`repository.User.EnsureExists` writes the row and has no caller yet. The id it
-takes must come from a token that has already been verified, never from a
-request body or a path parameter.
+`POST /api/v1/users/me` creates the row, and `repository.User.Create` writes it.
+The id it takes must come from a token that has already been verified, never
+from a request body or a path parameter.
 
 Project settings (auth providers, redirect URLs, JWT expiry) are managed in the
 Supabase dashboard, not in this repository.
