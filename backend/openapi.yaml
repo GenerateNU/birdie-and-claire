@@ -50,6 +50,17 @@ components:
       required:
         - kind
       type: object
+    CreateUserInputBody:
+      additionalProperties: false
+      properties:
+        name:
+          description: Display name; leading and trailing whitespace is removed
+          maxLength: 100
+          minLength: 1
+          type: string
+      required:
+        - name
+      type: object
     ErrorDetail:
       additionalProperties: false
       properties:
@@ -542,6 +553,53 @@ paths:
       summary: List a product's images
       tags:
         - products
+  /api/v1/users/me:
+    get:
+      operationId: get-current-user
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Get the caller's user
+      tags:
+        - users
+    post:
+      operationId: create-current-user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Create the caller's user
+      tags:
+        - users
   /api/v1/users/me/profile-picture/confirm:
     post:
       operationId: confirm-user-profile-picture

@@ -17,8 +17,11 @@ import (
 // Postgres SQLSTATE for a foreign key violation.
 const foreignKeyViolation = "23503"
 
-// Create's statement can raise 23503 on several keys; only this one means the client sent an unknown product.
-const outfitProductFKey = "outfit_products_product_id_fkey"
+// Create's statement can raise 23503 on several keys; these two are the client's fault.
+const (
+	outfitProductFKey = "outfit_products_product_id_fkey"
+	outfitUserFKey    = "outfits_user_id_fkey"
+)
 
 type OutfitRepository interface {
 	Create(ctx context.Context, params models.CreateOutfitParams, userID uuid.UUID) (models.Outfit, []models.Product, error)
@@ -56,6 +59,9 @@ func (r *outfitRepository) Create(ctx context.Context, params models.CreateOutfi
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) && pgErr.Code == foreignKeyViolation && pgErr.ConstraintName == outfitProductFKey {
 		return models.Outfit{}, nil, fmt.Errorf("create outfit: unknown product: %w", errs.ErrConflict)
+	}
+	if errors.As(err, &pgErr) && pgErr.Code == foreignKeyViolation && pgErr.ConstraintName == outfitUserFKey {
+		return models.Outfit{}, nil, fmt.Errorf("create outfit: unknown user %s: %w", userID, errs.ErrNotFound)
 	}
 	if err != nil {
 		return models.Outfit{}, nil, fmt.Errorf("create outfit: %w", err)
