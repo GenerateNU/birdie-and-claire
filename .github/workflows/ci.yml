@@ -88,7 +88,7 @@ jobs:
       - id: filter
         run: |
           changed=$(git diff --name-only HEAD^1 HEAD)
-          if grep -qE '^(frontend/|\.github/workflows/ci\.yml$)' <<<"$changed"; then
+          if grep -qE '^(frontend/|\.github/actions/setup-frontend/|\.github/workflows/ci\.yml$)' <<<"$changed"; then
             echo "frontend=true" >> "$GITHUB_OUTPUT"
           else
             echo "frontend=false" >> "$GITHUB_OUTPUT"
@@ -102,13 +102,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      # Bun is the only tool these checks need, so skip installing the rest.
-      - uses: jdx/mise-action@v4
-        with:
-          install: true
-          install_args: bun
-      - run: bun install --frozen-lockfile
-        working-directory: frontend
+      - uses: ./.github/actions/setup-frontend
       - run: mise run fmt:frontend
 
   frontend_lint:
@@ -118,13 +112,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      # Bun is the only tool these checks need, so skip installing the rest.
-      - uses: jdx/mise-action@v4
-        with:
-          install: true
-          install_args: bun
-      - run: bun install --frozen-lockfile
-        working-directory: frontend
+      - uses: ./.github/actions/setup-frontend
       - run: mise run lint:frontend
 
   frontend_build:
@@ -134,14 +122,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      # Bun is the only tool these checks need, so skip installing the rest.
-      - uses: jdx/mise-action@v4
-        with:
-          install: true
-          install_args: bun
-      - run: bun install --frozen-lockfile
-        working-directory: frontend
+      - uses: ./.github/actions/setup-frontend
       - run: mise run build:frontend
+      # The build regenerates the route tree, so a stale committed copy shows up as a diff.
+      - run: git diff --exit-code -- frontend/src/routeTree.gen.ts
 
   build:
     name: backend / build

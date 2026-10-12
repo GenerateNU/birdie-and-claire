@@ -6,7 +6,9 @@ import { apiFetch } from "../../api";
 
 export const Route = createFileRoute("/_signedIn/create-account")({
   beforeLoad: async ({ context }) => {
-    if (await context.queryClient.ensureQueryData(hasAccountQuery(context.userId))) {
+    const hasAccount = await context.queryClient.query(hasAccountQuery(context.userId));
+
+    if (hasAccount) {
       throw redirect({ to: "/", replace: true });
     }
   },
@@ -32,6 +34,8 @@ function CreateAccount() {
       });
 
       if (res.status === 201 || res.status === 409) {
+        // Has to stay a full page load. The cached "no account" answer never expires,
+        // so a router navigation would send the user straight back here.
         window.location.assign("/");
 
         return;

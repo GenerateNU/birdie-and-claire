@@ -4,7 +4,9 @@ import { AccountError, hasAccountQuery } from "../../account";
 
 export const Route = createFileRoute("/_signedIn/_hasAccount")({
   beforeLoad: async ({ context }) => {
-    if (!(await context.queryClient.ensureQueryData(hasAccountQuery(context.userId)))) {
+    const hasAccount = await context.queryClient.query(hasAccountQuery(context.userId));
+
+    if (!hasAccount) {
       throw redirect({ to: "/create-account", replace: true });
     }
   },

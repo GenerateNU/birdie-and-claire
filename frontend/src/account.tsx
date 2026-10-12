@@ -12,8 +12,6 @@ export function hasAccountQuery(userId: string) {
     // which is the only time the answer can change.
     staleTime: Infinity,
     gcTime: Infinity,
-    // The error screen has its own Retry button, so fail fast instead of a blank page during backoff.
-    retry: false,
     queryFn: async () => {
       const res = await apiFetch("/api/v1/users/me");
 
@@ -31,7 +29,7 @@ export function hasAccountQuery(userId: string) {
 }
 
 // supabase-js clears the local session even when the server revoke fails, so the
-// auth listener still redirects to /login. The error only means the refresh token
+// auth listener in main.tsx still redirects to /login. The error only means the refresh token
 // may not have been revoked server-side.
 export async function signOut() {
   const { error } = await supabase.auth.signOut();
