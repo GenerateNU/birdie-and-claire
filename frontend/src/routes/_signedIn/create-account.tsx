@@ -1,8 +1,20 @@
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useState, type SyntheticEvent } from "react";
 
-import { apiFetch } from "./api";
+import { AccountError, hasAccountQuery } from "../../account";
+import { apiFetch } from "../../api";
 
-export default function CreateAccount() {
+export const Route = createFileRoute("/_signedIn/create-account")({
+  beforeLoad: async ({ context }) => {
+    if (await context.queryClient.ensureQueryData(hasAccountQuery(context.userId))) {
+      throw redirect({ to: "/", replace: true });
+    }
+  },
+  errorComponent: AccountError,
+  component: CreateAccount,
+});
+
+function CreateAccount() {
   const [name, setName] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);

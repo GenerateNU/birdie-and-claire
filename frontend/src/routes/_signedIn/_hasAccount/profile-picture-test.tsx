@@ -1,7 +1,12 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, type ChangeEvent } from "react";
 
-import { apiFetch } from "./api";
-import { supabase } from "./supabase/client";
+import { apiFetch } from "../../../api";
+import { supabase } from "../../../supabase/client";
+
+export const Route = createFileRoute("/_signedIn/_hasAccount/profile-picture-test")({
+  component: ProfilePictureTest,
+});
 
 // Must match the backend allow-list. HEIC (iPhone default) is excluded because
 // most browsers can't render it in an <img>.
@@ -20,7 +25,7 @@ interface PresignedUpload {
   key: string;
 }
 
-export default function ProfilePictureTest() {
+function ProfilePictureTest() {
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<UserResponse | null>(null);
@@ -111,9 +116,9 @@ export default function ProfilePictureTest() {
 
   return (
     <div className="min-h-screen bg-gray-950 text-white p-8">
-      <a className="text-gray-400 text-sm underline hover:text-white" href="/">
+      <Link className="text-gray-400 text-sm underline hover:text-white" to="/">
         ← Home
-      </a>
+      </Link>
       <h1 className="text-3xl font-bold mt-4 mb-2">Profile picture test</h1>
       <p className="text-gray-400 text-sm mb-8">
         Sign in first, then pick an image and it uploads via a presigned URL.
