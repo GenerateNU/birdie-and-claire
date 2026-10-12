@@ -37,6 +37,8 @@ services:
       EMBEDDER_URL: ${EMBEDDER_URL:?EMBEDDER_URL is required}
       MODAL_PROXY_KEY: ${MODAL_PROXY_KEY:?MODAL_PROXY_KEY is required}
       MODAL_PROXY_SECRET: ${MODAL_PROXY_SECRET:?MODAL_PROXY_SECRET is required}
+      AI_URL: ${AI_URL:?AI_URL is required}
+      AI_API_KEY: ${AI_API_KEY:?AI_API_KEY is required}
     ports:
       - "127.0.0.1:${API_PORT:?API_PORT is required}:8080"
     volumes:
