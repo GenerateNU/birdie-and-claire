@@ -91,17 +91,17 @@ func (c *OutfitController) Unshare(ctx context.Context, input *OutfitIDInput) (*
 	return nil, nil
 }
 
-type PublicOutfitOutput struct {
-	Body models.PublicOutfitResponse
+type SharedOutfitOutput struct {
+	Body models.SharedOutfitResponse
 }
 
 // GetShared returns a shared outfit to anyone, signed in or not.
-func (c *OutfitController) GetShared(ctx context.Context, input *OutfitIDInput) (*PublicOutfitOutput, error) {
+func (c *OutfitController) GetShared(ctx context.Context, input *OutfitIDInput) (*SharedOutfitOutput, error) {
 	outfit, err := c.service.GetShared(ctx, input.ID)
 	if err != nil {
 		return nil, errs.ToHuma(ctx, err)
 	}
-	return &PublicOutfitOutput{Body: outfit}, nil
+	return &SharedOutfitOutput{Body: outfit}, nil
 }
 
 type ListOutfitsInput struct {

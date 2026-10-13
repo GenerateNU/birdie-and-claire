@@ -134,7 +134,7 @@ components:
         name:
           type: string
         shared_at:
-          description: When the outfit was first shared by link, or null while it is private
+          description: When the outfit was shared by link, or null while it is private
           format: date-time
           type:
             - string
@@ -167,7 +167,7 @@ components:
             $ref: "#/components/schemas/Product"
           type: array
         shared_at:
-          description: When the outfit was first shared by link, or null while it is private
+          description: When the outfit was shared by link, or null while it is private
           format: date-time
           type:
             - string
@@ -299,22 +299,6 @@ components:
         - headers
         - key
       type: object
-    PublicOutfitResponse:
-      additionalProperties: false
-      properties:
-        id:
-          type: string
-        name:
-          type: string
-        products:
-          items:
-            $ref: "#/components/schemas/Product"
-          type: array
-      required:
-        - id
-        - name
-        - products
-      type: object
     ReactionCounts:
       additionalProperties: false
       properties:
@@ -340,6 +324,22 @@ components:
           type: string
       required:
         - url
+      type: object
+    SharedOutfitResponse:
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        products:
+          items:
+            $ref: "#/components/schemas/Product"
+          type: array
+      required:
+        - id
+        - name
+        - products
       type: object
     UserResponse:
       additionalProperties: false
@@ -385,6 +385,7 @@ openapi: 3.1.0
 paths:
   /api/public/outfits/{id}:
     get:
+      description: A private outfit and a missing one both return 404.
       operationId: get-shared-outfit
       parameters:
         - description: Outfit ID
@@ -399,7 +400,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PublicOutfitResponse"
+                $ref: "#/components/schemas/SharedOutfitResponse"
           description: OK
         default:
           content:
@@ -588,6 +589,7 @@ paths:
         - outfits
   /api/v1/outfits/{id}/share:
     delete:
+      description: Also returns 204 if the outfit is already private.
       operationId: unshare-outfit
       parameters:
         - description: Outfit ID

@@ -21,7 +21,7 @@ type OutfitService interface {
 	List(ctx context.Context, params pagination.CursorParams) (pagination.Page[models.Outfit], error)
 	Share(ctx context.Context, id uuid.UUID) (models.ShareOutfitResponse, error)
 	Unshare(ctx context.Context, id uuid.UUID) error
-	GetShared(ctx context.Context, id uuid.UUID) (models.PublicOutfitResponse, error)
+	GetShared(ctx context.Context, id uuid.UUID) (models.SharedOutfitResponse, error)
 }
 
 type outfitService struct {
@@ -86,10 +86,10 @@ func (s *outfitService) Unshare(ctx context.Context, id uuid.UUID) error {
 	return s.repo.Outfit.Unshare(ctx, id, auth.UserID(ctx))
 }
 
-func (s *outfitService) GetShared(ctx context.Context, id uuid.UUID) (models.PublicOutfitResponse, error) {
+func (s *outfitService) GetShared(ctx context.Context, id uuid.UUID) (models.SharedOutfitResponse, error) {
 	outfit, products, err := s.repo.Outfit.GetShared(ctx, id)
 	if err != nil {
-		return models.PublicOutfitResponse{}, err
+		return models.SharedOutfitResponse{}, err
 	}
-	return models.PublicOutfitResponse{ID: outfit.ID, Name: outfit.Name, Products: products}, nil
+	return models.SharedOutfitResponse{ID: outfit.ID, Name: outfit.Name, Products: products}, nil
 }

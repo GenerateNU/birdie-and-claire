@@ -10,7 +10,7 @@ type Outfit struct {
 	ID        uuid.UUID  `json:"id"`
 	UserID    uuid.UUID  `json:"user_id"`
 	Name      string     `json:"name"`
-	SharedAt  *time.Time `json:"shared_at" doc:"When the outfit was first shared by link, or null while it is private"`
+	SharedAt  *time.Time `json:"shared_at" doc:"When the outfit was shared by link, or null while it is private"`
 	CreatedAt time.Time  `json:"created_at"`
 	UpdatedAt time.Time  `json:"updated_at"`
 }
@@ -20,9 +20,9 @@ type OutfitResponse struct {
 	Products []Product `json:"products" nullable:"false"`
 }
 
-// PublicOutfitResponse is what anyone with a share link sees, so it leaves out
+// SharedOutfitResponse is what anyone with a share link sees, so it leaves out
 // the owner and timestamps.
-type PublicOutfitResponse struct {
+type SharedOutfitResponse struct {
 	ID       uuid.UUID `json:"id"`
 	Name     string    `json:"name"`
 	Products []Product `json:"products" nullable:"false"`

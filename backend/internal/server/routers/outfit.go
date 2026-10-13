@@ -53,6 +53,7 @@ func OutfitRoutes(api huma.API, params types.RouteParams) {
 		Path:          "/api/v1/outfits/{id}/share",
 		DefaultStatus: http.StatusNoContent,
 		Summary:       "Make a shared outfit private again",
+		Description:   "Also returns 204 if the outfit is already private.",
 		Tags:          []string{"outfits"},
 	}, controller.Unshare)
 
@@ -62,6 +63,7 @@ func OutfitRoutes(api huma.API, params types.RouteParams) {
 		Method:      http.MethodGet,
 		Path:        "/api/public/outfits/{id}",
 		Summary:     "Get a shared outfit without signing in",
+		Description: "A private outfit and a missing one both return 404.",
 		Tags:        []string{"outfits"},
 	}, controller.GetShared)
 }

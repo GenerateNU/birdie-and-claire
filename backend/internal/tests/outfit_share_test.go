@@ -23,7 +23,11 @@ func insertTestOutfit(t *testing.T, db *sql.DB) (outfitID uuid.UUID, ownerID uui
 	if err != nil {
 		t.Fatalf("create outfit: %v", err)
 	}
-	t.Cleanup(func() { _, _ = db.Exec(`DELETE FROM outfits WHERE id = $1`, outfit.ID) })
+	// outfit_products.outfit_id has no ON DELETE CASCADE, so its rows go first.
+	t.Cleanup(func() {
+		_, _ = db.Exec(`DELETE FROM outfit_products WHERE outfit_id = $1`, outfit.ID)
+		_, _ = db.Exec(`DELETE FROM outfits WHERE id = $1`, outfit.ID)
+	})
 	return outfit.ID, ownerID
 }
 
@@ -36,7 +40,7 @@ func wantNotFound(t *testing.T, err error) {
 }
 
 // Someone else's outfit and a missing one both look like 404, so IDs reveal nothing.
-func TestOutfitOwnerChecks(t *testing.T) {
+func TestNonOwnerAndMissingOutfitReturnNotFound(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()
 	repo := repository.NewOutfitRepository(db)
@@ -70,7 +74,7 @@ func TestOutfitOwnerChecks(t *testing.T) {
 	wantNotFound(t, err)
 }
 
-func TestGetSharedOutfit(t *testing.T) {
+func TestSharedOutfitIsReadableOnlyWhileShared(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()
 	repo := repository.NewOutfitRepository(db)
@@ -130,7 +134,7 @@ func TestReshareKeepsSharedAt(t *testing.T) {
 }
 
 // A retried unshare on an outfit that is already private still succeeds.
-func TestUnsharePrivateOutfit(t *testing.T) {
+func TestUnsharePrivateOutfitSucceeds(t *testing.T) {
 	db := openTestDB(t)
 	outfitID, ownerID := insertTestOutfit(t, db)
 
