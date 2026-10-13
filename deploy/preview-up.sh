@@ -64,11 +64,13 @@ docker run -d \
   "$IMAGE" >/dev/null
 
 # `docker run -d` succeeds as soon as the container exists, so without this a
-# backend that exits on bad config would report a healthy preview.
+# backend that exits on bad config would report a healthy preview. The restart
+# count matters as much as Running: --restart brings a crashing container back
+# within a second, so a sample of Running alone mostly catches it while up.
 echo "    waiting for the container to stay up"
 for _ in $(seq 1 15); do
   sleep 2
-  if [ "$(docker inspect -f '{{.State.Running}}' "$CONTAINER" 2>/dev/null)" = "true" ]; then
+  if [ "$(docker inspect -f '{{.State.Running}} {{.RestartCount}}' "$CONTAINER" 2>/dev/null)" = "true 0" ]; then
     continue
   fi
   echo "${CONTAINER} exited instead of starting. Last lines:" >&2
