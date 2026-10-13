@@ -5,6 +5,9 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   // The router plugin has to run before the React plugin.
   plugins: [tanstackRouter({ target: "react" }), react()],
+  resolve: {
+    alias: { "@": "/src" },
+  },
   server: {
     proxy: {
       // Proxy API requests to the Go backend.

@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
-import { apiFetch } from "../../../api";
+import { apiFetch } from "@/api";
+import { Button, RadioGroup, TextField } from "@/design-system";
 
 export const Route = createFileRoute("/_signedIn/_hasAccount/llm-test")({
   component: LlmTest,
@@ -198,50 +199,33 @@ function LlmTest() {
       </p>
 
       <div className="flex flex-col gap-4 max-w-2xl">
-        <div className="flex flex-wrap gap-4 text-sm">
-          {MODES.map((option) => (
-            <label key={option.mode} className="flex items-center gap-1">
-              <input
-                type="radio"
-                name="mode"
-                checked={mode === option.mode}
-                onChange={() => setMode(option.mode)}
-              />
-              {option.label}
-            </label>
-          ))}
-        </div>
+        <RadioGroup
+          label="Mode"
+          options={MODES.map((option) => ({ label: option.label, value: option.mode }))}
+          value={mode}
+          onValueChange={setMode}
+        />
 
         {mode !== "structured" && (
-          <label className="flex flex-col gap-1 text-sm">
-            System (optional)
-            <textarea
-              value={system}
-              onChange={(e) => setSystem(e.target.value)}
-              rows={2}
-              className="rounded bg-gray-800 border border-gray-700 p-2"
-            />
-          </label>
+          <TextField
+            multiline
+            label="System (optional)"
+            value={system}
+            onValueChange={setSystem}
+            rows={2}
+          />
         )}
 
-        <label className="flex flex-col gap-1 text-sm">
-          Prompt
-          <textarea
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            rows={4}
-            className="rounded bg-gray-800 border border-gray-700 p-2"
-          />
-        </label>
+        <TextField multiline label="Prompt" value={prompt} onValueChange={setPrompt} rows={4} />
 
-        <button
-          type="button"
+        <Button
+          label="Run"
           onClick={run}
-          disabled={running || prompt.trim() === ""}
-          className="self-start rounded bg-blue-500 px-4 py-2 text-sm disabled:opacity-50"
-        >
-          {running ? "Running…" : "Run"}
-        </button>
+          loading={running}
+          loadingLabel="Running…"
+          disabled={prompt.trim() === ""}
+          className="self-start"
+        />
 
         {error && <p className="text-red-400 text-sm">Error: {error}</p>}
 

@@ -1,6 +1,6 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 
-import { apiFetch } from "../api";
+import { apiFetch } from "@/api";
 
 /** The wrapper every paginated list endpoint returns, in wire field names. */
 export type Page<T> = {

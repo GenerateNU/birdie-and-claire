@@ -1,6 +1,6 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
-import { AccountError, hasAccountQuery } from "../../account";
+import { AccountError, hasAccountQuery } from "@/account";
 
 export const Route = createFileRoute("/_signedIn/_hasAccount")({
   beforeLoad: async ({ context }) => {
