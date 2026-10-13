@@ -53,9 +53,11 @@ A production login works on a preview, but the preview database starts with
 no users, so you create the app account again there. It does start with the demo
 products from `backend/cmd/tasks/seeds/products.sql`: every push seeds them
 when the `products` table is empty. The database survives re-pushes and
-is dropped when the PR closes. Migrations run against it on every push; if you
-edit a migration that already ran, or main brings in an older-timestamped one,
-close and reopen the PR to start from a fresh database. Uploads from a preview
+is dropped when the PR closes. Migrations run against it on every push. If they
+fail, for example because main brought in an older-timestamped one, the deploy
+recreates the database and migrates again. Editing a migration that
+already ran does not fail, since goose skips versions it has applied, so close
+and reopen the PR to start from a fresh database. Uploads from a preview
 stay in the bucket after the PR closes.
 
 ## One-time setup
