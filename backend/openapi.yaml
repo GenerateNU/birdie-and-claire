@@ -316,6 +316,75 @@ components:
         - dislike
         - save
       type: object
+    RecommendationExpandedQuery:
+      additionalProperties: false
+      properties:
+        exclude_tags:
+          description: Products carrying any of these tags were left out
+          items:
+            type: string
+          type: array
+        nice_tags:
+          description: Each matching tag moved a product up the ranking
+          items:
+            type: string
+          type: array
+        slots:
+          $ref: "#/components/schemas/RecommendationExpandedSlots"
+          description: The search phrase used for each slot; an empty phrase means the slot was not searched
+      required:
+        - slots
+        - exclude_tags
+        - nice_tags
+      type: object
+    RecommendationExpandedSlots:
+      additionalProperties: false
+      properties:
+        accessory:
+          type: string
+        bottom:
+          type: string
+        top:
+          type: string
+      required:
+        - top
+        - bottom
+        - accessory
+      type: object
+    RecommendationRequest:
+      additionalProperties: false
+      properties:
+        query:
+          description: What the shopper is looking for, such as "summer wedding guest"
+          maxLength: 200
+          minLength: 1
+          type: string
+      required:
+        - query
+      type: object
+    RecommendationResponse:
+      additionalProperties: false
+      properties:
+        accessory:
+          items:
+            $ref: "#/components/schemas/Product"
+          type: array
+        bottom:
+          items:
+            $ref: "#/components/schemas/Product"
+          type: array
+        expanded_query:
+          $ref: "#/components/schemas/RecommendationExpandedQuery"
+        top:
+          items:
+            $ref: "#/components/schemas/Product"
+          type: array
+      required:
+        - expanded_query
+        - top
+        - bottom
+        - accessory
+      type: object
     ShareOutfitResponse:
       additionalProperties: false
       properties:
@@ -674,6 +743,33 @@ paths:
       summary: List a product's images
       tags:
         - products
+  /api/v1/recommendations:
+    post:
+      operationId: create-recommendations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecommendationRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecommendationResponse"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Recommend products per outfit slot for a shopper query
+      tags:
+        - recommendations
   /api/v1/users/me:
     get:
       operationId: get-current-user

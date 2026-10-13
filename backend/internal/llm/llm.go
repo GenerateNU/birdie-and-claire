@@ -25,7 +25,10 @@ type Request struct {
 	Prompt string
 	Tools  []Tool
 
-	outputType any
+	// names a file in prompts/ without its extension; a request sets it or System and Prompt, never both
+	promptName  string
+	promptInput any
+	outputType  any
 }
 
 type Response struct {

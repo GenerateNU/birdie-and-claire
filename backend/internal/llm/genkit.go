@@ -2,6 +2,7 @@ package llm
 
 import (
 	"context"
+	"embed"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -38,6 +39,9 @@ const (
 	// each turn is a billed model call; Genkit's default allows 50
 	maxToolTurns = 5
 )
+
+//go:embed prompts/*.prompt
+var promptFS embed.FS
 
 // the statuses a mid-stream gateway failure can carry that are worth another attempt
 var retryStatuses = []status.Name{status.Unavailable, status.ResourceExhausted, status.DeadlineExceeded, status.Internal}
@@ -78,7 +82,8 @@ func newGenkitClient(ctx context.Context, cfg config.LLMConfig, retry middleware
 
 	retry.Statuses = retryStatuses
 	return &genkitClient{
-		genkit:  genkit.Init(ctx, genkit.WithPlugins(plugin)),
+		// WithPromptFS reads the prompts directory by default, so no WithPromptDir
+		genkit:  genkit.Init(ctx, genkit.WithPlugins(plugin), genkit.WithPromptFS(promptFS)),
 		modelID: cfg.Model,
 		model:   openrouter.ModelRef(cfg.Model, nil),
 		retry:   retry,
@@ -89,7 +94,7 @@ func (c *genkitClient) Generate(ctx context.Context, req Request) (Response, err
 	start := time.Now()
 	usage := &callUsage{}
 
-	opts, err := c.options(req, usage)
+	opts, err := c.options(ctx, req, usage)
 	if err != nil {
 		return Response{}, err
 	}
@@ -110,7 +115,7 @@ func (c *genkitClient) Generate(ctx context.Context, req Request) (Response, err
 
 func (c *genkitClient) GenerateStream(ctx context.Context, req Request) (ChunkReader, error) {
 	usage := &callUsage{}
-	opts, err := c.options(req, usage)
+	opts, err := c.options(ctx, req, usage)
 	if err != nil {
 		return nil, err
 	}
@@ -127,17 +132,25 @@ func (c *genkitClient) GenerateStream(ctx context.Context, req Request) (ChunkRe
 	}, nil
 }
 
-func (c *genkitClient) options(req Request, usage *callUsage) ([]ai.GenerateOption, error) {
+func (c *genkitClient) options(ctx context.Context, req Request, usage *callUsage) ([]ai.GenerateOption, error) {
 	opts := []ai.GenerateOption{
 		ai.WithModel(c.model),
-		// %s so stray verbs in shopper text are never interpreted
-		ai.WithPrompt("%s", req.Prompt),
 		// Retry wraps classify wraps usage; the deadline on ctx sits outside all three, so it is never retried
 		ai.WithUse(c.retry, ai.MiddlewareFunc(classify), ai.MiddlewareFunc(usage.middleware)),
 		ai.WithMaxTurns(maxToolTurns),
 	}
-	if req.System != "" {
-		opts = append(opts, ai.WithSystem("%s", req.System))
+	if req.promptName != "" {
+		messages, err := c.renderPrompt(ctx, req)
+		if err != nil {
+			return nil, err
+		}
+		opts = append(opts, ai.WithMessages(messages...))
+	} else {
+		// %s so stray verbs in shopper text are never interpreted
+		opts = append(opts, ai.WithPrompt("%s", req.Prompt))
+		if req.System != "" {
+			opts = append(opts, ai.WithSystem("%s", req.System))
+		}
 	}
 	if req.outputType != nil {
 		opts = append(opts, ai.WithOutputType(req.outputType))
@@ -149,6 +162,23 @@ func (c *genkitClient) options(req Request, usage *callUsage) ([]ai.GenerateOpti
 		opts = append(opts, ai.WithTools(toGenkitTool(tool)))
 	}
 	return opts, nil
+}
+
+// Execute takes no output type, so the prompt is only rendered and its messages go through Generate.
+func (c *genkitClient) renderPrompt(ctx context.Context, req Request) ([]*ai.Message, error) {
+	if req.System != "" || req.Prompt != "" {
+		return nil, fmt.Errorf("llm: prompt %q cannot be combined with System or Prompt", req.promptName)
+	}
+	prompt := genkit.LookupPrompt(c.genkit, req.promptName)
+	if prompt == nil {
+		return nil, fmt.Errorf("llm: no prompt named %q", req.promptName)
+	}
+	rendered, err := prompt.Render(quietGenkit(ctx), req.promptInput)
+	if err != nil {
+		// the cause can quote the input, which is shopper text
+		return nil, fmt.Errorf("llm: render prompt %q failed", req.promptName)
+	}
+	return rendered.Messages, nil
 }
 
 // unregistered, so concurrent calls can use the same tool name without colliding
