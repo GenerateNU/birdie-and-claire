@@ -29,6 +29,12 @@ jobs:
   preview:
     name: Deploy preview backend
     runs-on: ubuntu-latest
+    # One shared environment, not one per PR: GitHub never deletes environments
+    # on its own, and removing them needs an admin token. A deploy from another
+    # PR can mark this PR's badge inactive; the PR comment stays current.
+    environment:
+      name: Preview
+      url: ${{ steps.frontend.outputs.url }}
     # Forked PRs cannot read secrets. The DROPLET_HOST check keeps this inert
     # until the droplet is set up.
     if: github.event.pull_request.head.repo.full_name == github.repository && vars.DROPLET_HOST != ''
@@ -94,6 +100,7 @@ jobs:
       # Runs from the repo root: the Vercel project's Root Directory is
       # frontend/, and the CLI applies it relative to where it starts.
       - name: Build and deploy the preview frontend to Vercel
+        id: frontend
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
@@ -114,13 +121,14 @@ jobs:
           kfl run --project test_project --env prod -- \
             npx --yes vercel@60.1.3 build --token="$VERCEL_TOKEN"
           url=$(npx --yes vercel@60.1.3 deploy --prebuilt --token="$VERCEL_TOKEN")
-          echo "FRONTEND_URL=${url}" >> "$GITHUB_ENV"
+          echo "url=${url}" >> "$GITHUB_OUTPUT"
 
       - name: Comment the result
         if: success() || failure()
         uses: actions/github-script@v7
         env:
           PREVIEW_HOST: pr-${{ github.event.pull_request.number }}.${{ vars.PREVIEW_DOMAIN }}
+          FRONTEND_URL: ${{ steps.frontend.outputs.url }}
           JOB_STATUS: ${{ job.status }}
         with:
           script: |
