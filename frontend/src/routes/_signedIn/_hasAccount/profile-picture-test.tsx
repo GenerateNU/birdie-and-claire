@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, type ChangeEvent } from "react";
+import { useRef, useState, type ChangeEvent } from "react";
 
 import { apiFetch } from "@/api";
-import { Avatar } from "@/design-system";
+import { Avatar, Button } from "@/design-system";
 import { supabase } from "@/supabase/client";
 
 export const Route = createFileRoute("/_signedIn/_hasAccount/profile-picture-test")({
@@ -30,6 +30,7 @@ function ProfilePictureTest() {
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<UserResponse | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function fetchCurrentUser() {
     const {
@@ -126,15 +127,20 @@ function ProfilePictureTest() {
       </p>
 
       <div className="flex flex-col gap-4 max-w-md">
-        <label className="flex flex-col gap-1 text-sm">
-          Image
-          <input
-            type="file"
-            accept={ACCEPTED_TYPES.join(",")}
-            onChange={handleFile}
-            className="text-sm file:mr-3 file:rounded file:border-0 file:bg-blue-500 file:px-3 file:py-2 file:text-white"
-          />
-        </label>
+        {/* The native file input can't be restyled, so it stays hidden and the
+            Button opens its file picker. */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={ACCEPTED_TYPES.join(",")}
+          onChange={handleFile}
+          className="hidden"
+        />
+        <Button
+          label="Choose file"
+          onClick={() => fileInputRef.current?.click()}
+          className="self-start"
+        />
 
         {status && <p className="text-gray-400 text-sm">{status}</p>}
         {error && <p className="text-red-400 text-sm">Error: {error}</p>}
