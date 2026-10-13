@@ -74,8 +74,15 @@ jobs:
       - name: Install Keyflare
         run: npm install -g "@keyflare/cli@${KEYFLARE_VERSION}"
 
+      # PUBLIC_API_URL stays out of Keyflare prod because previews read it too
+      # and each one needs its own host. preview-up.sh sets the preview value.
       - name: Generate backend.env from Keyflare prod
-        run: go -C backend run ./cmd/tasks deploy env production "$RUNNER_TEMP/backend.env"
+        env:
+          API_DOMAIN: ${{ vars.API_DOMAIN }}
+        run: |
+          set -euo pipefail
+          go -C backend run ./cmd/tasks deploy env production "$RUNNER_TEMP/backend.env"
+          echo "PUBLIC_API_URL=https://${API_DOMAIN}" >> "$RUNNER_TEMP/backend.env"
 
       - name: Configure SSH
         run: |
