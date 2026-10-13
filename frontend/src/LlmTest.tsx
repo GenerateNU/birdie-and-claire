@@ -52,6 +52,35 @@ function parseEvents(buffer: string): [StreamEvent[], string] {
   return [events, rest];
 }
 
+async function failureMessage(path: string, res: Response): Promise<string> {
+  const status = res.statusText ? `${res.status} (${res.statusText})` : String(res.status);
+  const text = (await res.text()).trim();
+
+  if (text === "") {
+    return `${path} failed: ${status}`;
+  }
+
+  return `${path} failed: ${status}: ${explanation(res, text)}`;
+}
+
+function explanation(res: Response, text: string): string {
+  if (res.headers.get("Content-Type")?.includes("application/problem+json")) {
+    try {
+      // SAFETY: huma writes problem+json bodies as huma.ErrorModel, whose detail and title are strings.
+      const problem = JSON.parse(text) as { detail?: string; title?: string };
+      const message = problem.detail || problem.title;
+
+      if (message) {
+        return message;
+      }
+    } catch {
+      // a mislabeled body falls back to its raw text below
+    }
+  }
+
+  return text.slice(0, 200);
+}
+
 export default function LlmTest() {
   const [mode, setMode] = useState<Mode>("plain");
   const [system, setSystem] = useState("");
@@ -68,7 +97,7 @@ export default function LlmTest() {
     });
 
     if (!res.ok) {
-      throw new Error(`${path} failed: ${res.status}`);
+      throw new Error(await failureMessage(path, res));
     }
 
     return res;

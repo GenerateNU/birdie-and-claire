@@ -149,7 +149,8 @@ function SignedInRoutes({ userId, pathname }: { userId: string; pathname: string
     return <OutfitsPage />;
   }
 
-  if (pathname === "/llm-test") {
+  // the /api/v1/llm routes exist only where AI_DEV_ENDPOINTS is set, which is local dev
+  if (import.meta.env.DEV && pathname === "/llm-test") {
     return <LlmTest />;
   }
 
@@ -169,9 +170,11 @@ function SignedInRoutes({ userId, pathname }: { userId: string; pathname: string
       <a className="block underline hover:text-white text-sm" href="/outfits">
         Outfits →
       </a>
-      <a className="block underline hover:text-white text-sm" href="/llm-test">
-        LLM test →
-      </a>
+      {import.meta.env.DEV && (
+        <a className="block underline hover:text-white text-sm" href="/llm-test">
+          LLM test →
+        </a>
+      )}
       <div className="mt-6">
         <button
           type="button"
