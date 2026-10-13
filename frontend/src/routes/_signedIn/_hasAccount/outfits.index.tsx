@@ -4,7 +4,7 @@ import { useCallback } from "react";
 import OutfitList, { type Outfit } from "../../../OutfitList";
 import { usePagination } from "../../../utils/usePagination";
 
-export const Route = createFileRoute("/_signedIn/_hasAccount/outfits")({
+export const Route = createFileRoute("/_signedIn/_hasAccount/outfits/")({
   component: OutfitsPage,
 });
 

@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 
 export type Outfit = {
@@ -42,7 +43,11 @@ export default function OutfitList({ outfits, nextCursor, onLoadMore }: OutfitLi
   return (
     <ul ref={listRef} className="max-h-96 overflow-y-auto">
       {outfits.map((outfit) => (
-        <li key={outfit.id}>{outfit.name}</li>
+        <li key={outfit.id}>
+          <Link className="underline" to="/outfits/$outfitId" params={{ outfitId: outfit.id }}>
+            {outfit.name}
+          </Link>
+        </li>
       ))}
       {nextCursor !== null && <li ref={sentinelRef} aria-hidden="true" className="h-px" />}
     </ul>
