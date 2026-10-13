@@ -22,6 +22,16 @@ docker rm -f "$CONTAINER" >/dev/null 2>&1 \
 
 rm -f "/opt/${PROJECT}/previews/pr-${PR_NUMBER}.env"
 
+# Tagged images are not dangling, so `docker image prune` would keep them.
+IMAGES=$(docker images --format '{{.Repository}}:{{.Tag}}' | grep -E "/${PROJECT}/backend:pr-${PR_NUMBER}-")
+if [ -z "$IMAGES" ]; then
+  echo "    no images for PR #${PR_NUMBER}"
+else
+  echo "$IMAGES" | xargs docker rmi >/dev/null 2>&1 \
+    && echo "    removed images for PR #${PR_NUMBER}" \
+    || echo "    could not remove some images for PR #${PR_NUMBER}"
+fi
+
 if [ -r "$SHARED_ENV" ]; then
   PGPASSWORD=$(grep -E '^PREVIEW_DB_PASSWORD=' "$SHARED_ENV" | head -1 | cut -d= -f2-)
   # FORCE disconnects any session a just-killed container still holds open.

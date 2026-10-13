@@ -78,4 +78,13 @@ for _ in $(seq 1 15); do
   exit 1
 done
 
+# Every push pulls a new pr-<n>-<sha> tag. Old tags are not dangling, so
+# `docker image prune` would keep them; remove this PR's by name instead of
+# `prune -a`, which would also take other projects' images off the droplet.
+echo "    removing older images for PR #${PR_NUMBER}"
+docker images --format '{{.Repository}}:{{.Tag}}' \
+  | grep -F "${IMAGE%:*}:pr-${PR_NUMBER}-" \
+  | grep -vxF "$IMAGE" \
+  | xargs -r docker rmi >/dev/null || true
+
 echo "==> https://${HOST}"
