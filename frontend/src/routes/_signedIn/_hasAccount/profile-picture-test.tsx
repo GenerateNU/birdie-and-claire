@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, type ChangeEvent } from "react";
 
 import { apiFetch } from "@/api";
+import { Avatar } from "@/design-system";
 import { supabase } from "@/supabase/client";
 
 export const Route = createFileRoute("/_signedIn/_hasAccount/profile-picture-test")({
@@ -143,11 +144,9 @@ function ProfilePictureTest() {
             <p className="font-semibold">{user.name || "(no name)"}</p>
             <p className="text-gray-400 text-xs break-all">{user.id}</p>
             {user.profile_picture_url ? (
-              <img
-                src={user.profile_picture_url}
-                alt="profile"
-                className="mt-3 h-32 w-32 rounded-full object-cover"
-              />
+              <div className="mt-3">
+                <Avatar src={user.profile_picture_url} alt="profile" size="lg" />
+              </div>
             ) : (
               <p className="text-gray-500 text-sm mt-3">No profile picture</p>
             )}

@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { apiFetch } from "@/api";
-import { Button } from "@/design-system";
+import { Button, RadioGroup } from "@/design-system";
 
 export const Route = createFileRoute("/_signedIn/_hasAccount/llm-test")({
   component: LlmTest,
@@ -199,19 +199,12 @@ function LlmTest() {
       </p>
 
       <div className="flex flex-col gap-4 max-w-2xl">
-        <div className="flex flex-wrap gap-4 text-sm">
-          {MODES.map((option) => (
-            <label key={option.mode} className="flex items-center gap-1">
-              <input
-                type="radio"
-                name="mode"
-                checked={mode === option.mode}
-                onChange={() => setMode(option.mode)}
-              />
-              {option.label}
-            </label>
-          ))}
-        </div>
+        <RadioGroup
+          label="Mode"
+          options={MODES.map((option) => ({ label: option.label, value: option.mode }))}
+          value={mode}
+          onValueChange={setMode}
+        />
 
         {mode !== "structured" && (
           <label className="flex flex-col gap-1 text-sm">

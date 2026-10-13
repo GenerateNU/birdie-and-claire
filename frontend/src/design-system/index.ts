@@ -1,4 +1,14 @@
+export { Avatar } from "./components/avatars/avatar";
+
 export { Button } from "./components/buttons/button";
+
+export { Checkbox } from "./components/buttons/checkbox";
+
+export { RadioGroup } from "./components/buttons/radio";
+
+export { Toggle } from "./components/buttons/toggle";
+
+export { Dialog } from "./components/dialog/dialog";
 
 export { Box } from "./primitives/box";
 
