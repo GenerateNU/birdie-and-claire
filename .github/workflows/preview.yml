@@ -1,6 +1,6 @@
-# Per-PR backend preview on the shared droplet: its own container and its own
-# database, migrated from the PR branch. Vercel builds the frontend preview
-# separately; that one proxies to the production API.
+# Per-PR preview: a backend on the shared droplet with its own container and
+# database, migrated from the PR branch, and a Vercel frontend built from the
+# same commit whose /api proxy points at that backend.
 #
 # Previews read the Keyflare prod environment, so they use production
 # Supabase auth, the production S3 bucket, and the production embedder. Only
@@ -61,7 +61,7 @@ jobs:
       - uses: jdx/mise-action@v4
         with:
           install: true
-          install_args: go
+          install_args: go bun
 
       - name: Install Keyflare
         run: npm install -g "@keyflare/cli@${KEYFLARE_VERSION}"
@@ -89,6 +89,33 @@ jobs:
           scp -p "$RUNNER_TEMP/preview.env" "$DROPLET:/opt/birdie-and-claire/preview.env"
           ssh "$DROPLET" bash -s -- "$PR" "$IMAGE" "$PREVIEW_DOMAIN" < deploy/preview-up.sh
 
+      # vercel.json proxies /api to production. A preview rewrites that target to
+      # its own backend first, so calls stay same-origin and need no CORS.
+      # Runs from the repo root: the Vercel project's Root Directory is
+      # frontend/, and the CLI applies it relative to where it starts.
+      - name: Build and deploy the preview frontend to Vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+          PREVIEW_HOST: pr-${{ github.event.pull_request.number }}.${{ vars.PREVIEW_DOMAIN }}
+        run: |
+          set -euo pipefail
+          jq --arg destination "https://${PREVIEW_HOST}/api/:path*" \
+            '(.rewrites[] | select(.source == "/api/:path*") | .destination) = $destination' \
+            frontend/vercel.json > "$RUNNER_TEMP/vercel.json"
+          mv "$RUNNER_TEMP/vercel.json" frontend/vercel.json
+          # A renamed rewrite source would match nothing and silently leave the
+          # preview on production's API.
+          grep -qF "$PREVIEW_HOST" frontend/vercel.json
+          npx --yes vercel@60.1.3 pull --yes --environment=preview --token="$VERCEL_TOKEN"
+          # Vite inlines VITE_SUPABASE_* at build time, so the preview reads them
+          # from Keyflare prod like the backend does.
+          kfl run --project test_project --env prod -- \
+            npx --yes vercel@60.1.3 build --token="$VERCEL_TOKEN"
+          url=$(npx --yes vercel@60.1.3 deploy --prebuilt --token="$VERCEL_TOKEN")
+          echo "FRONTEND_URL=${url}" >> "$GITHUB_ENV"
+
       - name: Comment the result
         if: success() || failure()
         uses: actions/github-script@v7
@@ -103,14 +130,15 @@ jobs:
             const body = process.env.JOB_STATUS === 'success'
               ? [
                   marker,
-                  '### Preview backend ready',
+                  '### Preview ready',
                   '',
+                  `App: **${process.env.FRONTEND_URL}**`,
                   `API: **https://${process.env.PREVIEW_HOST}** (docs at \`/docs\`)`,
                   '',
-                  `Built from \`${sha}\` with its own database, migrated from this branch.`,
+                  `Built from \`${sha}\`. The app talks to this API, which has its own database, migrated from this branch.`,
                   'Auth, S3, and the embedder are production. Uploads from this preview land in the real bucket.',
                 ].join('\n')
-              : [marker, '### Preview backend failed', '', `[View the logs](${logs})`].join('\n');
+              : [marker, '### Preview failed', '', `[View the logs](${logs})`].join('\n');
 
             const { owner, repo } = context.repo;
             const issue_number = context.issue.number;

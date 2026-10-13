@@ -24,11 +24,14 @@ preview.yml                              preview-cleanup.yml
    keyflare prod -> preview.env             DROP DATABASE pr_<n>
    CREATE DATABASE pr_<n>, migrate
    run at https://pr-<n>.<PREVIEW_DOMAIN>
+   vercel build with /api -> pr-<n>, vercel deploy --prebuilt
 ```
 
-Merging to `main` deploys nothing: `frontend/vercel.json` turns off Git
-deployments for `main`. Vercel still builds a frontend preview for every PR on
-its own, and that preview proxies `/api` to the production backend.
+Vercel's Git integration deploys nothing: `frontend/vercel.json` turns off Git
+deployments for every branch, so merging to `main` deploys nothing. The only
+frontend deploys are the two workflows above. A preview frontend is built from
+the PR's commit with its `/api` proxy rewritten to that PR's backend, so it never
+talks to production's API.
 
 ```
 droplet
@@ -45,6 +48,13 @@ A preview gets its own database and nothing else. It reads the Keyflare `prod`
 environment, so it verifies tokens against production Supabase, writes uploads
 to the production storage bucket, and calls the production embedder. Do not
 exercise destructive flows on a preview.
+
+A production login works on a preview, but the preview database starts empty,
+so you create the app account again there. The database survives re-pushes and
+is dropped when the PR closes. Migrations run against it on every push; if you
+edit a migration that already ran, or main brings in an older-timestamped one,
+close and reopen the PR to start from a fresh database. Uploads from a preview
+stay in the bucket after the PR closes.
 
 ## One-time setup
 
@@ -110,25 +120,23 @@ pictures load without a signed URL. `.env.example` explains each variable.
 
 Import `GenerateNU/birdie-and-claire` as a new project with **Root Directory**
 set to `frontend`. `frontend/vercel.json` sets the build, the `/api` proxy, the
-SPA fallback, and turns off Git deployments for `main`.
-
-Under Settings, Environment Variables, add `VITE_SUPABASE_URL` and
-`VITE_SUPABASE_ANON_KEY` for the **Preview** environment only, with the same
-values as Keyflare prod. Production builds in the release workflow and reads
-them from Keyflare.
+SPA fallback, and turns off Git deployments. Both production and preview
+frontends build in GitHub Actions and read `VITE_SUPABASE_*` from Keyflare, so
+the Vercel project needs no environment variables.
 
 Under Settings, Deployment Protection, turn off Vercel Authentication if
 reviewers without a Vercel account need to open previews.
 
-The `/api` proxy target is written into `vercel.json`. If `API_DOMAIN` changes,
-change it there too.
+The production `/api` proxy target is written into `vercel.json`. If
+`API_DOMAIN` changes, change it there too. `preview.yml` rewrites it per PR.
 
 ### 5. Storage CORS
 
 Browsers upload straight to the bucket with presigned URLs, so storage must
 accept a cross-origin `PUT` from the production site and from
 `https://<project>-*-<team>.vercel.app`, which covers Vercel's preview URLs.
-Check this against Supabase Storage before the first release.
+Supabase Storage already allows this: its S3 endpoint answers preflights with
+`Access-Control-Allow-Origin: *` and allows `PUT`, so there is nothing to set.
 
 ### 6. GitHub
 
