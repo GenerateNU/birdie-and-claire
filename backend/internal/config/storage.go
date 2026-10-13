@@ -11,6 +11,7 @@ const defaultMaxUploadBytes = 5 << 20 // 5 MiB
 type StorageConfig struct {
 	Endpoint       string // API uses (floci:4566 in-container); "" = real AWS
 	PublicEndpoint string // browser uses (localhost:4566); presigned URLs sign to this
+	PublicURL      string // base URL objects are read from: <PublicURL>/<key>
 	Region         string
 	Bucket         string
 	MaxUploadBytes int64
@@ -31,6 +32,11 @@ func loadStorage() (StorageConfig, error) {
 		return StorageConfig{}, fmt.Errorf("AWS credentials missing (use test/test for Floci)")
 	}
 
+	publicURL := os.Getenv("S3_PUBLIC_URL")
+	if publicURL == "" {
+		return StorageConfig{}, fmt.Errorf("S3_PUBLIC_URL is required")
+	}
+
 	endpoint := os.Getenv("S3_ENDPOINT")
 	publicEndpoint := os.Getenv("S3_PUBLIC_ENDPOINT")
 	if (endpoint == "") != (publicEndpoint == "") {
@@ -45,6 +51,7 @@ func loadStorage() (StorageConfig, error) {
 	return StorageConfig{
 		Endpoint:       endpoint,
 		PublicEndpoint: publicEndpoint,
+		PublicURL:      publicURL,
 		Region:         region,
 		Bucket:         bucket,
 		MaxUploadBytes: maxUploadBytes,

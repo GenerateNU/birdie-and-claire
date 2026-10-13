@@ -1,0 +1,137 @@
+# Production deploy: backend to the shared droplet, frontend to Vercel.
+#
+# Publishing a GitHub Release ships both. The `production` environment holds
+# the run for a TL's approval first, which is also the only review migrations
+# get before they reach Supabase.
+name: Deploy production
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Tag, branch, or SHA to deploy (an older tag rolls back code, not schema)
+        required: true
+        default: main
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  KEYFLARE_API_KEY: ${{ secrets.KEYFLARE_API_KEY }}
+  KEYFLARE_API_URL: ${{ secrets.KEYFLARE_API_URL }}
+  KEYFLARE_VERSION: 0.1.1
+
+jobs:
+  deploy:
+    name: Deploy backend and frontend
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: ${{ vars.PUBLIC_FRONTEND_URL }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+
+      # github.sha is the workflow's own ref, not the one checked out, so a
+      # manual deploy of an older tag would otherwise be mislabelled.
+      - name: Resolve the deployed commit
+        run: echo "DEPLOY_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      # GHCR wants lowercase, and github.repository keeps GenerateNU's casing.
+      - name: Compute the image name
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}/backend:${DEPLOY_SHA}" >> "$GITHUB_ENV"
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: backend
+          file: backend/Dockerfile
+          push: true
+          tags: ${{ env.IMAGE }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - uses: jdx/mise-action@v4
+        with:
+          install: true
+          install_args: go bun
+
+      - name: Install Keyflare
+        run: npm install -g "@keyflare/cli@${KEYFLARE_VERSION}"
+
+      - name: Generate backend.env from Keyflare prod
+        run: go -C backend run ./cmd/tasks deploy env production "$RUNNER_TEMP/backend.env"
+
+      - name: Configure SSH
+        run: |
+          set -euo pipefail
+          install -m 700 -d ~/.ssh
+          echo "${{ secrets.DROPLET_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          # A pinned host key stops anything answering at that IP from
+          # harvesting the deploy key.
+          echo "${{ secrets.DROPLET_SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Migrate and deploy the backend
+        env:
+          DROPLET: ${{ vars.DROPLET_USER }}@${{ vars.DROPLET_HOST }}
+          API_DOMAIN: ${{ vars.API_DOMAIN }}
+        run: |
+          set -euo pipefail
+          ssh "$DROPLET" "mkdir -p /opt/birdie-and-claire"
+          scp -p "$RUNNER_TEMP/backend.env" deploy/app/docker-compose.yml "$DROPLET:/opt/birdie-and-claire/"
+          # Migrations go first: the server refuses to boot on a stale schema,
+          # so the old container keeps serving if they fail.
+          ssh "$DROPLET" \
+            "cd /opt/birdie-and-claire \
+             && docker pull --quiet '$IMAGE' \
+             && docker run --rm --env-file backend.env --entrypoint /migrate '$IMAGE' up \
+             && BACKEND_IMAGE='$IMAGE' API_DOMAIN='$API_DOMAIN' docker compose up -d \
+             && docker image prune -f"
+
+      # The frontend must never go live against a backend that failed to start.
+      - name: Wait for the backend to be healthy
+        env:
+          API_DOMAIN: ${{ vars.API_DOMAIN }}
+        run: |
+          for attempt in $(seq 1 30); do
+            if curl -fsS "https://${API_DOMAIN}/health" >/dev/null; then
+              echo "healthy after ${attempt} attempt(s)"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::Backend never became healthy at https://${API_DOMAIN}/health"
+          exit 1
+
+      # Runs from the repo root: the Vercel project's Root Directory is
+      # frontend/, and the CLI applies it relative to where it starts.
+      - name: Build and deploy the frontend to Vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+        run: |
+          set -euo pipefail
+          npx --yes vercel@60.1.3 pull --yes --environment=production --token="$VERCEL_TOKEN"
+          # Vite inlines VITE_SUPABASE_* at build time, so production reads
+          # them from Keyflare rather than from Vercel's settings.
+          kfl run --project test_project --env prod -- \
+            npx --yes vercel@60.1.3 build --prod --token="$VERCEL_TOKEN"
+          npx --yes vercel@60.1.3 deploy --prebuilt --prod --token="$VERCEL_TOKEN"
