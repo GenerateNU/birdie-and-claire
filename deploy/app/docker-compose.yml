@@ -1,0 +1,23 @@
+# This project's production backend on the shared droplet. The deploy workflow
+# copies this file and a freshly generated backend.env to
+# /opt/birdie-and-claire on every release.
+name: birdie-and-claire
+
+services:
+  backend:
+    # An immutable per-commit tag, so a rollback is a redeploy of an older ref.
+    image: ${BACKEND_IMAGE:?set BACKEND_IMAGE}
+    container_name: birdie-and-claire-backend
+    restart: unless-stopped
+    env_file:
+      - backend.env
+    networks:
+      - edge
+    labels:
+      caddy: ${API_DOMAIN:?set API_DOMAIN}
+      caddy.reverse_proxy: "{{upstreams 8080}}"
+
+networks:
+  edge:
+    name: edge
+    external: true
