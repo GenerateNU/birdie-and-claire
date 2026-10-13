@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, type SyntheticEvent } from "react";
 
-import { supabase } from "../supabase/client";
+import { Button, TextField } from "@/design-system";
+import { supabase } from "@/supabase/client";
 
 export const Route = createFileRoute("/login")({
   component: Login,
@@ -93,23 +94,8 @@ function Login() {
       {step === "email" ? (
         <form onSubmit={sendCode} className="flex flex-col gap-4 max-w-md">
           <p className="text-gray-400 text-sm">We'll email you a code.</p>
-          <label className="flex flex-col gap-1 text-sm">
-            Email
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="rounded border border-gray-700 bg-gray-800 px-3 py-2 text-white"
-            />
-          </label>
-          <button
-            type="submit"
-            disabled={busy}
-            className="rounded bg-blue-500 px-3 py-2 text-sm text-white disabled:opacity-50"
-          >
-            Send code
-          </button>
+          <TextField label="Email" type="email" required value={email} onValueChange={setEmail} />
+          <Button label="Send code" type="submit" disabled={busy} />
           {status && <p className="text-gray-400 text-sm">{status}</p>}
           {error && <p className="text-red-400 text-sm">Error: {error}</p>}
         </form>
@@ -118,42 +104,18 @@ function Login() {
           <p className="text-gray-400 text-sm">
             Enter the code we sent to <span className="text-gray-200">{email}</span>.
           </p>
-          <label className="flex flex-col gap-1 text-sm">
-            Code
-            <input
-              type="text"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              required
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              className="rounded border border-gray-700 bg-gray-800 px-3 py-2 text-white"
-            />
-          </label>
-          <button
-            type="submit"
-            disabled={busy}
-            className="rounded bg-blue-500 px-3 py-2 text-sm text-white disabled:opacity-50"
-          >
-            Verify
-          </button>
+          <TextField
+            label="Code"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            required
+            value={code}
+            onValueChange={setCode}
+          />
+          <Button label="Verify" type="submit" disabled={busy} />
           <div className="flex gap-4 text-sm">
-            <button
-              type="button"
-              onClick={resendCode}
-              disabled={busy}
-              className="underline hover:text-white disabled:opacity-50"
-            >
-              Resend code
-            </button>
-            <button
-              type="button"
-              onClick={changeEmail}
-              disabled={busy}
-              className="underline hover:text-white disabled:opacity-50"
-            >
-              Change email
-            </button>
+            <Button label="Resend code" onClick={resendCode} disabled={busy} />
+            <Button label="Change email" onClick={changeEmail} disabled={busy} />
           </div>
           {status && <p className="text-gray-400 text-sm">{status}</p>}
           {notice && <p className="text-gray-400 text-sm">{notice}</p>}

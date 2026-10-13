@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignedInRouteImport } from './routes/_signedIn'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as PlaygroundRouteImport } from './routes/playground'
 import { Route as SignedInHasAccountRouteImport } from './routes/_signedIn/_hasAccount'
 import { Route as SignedInCreateAccountRouteImport } from './routes/_signedIn/create-account'
 import { Route as SignedInHasAccountIndexRouteImport } from './routes/_signedIn/_hasAccount/index'
@@ -26,6 +27,11 @@ const SignedInRoute = SignedInRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlaygroundRoute = PlaygroundRouteImport.update({
+  id: '/playground',
+  path: '/playground',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SignedInHasAccountRoute = SignedInHasAccountRouteImport.update({
@@ -70,6 +76,7 @@ const SignedInHasAccountOutfitsOutfitIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof SignedInHasAccountIndexRoute
   '/login': typeof LoginRoute
+  '/playground': typeof PlaygroundRoute
   '/create-account': typeof SignedInCreateAccountRoute
   '/llm-test': typeof SignedInHasAccountLlmTestRoute
   '/profile-picture-test': typeof SignedInHasAccountProfilePictureTestRoute
@@ -79,6 +86,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof SignedInHasAccountIndexRoute
   '/login': typeof LoginRoute
+  '/playground': typeof PlaygroundRoute
   '/create-account': typeof SignedInCreateAccountRoute
   '/llm-test': typeof SignedInHasAccountLlmTestRoute
   '/profile-picture-test': typeof SignedInHasAccountProfilePictureTestRoute
@@ -89,6 +97,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_signedIn': typeof SignedInRouteWithChildren
   '/login': typeof LoginRoute
+  '/playground': typeof PlaygroundRoute
   '/_signedIn/_hasAccount': typeof SignedInHasAccountRouteWithChildren
   '/_signedIn/create-account': typeof SignedInCreateAccountRoute
   '/_signedIn/_hasAccount/llm-test': typeof SignedInHasAccountLlmTestRoute
@@ -102,6 +111,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/playground'
     | '/create-account'
     | '/llm-test'
     | '/profile-picture-test'
@@ -111,6 +121,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/playground'
     | '/create-account'
     | '/llm-test'
     | '/profile-picture-test'
@@ -120,6 +131,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_signedIn'
     | '/login'
+    | '/playground'
     | '/_signedIn/_hasAccount'
     | '/_signedIn/create-account'
     | '/_signedIn/_hasAccount/llm-test'
@@ -132,6 +144,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   SignedInRoute: typeof SignedInRouteWithChildren
   LoginRoute: typeof LoginRoute
+  PlaygroundRoute: typeof PlaygroundRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -148,6 +161,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/playground': {
+      id: '/playground'
+      path: '/playground'
+      fullPath: '/playground'
+      preLoaderRoute: typeof PlaygroundRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_signedIn/_hasAccount': {
@@ -240,6 +260,7 @@ const SignedInRouteWithChildren = SignedInRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   SignedInRoute: SignedInRouteWithChildren,
   LoginRoute: LoginRoute,
+  PlaygroundRoute: PlaygroundRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

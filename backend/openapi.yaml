@@ -133,6 +133,12 @@ components:
           type: string
         name:
           type: string
+        shared_at:
+          description: When the outfit was shared by link, or null while it is private
+          format: date-time
+          type:
+            - string
+            - "null"
         updated_at:
           format: date-time
           type: string
@@ -142,6 +148,7 @@ components:
         - id
         - user_id
         - name
+        - shared_at
         - created_at
         - updated_at
       type: object
@@ -159,6 +166,12 @@ components:
           items:
             $ref: "#/components/schemas/Product"
           type: array
+        shared_at:
+          description: When the outfit was shared by link, or null while it is private
+          format: date-time
+          type:
+            - string
+            - "null"
         updated_at:
           format: date-time
           type: string
@@ -169,6 +182,7 @@ components:
         - id
         - user_id
         - name
+        - shared_at
         - created_at
         - updated_at
       type: object
@@ -302,6 +316,31 @@ components:
         - dislike
         - save
       type: object
+    ShareOutfitResponse:
+      additionalProperties: false
+      properties:
+        url:
+          description: Public link to the outfit; stays the same across re-shares
+          type: string
+      required:
+        - url
+      type: object
+    SharedOutfitResponse:
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        products:
+          items:
+            $ref: "#/components/schemas/Product"
+          type: array
+      required:
+        - id
+        - name
+        - products
+      type: object
     UserResponse:
       additionalProperties: false
       properties:
@@ -344,6 +383,34 @@ info:
   version: 1.0.0
 openapi: 3.1.0
 paths:
+  /api/public/outfits/{id}:
+    get:
+      description: A private outfit and a missing one both return 404.
+      operationId: get-shared-outfit
+      parameters:
+        - description: Outfit ID
+          in: path
+          name: id
+          required: true
+          schema:
+            description: Outfit ID
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SharedOutfitResponse"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Get a shared outfit without signing in
+      tags:
+        - outfits
   /api/v1/embedder/warm:
     post:
       description: "Boots a Modal container ahead of an embed call and reports how long it took: tens of seconds on a cold start, well under one when a container is already up. Modal keeps the container warm for about 60 seconds."
@@ -458,7 +525,7 @@ paths:
           description: Error
       security:
         - bearer: []
-      summary: Get an outfit with its products
+      summary: Get one of the authenticated user's outfits with its products
       tags:
         - outfits
   /api/v1/outfits/{id}/reactions:
@@ -518,6 +585,60 @@ paths:
       security:
         - bearer: []
       summary: React to an outfit
+      tags:
+        - outfits
+  /api/v1/outfits/{id}/share:
+    delete:
+      description: Also returns 204 if the outfit is already private.
+      operationId: unshare-outfit
+      parameters:
+        - description: Outfit ID
+          in: path
+          name: id
+          required: true
+          schema:
+            description: Outfit ID
+            type: string
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Make a shared outfit private again
+      tags:
+        - outfits
+    post:
+      operationId: share-outfit
+      parameters:
+        - description: Outfit ID
+          in: path
+          name: id
+          required: true
+          schema:
+            description: Outfit ID
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShareOutfitResponse"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Share an outfit by public link
       tags:
         - outfits
   /api/v1/products/{product_id}/images:

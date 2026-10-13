@@ -1,8 +1,9 @@
 import { queryOptions } from "@tanstack/react-query";
 import { useRouter, useRouterState, type ErrorComponentProps } from "@tanstack/react-router";
 
-import { apiFetch } from "./api";
-import { supabase } from "./supabase/client";
+import { apiFetch } from "@/api";
+import { Button } from "@/design-system";
+import { supabase } from "@/supabase/client";
 
 /** Whether the signed-in user has a row in our users table. */
 export function hasAccountQuery(userId: string) {
@@ -51,21 +52,8 @@ export function AccountError({ error }: ErrorComponentProps) {
         Error: {error instanceof Error ? error.message : String(error)}
       </p>
       <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => router.invalidate()}
-          disabled={retrying}
-          className="rounded bg-blue-500 px-3 py-2 text-sm text-white disabled:opacity-50"
-        >
-          Retry
-        </button>
-        <button
-          type="button"
-          onClick={signOut}
-          className="rounded bg-gray-700 px-3 py-2 text-sm text-white"
-        >
-          Sign out
-        </button>
+        <Button label="Retry" onClick={() => router.invalidate()} disabled={retrying} />
+        <Button label="Sign out" variant="secondary" onClick={signOut} />
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import { supabase } from "./supabase/client";
+import { supabase } from "@/supabase/client";
 
 /** fetch for our own /api/v1 routes, with the signed-in user's Supabase token attached. */
 export async function apiFetch(path: string, init: RequestInit = {}): Promise<Response> {

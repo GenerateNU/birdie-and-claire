@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback } from "react";
 
-import OutfitList, { type Outfit } from "../../../OutfitList";
-import { usePagination } from "../../../utils/usePagination";
+import OutfitList, { type Outfit } from "@/OutfitList";
+import { Button } from "@/design-system";
+import { usePagination } from "@/utils/usePagination";
 
 export const Route = createFileRoute("/_signedIn/_hasAccount/outfits/")({
   component: OutfitsPage,
@@ -50,9 +51,7 @@ function OutfitsPage() {
       {isFetchNextPageError && (
         <p>
           Failed to load more: {error?.message}{" "}
-          <button className="underline" onClick={() => void fetchNextPage()}>
-            Retry
-          </button>
+          <Button label="Retry" onClick={() => void fetchNextPage()} />
         </p>
       )}
     </div>

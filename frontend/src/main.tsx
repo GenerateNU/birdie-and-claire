@@ -4,8 +4,9 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
 import "./index.css";
-import { routeTree } from "./routeTree.gen";
-import { supabase } from "./supabase/client";
+import { ToastProvider } from "@/design-system";
+import { routeTree } from "@/routeTree.gen";
+import { supabase } from "@/supabase/client";
 
 const queryClient = new QueryClient();
 
@@ -34,7 +35,9 @@ supabase.auth.onAuthStateChange((event) => {
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+      <ToastProvider>
+        <RouterProvider router={router} />
+      </ToastProvider>
     </QueryClientProvider>
   </StrictMode>,
 );
