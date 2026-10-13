@@ -93,6 +93,7 @@ jobs:
           set -euo pipefail
           ssh "$DROPLET" "mkdir -p /opt/birdie-and-claire"
           scp -p "$RUNNER_TEMP/preview.env" "$DROPLET:/opt/birdie-and-claire/preview.env"
+          scp -p backend/cmd/tasks/seeds/products.sql "$DROPLET:/opt/birdie-and-claire/products.sql"
           ssh "$DROPLET" bash -s -- "$PR" "$IMAGE" "$PREVIEW_DOMAIN" < deploy/preview-up.sh
 
       # vercel.json proxies /api to production. A preview rewrites that target to

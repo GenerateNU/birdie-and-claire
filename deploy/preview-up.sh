@@ -53,6 +53,19 @@ echo "    applying migrations"
 docker pull --quiet "$IMAGE"
 docker run --rm --network edge --env-file "$PR_ENV_FILE" --entrypoint /migrate "$IMAGE" up
 
+# Keyed on an empty products table, not on createdb above, so any path that
+# leaves a fresh database gets seeded too. The assignment lets set -e stop the
+# deploy when the check itself fails, instead of reading that as "empty".
+HAS_PRODUCTS=$(docker exec -e PGPASSWORD="$PGPASSWORD" preview-db \
+  psql -U postgres -d "${DB_NAME}" -v ON_ERROR_STOP=1 -tAc "SELECT EXISTS (SELECT 1 FROM products)")
+if [ "$HAS_PRODUCTS" = "t" ]; then
+  echo "    products already present, skipping seed"
+else
+  echo "    seeding demo products"
+  docker exec -i -e PGPASSWORD="$PGPASSWORD" preview-db \
+    psql -U postgres -d "${DB_NAME}" -v ON_ERROR_STOP=1 -q -1 < "${PROJECT_DIR}/products.sql"
+fi
+
 echo "    starting ${CONTAINER}"
 docker rm -f "$CONTAINER" >/dev/null 2>&1 || true
 docker run -d \
