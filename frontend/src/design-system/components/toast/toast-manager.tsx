@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { Toast, type ToastAction, type ToastData, type ToastVariant } from "./toast";
 
 const DEFAULT_DURATION_MS = 5000;
+
 const ACTION_DURATION_MS = 10000;
 
 type ToastConfig = {

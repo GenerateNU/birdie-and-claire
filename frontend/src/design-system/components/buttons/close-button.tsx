@@ -2,7 +2,7 @@ import type { ButtonHTMLAttributes } from "react";
 
 export function CloseButton(props: ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
-    // Text × until there's an icon library. 
+    // Text × until there's an icon library.
     <button
       type="button"
       aria-label="Close"
