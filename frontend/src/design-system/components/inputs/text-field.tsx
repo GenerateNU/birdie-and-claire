@@ -1,12 +1,13 @@
 import { Input as BaseInput } from "@base-ui/react/input";
+import type { ComponentProps } from "react";
 
-type TextFieldProps = {
+const inputClasses =
+  "rounded-sm border bg-background px-sm py-xs text-body focus-ring data-[disabled]:opacity-50";
+
+type TextFieldProps = Omit<ComponentProps<"input">, "value" | "onChange" | "className"> & {
   label: string;
   value: string;
   onValueChange: (value: string) => void;
-  type?: "text" | "email" | "password" | "search" | "tel" | "url";
-  placeholder?: string;
-  disabled?: boolean;
   className?: string;
 };
 
@@ -14,20 +15,19 @@ export function TextField({
   label,
   value,
   onValueChange,
-  type = "text",
-  placeholder,
-  disabled = false,
   className,
+  ...inputProps
 }: TextFieldProps) {
+  const labelClasses = "flex flex-col gap-xxs text-body";
+
   return (
-    <label className={className}>
+    <label className={className ? `${labelClasses} ${className}` : labelClasses}>
       {label}
       <BaseInput
-        type={type}
+        {...inputProps}
         value={value}
         onValueChange={onValueChange}
-        placeholder={placeholder}
-        disabled={disabled}
+        className={inputClasses}
       />
     </label>
   );

@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, type SyntheticEvent } from "react";
 
-import { Button } from "@/design-system";
+import { Button, TextField } from "@/design-system";
 import { supabase } from "@/supabase/client";
 
 export const Route = createFileRoute("/login")({
@@ -94,16 +94,7 @@ function Login() {
       {step === "email" ? (
         <form onSubmit={sendCode} className="flex flex-col gap-4 max-w-md">
           <p className="text-gray-400 text-sm">We'll email you a code.</p>
-          <label className="flex flex-col gap-1 text-sm">
-            Email
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="rounded border border-gray-700 bg-gray-800 px-3 py-2 text-white"
-            />
-          </label>
+          <TextField label="Email" type="email" required value={email} onValueChange={setEmail} />
           <Button label="Send code" type="submit" disabled={busy} />
           {status && <p className="text-gray-400 text-sm">{status}</p>}
           {error && <p className="text-red-400 text-sm">Error: {error}</p>}
@@ -113,18 +104,14 @@ function Login() {
           <p className="text-gray-400 text-sm">
             Enter the code we sent to <span className="text-gray-200">{email}</span>.
           </p>
-          <label className="flex flex-col gap-1 text-sm">
-            Code
-            <input
-              type="text"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              required
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              className="rounded border border-gray-700 bg-gray-800 px-3 py-2 text-white"
-            />
-          </label>
+          <TextField
+            label="Code"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            required
+            value={code}
+            onValueChange={setCode}
+          />
           <Button label="Verify" type="submit" disabled={busy} />
           <div className="flex gap-4 text-sm">
             <Button label="Resend code" onClick={resendCode} disabled={busy} />

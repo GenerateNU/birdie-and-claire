@@ -3,7 +3,7 @@ import { useState, type SyntheticEvent } from "react";
 
 import { AccountError, hasAccountQuery } from "@/account";
 import { apiFetch } from "@/api";
-import { Button } from "@/design-system";
+import { Button, TextField } from "@/design-system";
 
 export const Route = createFileRoute("/_signedIn/create-account")({
   beforeLoad: async ({ context }) => {
@@ -57,16 +57,7 @@ function CreateAccount() {
       </p>
 
       <form onSubmit={submit} className="flex flex-col gap-4 max-w-md">
-        <label className="flex flex-col gap-1 text-sm">
-          Name
-          <input
-            type="text"
-            required
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="rounded border border-gray-700 bg-gray-800 px-3 py-2 text-white"
-          />
-        </label>
+        <TextField label="Name" required value={name} onValueChange={setName} />
         <Button label="Create account" type="submit" disabled={status !== null} />
         {status && <p className="text-gray-400 text-sm">{status}</p>}
         {error && <p className="text-red-400 text-sm">Error: {error}</p>}

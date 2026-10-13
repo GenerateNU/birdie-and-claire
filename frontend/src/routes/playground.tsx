@@ -10,10 +10,14 @@ import {
   Checkbox,
   Dialog,
   ColorScale,
+  Empty,
+  ErrorState,
   RadioGroup,
   StatusColor,
+  Spinner,
   Text,
   TextColor,
+  TextField,
   Toggle,
   TypeScale,
   useToast,
@@ -38,6 +42,10 @@ const sectionTitles = {
   buttons: "Buttons",
   checkbox: "Checkbox",
   toggle: "Toggle",
+  "text-field": "Text field",
+  spinner: "Spinner",
+  empty: "Empty",
+  "error-state": "Error state",
   "radio-group": "Radio group",
   avatar: "Avatar",
   dialog: "Dialog",
@@ -53,7 +61,18 @@ const navGroups = [
   {
     title: "Components",
     href: "#top",
-    sections: ["buttons", "checkbox", "toggle", "radio-group", "avatar", "dialog", "toast", "text"],
+    sections: [
+      "buttons",
+      "checkbox",
+      "toggle",
+      "text-field",
+      "spinner",
+      "radio-group",
+      "avatar",
+      "dialog",
+      "toast",
+      "text",
+    ],
   },
   { title: "Tokens", href: "#tokens", sections: ["color-scales", "semantic-colors"] },
 ] as const;
@@ -138,6 +157,25 @@ function Playground() {
 
             <Section id="toggle">
               <ToggleExamples />
+            </Section>
+
+            <Section id="text-field">
+              <TextFieldExamples />
+            </Section>
+
+            <Section id="spinner">
+              <Spinner />
+            </Section>
+
+            <Section id="empty">
+              <Empty title="Nothing here yet" description="Items you add will show up here." />
+            </Section>
+
+            <Section id="error-state">
+              <Box className="flex flex-col gap-md">
+                <ErrorState message="Something went wrong." />
+                <ErrorState message="Could not load your trips." onRetry={() => {}} />
+              </Box>
             </Section>
 
             <Section id="radio-group">
@@ -273,6 +311,22 @@ function ToggleExamples() {
     <Box className="flex flex-col gap-sm">
       <Toggle label="Toggle" checked={checked} onCheckedChange={setChecked} />
       <Toggle label="Disabled" checked onCheckedChange={() => {}} disabled />
+    </Box>
+  );
+}
+
+function TextFieldExamples() {
+  const [value, setValue] = useState("");
+
+  return (
+    <Box className="flex max-w-md flex-col gap-sm">
+      <TextField
+        label="Text field"
+        placeholder="Type here"
+        value={value}
+        onValueChange={setValue}
+      />
+      <TextField label="Disabled" value="Can't edit" onValueChange={() => {}} disabled />
     </Box>
   );
 }
