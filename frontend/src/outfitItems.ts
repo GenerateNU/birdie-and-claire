@@ -17,7 +17,12 @@ export type OutfitItem = {
   image: ItemImage;
 };
 
-/** The outfit canvas's size in the Figma frame, in pixels. Spot positions are relative to it. */
+/**
+ * The outfit canvas's size in pixels, from the Figma's Builder Space frame:
+ * https://www.figma.com/design/oPKUetZyR06nTL9jjhj2Yy/%F0%9F%8E%A8-Birdie-and-Claire-Design?node-id=5229-1720
+ * Spot positions are relative to it. On the page the canvas sits centered in a gray panel that can
+ * be larger.
+ */
 export const CANVAS_SIZE = { width: 912, height: 808 };
 
 /**

@@ -128,11 +128,9 @@ function OutfitPage() {
 
   return (
     <EditorFrame>
-      {/* The handle column has no width, so the 4px gap on each side of it makes the Figma's 8px.
-          The grow factors are the Figma's panel widths, so the panels keep that ratio at any page
-          width. 912 is also CANVAS_SIZE.width. */}
-      <main className="flex gap-[4px] p-[8px] pt-[16px]">
-        <div className="min-w-0 grow-[912] basis-0">
+      {/* The handle column has no width, so the 4px gap on each side of it makes the Figma's 8px. */}
+      <main className="flex min-h-0 flex-1 gap-[4px] p-[8px] pt-[16px]">
+        <div className="min-w-0 flex-1">
           <OutfitCanvas items={items} />
         </div>
         {/* Panel resizing comes with outfit editing. Until then the handle is only drawn. */}
@@ -145,31 +143,27 @@ function OutfitPage() {
             className="absolute left-1/2 top-1/2 max-w-none -translate-x-1/2 -translate-y-1/2"
           />
         </div>
-        {/* Absolute, so a long list scrolls inside the panel instead of growing past the canvas. */}
-        <div className="relative min-w-0 grow-[576] basis-0">
-          <div className="absolute inset-0">
-            <OutfitDetails outfitName={outfitQuery.data.name} items={items} />
-          </div>
+        <div className="w-[576px] shrink-0">
+          <OutfitDetails outfitName={outfitQuery.data.name} items={items} />
         </div>
       </main>
     </EditorFrame>
   );
 }
 
+/** Fills the window, so the panels under the header take the height that's left. */
 function EditorFrame({ children }: EditorFrameProps) {
   return (
-    <div className="min-h-screen bg-white font-roboto text-black">
-      <div className="mx-auto max-w-[1512px]">
-        <EditorHeader />
-        {children}
-      </div>
+    <div className="flex h-screen flex-col bg-white font-roboto text-black">
+      <EditorHeader />
+      {children}
     </div>
   );
 }
 
 function EditorHeader() {
   return (
-    <header className="grid h-[144px] grid-cols-[1fr_auto_1fr] items-end border border-black px-[18px]">
+    <header className="grid h-[144px] grid-cols-[1fr_auto_1fr] items-end border-y border-black px-[18px]">
       <h1 className="pb-[18px] text-[28px] font-medium leading-[36px]">Outfit Editor</h1>
       <Link to="/outfits" className="pb-[2px]">
         {/* object-bottom repeats the Figma's crop of the image's empty top edge. */}

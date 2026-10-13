@@ -22,7 +22,7 @@ const SILHOUETTE_BOX = { left: 241, top: -6, width: 446, height: 792 };
 // For a photo that couldn't be cut out, the garment's box is unknown.
 const WHOLE_PHOTO: GarmentBox = { left: 0, top: 0, right: 1, bottom: 1 };
 
-// Percentages of the canvas, so the layout scales with the page and keeps the Figma's proportions.
+// Percentages of the canvas, so everything on it scales together and keeps the Figma's proportions.
 function percentOfWidth(pixels: number): string {
   return `${(pixels / CANVAS_SIZE.width) * 100}%`;
 }
@@ -82,53 +82,60 @@ export default function OutfitCanvas({ items }: OutfitCanvasProps) {
   });
 
   return (
-    <div
-      className="relative isolate overflow-hidden border border-black bg-[#eaeaea]"
-      style={{ aspectRatio: `${CANVAS_SIZE.width} / ${CANVAS_SIZE.height}` }}
-    >
-      <img
-        src={silhouette}
-        alt=""
-        className="absolute object-cover opacity-[0.32]"
+    <div className="relative isolate flex h-full items-center justify-center overflow-hidden border border-black bg-[#eaeaea] [container-type:size]">
+      {/* The canvas, centered in the gray panel. It's never larger than the Figma, and shrinks to
+          fit whichever of the panel's width or height runs out first. */}
+      <div
+        className="relative"
         style={{
-          left: percentOfWidth(SILHOUETTE_BOX.left),
-          top: percentOfHeight(SILHOUETTE_BOX.top),
-          width: percentOfWidth(SILHOUETTE_BOX.width),
-          height: percentOfHeight(SILHOUETTE_BOX.height),
+          aspectRatio: `${CANVAS_SIZE.width} / ${CANVAS_SIZE.height}`,
+          width: `min(${CANVAS_SIZE.width}px, 100cqw, 100cqh * ${CANVAS_SIZE.width} / ${CANVAS_SIZE.height})`,
         }}
-      />
-      {placedItems.map(({ spot, product, photoUrl }, index) => {
-        const cutout = cutouts[index].data;
+      >
+        <img
+          src={silhouette}
+          alt=""
+          className="absolute object-cover opacity-[0.32]"
+          style={{
+            left: percentOfWidth(SILHOUETTE_BOX.left),
+            top: percentOfHeight(SILHOUETTE_BOX.top),
+            width: percentOfWidth(SILHOUETTE_BOX.width),
+            height: percentOfHeight(SILHOUETTE_BOX.height),
+          }}
+        />
+        {placedItems.map(({ spot, product, photoUrl }, index) => {
+          const cutout = cutouts[index].data;
 
-        // Drawn once the cut-out settles, so the uncut photo never flashes on the canvas.
-        if (cutout === undefined) {
-          return null;
-        }
+          // Drawn once the cut-out settles, so the uncut photo never flashes on the canvas.
+          if (cutout === undefined) {
+            return null;
+          }
 
-        // Usually the image host blocks cross-origin reads. multiply hides the photo's white
-        // background, though the silhouette shows through the garment.
-        if (cutout === null) {
+          // Usually the image host blocks cross-origin reads. multiply hides the photo's white
+          // background, though the silhouette shows through the garment.
+          if (cutout === null) {
+            return (
+              <img
+                key={product.id}
+                src={photoUrl}
+                alt={product.title}
+                className="absolute max-w-none mix-blend-multiply"
+                style={garmentPlacement(spot, WHOLE_PHOTO)}
+              />
+            );
+          }
+
           return (
             <img
               key={product.id}
-              src={photoUrl}
+              src={cutout.url}
               alt={product.title}
-              className="absolute max-w-none mix-blend-multiply"
-              style={garmentPlacement(spot, WHOLE_PHOTO)}
+              className="absolute max-w-none"
+              style={garmentPlacement(spot, cutout.garment)}
             />
           );
-        }
-
-        return (
-          <img
-            key={product.id}
-            src={cutout.url}
-            alt={product.title}
-            className="absolute max-w-none"
-            style={garmentPlacement(spot, cutout.garment)}
-          />
-        );
-      })}
+        })}
+      </div>
       {/* Help content comes with outfit editing. */}
       <button
         type="button"
