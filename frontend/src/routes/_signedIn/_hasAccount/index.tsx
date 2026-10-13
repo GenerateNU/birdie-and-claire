@@ -23,6 +23,9 @@ function Home() {
       <Link className="block underline hover:text-white text-sm" to="/outfits">
         Outfits →
       </Link>
+      <Link className="block underline hover:text-white text-sm" to="/llm-test">
+        LLM test →
+      </Link>
       <div className="mt-6">
         <button
           type="button"

@@ -14,4 +14,5 @@ func Setup(api huma.API, params types.RouteParams) {
 	OutfitRoutes(api, params)
 	OutfitReactionRoutes(api, params)
 	EmbedderRoutes(api, params)
+	LLMRoutes(api, params)
 }

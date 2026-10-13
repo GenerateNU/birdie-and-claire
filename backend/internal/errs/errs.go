@@ -20,6 +20,7 @@ var (
 	ErrConflict     = errors.New("conflicting state")
 	ErrInvalidInput = errors.New("invalid input")
 	ErrBadCursor    = errors.New("invalid cursor")
+	ErrForbidden    = errors.New("forbidden")
 )
 
 // ToHuma maps a service error to an HTTP error. An unrecognised error becomes a
@@ -38,6 +39,9 @@ func ToHuma(ctx context.Context, err error) error {
 		return huma.Error409Conflict(ErrConflict.Error())
 	case errors.Is(err, ErrBadCursor):
 		return huma.Error400BadRequest(ErrBadCursor.Error())
+	case errors.Is(err, ErrForbidden):
+		// the wrapping message is the reason shown to the caller, so wrap it with client-safe text only
+		return huma.Error403Forbidden(err.Error())
 	default:
 		log.Error(ctx, "request failed", "error", err)
 		return huma.Error500InternalServerError("internal server error")
