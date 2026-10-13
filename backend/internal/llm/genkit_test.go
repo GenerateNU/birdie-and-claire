@@ -762,3 +762,18 @@ func TestLogsNeverContainRefusal(t *testing.T) {
 		t.Fatalf("logs contain the refusal text:\n%s", logged)
 	}
 }
+
+func TestToolLoopStopsAfterMaxTurns(t *testing.T) {
+	client, stub := newStubClient(t, fastRetry, func(w http.ResponseWriter, _ *http.Request, _ int, _ chatRequest) {
+		writeToolCall(w, "add", `{"a":2,"b":3}`)
+	})
+
+	_, err := client.Generate(context.Background(), Request{Prompt: "keep adding", Tools: []Tool{addTool()}})
+	if err == nil || !strings.Contains(err.Error(), "tool turns") {
+		t.Fatalf("err = %v, want the max-turns error", err)
+	}
+	// every allowed turn runs its tools, then one more model call asks for a turn past the cap
+	if want := maxToolTurns + 1; stub.calls() != want {
+		t.Errorf("made %d requests, want %d", stub.calls(), want)
+	}
+}

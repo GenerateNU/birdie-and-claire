@@ -3,6 +3,7 @@ package config
 import (
 	"maps"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -186,5 +187,18 @@ func assertLLMConfig(t *testing.T, cfg LLMConfig, tt llmCase) {
 	}
 	if !slices.Equal(gotDevUserIDs, tt.wantDevUserIDs) {
 		t.Errorf("DevUserIDs = %v, want %v", gotDevUserIDs, tt.wantDevUserIDs)
+	}
+}
+
+func TestLoadLLMErrorOmitsTheURL(t *testing.T) {
+	t.Setenv("AI_API_KEY", "sk-or-test")
+	t.Setenv("AI_MODEL", "")
+	t.Setenv("AI_DEV_USER_IDS", "")
+	t.Setenv("AI_URL", "https://user:s3cret-pass@gateway.example.com/api/v1?key=s3cret-key")
+
+	_, err := loadLLM()
+	assertLoadError(t, err, "AI_URL must be an https URL")
+	if strings.Contains(err.Error(), "s3cret") {
+		t.Errorf("error %q echoes the URL's credentials", err)
 	}
 }

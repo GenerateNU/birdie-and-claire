@@ -43,7 +43,8 @@ func loadLLM() (LLMConfig, error) {
 	parsed, err := url.Parse(baseURL)
 	// a path is allowed because gateways serve under one, like OpenRouter's /api/v1
 	if err != nil || parsed.Scheme != "https" || parsed.Host == "" || parsed.User != nil || strings.ContainsAny(baseURL, "?#") {
-		return LLMConfig{}, fmt.Errorf("AI_URL must be an https URL with no query or fragment, got %q", baseURL)
+		// the value is left out because a URL can carry credentials
+		return LLMConfig{}, fmt.Errorf("AI_URL must be an https URL with no credentials, query, or fragment")
 	}
 
 	devUserIDs, err := loadDevUserIDs()

@@ -66,7 +66,7 @@ func run() error {
 
 	emb := embedder.New(cfg.Embedder)
 	llmClient := llm.New(ctx, cfg.LLM)
-	log.Info(ctx, "llm client ready", "model", cfg.LLM.Model)
+	log.Debug(ctx, "llm client ready", "model", cfg.LLM.Model)
 
 	app, _ := server.New(cfg, db, store, emb, llmClient, verifier)
 

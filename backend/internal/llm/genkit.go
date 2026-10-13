@@ -35,6 +35,8 @@ const (
 	retryMaxDelay     = 4 * time.Second
 	// the default transport keeps 2 idle conns per host and every call here hits one host
 	maxIdleConnsPerGateway = 64
+	// each turn is a billed model call; Genkit's default allows 50
+	maxToolTurns = 5
 )
 
 // the statuses a mid-stream gateway failure can carry that are worth another attempt
@@ -132,6 +134,7 @@ func (c *genkitClient) options(req Request, usage *callUsage) ([]ai.GenerateOpti
 		ai.WithPrompt("%s", req.Prompt),
 		// Retry wraps classify wraps usage; the deadline on ctx sits outside all three, so it is never retried
 		ai.WithUse(c.retry, ai.MiddlewareFunc(classify), ai.MiddlewareFunc(usage.middleware)),
+		ai.WithMaxTurns(maxToolTurns),
 	}
 	if req.System != "" {
 		opts = append(opts, ai.WithSystem("%s", req.System))
@@ -236,6 +239,8 @@ func mapError(ctx context.Context, req Request, err error) error {
 	switch {
 	case errors.Is(err, ai.ErrToolFailed):
 		return fmt.Errorf("%w: %w", ErrToolFailed, err)
+	case errors.Is(err, ai.ErrMaxTurnsExceeded):
+		return fmt.Errorf("llm: model asked for more than %d tool turns", maxToolTurns)
 	case ctx.Err() != nil:
 		// Retry returns the last attempt's error when the deadline cuts its backoff, so add ctx.Err() for errors.Is
 		return fmt.Errorf("llm: %w: %s", ctx.Err(), redact(err))
