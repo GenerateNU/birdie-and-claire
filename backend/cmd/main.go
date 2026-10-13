@@ -14,6 +14,7 @@ import (
 	"birdie-and-claire/internal/config"
 	"birdie-and-claire/internal/database"
 	"birdie-and-claire/internal/embedder"
+	"birdie-and-claire/internal/llm"
 	"birdie-and-claire/internal/log"
 	"birdie-and-claire/internal/server"
 	"birdie-and-claire/internal/storage"
@@ -64,8 +65,10 @@ func run() error {
 	}
 
 	emb := embedder.New(cfg.Embedder)
+	llmClient := llm.New(ctx, cfg.LLM)
+	log.Info(ctx, "llm client ready", "model", cfg.LLM.Model)
 
-	app, _ := server.New(cfg, db, store, emb, verifier)
+	app, _ := server.New(cfg, db, store, emb, llmClient, verifier)
 
 	serverErr := make(chan error, 1)
 	go func() {

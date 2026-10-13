@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import { apiFetch } from "./api";
 import CreateAccount from "./CreateAccount";
+import LlmTest from "./LlmTest";
 import Login from "./Login";
 import OutfitsPage from "./OutfitsPage";
 import ProfilePictureTest from "./ProfilePictureTest";
@@ -148,6 +149,10 @@ function SignedInRoutes({ userId, pathname }: { userId: string; pathname: string
     return <OutfitsPage />;
   }
 
+  if (pathname === "/llm-test") {
+    return <LlmTest />;
+  }
+
   return (
     <div className="min-h-screen bg-gray-950 text-white p-8">
       <h1 className="text-3xl font-bold mb-2">Birdie &amp; Claire</h1>
@@ -163,6 +168,9 @@ function SignedInRoutes({ userId, pathname }: { userId: string; pathname: string
       </a>
       <a className="block underline hover:text-white text-sm" href="/outfits">
         Outfits →
+      </a>
+      <a className="block underline hover:text-white text-sm" href="/llm-test">
+        LLM test →
       </a>
       <div className="mt-6">
         <button

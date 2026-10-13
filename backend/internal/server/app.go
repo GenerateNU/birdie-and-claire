@@ -8,6 +8,7 @@ import (
 	"birdie-and-claire/internal/auth"
 	"birdie-and-claire/internal/config"
 	"birdie-and-claire/internal/embedder"
+	"birdie-and-claire/internal/llm"
 	"birdie-and-claire/internal/repository"
 	"birdie-and-claire/internal/server/middlewares"
 	"birdie-and-claire/internal/server/routers"
@@ -21,7 +22,7 @@ import (
 
 // New returns the huma.API alongside the app because cmd/openapi renders the
 // tracked spec from it.
-func New(cfg *config.Configuration, database *sql.DB, store storage.ObjectStore, emb embedder.Embedder, verifier *auth.Verifier) (*fiber.App, huma.API) {
+func New(cfg *config.Configuration, database *sql.DB, store storage.ObjectStore, emb embedder.Embedder, llmClient llm.Client, verifier *auth.Verifier) (*fiber.App, huma.API) {
 	app := fiber.New(fiber.Config{
 		ServerHeader: cfg.App.Name,
 		AppName:      cfg.App.Name,
@@ -36,6 +37,7 @@ func New(cfg *config.Configuration, database *sql.DB, store storage.ObjectStore,
 			Config:     cfg,
 			Storage:    store,
 			Embedder:   emb,
+			LLM:        llmClient,
 		},
 		Verifier: verifier,
 	})
@@ -53,7 +55,7 @@ func ListenConfig(cfg *config.Configuration) fiber.ListenConfig {
 }
 
 // Spec builds the API for cmd/openapi. No handler runs, so the nil database,
-// store, embedder, and verifier are never read.
+// store, embedder, LLM client, and verifier are never read.
 func Spec(cfg *config.Configuration) huma.API {
 	api := humafiber.New(fiber.New(), apiConfig(cfg))
 	routers.Setup(api, types.RouteParams{
@@ -62,6 +64,7 @@ func Spec(cfg *config.Configuration) huma.API {
 			Config:     cfg,
 			Storage:    nil,
 			Embedder:   nil,
+			LLM:        nil,
 		},
 	})
 	return api
