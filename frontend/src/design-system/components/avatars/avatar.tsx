@@ -1,27 +1,31 @@
 import { Avatar as BaseAvatar } from "@base-ui/react/avatar";
 
-// md and lg go past the spacing tokens (max 48px), so these use Tailwind's own sizes.
 const sizeClasses = {
-  sm: "size-6",
-  md: "size-12",
-  lg: "size-32",
+  sm: "size-6 text-caption",
+  md: "size-12 text-body",
+  lg: "size-32 text-heading",
 } as const;
 
 type AvatarProps = {
   src: string | null;
   alt: string;
+  initials?: string;
   size?: keyof typeof sizeClasses;
 };
 
-export function Avatar({ src, alt, size = "md" }: AvatarProps) {
+export function Avatar({ src, alt, initials, size = "md" }: AvatarProps) {
   return (
     <BaseAvatar.Root
       className={`inline-flex shrink-0 overflow-hidden rounded-full bg-gray-200 ${sizeClasses[size]}`}
     >
       {src && <BaseAvatar.Image src={src} alt={alt} className="size-full object-cover" />}
-      {/* Shown while the image loads, if it fails, or when there's no photo. Only
-          one of Image and Fallback renders at a time, so each carries the alt. */}
-      <BaseAvatar.Fallback role="img" aria-label={alt} className="size-full" />
+      <BaseAvatar.Fallback
+        role="img"
+        aria-label={alt}
+        className="flex size-full items-center justify-center uppercase text-secondary"
+      >
+        {initials}
+      </BaseAvatar.Fallback>
     </BaseAvatar.Root>
   );
 }

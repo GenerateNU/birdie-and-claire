@@ -2,6 +2,7 @@
 // keep the names stable so components don't have to change.
 
 const Gray = {
+  0: "#FFFFFF",
   50: "#F9FAFB",
   100: "#F3F4F6",
   200: "#E5E7EB",
@@ -45,10 +46,11 @@ export const TextColor = {
   primary: Gray[900],
   secondary: Gray[600],
   disabled: Gray[400],
+  inverse: Gray[0],
 } as const;
 
 export const BackgroundColor = {
-  background: "#FFFFFF",
+  background: Gray[0],
   surface: Gray[50],
   overlay: "rgba(0, 0, 0, 0.4)",
 } as const;

@@ -1,7 +1,7 @@
 import { Checkbox as BaseCheckbox } from "@base-ui/react/checkbox";
 
 const boxClasses =
-  "flex size-md items-center justify-center rounded-xs border bg-background text-caption text-white data-[checked]:border-brand-500 data-[checked]:bg-brand-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus";
+  "flex size-md items-center justify-center rounded-xs border bg-background text-caption text-inverse data-[checked]:border-brand-500 data-[checked]:bg-brand-500 focus-ring";
 
 type CheckboxProps = {
   label: string;

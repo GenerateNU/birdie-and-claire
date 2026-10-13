@@ -1,11 +1,16 @@
 import { Button as BaseButton } from "@base-ui/react/button";
 import type { MouseEventHandler } from "react";
-import { ButtonBase, ButtonSize, ButtonVariant } from "./variant";
+import {
+  buttonBaseClasses,
+  buttonSizeClasses,
+  buttonVariantClasses,
+  type ButtonVariant,
+} from "./variant";
 
 type ButtonProps = {
   label: string;
-  variant?: keyof typeof ButtonVariant;
-  size?: keyof typeof ButtonSize;
+  variant?: ButtonVariant;
+  size?: keyof typeof buttonSizeClasses;
   loading?: boolean;
   loadingLabel?: string;
   onClick?: MouseEventHandler<HTMLButtonElement>;
@@ -25,8 +30,8 @@ export function Button({
   disabled = false,
   className,
 }: ButtonProps) {
-  const variantClasses = `${ButtonBase} ${ButtonVariant[variant]} ${ButtonSize[size]}`;
-  const classes = className ? `${variantClasses} ${className}` : variantClasses;
+  const buttonClasses = `${buttonBaseClasses} ${buttonVariantClasses[variant]} ${buttonSizeClasses[size]}`;
+  const classes = className ? `${buttonClasses} ${className}` : buttonClasses;
 
   return (
     <BaseButton

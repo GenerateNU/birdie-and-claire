@@ -3,7 +3,7 @@ import { RadioGroup as BaseRadioGroup } from "@base-ui/react/radio-group";
 import { useId } from "react";
 
 const radioClasses =
-  "flex size-md items-center justify-center rounded-full border bg-background data-[checked]:border-brand-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus";
+  "flex size-md items-center justify-center rounded-full border bg-background data-[checked]:border-brand-500 focus-ring";
 
 const dotClasses = "size-xs rounded-full bg-brand-500";
 

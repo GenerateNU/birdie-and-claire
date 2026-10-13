@@ -1,10 +1,10 @@
 import { Switch } from "@base-ui/react/switch";
 
 const trackClasses =
-  "flex h-md w-xl shrink-0 items-center rounded-full bg-gray-300 p-[2px] data-[checked]:bg-brand-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus";
+  "flex h-md w-xl shrink-0 items-center rounded-full bg-gray-300 p-[2px] data-[checked]:bg-brand-500 focus-ring";
 
 const thumbClasses =
-  "size-sm rounded-full bg-white transition-transform data-[checked]:translate-x-md";
+  "size-sm rounded-full bg-background transition-transform data-[checked]:translate-x-md";
 
 type ToggleProps = {
   label: string;

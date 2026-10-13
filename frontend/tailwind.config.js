@@ -9,11 +9,11 @@ import { CornerRadius } from "./src/design-system/tokens/corner-radius";
 import { Spacing } from "./src/design-system/tokens/spacing";
 import { FontFamily, TypeScale } from "./src/design-system/tokens/typography";
 
-// Extends Tailwind's defaults rather than replacing them.
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ["./index.html", "./src/**/*.{js,jsx,ts,tsx}"],
   theme: {
+    // Extends Tailwind's defaults rather than replacing them.
     extend: {
       colors: { ...ColorScale, ...StatusColor },
       textColor: TextColor,

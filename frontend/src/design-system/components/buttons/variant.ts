@@ -1,13 +1,14 @@
-export const ButtonBase =
-  "rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus data-[disabled]:opacity-50";
+export const buttonBaseClasses = "rounded-md focus-ring data-[disabled]:opacity-50";
 
-export const ButtonVariant = {
-  primary: "bg-brand-500 text-white",
+export const buttonVariantClasses = {
+  primary: "bg-brand-500 text-inverse",
   secondary: "border bg-background text-primary",
 } as const;
 
-export const ButtonSize = {
+export const buttonSizeClasses = {
   sm: "px-xs py-xxs text-caption",
   md: "px-md py-xs text-body",
   lg: "px-lg py-sm text-subheading",
 } as const;
+
+export type ButtonVariant = keyof typeof buttonVariantClasses;

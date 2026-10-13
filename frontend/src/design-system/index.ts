@@ -10,6 +10,8 @@ export { Toggle } from "./components/buttons/toggle";
 
 export { Dialog } from "./components/dialog/dialog";
 
+export { ToastProvider, useToast } from "./components/toast/toast-manager";
+
 export { Box } from "./primitives/box";
 
 export { Divider } from "./primitives/divider";

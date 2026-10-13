@@ -16,6 +16,7 @@ import {
   TextColor,
   Toggle,
   TypeScale,
+  useToast,
 } from "@/design-system";
 
 export const Route = createFileRoute("/playground")({
@@ -40,6 +41,7 @@ const sectionTitles = {
   "radio-group": "Radio group",
   avatar: "Avatar",
   dialog: "Dialog",
+  toast: "Toast",
   text: "Text",
   "color-scales": "Color scales",
   "semantic-colors": "Semantic colors",
@@ -51,7 +53,7 @@ const navGroups = [
   {
     title: "Components",
     href: "#top",
-    sections: ["buttons", "checkbox", "toggle", "radio-group", "avatar", "dialog", "text"],
+    sections: ["buttons", "checkbox", "toggle", "radio-group", "avatar", "dialog", "toast", "text"],
   },
   { title: "Tokens", href: "#tokens", sections: ["color-scales", "semantic-colors"] },
 ] as const;
@@ -69,7 +71,8 @@ const radioOptions = [
   { label: "Large", value: "lg" },
 ];
 
-// Each semantic group only works with one utility, so show the class to type.
+// Text, background, and border colors only work with their own utility, so show
+// the class to type. Status colors work with any utility; bg- is just an example.
 const semanticGroups = [
   { title: "Text", classPrefix: "text-", colors: TextColor },
   { title: "Background", classPrefix: "bg-", colors: BackgroundColor },
@@ -146,14 +149,21 @@ function Playground() {
                 <Avatar src={samplePhoto} alt="Sample photo, small" size="sm" />
                 <Avatar src={samplePhoto} alt="Sample photo, medium" />
                 <Avatar src={samplePhoto} alt="Sample photo, large" size="lg" />
-                <Avatar src={null} alt="No photo" />
-                <Avatar src="/missing-photo.png" alt="Photo that fails to load" />
+                <Avatar src={null} alt="No photo" initials="VZ" size="sm" />
+                <Avatar src={null} alt="No photo" initials="VZ" />
+                <Avatar src={null} alt="No photo" initials="VZ" size="lg" />
+                <Avatar src="/missing-photo.png" alt="Photo that fails to load" initials="AV" />
+                <Avatar src={null} alt="No photo or initials" />
               </Box>
-              <Label>sm · md · lg · no photo · failed load</Label>
+              <Label>photo sm · md · lg · initials sm · md · lg · failed load · no initials</Label>
             </Section>
 
             <Section id="dialog">
               <DialogExamples />
+            </Section>
+
+            <Section id="toast">
+              <ToastExamples />
             </Section>
 
             <Section id="text">
@@ -314,6 +324,37 @@ function DialogExamples() {
         message="Clicking outside, Esc, the ×, or the button closes this one."
         actions={[{ label: "Got it", variant: "primary", onClick: close }]}
         dismissible
+      />
+    </Box>
+  );
+}
+
+function ToastExamples() {
+  const toast = useToast();
+
+  return (
+    <Box className="flex flex-wrap gap-sm">
+      <Button label="Neutral" onClick={() => toast.show({ message: "Outfit saved" })} />
+      <Button
+        label="Success"
+        onClick={() => toast.show({ message: "Profile updated", variant: "success" })}
+      />
+      <Button
+        label="With subtitle"
+        variant="secondary"
+        onClick={() =>
+          toast.show({ message: "Outfit saved", subtitle: "You can find it under Outfits." })
+        }
+      />
+      <Button
+        label="With action"
+        variant="secondary"
+        onClick={() =>
+          toast.show({
+            message: "Outfit deleted",
+            action: { label: "Undo", onClick: () => toast.show({ message: "Restored" }) },
+          })
+        }
       />
     </Box>
   );
