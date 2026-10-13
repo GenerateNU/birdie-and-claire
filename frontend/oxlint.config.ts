@@ -1,7 +1,7 @@
 import { defineConfig } from "oxlint";
 
 export default defineConfig({
-  ignorePatterns: ["tools/oxlint/anti-slop/**"],
+  ignorePatterns: ["tools/oxlint/anti-slop/**", "src/routeTree.gen.ts"],
   jsPlugins: [{ name: "anti-slop", specifier: "./tools/oxlint/anti-slop/index.ts" }],
   rules: {
     "anti-slop/no-array-filter-map": "error",
