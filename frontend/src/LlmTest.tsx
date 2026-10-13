@@ -188,8 +188,8 @@ export default function LlmTest() {
       </a>
       <h1 className="text-3xl font-bold mt-4 mb-2">LLM test</h1>
       <p className="text-gray-400 text-sm mb-8">
-        Sign in first. Needs <code className="text-gray-200">AI_DEV_ENDPOINTS=true</code> on the
-        API.
+        Sign in first. Your user id must be in{" "}
+        <code className="text-gray-200">AI_DEV_USER_IDS</code> on the API.
       </p>
 
       <div className="flex flex-col gap-4 max-w-2xl">

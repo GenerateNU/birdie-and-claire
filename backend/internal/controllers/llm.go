@@ -3,26 +3,33 @@ package controllers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
+	"slices"
 	"time"
 
+	"birdie-and-claire/internal/auth"
+	"birdie-and-claire/internal/errs"
 	"birdie-and-claire/internal/llm"
 	"birdie-and-claire/internal/log"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/sse"
+	"github.com/google/uuid"
 )
 
 const devCallTimeout = 60 * time.Second
 
 type LLMController struct {
 	llm             llm.Client
+	testerIDs       []uuid.UUID
 	currentTimeTool llm.Tool
 }
 
-func NewLLMController(client llm.Client) *LLMController {
+func NewLLMController(client llm.Client, testerIDs []uuid.UUID) *LLMController {
 	return &LLMController{
-		llm: client,
+		llm:       client,
+		testerIDs: testerIDs,
 		currentTimeTool: llm.NewTool("current_time", "Returns the current time in UTC, in RFC 3339 format.",
 			func(context.Context, struct{}) (string, error) {
 				return time.Now().UTC().Format(time.RFC3339), nil
@@ -68,6 +75,21 @@ type LLMStreamDone struct{}
 
 type LLMStreamError struct {
 	Message string `json:"message"`
+}
+
+// RequireTester rejects callers missing from AI_DEV_USER_IDS; as middleware it runs before the stream sends its 200.
+func (c *LLMController) RequireTester(api huma.API) func(huma.Context, func(huma.Context)) {
+	return func(ctx huma.Context, next func(huma.Context)) {
+		caller := auth.UserID(ctx.Context())
+		if slices.Contains(c.testerIDs, caller) {
+			next(ctx)
+			return
+		}
+
+		var denied huma.StatusError
+		errors.As(errs.ToHuma(ctx.Context(), fmt.Errorf("%w: not on the LLM test list; your user id is %s", errs.ErrForbidden, caller)), &denied)
+		_ = huma.WriteErr(api, ctx, denied.GetStatus(), denied.Error())
+	}
 }
 
 const outfitIdeaSystem = "Suggest one outfit for the occasion the user describes. " +

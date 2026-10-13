@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"net/url"
 	"os"
-	"strconv"
+	"slices"
 	"strings"
+
+	"github.com/google/uuid"
 )
 
 const (
@@ -19,8 +21,8 @@ type LLMConfig struct {
 	BaseURL string
 	// the gateway's own ID, such as "openai/gpt-5-mini" on OpenRouter
 	Model string
-	// gates the /api/v1/llm test routes, which let any signed-in user spend the key
-	DevEndpoints bool
+	// users allowed on the /api/v1/llm test routes, which spend the gateway key
+	DevUserIDs []uuid.UUID
 }
 
 func loadLLM() (LLMConfig, error) {
@@ -44,13 +46,29 @@ func loadLLM() (LLMConfig, error) {
 		return LLMConfig{}, fmt.Errorf("AI_URL must be an https URL with no query or fragment, got %q", baseURL)
 	}
 
-	devEndpoints := false
-	if raw := os.Getenv("AI_DEV_ENDPOINTS"); raw != "" {
-		devEndpoints, err = strconv.ParseBool(raw)
-		if err != nil {
-			return LLMConfig{}, fmt.Errorf("AI_DEV_ENDPOINTS must be true or false, got %q", raw)
-		}
+	devUserIDs, err := loadDevUserIDs()
+	if err != nil {
+		return LLMConfig{}, err
 	}
 
-	return LLMConfig{APIKey: key, BaseURL: baseURL, Model: model, DevEndpoints: devEndpoints}, nil
+	return LLMConfig{APIKey: key, BaseURL: baseURL, Model: model, DevUserIDs: devUserIDs}, nil
+}
+
+func loadDevUserIDs() ([]uuid.UUID, error) {
+	var ids []uuid.UUID
+	for entry := range strings.SplitSeq(os.Getenv("AI_DEV_USER_IDS"), ",") {
+		entry = strings.TrimSpace(entry)
+		if entry == "" {
+			continue
+		}
+		id, err := uuid.Parse(entry)
+		// a request with no auth context reads as the nil UUID, so allowing it would let that through
+		if err != nil || id == uuid.Nil {
+			return nil, fmt.Errorf("AI_DEV_USER_IDS must be comma-separated user UUIDs, got %q", entry)
+		}
+		if !slices.Contains(ids, id) {
+			ids = append(ids, id)
+		}
+	}
+	return ids, nil
 }

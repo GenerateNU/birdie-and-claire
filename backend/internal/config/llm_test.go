@@ -2,19 +2,27 @@ package config
 
 import (
 	"maps"
+	"slices"
 	"testing"
+
+	"github.com/google/uuid"
+)
+
+const (
+	testerA = "3f0c9a1e-5b7d-4e2a-9c61-8d2b7f4a1c05"
+	testerB = "7b2e4d10-1c3a-4f5e-8a9b-0c1d2e3f4a5b"
 )
 
 type llmCase struct {
-	name             string
-	envVars          map[string]string
-	wantErrMsg       string
-	wantBaseURL      string
-	wantModel        string
-	wantDevEndpoints bool
+	name           string
+	envVars        map[string]string
+	wantErrMsg     string
+	wantBaseURL    string
+	wantModel      string
+	wantDevUserIDs []string
 }
 
-var llmEnvKeys = []string{"AI_API_KEY", "AI_MODEL", "AI_URL", "AI_DEV_ENDPOINTS"}
+var llmEnvKeys = []string{"AI_API_KEY", "AI_MODEL", "AI_URL", "AI_DEV_USER_IDS"}
 
 // llmEnv is a valid environment with overrides applied; an empty override sets the variable to empty.
 func llmEnv(overrides map[string]string) map[string]string {
@@ -97,20 +105,43 @@ func TestLoadLLM(t *testing.T) {
 			wantErrMsg: "AI_URL must be an https URL",
 		},
 		{
-			name:             "dev endpoints true",
-			envVars:          llmEnv(map[string]string{"AI_DEV_ENDPOINTS": "true"}),
-			wantBaseURL:      "https://openrouter.ai/api/v1",
-			wantDevEndpoints: true,
-		},
-		{
-			name:        "dev endpoints false",
-			envVars:     llmEnv(map[string]string{"AI_DEV_ENDPOINTS": "false"}),
+			name:        "dev user ids unset allow nobody",
+			envVars:     llmEnv(nil),
 			wantBaseURL: "https://openrouter.ai/api/v1",
 		},
 		{
-			name:       "dev endpoints junk fails",
-			envVars:    llmEnv(map[string]string{"AI_DEV_ENDPOINTS": "yes please"}),
-			wantErrMsg: "AI_DEV_ENDPOINTS must be true or false",
+			name:           "one dev user id",
+			envVars:        llmEnv(map[string]string{"AI_DEV_USER_IDS": testerA}),
+			wantBaseURL:    "https://openrouter.ai/api/v1",
+			wantDevUserIDs: []string{testerA},
+		},
+		{
+			name:           "several dev user ids with spaces",
+			envVars:        llmEnv(map[string]string{"AI_DEV_USER_IDS": " " + testerA + " ,  " + testerB + " "}),
+			wantBaseURL:    "https://openrouter.ai/api/v1",
+			wantDevUserIDs: []string{testerA, testerB},
+		},
+		{
+			name:           "trailing comma",
+			envVars:        llmEnv(map[string]string{"AI_DEV_USER_IDS": testerA + ","}),
+			wantBaseURL:    "https://openrouter.ai/api/v1",
+			wantDevUserIDs: []string{testerA},
+		},
+		{
+			name:           "duplicate dev user ids collapse",
+			envVars:        llmEnv(map[string]string{"AI_DEV_USER_IDS": testerA + "," + testerB + "," + testerA}),
+			wantBaseURL:    "https://openrouter.ai/api/v1",
+			wantDevUserIDs: []string{testerA, testerB},
+		},
+		{
+			name:       "invalid dev user id fails",
+			envVars:    llmEnv(map[string]string{"AI_DEV_USER_IDS": testerA + ",not-a-uuid"}),
+			wantErrMsg: "AI_DEV_USER_IDS must be comma-separated user UUIDs",
+		},
+		{
+			name:       "nil dev user id fails",
+			envVars:    llmEnv(map[string]string{"AI_DEV_USER_IDS": uuid.Nil.String()}),
+			wantErrMsg: "AI_DEV_USER_IDS must be comma-separated user UUIDs",
 		},
 	}
 
@@ -149,7 +180,11 @@ func assertLLMConfig(t *testing.T, cfg LLMConfig, tt llmCase) {
 	if cfg.BaseURL != tt.wantBaseURL {
 		t.Errorf("BaseURL = %q, want %q", cfg.BaseURL, tt.wantBaseURL)
 	}
-	if cfg.DevEndpoints != tt.wantDevEndpoints {
-		t.Errorf("DevEndpoints = %v, want %v", cfg.DevEndpoints, tt.wantDevEndpoints)
+	var gotDevUserIDs []string
+	for _, id := range cfg.DevUserIDs {
+		gotDevUserIDs = append(gotDevUserIDs, id.String())
+	}
+	if !slices.Equal(gotDevUserIDs, tt.wantDevUserIDs) {
+		t.Errorf("DevUserIDs = %v, want %v", gotDevUserIDs, tt.wantDevUserIDs)
 	}
 }

@@ -10,12 +10,10 @@ import (
 	"github.com/danielgtaylor/huma/v2/sse"
 )
 
+// LLMRoutes spend the gateway key, so every route is gated on AI_DEV_USER_IDS and hidden from the docs.
 func LLMRoutes(api huma.API, params types.RouteParams) {
-	// any signed-in user could spend the gateway key; Hidden also keeps the routes out of /docs when the flag is on
-	if !params.ServiceParams.Config.LLM.DevEndpoints {
-		return
-	}
-	controller := controllers.NewLLMController(params.ServiceParams.LLM)
+	controller := controllers.NewLLMController(params.ServiceParams.LLM, params.ServiceParams.Config.LLM.DevUserIDs)
+	testersOnly := huma.Middlewares{controller.RequireTester(api)}
 
 	huma.Register(api, huma.Operation{
 		OperationID: "llm-generate",
@@ -24,6 +22,7 @@ func LLMRoutes(api huma.API, params types.RouteParams) {
 		Summary:     "Generate text (dev only)",
 		Tags:        []string{"llm"},
 		Hidden:      true,
+		Middlewares: testersOnly,
 	}, controller.Generate)
 
 	huma.Register(api, huma.Operation{
@@ -33,6 +32,7 @@ func LLMRoutes(api huma.API, params types.RouteParams) {
 		Summary:     "Generate a fixed demo schema (dev only)",
 		Tags:        []string{"llm"},
 		Hidden:      true,
+		Middlewares: testersOnly,
 	}, controller.GenerateStructured)
 
 	sse.Register(api, huma.Operation{
@@ -42,6 +42,7 @@ func LLMRoutes(api huma.API, params types.RouteParams) {
 		Summary:     "Stream generated text (dev only)",
 		Tags:        []string{"llm"},
 		Hidden:      true,
+		Middlewares: testersOnly,
 	}, map[string]any{
 		"chunk": controllers.LLMStreamChunk{},
 		"done":  controllers.LLMStreamDone{},
