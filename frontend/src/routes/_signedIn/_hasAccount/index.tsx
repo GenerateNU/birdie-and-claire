@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { signOut } from "@/account";
+import { Button } from "@/design-system";
 
 export const Route = createFileRoute("/_signedIn/_hasAccount/")({
   component: Home,
@@ -27,13 +28,7 @@ function Home() {
         LLM test →
       </Link>
       <div className="mt-6">
-        <button
-          type="button"
-          onClick={signOut}
-          className="rounded bg-blue-500 px-3 py-2 text-sm text-white"
-        >
-          Sign out
-        </button>
+        <Button label="Sign out" onClick={signOut} />
       </div>
     </div>
   );

@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { apiFetch } from "@/api";
+import { Button } from "@/design-system";
 
 export const Route = createFileRoute("/_signedIn/_hasAccount/llm-test")({
   component: LlmTest,
@@ -234,14 +235,14 @@ function LlmTest() {
           />
         </label>
 
-        <button
-          type="button"
+        <Button
+          label="Run"
           onClick={run}
-          disabled={running || prompt.trim() === ""}
-          className="self-start rounded bg-blue-500 px-4 py-2 text-sm disabled:opacity-50"
-        >
-          {running ? "Running…" : "Run"}
-        </button>
+          loading={running}
+          loadingLabel="Running…"
+          disabled={prompt.trim() === ""}
+          className="self-start"
+        />
 
         {error && <p className="text-red-400 text-sm">Error: {error}</p>}
 

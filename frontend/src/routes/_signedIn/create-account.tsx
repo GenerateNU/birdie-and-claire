@@ -3,6 +3,7 @@ import { useState, type SyntheticEvent } from "react";
 
 import { AccountError, hasAccountQuery } from "@/account";
 import { apiFetch } from "@/api";
+import { Button } from "@/design-system";
 
 export const Route = createFileRoute("/_signedIn/create-account")({
   beforeLoad: async ({ context }) => {
@@ -66,13 +67,7 @@ function CreateAccount() {
             className="rounded border border-gray-700 bg-gray-800 px-3 py-2 text-white"
           />
         </label>
-        <button
-          type="submit"
-          disabled={status !== null}
-          className="rounded bg-blue-500 px-3 py-2 text-sm text-white disabled:opacity-50"
-        >
-          Create account
-        </button>
+        <Button label="Create account" type="submit" disabled={status !== null} />
         {status && <p className="text-gray-400 text-sm">{status}</p>}
         {error && <p className="text-red-400 text-sm">Error: {error}</p>}
       </form>

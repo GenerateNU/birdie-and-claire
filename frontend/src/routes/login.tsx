@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, type SyntheticEvent } from "react";
 
+import { Button } from "@/design-system";
 import { supabase } from "@/supabase/client";
 
 export const Route = createFileRoute("/login")({
@@ -103,13 +104,7 @@ function Login() {
               className="rounded border border-gray-700 bg-gray-800 px-3 py-2 text-white"
             />
           </label>
-          <button
-            type="submit"
-            disabled={busy}
-            className="rounded bg-blue-500 px-3 py-2 text-sm text-white disabled:opacity-50"
-          >
-            Send code
-          </button>
+          <Button label="Send code" type="submit" disabled={busy} />
           {status && <p className="text-gray-400 text-sm">{status}</p>}
           {error && <p className="text-red-400 text-sm">Error: {error}</p>}
         </form>
@@ -130,30 +125,10 @@ function Login() {
               className="rounded border border-gray-700 bg-gray-800 px-3 py-2 text-white"
             />
           </label>
-          <button
-            type="submit"
-            disabled={busy}
-            className="rounded bg-blue-500 px-3 py-2 text-sm text-white disabled:opacity-50"
-          >
-            Verify
-          </button>
+          <Button label="Verify" type="submit" disabled={busy} />
           <div className="flex gap-4 text-sm">
-            <button
-              type="button"
-              onClick={resendCode}
-              disabled={busy}
-              className="underline hover:text-white disabled:opacity-50"
-            >
-              Resend code
-            </button>
-            <button
-              type="button"
-              onClick={changeEmail}
-              disabled={busy}
-              className="underline hover:text-white disabled:opacity-50"
-            >
-              Change email
-            </button>
+            <Button label="Resend code" onClick={resendCode} disabled={busy} />
+            <Button label="Change email" onClick={changeEmail} disabled={busy} />
           </div>
           {status && <p className="text-gray-400 text-sm">{status}</p>}
           {notice && <p className="text-gray-400 text-sm">{notice}</p>}
