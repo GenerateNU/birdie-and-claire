@@ -43,7 +43,7 @@ droplet
 
 A preview gets its own database and nothing else. It reads the Keyflare `prod`
 environment, so it verifies tokens against production Supabase, writes uploads
-to the production S3 bucket, and calls the production embedder. Do not
+to the production storage bucket, and calls the production embedder. Do not
 exercise destructive flows on a preview.
 
 ## One-time setup
@@ -96,8 +96,15 @@ kfl keys create --type system --label birdie-and-claire-ci \
 The prod environment must hold `DB_HOST`, `DB_PORT`, `DB_USER`,
 `DB_PASSWORD`, `DB_NAME` (Supabase's session pooler, port 5432), the backend
 variables listed in `backend/cmd/tasks/deploy.go`, and `VITE_SUPABASE_URL` and
-`VITE_SUPABASE_ANON_KEY` for the frontend build. `S3_ENDPOINT` is never copied
-to the droplet, so the backend talks to real S3.
+`VITE_SUPABASE_ANON_KEY` for the frontend build.
+
+Storage is Supabase Storage through its S3-compatible API. Set `S3_ENDPOINT`
+and `S3_PUBLIC_ENDPOINT` to
+`https://<project-ref>.storage.supabase.co/storage/v1/s3`, `S3_PUBLIC_URL` to
+`https://<project-ref>.supabase.co/storage/v1/object/public/<bucket>`, and
+`S3_REGION` to the project's region. The access keys come from Supabase,
+Project Settings, Storage, S3 Access Keys. The bucket must be public so profile
+pictures load without a signed URL. `.env.example` explains each variable.
 
 ### 4. Vercel
 
@@ -116,11 +123,12 @@ reviewers without a Vercel account need to open previews.
 The `/api` proxy target is written into `vercel.json`. If `API_DOMAIN` changes,
 change it there too.
 
-### 5. S3 CORS
+### 5. Storage CORS
 
-Browsers upload straight to S3 with presigned URLs, so the production bucket's
-CORS rule must allow `PUT` from the production site and from
+Browsers upload straight to the bucket with presigned URLs, so storage must
+accept a cross-origin `PUT` from the production site and from
 `https://<project>-*-<team>.vercel.app`, which covers Vercel's preview URLs.
+Check this against Supabase Storage before the first release.
 
 ### 6. GitHub
 

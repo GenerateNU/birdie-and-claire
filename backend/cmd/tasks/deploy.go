@@ -8,13 +8,14 @@ import (
 )
 
 // backendEnvNames are the variables the deployed backend reads, apart from
-// DATABASE_URL, which production assembles from the DB_* parts. S3_ENDPOINT
-// and S3_PUBLIC_ENDPOINT are absent on purpose: leaving both unset is what
-// points the storage client at real AWS instead of Floci.
+// DATABASE_URL, which production assembles from the DB_* parts.
 var backendEnvNames = []string{
 	"SUPABASE_URL",
 	"S3_BUCKET",
 	"S3_REGION",
+	"S3_ENDPOINT",
+	"S3_PUBLIC_ENDPOINT",
+	"S3_PUBLIC_URL",
 	"S3_MAX_UPLOAD_BYTES",
 	"AWS_ACCESS_KEY_ID",
 	"AWS_SECRET_ACCESS_KEY",

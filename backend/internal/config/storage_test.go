@@ -14,7 +14,7 @@ type storageCase struct {
 }
 
 var storageEnvKeys = []string{
-	"S3_BUCKET", "S3_REGION", "S3_ENDPOINT", "S3_PUBLIC_ENDPOINT",
+	"S3_BUCKET", "S3_REGION", "S3_ENDPOINT", "S3_PUBLIC_ENDPOINT", "S3_PUBLIC_URL",
 	"S3_MAX_UPLOAD_BYTES", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY",
 }
 
@@ -29,6 +29,7 @@ func TestLoadStorage(t *testing.T) {
 				"S3_PUBLIC_ENDPOINT":    "http://localhost:4566",
 				"AWS_ACCESS_KEY_ID":     "test",
 				"AWS_SECRET_ACCESS_KEY": "test",
+				"S3_PUBLIC_URL":         "http://localhost:4566/birdie-and-claire-profile-pictures",
 			},
 			wantMaxUploadBytes: defaultMaxUploadBytes,
 		},
@@ -40,6 +41,7 @@ func TestLoadStorage(t *testing.T) {
 				"S3_ENDPOINT":           "",
 				"AWS_ACCESS_KEY_ID":     "real-key",
 				"AWS_SECRET_ACCESS_KEY": "real-secret",
+				"S3_PUBLIC_URL":         "https://birdie-and-claire-profile-pictures.s3.us-east-1.amazonaws.com",
 			},
 			wantMaxUploadBytes: defaultMaxUploadBytes,
 		},
@@ -49,6 +51,7 @@ func TestLoadStorage(t *testing.T) {
 				"S3_REGION":             "us-east-1",
 				"AWS_ACCESS_KEY_ID":     "test",
 				"AWS_SECRET_ACCESS_KEY": "test",
+				"S3_PUBLIC_URL":         "http://localhost:4566/birdie-and-claire-profile-pictures",
 			},
 			wantErr:    true,
 			wantErrMsg: "S3_BUCKET is required",
@@ -59,6 +62,7 @@ func TestLoadStorage(t *testing.T) {
 				"S3_BUCKET":             "birdie-and-claire-profile-pictures",
 				"AWS_ACCESS_KEY_ID":     "test",
 				"AWS_SECRET_ACCESS_KEY": "test",
+				"S3_PUBLIC_URL":         "http://localhost:4566/birdie-and-claire-profile-pictures",
 			},
 			wantErr:    true,
 			wantErrMsg: "S3_REGION is required",
@@ -84,6 +88,17 @@ func TestLoadStorage(t *testing.T) {
 			wantErrMsg: "AWS credentials missing",
 		},
 		{
+			name: "missing public URL fails",
+			envVars: map[string]string{
+				"S3_BUCKET":             "birdie-and-claire-profile-pictures",
+				"S3_REGION":             "us-east-1",
+				"AWS_ACCESS_KEY_ID":     "test",
+				"AWS_SECRET_ACCESS_KEY": "test",
+			},
+			wantErr:    true,
+			wantErrMsg: "S3_PUBLIC_URL is required",
+		},
+		{
 			name: "explicit max upload bytes is parsed",
 			envVars: map[string]string{
 				"S3_BUCKET":             "birdie-and-claire-profile-pictures",
@@ -91,6 +106,7 @@ func TestLoadStorage(t *testing.T) {
 				"S3_MAX_UPLOAD_BYTES":   "1048576",
 				"AWS_ACCESS_KEY_ID":     "test",
 				"AWS_SECRET_ACCESS_KEY": "test",
+				"S3_PUBLIC_URL":         "http://localhost:4566/birdie-and-claire-profile-pictures",
 			},
 			wantMaxUploadBytes: 1048576,
 		},
@@ -102,6 +118,7 @@ func TestLoadStorage(t *testing.T) {
 				"S3_MAX_UPLOAD_BYTES":   "five megs",
 				"AWS_ACCESS_KEY_ID":     "test",
 				"AWS_SECRET_ACCESS_KEY": "test",
+				"S3_PUBLIC_URL":         "http://localhost:4566/birdie-and-claire-profile-pictures",
 			},
 			wantErr:    true,
 			wantErrMsg: "S3_MAX_UPLOAD_BYTES must be a positive number",
@@ -114,6 +131,7 @@ func TestLoadStorage(t *testing.T) {
 				"S3_ENDPOINT":           "http://floci:4566",
 				"AWS_ACCESS_KEY_ID":     "test",
 				"AWS_SECRET_ACCESS_KEY": "test",
+				"S3_PUBLIC_URL":         "http://localhost:4566/birdie-and-claire-profile-pictures",
 			},
 			wantErr:    true,
 			wantErrMsg: "must be set together",
@@ -126,6 +144,7 @@ func TestLoadStorage(t *testing.T) {
 				"S3_PUBLIC_ENDPOINT":    "http://localhost:4566",
 				"AWS_ACCESS_KEY_ID":     "test",
 				"AWS_SECRET_ACCESS_KEY": "test",
+				"S3_PUBLIC_URL":         "http://localhost:4566/birdie-and-claire-profile-pictures",
 			},
 			wantErr:    true,
 			wantErrMsg: "must be set together",
@@ -181,6 +200,9 @@ func assertStorageConfig(t *testing.T, cfg StorageConfig, tt storageCase) {
 	}
 	if cfg.PublicEndpoint != tt.envVars["S3_PUBLIC_ENDPOINT"] {
 		t.Errorf("PublicEndpoint = %q, want %q", cfg.PublicEndpoint, tt.envVars["S3_PUBLIC_ENDPOINT"])
+	}
+	if cfg.PublicURL != tt.envVars["S3_PUBLIC_URL"] {
+		t.Errorf("PublicURL = %q, want %q", cfg.PublicURL, tt.envVars["S3_PUBLIC_URL"])
 	}
 	if cfg.MaxUploadBytes != tt.wantMaxUploadBytes {
 		t.Errorf("MaxUploadBytes = %d, want %d", cfg.MaxUploadBytes, tt.wantMaxUploadBytes)

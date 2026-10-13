@@ -19,10 +19,10 @@ import (
 const presignExpiry = 15 * time.Minute
 
 type s3Store struct {
-	client          *s3.Client
-	presigner       *s3.PresignClient
-	bucket          string
-	publicBucketURL string
+	client    *s3.Client
+	presigner *s3.PresignClient
+	bucket    string
+	publicURL string
 }
 
 func New(ctx context.Context, cfg config.StorageConfig) (ObjectStore, error) {
@@ -34,19 +34,11 @@ func New(ctx context.Context, cfg config.StorageConfig) (ObjectStore, error) {
 	publicClient := newS3Client(awsCfg, cfg.PublicEndpoint)
 
 	return &s3Store{
-		client:          newS3Client(awsCfg, cfg.Endpoint),
-		presigner:       s3.NewPresignClient(publicClient, s3.WithPresignExpires(presignExpiry)),
-		bucket:          cfg.Bucket,
-		publicBucketURL: publicBucketURL(cfg),
+		client:    newS3Client(awsCfg, cfg.Endpoint),
+		presigner: s3.NewPresignClient(publicClient, s3.WithPresignExpires(presignExpiry)),
+		bucket:    cfg.Bucket,
+		publicURL: cfg.PublicURL,
 	}, nil
-}
-
-// publicBucketURL is the browser-facing base URL for the bucket: the Floci host
-func publicBucketURL(cfg config.StorageConfig) string {
-	if cfg.PublicEndpoint != "" {
-		return fmt.Sprintf("%s/%s", cfg.PublicEndpoint, cfg.Bucket)
-	}
-	return fmt.Sprintf("https://%s.s3.%s.amazonaws.com", cfg.Bucket, cfg.Region)
 }
 
 func newS3Client(awsCfg aws.Config, endpoint string) *s3.Client {
@@ -123,7 +115,7 @@ func (s *s3Store) DeleteObject(ctx context.Context, key string) error {
 }
 
 func (s *s3Store) PublicURL(key string) string {
-	return fmt.Sprintf("%s/%s", s.publicBucketURL, key)
+	return fmt.Sprintf("%s/%s", s.publicURL, key)
 }
 
 func (s *s3Store) HeadBucket(ctx context.Context) error {
