@@ -57,17 +57,51 @@ func (c *OutfitController) Create(ctx context.Context, input *CreateOutfitInput)
 	return &OutfitOutput{Body: outfit}, nil
 }
 
-type GetOutfitInput struct {
+type OutfitIDInput struct {
 	ID uuid.UUID `path:"id" doc:"Outfit ID"`
 }
 
-// Get returns an outfit with its products.
-func (c *OutfitController) Get(ctx context.Context, input *GetOutfitInput) (*OutfitOutput, error) {
+// Get returns one of the authenticated user's outfits with its products.
+func (c *OutfitController) Get(ctx context.Context, input *OutfitIDInput) (*OutfitOutput, error) {
 	outfit, err := c.service.Get(ctx, input.ID)
 	if err != nil {
 		return nil, errs.ToHuma(ctx, err)
 	}
 	return &OutfitOutput{Body: outfit}, nil
+}
+
+type ShareOutfitOutput struct {
+	Body models.ShareOutfitResponse
+}
+
+// Share makes one of the authenticated user's outfits public and returns its link.
+func (c *OutfitController) Share(ctx context.Context, input *OutfitIDInput) (*ShareOutfitOutput, error) {
+	share, err := c.service.Share(ctx, input.ID)
+	if err != nil {
+		return nil, errs.ToHuma(ctx, err)
+	}
+	return &ShareOutfitOutput{Body: share}, nil
+}
+
+// Unshare makes one of the authenticated user's outfits private again.
+func (c *OutfitController) Unshare(ctx context.Context, input *OutfitIDInput) (*struct{}, error) {
+	if err := c.service.Unshare(ctx, input.ID); err != nil {
+		return nil, errs.ToHuma(ctx, err)
+	}
+	return nil, nil
+}
+
+type PublicOutfitOutput struct {
+	Body models.PublicOutfitResponse
+}
+
+// GetShared returns a shared outfit to anyone, signed in or not.
+func (c *OutfitController) GetShared(ctx context.Context, input *OutfitIDInput) (*PublicOutfitOutput, error) {
+	outfit, err := c.service.GetShared(ctx, input.ID)
+	if err != nil {
+		return nil, errs.ToHuma(ctx, err)
+	}
+	return &PublicOutfitOutput{Body: outfit}, nil
 }
 
 type ListOutfitsInput struct {

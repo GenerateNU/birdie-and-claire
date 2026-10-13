@@ -11,7 +11,7 @@ import (
 )
 
 func OutfitRoutes(api huma.API, params types.RouteParams) {
-	service := services.NewOutfitService(params.ServiceParams.Repository)
+	service := services.NewOutfitService(params.ServiceParams.Repository, params.ServiceParams.Config.App.PublicAPIURL)
 	controller := controllers.NewOutfitController(service)
 
 	huma.Register(api, huma.Operation{
@@ -27,7 +27,7 @@ func OutfitRoutes(api huma.API, params types.RouteParams) {
 		OperationID: "get-outfit",
 		Method:      http.MethodGet,
 		Path:        "/api/v1/outfits/{id}",
-		Summary:     "Get an outfit with its products",
+		Summary:     "Get one of the authenticated user's outfits with its products",
 		Tags:        []string{"outfits"},
 	}, controller.Get)
 
@@ -38,4 +38,30 @@ func OutfitRoutes(api huma.API, params types.RouteParams) {
 		Summary:     "List the authenticated user's outfits",
 		Tags:        []string{"outfits"},
 	}, controller.List)
+
+	huma.Register(api, huma.Operation{
+		OperationID: "share-outfit",
+		Method:      http.MethodPost,
+		Path:        "/api/v1/outfits/{id}/share",
+		Summary:     "Share an outfit by public link",
+		Tags:        []string{"outfits"},
+	}, controller.Share)
+
+	huma.Register(api, huma.Operation{
+		OperationID:   "unshare-outfit",
+		Method:        http.MethodDelete,
+		Path:          "/api/v1/outfits/{id}/share",
+		DefaultStatus: http.StatusNoContent,
+		Summary:       "Make a shared outfit private again",
+		Tags:          []string{"outfits"},
+	}, controller.Unshare)
+
+	// Outside /api/v1, so the auth middleware does not run.
+	huma.Register(api, huma.Operation{
+		OperationID: "get-shared-outfit",
+		Method:      http.MethodGet,
+		Path:        "/api/public/outfits/{id}",
+		Summary:     "Get a shared outfit without signing in",
+		Tags:        []string{"outfits"},
+	}, controller.GetShared)
 }
