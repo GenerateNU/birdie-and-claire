@@ -1,3 +1,4 @@
+import { AvatarSize } from "./src/design-system/tokens/avatar-size";
 import {
   BackgroundColor,
   BorderColor,
@@ -6,6 +7,7 @@ import {
   TextColor,
 } from "./src/design-system/tokens/color";
 import { CornerRadius } from "./src/design-system/tokens/corner-radius";
+import { PopupWidth } from "./src/design-system/tokens/layout";
 import { Spacing } from "./src/design-system/tokens/spacing";
 import { FontFamily, TypeScale } from "./src/design-system/tokens/typography";
 
@@ -21,6 +23,12 @@ export default {
       borderColor: BorderColor,
       outlineColor: { focus: BorderColor.focus },
       spacing: Spacing,
+      width: { popup: PopupWidth },
+      size: {
+        "avatar-sm": AvatarSize.sm,
+        "avatar-md": AvatarSize.md,
+        "avatar-lg": AvatarSize.lg,
+      },
       borderRadius: CornerRadius,
       fontFamily: FontFamily,
       fontSize: TypeScale,

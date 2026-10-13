@@ -52,6 +52,8 @@ export const TextColor = {
 export const BackgroundColor = {
   background: Gray[0],
   surface: Gray[50],
+  placeholder: Gray[200],
+  "control-off": Gray[300],
   overlay: "rgba(0, 0, 0, 0.4)",
 } as const;
 

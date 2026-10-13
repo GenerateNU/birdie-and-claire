@@ -1,7 +1,7 @@
 import { Switch } from "@base-ui/react/switch";
 
 const trackClasses =
-  "flex h-md w-xl shrink-0 items-center rounded-full bg-gray-300 p-[2px] data-[checked]:bg-brand-500 focus-ring";
+  "flex h-md w-xl shrink-0 items-center rounded-full bg-control-off p-xxxs data-[checked]:bg-brand-500 focus-ring";
 
 const thumbClasses =
   "size-sm rounded-full bg-background transition-transform data-[checked]:translate-x-md";

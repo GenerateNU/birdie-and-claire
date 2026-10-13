@@ -40,7 +40,7 @@ export function ToastProvider({ children }: ToastProviderProps) {
     <BaseToast.Provider>
       {children}
       <BaseToast.Portal>
-        <BaseToast.Viewport className="fixed left-1/2 top-md z-50 flex w-96 max-w-[calc(100vw-32px)] -translate-x-1/2 flex-col gap-xs">
+        <BaseToast.Viewport className="fixed left-1/2 top-md z-50 flex w-popup max-w-[calc(100vw-theme(spacing.md)*2)] -translate-x-1/2 flex-col gap-xs">
           <ToastList />
         </BaseToast.Viewport>
       </BaseToast.Portal>

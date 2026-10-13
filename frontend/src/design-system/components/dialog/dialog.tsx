@@ -41,7 +41,7 @@ export function Dialog({
     >
       <DialogParts.Portal>
         <DialogParts.Backdrop className="fixed inset-0 bg-overlay" />
-        <DialogParts.Popup className="fixed left-1/2 top-1/2 flex w-96 max-w-[calc(100vw-32px)] -translate-x-1/2 -translate-y-1/2 flex-col gap-md rounded-lg bg-background p-lg text-primary">
+        <DialogParts.Popup className="fixed left-1/2 top-1/2 flex w-popup max-w-[calc(100vw-theme(spacing.md)*2)] -translate-x-1/2 -translate-y-1/2 flex-col gap-md rounded-lg bg-background p-lg text-primary">
           <div className="flex items-start justify-between gap-md">
             <DialogParts.Title className="text-subheading">{title}</DialogParts.Title>
             {dismissible && <DialogParts.Close render={<CloseButton />} />}

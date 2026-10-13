@@ -1,9 +1,9 @@
 import { Avatar as BaseAvatar } from "@base-ui/react/avatar";
 
 const sizeClasses = {
-  sm: "size-6 text-caption",
-  md: "size-12 text-body",
-  lg: "size-32 text-heading",
+  sm: "size-avatar-sm text-caption",
+  md: "size-avatar-md text-body",
+  lg: "size-avatar-lg text-heading",
 } as const;
 
 type AvatarProps = {
@@ -16,7 +16,7 @@ type AvatarProps = {
 export function Avatar({ src, alt, initials, size = "md" }: AvatarProps) {
   return (
     <BaseAvatar.Root
-      className={`inline-flex shrink-0 overflow-hidden rounded-full bg-gray-200 ${sizeClasses[size]}`}
+      className={`inline-flex shrink-0 overflow-hidden rounded-full bg-placeholder ${sizeClasses[size]}`}
     >
       {src && <BaseAvatar.Image src={src} alt={alt} className="size-full object-cover" />}
       <BaseAvatar.Fallback
