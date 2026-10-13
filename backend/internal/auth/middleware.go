@@ -28,7 +28,7 @@ func Middleware(v *Verifier) fiber.Handler {
 			return unauthorized(c, "invalid token")
 		}
 
-		c.SetContext(withUserID(c.Context(), userID))
+		c.SetContext(WithUserID(c.Context(), userID))
 		return c.Next()
 	}
 }

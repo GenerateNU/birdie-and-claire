@@ -1,10 +1,15 @@
+import { createFileRoute } from "@tanstack/react-router";
 import { useState, type SyntheticEvent } from "react";
 
-import { supabase } from "./supabase/client";
+import { supabase } from "../supabase/client";
+
+export const Route = createFileRoute("/login")({
+  component: Login,
+});
 
 type Step = "email" | "code";
 
-export default function Login() {
+function Login() {
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
@@ -75,7 +80,7 @@ export default function Login() {
       return;
     }
 
-    // App checks for an account and sends the user to /create-account if there isn't one.
+    // The _hasAccount route checks for an account and sends the user to /create-account if there isn't one.
     window.location.assign("/");
   }
 

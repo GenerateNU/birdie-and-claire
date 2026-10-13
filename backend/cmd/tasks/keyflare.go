@@ -40,6 +40,9 @@ func secretsEnv(args []string) (string, bool) {
 	if args[0] == "db" && len(args) > 1 && args[1] == "prod" {
 		return keyflareEnvProd, true
 	}
+	if args[0] == "deploy" {
+		return keyflareEnvProd, true
+	}
 	if secretsRequired[args[0]] {
 		return keyflareEnvDev, true
 	}

@@ -1,0 +1,61 @@
+# Shared droplet infrastructure: ONE of these per droplet, however many
+# projects it hosts. Every project's stack joins the `edge` network created
+# here.
+#
+# This is a copy of inspirate-consulting's deploy/shared with one change: the
+# preview database runs pgvector/pgvector:pg17 instead of postgres:17-alpine,
+# because this project's migrations create the vector extension. pgvector is a
+# superset of Postgres 17, so the other projects' previews keep working. The
+# droplet runs exactly one copy, so keep the two repos in sync.
+#
+# Caddy is the label-driven variant: it watches the Docker socket and builds
+# its config from container labels, so a preview container routes itself and
+# gets a certificate without anyone editing a Caddyfile.
+name: shared
+
+services:
+  caddy:
+    image: lucaslorentz/caddy-docker-proxy:2.9-alpine
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      CADDY_INGRESS_NETWORKS: edge
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - edge
+    labels:
+      caddy.email: ${ACME_EMAIL:?set ACME_EMAIL in /opt/shared/.env}
+
+  # Preview databases only. Production data lives in Supabase, so nothing here
+  # is worth backing up. No ports are published: only containers on `edge`
+  # can reach it.
+  preview-db:
+    image: pgvector/pgvector:pg17
+    container_name: preview-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${PREVIEW_DB_PASSWORD:?set PREVIEW_DB_PASSWORD in /opt/shared/.env}
+    volumes:
+      - preview_db_data:/var/lib/postgresql/data
+    networks:
+      - edge
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  edge:
+    name: edge
+
+volumes:
+  caddy_data:
+  caddy_config:
+  preview_db_data:

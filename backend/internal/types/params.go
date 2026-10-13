@@ -6,6 +6,7 @@ import (
 	"birdie-and-claire/internal/auth"
 	"birdie-and-claire/internal/config"
 	"birdie-and-claire/internal/embedder"
+	"birdie-and-claire/internal/llm"
 	"birdie-and-claire/internal/repository"
 	"birdie-and-claire/internal/storage"
 )
@@ -15,6 +16,7 @@ type ServiceParams struct {
 	Config     *config.Configuration
 	Storage    storage.ObjectStore
 	Embedder   embedder.Embedder
+	LLM        llm.Client
 }
 
 type RouteParams struct {
