@@ -24,6 +24,7 @@ var backendEnvNames = []string{
 	"MODAL_PROXY_SECRET",
 	"AI_URL",
 	"AI_API_KEY",
+	"AI_MODEL",
 }
 
 const deployEnvUsage = "usage: deploy env <production|preview> <output-file>"
