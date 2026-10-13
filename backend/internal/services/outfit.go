@@ -27,13 +27,7 @@ func NewOutfitService(repo *repository.Repository) OutfitService {
 }
 
 func (s *outfitService) Create(ctx context.Context, params models.CreateOutfitParams) (models.OutfitResponse, error) {
-	userID := auth.UserID(ctx)
-	// outfits.user_id references users, and nothing else creates that row yet.
-	if err := s.repo.User.EnsureExists(ctx, userID); err != nil {
-		return models.OutfitResponse{}, err
-	}
-
-	outfit, products, err := s.repo.Outfit.Create(ctx, params, userID)
+	outfit, products, err := s.repo.Outfit.Create(ctx, params, auth.UserID(ctx))
 	if err != nil {
 		return models.OutfitResponse{}, err
 	}

@@ -16,6 +16,6 @@ func UserID(ctx context.Context) uuid.UUID {
 }
 
 // Can write userId to context
-func withUserID(ctx context.Context, id uuid.UUID) context.Context {
+func WithUserID(ctx context.Context, id uuid.UUID) context.Context {
 	return context.WithValue(ctx, userIDKey{}, id)
 }

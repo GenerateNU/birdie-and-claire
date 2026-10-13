@@ -8,6 +8,7 @@ type Configuration struct {
 	Supabase SupabaseConfig
 	Storage  StorageConfig
 	Embedder EmbedderConfig
+	LLM      LLMConfig
 }
 
 // Load fails on the first missing or malformed variable, so a bad environment
@@ -38,5 +39,10 @@ func Load() (*Configuration, error) {
 		return nil, err
 	}
 
-	return &Configuration{App: app, Database: database, Supabase: supabase, Storage: storage, Embedder: embedder}, nil
+	llm, err := loadLLM()
+	if err != nil {
+		return nil, err
+	}
+
+	return &Configuration{App: app, Database: database, Supabase: supabase, Storage: storage, Embedder: embedder, LLM: llm}, nil
 }
