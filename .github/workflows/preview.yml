@@ -1,0 +1,159 @@
+# Per-PR preview: a backend on the shared droplet with its own container and
+# database, migrated from the PR branch, and a Vercel frontend built from the
+# same commit whose /api proxy points at that backend.
+#
+# Previews read the Keyflare prod environment, so they use production
+# Supabase auth, the production S3 bucket, and the production embedder. Only
+# the database is per-PR.
+name: Preview backend
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  packages: write
+  pull-requests: write
+
+concurrency:
+  group: droplet-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  KEYFLARE_API_KEY: ${{ secrets.KEYFLARE_API_KEY }}
+  KEYFLARE_API_URL: ${{ secrets.KEYFLARE_API_URL }}
+  KEYFLARE_VERSION: 0.1.1
+
+jobs:
+  preview:
+    name: Deploy preview backend
+    runs-on: ubuntu-latest
+    # One shared environment, not one per PR: GitHub never deletes environments
+    # on its own, and removing them needs an admin token. A deploy from another
+    # PR can mark this PR's badge inactive; the PR comment stays current.
+    environment:
+      name: Preview
+      url: ${{ steps.frontend.outputs.url }}
+    # Forked PRs cannot read secrets. The DROPLET_HOST check keeps this inert
+    # until the droplet is set up.
+    if: github.event.pull_request.head.repo.full_name == github.repository && vars.DROPLET_HOST != ''
+    env:
+      PR: ${{ github.event.pull_request.number }}
+    steps:
+      - uses: actions/checkout@v7
+
+      # GHCR wants lowercase, and github.repository keeps GenerateNU's casing.
+      - name: Compute the image name
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}/backend:pr-${PR}-${{ github.sha }}" >> "$GITHUB_ENV"
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: backend
+          file: backend/Dockerfile
+          push: true
+          tags: ${{ env.IMAGE }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - uses: jdx/mise-action@v4
+        with:
+          install: true
+          install_args: go bun
+
+      - name: Install Keyflare
+        run: npm install -g "@keyflare/cli@${KEYFLARE_VERSION}"
+
+      - name: Generate preview.env from Keyflare prod
+        run: go -C backend run ./cmd/tasks deploy env preview "$RUNNER_TEMP/preview.env"
+
+      - name: Configure SSH
+        run: |
+          set -euo pipefail
+          install -m 700 -d ~/.ssh
+          echo "${{ secrets.DROPLET_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          echo "${{ secrets.DROPLET_SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      # The script goes over stdin, so the droplet needs no checkout of this repo.
+      - name: Bring the preview up
+        env:
+          DROPLET: ${{ vars.DROPLET_USER }}@${{ vars.DROPLET_HOST }}
+          PREVIEW_DOMAIN: ${{ vars.PREVIEW_DOMAIN }}
+        run: |
+          set -euo pipefail
+          ssh "$DROPLET" "mkdir -p /opt/birdie-and-claire"
+          scp -p "$RUNNER_TEMP/preview.env" "$DROPLET:/opt/birdie-and-claire/preview.env"
+          ssh "$DROPLET" bash -s -- "$PR" "$IMAGE" "$PREVIEW_DOMAIN" < deploy/preview-up.sh
+
+      # vercel.json proxies /api to production. A preview rewrites that target to
+      # its own backend first, so calls stay same-origin and need no CORS.
+      # Runs from the repo root: the Vercel project's Root Directory is
+      # frontend/, and the CLI applies it relative to where it starts.
+      - name: Build and deploy the preview frontend to Vercel
+        id: frontend
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+          PREVIEW_HOST: pr-${{ github.event.pull_request.number }}.${{ vars.PREVIEW_DOMAIN }}
+        run: |
+          set -euo pipefail
+          jq --arg destination "https://${PREVIEW_HOST}/api/:path*" \
+            '(.rewrites[] | select(.source == "/api/:path*") | .destination) = $destination' \
+            frontend/vercel.json > "$RUNNER_TEMP/vercel.json"
+          mv "$RUNNER_TEMP/vercel.json" frontend/vercel.json
+          # A renamed rewrite source would match nothing and silently leave the
+          # preview on production's API.
+          grep -qF "$PREVIEW_HOST" frontend/vercel.json
+          npx --yes vercel@60.1.3 pull --yes --environment=preview --token="$VERCEL_TOKEN"
+          # Vite inlines VITE_SUPABASE_* at build time, so the preview reads them
+          # from Keyflare prod like the backend does.
+          kfl run --project test_project --env prod -- \
+            npx --yes vercel@60.1.3 build --token="$VERCEL_TOKEN"
+          url=$(npx --yes vercel@60.1.3 deploy --prebuilt --token="$VERCEL_TOKEN")
+          echo "url=${url}" >> "$GITHUB_OUTPUT"
+
+      - name: Comment the result
+        if: success() || failure()
+        uses: actions/github-script@v7
+        env:
+          PREVIEW_HOST: pr-${{ github.event.pull_request.number }}.${{ vars.PREVIEW_DOMAIN }}
+          FRONTEND_URL: ${{ steps.frontend.outputs.url }}
+          JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const marker = '<!-- droplet-preview -->';
+            const sha = context.payload.pull_request.head.sha.slice(0, 7);
+            const logs = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const body = process.env.JOB_STATUS === 'success'
+              ? [
+                  marker,
+                  '### Preview ready',
+                  '',
+                  `App: **${process.env.FRONTEND_URL}**`,
+                  `API: **https://${process.env.PREVIEW_HOST}** (docs at \`/docs\`)`,
+                  '',
+                  `Built from \`${sha}\`. The app talks to this API, which has its own database, migrated from this branch.`,
+                  'Auth, S3, and the embedder are production. Uploads from this preview land in the real bucket.',
+                ].join('\n')
+              : [marker, '### Preview failed', '', `[View the logs](${logs})`].join('\n');
+
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number });
+            const existing = comments.find((comment) => comment.body?.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }

@@ -34,7 +34,7 @@ func main() {
 
 func run() error {
 	if len(os.Args) < 2 {
-		return errors.New("usage: go run ./cmd/tasks <bootstrap|setup|backend|frontend|dev|db|floci>")
+		return errors.New("usage: go run ./cmd/tasks <bootstrap|setup|backend|frontend|dev|db|floci|deploy>")
 	}
 
 	root, err := repositoryRoot()
@@ -65,6 +65,8 @@ func run() error {
 		return database(root, os.Args[2:])
 	case "floci":
 		return floci(root, os.Args[2:])
+	case "deploy":
+		return deploy(os.Args[2:])
 	default:
 		return fmt.Errorf("unknown task %q", os.Args[1])
 	}
