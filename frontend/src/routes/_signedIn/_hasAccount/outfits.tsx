@@ -1,9 +1,14 @@
+import { createFileRoute } from "@tanstack/react-router";
 import { useCallback } from "react";
 
-import OutfitList, { type Outfit } from "./OutfitList";
-import { usePagination } from "./utils/usePagination";
+import OutfitList, { type Outfit } from "../../../OutfitList";
+import { usePagination } from "../../../utils/usePagination";
 
-export default function OutfitsPage() {
+export const Route = createFileRoute("/_signedIn/_hasAccount/outfits")({
+  component: OutfitsPage,
+});
+
+function OutfitsPage() {
   const {
     data,
     error,

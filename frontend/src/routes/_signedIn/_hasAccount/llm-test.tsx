@@ -1,6 +1,11 @@
+import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
-import { apiFetch } from "./api";
+import { apiFetch } from "../../../api";
+
+export const Route = createFileRoute("/_signedIn/_hasAccount/llm-test")({
+  component: LlmTest,
+});
 
 type Mode = "plain" | "tool" | "stream" | "structured";
 
@@ -81,7 +86,7 @@ function explanation(res: Response, text: string): string {
   return text.slice(0, 200);
 }
 
-export default function LlmTest() {
+function LlmTest() {
   const [mode, setMode] = useState<Mode>("plain");
   const [system, setSystem] = useState("");
   const [prompt, setPrompt] = useState("");

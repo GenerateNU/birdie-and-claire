@@ -1,0 +1,15 @@
+name: Set up frontend
+description: Installs the mise-pinned Bun and the frontend's packages.
+
+runs:
+  using: composite
+  steps:
+    # Bun is the only tool the frontend checks need, so skip installing the rest.
+    - uses: jdx/mise-action@v4
+      with:
+        install: true
+        install_args: bun
+
+    - run: bun install --frozen-lockfile
+      shell: bash
+      working-directory: frontend
