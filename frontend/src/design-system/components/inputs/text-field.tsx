@@ -2,33 +2,54 @@ import { Input as BaseInput } from "@base-ui/react/input";
 import type { ComponentProps } from "react";
 
 const inputClasses =
-  "rounded-sm border bg-background px-sm py-xs text-body focus-ring data-[disabled]:opacity-50";
+  "rounded-sm border bg-background px-sm py-xs text-body text-primary focus-ring data-[disabled]:opacity-50 disabled:opacity-50";
 
-type TextFieldProps = Omit<ComponentProps<"input">, "value" | "onChange" | "className"> & {
+type SharedProps = {
   label: string;
   value: string;
   onValueChange: (value: string) => void;
   className?: string;
 };
 
-export function TextField({
-  label,
-  value,
-  onValueChange,
-  className,
-  ...inputProps
-}: TextFieldProps) {
+type SingleLineProps = SharedProps &
+  Omit<ComponentProps<"input">, keyof SharedProps | "onChange"> & { multiline?: false };
+
+type MultilineProps = SharedProps &
+  Omit<ComponentProps<"textarea">, keyof SharedProps | "onChange"> & { multiline: true };
+
+type TextFieldProps = SingleLineProps | MultilineProps;
+
+export function TextField(props: TextFieldProps) {
   const labelClasses = "flex flex-col gap-xxs text-body";
+  const classes = props.className ? `${labelClasses} ${props.className}` : labelClasses;
+
+  if (props.multiline) {
+    const {
+      label,
+      onValueChange,
+      multiline: _multiline,
+      className: _className,
+      ...textareaProps
+    } = props;
+
+    return (
+      <label className={classes}>
+        {label}
+        <textarea
+          {...textareaProps}
+          onChange={(event) => onValueChange(event.target.value)}
+          className={inputClasses}
+        />
+      </label>
+    );
+  }
+
+  const { label, multiline: _multiline, className: _className, ...inputProps } = props;
 
   return (
-    <label className={className ? `${labelClasses} ${className}` : labelClasses}>
+    <label className={classes}>
       {label}
-      <BaseInput
-        {...inputProps}
-        value={value}
-        onValueChange={onValueChange}
-        className={inputClasses}
-      />
+      <BaseInput {...inputProps} className={inputClasses} />
     </label>
   );
 }

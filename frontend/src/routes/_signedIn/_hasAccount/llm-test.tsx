@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { apiFetch } from "@/api";
-import { Button, RadioGroup } from "@/design-system";
+import { Button, RadioGroup, TextField } from "@/design-system";
 
 export const Route = createFileRoute("/_signedIn/_hasAccount/llm-test")({
   component: LlmTest,
@@ -207,26 +207,16 @@ function LlmTest() {
         />
 
         {mode !== "structured" && (
-          <label className="flex flex-col gap-1 text-sm">
-            System (optional)
-            <textarea
-              value={system}
-              onChange={(e) => setSystem(e.target.value)}
-              rows={2}
-              className="rounded bg-gray-800 border border-gray-700 p-2"
-            />
-          </label>
+          <TextField
+            multiline
+            label="System (optional)"
+            value={system}
+            onValueChange={setSystem}
+            rows={2}
+          />
         )}
 
-        <label className="flex flex-col gap-1 text-sm">
-          Prompt
-          <textarea
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            rows={4}
-            className="rounded bg-gray-800 border border-gray-700 p-2"
-          />
-        </label>
+        <TextField multiline label="Prompt" value={prompt} onValueChange={setPrompt} rows={4} />
 
         <Button
           label="Run"
