@@ -44,6 +44,7 @@ install -m 700 -d "${PROJECT_DIR}/previews"
 ( umask 077
   cat "${PROJECT_DIR}/preview.env"
   echo "DATABASE_URL=postgres://postgres:${PGPASSWORD}@preview-db:5432/${DB_NAME}?sslmode=disable"
+  echo "PUBLIC_API_URL=https://${HOST}"
 ) > "$PR_ENV_FILE"
 
 # Migrations run before the new code starts: the server refuses to boot on a
