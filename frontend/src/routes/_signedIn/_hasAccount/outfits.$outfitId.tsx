@@ -2,15 +2,13 @@ import { useQueries, useQuery, type UseQueryResult } from "@tanstack/react-query
 import { createFileRoute, Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
-import { apiFetch } from "../../../api";
-import panelHandleIcon from "../../../assets/icons/panel-handle.svg";
-import redoIcon from "../../../assets/icons/redo.svg";
-import undoIcon from "../../../assets/icons/undo.svg";
-import logo from "../../../assets/logo.png";
-import OutfitCanvas from "../../../OutfitCanvas";
-import OutfitDetails from "../../../OutfitDetails";
-import type { Outfit } from "../../../OutfitList";
-import type { ItemImage, OutfitItem, Product } from "../../../outfitItems";
+import OutfitCanvas from "@/OutfitCanvas";
+import OutfitDetails from "@/OutfitDetails";
+import type { Outfit } from "@/OutfitList";
+import { apiFetch } from "@/api";
+import logo from "@/assets/logo.png";
+import { Button, Empty, ErrorState, Spinner } from "@/design-system";
+import type { ItemImage, OutfitItem, Product } from "@/outfitItems";
 
 export const Route = createFileRoute("/_signedIn/_hasAccount/outfits/$outfitId")({
   component: OutfitPage,
@@ -94,7 +92,7 @@ function OutfitPage() {
   if (outfitQuery.isPending) {
     return (
       <EditorFrame>
-        <p className="p-[24px] text-[24px] leading-[32px]">Loading…</p>
+        <Spinner className="m-lg" />
       </EditorFrame>
     );
   }
@@ -103,12 +101,11 @@ function OutfitPage() {
   if (outfitQuery.data === undefined) {
     return (
       <EditorFrame>
-        <p className="p-[24px] text-[24px] leading-[32px]">
-          Failed to load the outfit: {outfitQuery.error?.message}{" "}
-          <button className="underline" onClick={() => void outfitQuery.refetch()}>
-            Retry
-          </button>
-        </p>
+        <ErrorState
+          message={`Failed to load the outfit: ${outfitQuery.error?.message}`}
+          onRetry={() => void outfitQuery.refetch()}
+          className="p-lg"
+        />
       </EditorFrame>
     );
   }
@@ -116,7 +113,7 @@ function OutfitPage() {
   if (outfitQuery.data === null) {
     return (
       <EditorFrame>
-        <p className="p-[24px] text-[24px] leading-[32px]">Outfit not found.</p>
+        <Empty title="Outfit not found" className="p-lg" />
       </EditorFrame>
     );
   }
@@ -128,20 +125,9 @@ function OutfitPage() {
 
   return (
     <EditorFrame>
-      {/* The handle column has no width, so the 4px gap on each side of it makes the Figma's 8px. */}
-      <main className="flex min-h-0 flex-1 gap-[4px] p-[8px] pt-[16px]">
+      <main className="flex min-h-0 flex-1 gap-xs p-xs pt-md">
         <div className="min-w-0 flex-1">
           <OutfitCanvas items={items} />
-        </div>
-        {/* Panel resizing comes with outfit editing. Until then the handle is only drawn. */}
-        <div className="relative z-10 w-0 self-center">
-          <img
-            src={panelHandleIcon}
-            alt=""
-            width={32}
-            height={32}
-            className="absolute left-1/2 top-1/2 max-w-none -translate-x-1/2 -translate-y-1/2"
-          />
         </div>
         <div className="w-[576px] shrink-0">
           <OutfitDetails outfitName={outfitQuery.data.name} items={items} />
@@ -154,7 +140,7 @@ function OutfitPage() {
 /** Fills the window, so the panels under the header take the height that's left. */
 function EditorFrame({ children }: EditorFrameProps) {
   return (
-    <div className="flex h-screen flex-col bg-white font-roboto text-black">
+    <div className="flex h-screen flex-col bg-background font-sans text-primary">
       <EditorHeader />
       {children}
     </div>
@@ -163,9 +149,10 @@ function EditorFrame({ children }: EditorFrameProps) {
 
 function EditorHeader() {
   return (
-    <header className="grid h-[144px] grid-cols-[1fr_auto_1fr] items-end border-y border-black px-[18px]">
-      <h1 className="pb-[18px] text-[28px] font-medium leading-[36px]">Outfit Editor</h1>
-      <Link to="/outfits" className="pb-[2px]">
+    <header className="grid h-[144px] grid-cols-[1fr_auto_1fr] items-end border-y px-md">
+      {/* Text's heading variant renders an h2, and the page needs an h1. */}
+      <h1 className="pb-md text-heading">Outfit Editor</h1>
+      <Link to="/outfits" className="pb-xxxs">
         {/* object-bottom repeats the Figma's crop of the image's empty top edge. */}
         <img
           src={logo}
@@ -173,32 +160,11 @@ function EditorHeader() {
           className="h-[118px] w-[373px] object-cover object-bottom"
         />
       </Link>
-      {/* Editing isn't built yet. These hold the Figma's layout until it is. Both icon SVGs are
-          drawn upside down, so rotate-180 turns each one back. */}
-      <div className="flex items-center gap-[5px] justify-self-end pb-[12px]">
-        <button
-          type="button"
-          disabled
-          aria-label="Undo"
-          className="disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          <img src={undoIcon} alt="" width={40} height={40} className="rotate-180" />
-        </button>
-        <button
-          type="button"
-          disabled
-          aria-label="Redo"
-          className="disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          <img src={redoIcon} alt="" width={40} height={40} className="rotate-180" />
-        </button>
-        <button
-          type="button"
-          disabled
-          className="ml-[12px] h-[48px] rounded-[25px] border border-black bg-[rgba(128,128,128,0.55)] px-[24px] text-[28px] font-medium leading-[36px] disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          Save
-        </button>
+      {/* Disabled until outfit editing is built. */}
+      <div className="flex items-center gap-xxs justify-self-end pb-sm">
+        <Button label="Undo" variant="secondary" disabled />
+        <Button label="Redo" variant="secondary" disabled />
+        <Button label="Save" disabled className="ml-sm" />
       </div>
     </header>
   );

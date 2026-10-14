@@ -54,9 +54,17 @@ const SCARF: CanvasSpot = {
   layer: 6,
 };
 
-// Beside the body rather than worn, where the Figma puts its jacket.
+// Left of the body. Outerwear is never worn on the canvas.
 const JACKET: CanvasSpot = {
   centerX: 236,
+  anchor: { edge: "top", y: 47 },
+  garmentWidth: 190,
+  layer: 8,
+};
+
+// JACKET mirrored to the right of the body (x 466), for a sweater when a top is already worn.
+const SWEATER_BESIDE: CanvasSpot = {
+  centerX: 696,
   anchor: { edge: "top", y: 47 },
   garmentWidth: 190,
   layer: 8,
@@ -98,29 +106,79 @@ const SHOES: CanvasSpot = {
   layer: 3,
 };
 
-/** Head to toe, which is also the order of the details list. */
-export const CANVAS_SPOTS = [HAT, SCARF, JACKET, TOP, BELT, BAG, BOTTOMS, SHOES];
+/** Head to toe, the order of the details list. Sweaters are listed with tops wherever they're drawn. */
+export const SPOTS_HEAD_TO_TOE = [HAT, SCARF, JACKET, TOP, BELT, BAG, BOTTOMS, SHOES];
 
 // Provisional until the store's product types are filled in. Sweaters, Bags, and Scarf are values
 // birdieandclaire.com already uses; the rest are guesses. Edit this table when they change.
-const SPOT_BY_PRODUCT_TYPE = new Map<string, CanvasSpot>([
-  ["Hats", HAT],
-  ["Scarf", SCARF],
-  ["Outerwear", JACKET],
-  ["Sweaters", TOP],
-  ["Tops", TOP],
-  ["Belts", BELT],
-  ["Bags", BAG],
-  ["Skirts", BOTTOMS],
-  ["Pants", BOTTOMS],
-  ["Shoes", SHOES],
+// Each type lists the spots it can take, in the order it tries them.
+const SPOTS_BY_PRODUCT_TYPE = new Map<string, CanvasSpot[]>([
+  ["Hats", [HAT]],
+  ["Scarf", [SCARF]],
+  ["Outerwear", [JACKET]],
+  ["Sweaters", [TOP, SWEATER_BESIDE]],
+  ["Tops", [TOP]],
+  ["Belts", [BELT]],
+  ["Bags", [BAG]],
+  ["Skirts", [BOTTOMS]],
+  ["Pants", [BOTTOMS]],
+  ["Shoes", [SHOES]],
 ]);
 
-/** The canvas spot for a product type, or undefined when the product only shows in the details list. */
-export function spotFor(productType: string | null): CanvasSpot | undefined {
+// Dressing order: a top is worn before a sweater, so a sweater only gets the body when there's no
+// top. Other types never compete for the same spot, so they have no rank.
+const INSIDE_OUT = ["Tops", "Sweaters"];
+
+function spotsFor(productType: string | null): CanvasSpot[] {
   if (productType === null) {
-    return undefined;
+    return [];
   }
 
-  return SPOT_BY_PRODUCT_TYPE.get(productType);
+  return SPOTS_BY_PRODUCT_TYPE.get(productType) ?? [];
+}
+
+/** The spot a product type is listed under, or undefined when it has none on the canvas. */
+export function spotFor(productType: string | null): CanvasSpot | undefined {
+  return spotsFor(productType)[0];
+}
+
+function placementOrder(a: OutfitItem, b: OutfitItem): number {
+  const rankDifference =
+    INSIDE_OUT.indexOf(a.product.product_type ?? "") -
+    INSIDE_OUT.indexOf(b.product.product_type ?? "");
+
+  if (rankDifference !== 0) {
+    return rankDifference;
+  }
+
+  return a.product.title.localeCompare(b.product.title);
+}
+
+/**
+ * Gives each item with a photo the first free spot its type can take, from the inside out and
+ * then by title. An item whose photo is still loading keeps its spot, so the result doesn't
+ * change with load timing. Items left without a spot show only in the details list.
+ */
+export function placeOnCanvas(items: OutfitItem[]): { item: OutfitItem; spot: CanvasSpot }[] {
+  const takenSpots = new Set<CanvasSpot>();
+  const placements = [];
+
+  for (const item of [...items].sort(placementOrder)) {
+    if (item.image.status === "missing" || item.image.status === "failed") {
+      continue;
+    }
+
+    const spot = spotsFor(item.product.product_type).find(
+      (candidate) => !takenSpots.has(candidate),
+    );
+
+    if (spot === undefined) {
+      continue;
+    }
+
+    takenSpots.add(spot);
+    placements.push({ item, spot });
+  }
+
+  return placements;
 }

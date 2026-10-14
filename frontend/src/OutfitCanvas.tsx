@@ -1,16 +1,10 @@
 import { useQueries } from "@tanstack/react-query";
 import type { CSSProperties } from "react";
 
-import helpIcon from "./assets/icons/help.svg";
-import silhouette from "./assets/silhouette.png";
-import { cutOutGarment, type GarmentBox } from "./garmentCutout";
-import {
-  CANVAS_SIZE,
-  CANVAS_SPOTS,
-  spotFor,
-  type CanvasSpot,
-  type OutfitItem,
-} from "./outfitItems";
+import silhouette from "@/assets/silhouette.png";
+import { Button } from "@/design-system";
+import { cutOutGarment, type GarmentBox } from "@/garmentCutout";
+import { CANVAS_SIZE, placeOnCanvas, type CanvasSpot, type OutfitItem } from "@/outfitItems";
 
 type OutfitCanvasProps = {
   items: OutfitItem[];
@@ -49,20 +43,9 @@ function garmentPlacement(spot: CanvasSpot, garment: GarmentBox): CSSProperties 
 }
 
 export default function OutfitCanvas({ items }: OutfitCanvasProps) {
-  // One item per spot: the first by title that has a photo, whether or not it has loaded yet, so
-  // the pick doesn't change with load timing. Others show only in the details list.
-  const itemsByTitle = [...items].sort((a, b) => a.product.title.localeCompare(b.product.title));
-
-  const placedItems = CANVAS_SPOTS.flatMap((spot) => {
-    const item = itemsByTitle.find(
-      (candidate) =>
-        spotFor(candidate.product.product_type) === spot &&
-        candidate.image.status !== "missing" &&
-        candidate.image.status !== "failed",
-    );
-
-    // Nothing for this spot, or its photo hasn't loaded yet.
-    if (item?.image.status !== "loaded") {
+  const placedItems = placeOnCanvas(items).flatMap(({ item, spot }) => {
+    // Its spot stays taken, but it isn't drawn until its photo has loaded.
+    if (item.image.status !== "loaded") {
       return [];
     }
 
@@ -82,9 +65,9 @@ export default function OutfitCanvas({ items }: OutfitCanvasProps) {
   });
 
   return (
-    <div className="relative isolate flex h-full items-center justify-center overflow-hidden border border-black bg-[#eaeaea] [container-type:size]">
-      {/* The canvas, centered in the gray panel. It's never larger than the Figma, and shrinks to
-          fit whichever of the panel's width or height runs out first. */}
+    <div className="relative isolate flex h-full items-center justify-center overflow-hidden border bg-placeholder [container-type:size]">
+      {/* The canvas, centered in the panel. It's never larger than the Figma, and shrinks to fit
+          whichever of the panel's width or height runs out first. */}
       <div
         className="relative"
         style={{
@@ -137,14 +120,7 @@ export default function OutfitCanvas({ items }: OutfitCanvasProps) {
         })}
       </div>
       {/* Help content comes with outfit editing. */}
-      <button
-        type="button"
-        disabled
-        aria-label="Help"
-        className="absolute left-[12px] top-[15px] z-10 disabled:cursor-not-allowed disabled:opacity-40"
-      >
-        <img src={helpIcon} alt="" width={43} height={43} />
-      </button>
+      <Button label="Help" variant="secondary" disabled className="absolute left-sm top-md z-10" />
     </div>
   );
 }
