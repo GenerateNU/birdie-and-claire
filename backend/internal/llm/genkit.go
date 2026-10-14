@@ -155,8 +155,8 @@ func (c *genkitClient) options(ctx context.Context, req Request, usage *callUsag
 	if req.outputType != nil {
 		opts = append(opts, ai.WithOutputType(req.outputType))
 	}
-	if req.maxOutputTokens > 0 {
-		opts = append(opts, ai.WithConfig(&openrouter.ChatConfig{MaxOutputTokens: req.maxOutputTokens}))
+	if config := chatConfig(req); config != nil {
+		opts = append(opts, ai.WithConfig(config))
 	}
 	for _, tool := range req.Tools {
 		if tool.call == nil {
@@ -165,6 +165,18 @@ func (c *genkitClient) options(ctx context.Context, req Request, usage *callUsag
 		opts = append(opts, ai.WithTools(toGenkitTool(tool)))
 	}
 	return opts, nil
+}
+
+// chatConfig is nil when the request sets nothing, so the gateway keeps its defaults.
+func chatConfig(req Request) *openrouter.ChatConfig {
+	if req.maxOutputTokens == 0 && !req.noReasoning {
+		return nil
+	}
+	config := &openrouter.ChatConfig{MaxOutputTokens: req.maxOutputTokens}
+	if req.noReasoning {
+		config.Reasoning = &openrouter.ReasoningConfig{Effort: openrouter.ReasoningEffortNone}
+	}
+	return config
 }
 
 // Execute takes no output type, so the prompt is only rendered and its messages go through Generate.

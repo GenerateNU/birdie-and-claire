@@ -33,7 +33,10 @@ type chatRequest struct {
 	Model     string `json:"model"`
 	Stream    bool   `json:"stream"`
 	MaxTokens int    `json:"max_tokens"`
-	Messages  []struct {
+	Reasoning *struct {
+		Effort string `json:"effort"`
+	} `json:"reasoning"`
+	Messages []struct {
 		Role       string `json:"role"`
 		Content    any    `json:"content"`
 		ToolCallID string `json:"tool_call_id"`

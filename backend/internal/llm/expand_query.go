@@ -21,6 +21,7 @@ func ExpandQuery(ctx context.Context, client Client, query string) (ExpandedQuer
 		promptName:      "expand_query",
 		promptInput:     expandQueryInput{Query: stripDotpromptMarkers(query)},
 		maxOutputTokens: expandQueryMaxOutputTokens,
+		noReasoning:     true,
 	})
 }
 

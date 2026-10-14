@@ -851,20 +851,26 @@ func TestPromptNameCannotBeCombinedWithSystemOrPrompt(t *testing.T) {
 	}
 }
 
-func TestExpandQueryCapsOutputTokens(t *testing.T) {
+func TestExpandQueryCapsOutputAndTurnsOffReasoning(t *testing.T) {
 	client, stub := newStubClient(t, fastRetry, respondText(expandedAnswer))
 	if _, err := ExpandQuery(context.Background(), client, "brunch"); err != nil {
 		t.Fatalf("ExpandQuery: %v", err)
 	}
-	if got := stub.requests()[0].MaxTokens; got != expandQueryMaxOutputTokens {
-		t.Errorf("max_tokens = %d, want %d", got, expandQueryMaxOutputTokens)
+	expand := stub.requests()[0]
+	if expand.MaxTokens != expandQueryMaxOutputTokens {
+		t.Errorf("max_tokens = %d, want %d", expand.MaxTokens, expandQueryMaxOutputTokens)
+	}
+	// reasoning tokens count against max_tokens, so with reasoning on the cap can leave no room for the answer
+	if expand.Reasoning == nil || expand.Reasoning.Effort != "none" {
+		t.Errorf("reasoning = %+v, want effort none", expand.Reasoning)
 	}
 
 	if _, err := client.Generate(context.Background(), Request{Prompt: "hi"}); err != nil {
 		t.Fatalf("Generate: %v", err)
 	}
-	if got := stub.requests()[1].MaxTokens; got != 0 {
-		t.Errorf("max_tokens = %d on a request without a cap, want it left unset", got)
+	plain := stub.requests()[1]
+	if plain.MaxTokens != 0 || plain.Reasoning != nil {
+		t.Errorf("max_tokens = %d, reasoning = %+v on a plain request, want both left unset", plain.MaxTokens, plain.Reasoning)
 	}
 }
 
