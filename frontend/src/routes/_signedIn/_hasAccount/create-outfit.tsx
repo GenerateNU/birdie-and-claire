@@ -9,7 +9,17 @@ export const Route = createFileRoute("/_signedIn/_hasAccount/create-outfit")({
 
 type Step = "occasion" | "review";
 
-const occasions = ["Work", "Night out", "Casual", "Festive"];
+// Photos live in the public Supabase bucket the product images use, until occasions
+// come from the backend.
+const occasionImageBase =
+  "https://zrjwxlrjnnohojbassya.supabase.co/storage/v1/object/public/image_data/occasions";
+
+const occasions = [
+  { name: "Work", src: `${occasionImageBase}/workwear.png` },
+  { name: "Night out", src: `${occasionImageBase}/nightout.png` },
+  { name: "Casual", src: `${occasionImageBase}/casual.png` },
+  { name: "Festive", src: `${occasionImageBase}/festive.png` },
+];
 
 function CreateOutfit() {
   const [step, setStep] = useState<Step>("occasion");
@@ -44,13 +54,13 @@ function CreateOutfit() {
     <Box className="flex min-h-screen flex-col items-center gap-lg p-xl">
       <Text variant="heading">What's the occasion?</Text>
       <Box className="grid w-full max-w-content-xl grid-cols-2 gap-md md:grid-cols-4">
-        {occasions.map((occasion) => (
+        {occasions.map(({ name, src }) => (
           <ImageCard
-            key={occasion}
-            label={occasion}
-            src={null}
-            pressed={cardOccasion === occasion}
-            onPressedChange={(pressed) => selectCard(occasion, pressed)}
+            key={name}
+            label={name}
+            src={src}
+            pressed={cardOccasion === name}
+            onPressedChange={(pressed) => selectCard(name, pressed)}
           />
         ))}
       </Box>
