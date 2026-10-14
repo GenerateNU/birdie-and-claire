@@ -2,10 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useCallback } from "react";
 
 import OutfitList, { type Outfit } from "@/OutfitList";
-import { Button, Text } from "@/design-system";
+import { Empty, ErrorState, Spinner, Text } from "@/design-system";
 import { usePagination } from "@/utils/usePagination";
 
-export const Route = createFileRoute("/_signedIn/_hasAccount/outfits")({
+export const Route = createFileRoute("/_signedIn/_hasAccount/outfits/")({
   component: OutfitsPage,
 });
 
@@ -18,6 +18,7 @@ function OutfitsPage() {
     hasNextPage,
     isFetchingNextPage,
     isFetchNextPageError,
+    refetch,
   } = usePagination<Outfit>("/api/v1/outfits");
 
   // The cursor is unused because usePagination already tracks the next page param.
@@ -29,11 +30,22 @@ function OutfitsPage() {
   }, [fetchNextPage, isFetchingNextPage, isFetchNextPageError]);
 
   if (isPending) {
-    return <div className="min-h-screen p-xl">Loading…</div>;
+    return (
+      <div className="min-h-screen p-xl">
+        <Spinner />
+      </div>
+    );
   }
 
   if (!data) {
-    return <div className="min-h-screen p-xl">Failed to load outfits: {error?.message}</div>;
+    return (
+      <div className="min-h-screen p-xl">
+        <ErrorState
+          message={`Failed to load outfits: ${error?.message}`}
+          onRetry={() => void refetch()}
+        />
+      </div>
+    );
   }
 
   const outfits = data.pages.flatMap((page) => page.items);
@@ -45,12 +57,17 @@ function OutfitsPage() {
       <Text variant="heading" className="mb-xs">
         Outfits
       </Text>
-      <OutfitList outfits={outfits} nextCursor={nextCursor} onLoadMore={onLoadMore} />
+      {outfits.length === 0 ? (
+        <Empty title="No outfits yet" />
+      ) : (
+        <OutfitList outfits={outfits} nextCursor={nextCursor} onLoadMore={onLoadMore} />
+      )}
       {isFetchNextPageError && (
-        <p>
-          Failed to load more: {error?.message}{" "}
-          <Button label="Retry" onClick={() => void fetchNextPage()} />
-        </p>
+        <ErrorState
+          message={`Failed to load more: ${error?.message}`}
+          onRetry={() => void fetchNextPage()}
+          retryLabel="Retry"
+        />
       )}
     </div>
   );

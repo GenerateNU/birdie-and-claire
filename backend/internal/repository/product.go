@@ -13,8 +13,12 @@ import (
 
 type ProductRepository interface {
 	Exists(ctx context.Context, productID uuid.UUID) (bool, error)
-	FindSimilar(ctx context.Context, embedding []float32, limit int) ([]models.Product, error)
+	// FindSimilar ranks a slot's products by distance to embedding, less a bonus per matching niceTag; pass the tags lowercase.
+	FindSimilar(ctx context.Context, embedding []float32, slot models.ProductSlot, excludeTags, niceTags []string, limit int) ([]models.Product, error)
 }
+
+// untuned: a guess at how much one matching nice tag is worth in cosine distance
+const bonusPerTag = 0.02
 
 type productRepository struct {
 	db *sql.DB
@@ -35,17 +39,22 @@ func (r *productRepository) Exists(ctx context.Context, productID uuid.UUID) (bo
 	return exists, nil
 }
 
-func (r *productRepository) FindSimilar(ctx context.Context, embedding []float32, limit int) ([]models.Product, error) {
+func (r *productRepository) FindSimilar(ctx context.Context, embedding []float32, slot models.ProductSlot, excludeTags, niceTags []string, limit int) ([]models.Product, error) {
 	rows, err := r.db.QueryContext(ctx, `
-		SELECT p.id, p.shopify_id, p.handle, p.title, p.product_type, p.tags, p.created_at, p.updated_at
+		SELECT p.id, p.shopify_id, p.handle, p.title, p.product_type, p.slot, p.tags, p.created_at, p.updated_at
 		FROM products p
 		WHERE p.embedding IS NOT NULL
+			AND p.slot = $2
+			-- stored tags keep the catalog's casing, so only that side is lowered; a NULL list matches no tag
+			AND NOT EXISTS (SELECT 1 FROM unnest(p.tags) tag WHERE lower(tag) = ANY($3::text[]))
 		-- <=> is pgvector's cosine distance, so smaller means more similar.
-		ORDER BY p.embedding <=> $1, p.id
-		LIMIT $2
-	`, pgvector.NewVector(embedding), limit)
+		ORDER BY (p.embedding <=> $1)
+			- $4::float8 * (SELECT count(*) FROM unnest(p.tags) tag WHERE lower(tag) = ANY($5::text[])),
+			p.id
+		LIMIT $6
+	`, pgvector.NewVector(embedding), slot, excludeTags, bonusPerTag, niceTags, limit)
 	if err != nil {
-		return nil, fmt.Errorf("find similar products: %w", err)
+		return nil, fmt.Errorf("find similar products in slot %s: %w", slot, err)
 	}
 	defer func() { _ = rows.Close() }()
 
@@ -58,16 +67,17 @@ func (r *productRepository) FindSimilar(ctx context.Context, embedding []float32
 			&product.Handle,
 			&product.Title,
 			&product.ProductType,
+			&product.Slot,
 			&product.Tags,
 			&product.CreatedAt,
 			&product.UpdatedAt,
 		); err != nil {
-			return nil, fmt.Errorf("scan similar product: %w", err)
+			return nil, fmt.Errorf("scan similar product in slot %s: %w", slot, err)
 		}
 		products = append(products, product)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate similar products: %w", err)
+		return nil, fmt.Errorf("iterate similar products in slot %s: %w", slot, err)
 	}
 	return products, nil
 }

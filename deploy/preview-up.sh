@@ -44,13 +44,37 @@ install -m 700 -d "${PROJECT_DIR}/previews"
 ( umask 077
   cat "${PROJECT_DIR}/preview.env"
   echo "DATABASE_URL=postgres://postgres:${PGPASSWORD}@preview-db:5432/${DB_NAME}?sslmode=disable"
+  echo "PUBLIC_API_URL=https://${HOST}"
 ) > "$PR_ENV_FILE"
 
 # Migrations run before the new code starts: the server refuses to boot on a
 # stale schema, so a bad migration fails here with a clearer error.
 echo "    applying migrations"
 docker pull --quiet "$IMAGE"
-docker run --rm --network edge --env-file "$PR_ENV_FILE" --entrypoint /migrate "$IMAGE" up
+# Goose refuses an older-timestamped migration that main brought in after a
+# newer one ran here. Starting over from an empty database fixes that, and a
+# migration that is broken on its own still fails on the second attempt.
+if ! docker run --rm --network edge --env-file "$PR_ENV_FILE" --entrypoint /migrate "$IMAGE" up; then
+  # FORCE disconnects the running preview container, which still uses the database.
+  docker exec -e PGPASSWORD="$PGPASSWORD" preview-db \
+    psql -U postgres -tAc "DROP DATABASE ${DB_NAME} WITH (FORCE)" >/dev/null
+  docker exec -e PGPASSWORD="$PGPASSWORD" preview-db createdb -U postgres "${DB_NAME}"
+  echo "    migrations failed on existing database, recreated ${DB_NAME}"
+  docker run --rm --network edge --env-file "$PR_ENV_FILE" --entrypoint /migrate "$IMAGE" up
+fi
+
+# Keyed on an empty products table, not on createdb above, so any path that
+# leaves a fresh database gets seeded too. The assignment lets set -e stop the
+# deploy when the check itself fails, instead of reading that as "empty".
+HAS_PRODUCTS=$(docker exec -e PGPASSWORD="$PGPASSWORD" preview-db \
+  psql -U postgres -d "${DB_NAME}" -v ON_ERROR_STOP=1 -tAc "SELECT EXISTS (SELECT 1 FROM products)")
+if [ "$HAS_PRODUCTS" = "t" ]; then
+  echo "    products already present, skipping seed"
+else
+  echo "    seeding demo products"
+  docker exec -i -e PGPASSWORD="$PGPASSWORD" preview-db \
+    psql -U postgres -d "${DB_NAME}" -v ON_ERROR_STOP=1 -q -1 < "${PROJECT_DIR}/products.sql"
+fi
 
 echo "    starting ${CONTAINER}"
 docker rm -f "$CONTAINER" >/dev/null 2>&1 || true

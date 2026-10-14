@@ -133,6 +133,12 @@ components:
           type: string
         name:
           type: string
+        shared_at:
+          description: When the outfit was shared by link, or null while it is private
+          format: date-time
+          type:
+            - string
+            - "null"
         updated_at:
           format: date-time
           type: string
@@ -142,6 +148,57 @@ components:
         - id
         - user_id
         - name
+        - shared_at
+        - created_at
+        - updated_at
+      type: object
+    OutfitProduct:
+      additionalProperties: false
+      properties:
+        created_at:
+          format: date-time
+          type: string
+        handle:
+          type: string
+        id:
+          type: string
+        image_url:
+          description: URL of the product's lowest-position image, or null when it has none
+          type:
+            - string
+            - "null"
+        product_type:
+          type:
+            - string
+            - "null"
+        shopify_id:
+          format: int64
+          type: integer
+        slot:
+          enum:
+            - top
+            - bottom
+            - accessory
+            - shoe
+          type: string
+        tags:
+          items:
+            type: string
+          type: array
+        title:
+          type: string
+        updated_at:
+          format: date-time
+          type: string
+      required:
+        - image_url
+        - id
+        - shopify_id
+        - handle
+        - title
+        - product_type
+        - slot
+        - tags
         - created_at
         - updated_at
       type: object
@@ -157,8 +214,14 @@ components:
           type: string
         products:
           items:
-            $ref: "#/components/schemas/Product"
+            $ref: "#/components/schemas/OutfitProduct"
           type: array
+        shared_at:
+          description: When the outfit was shared by link, or null while it is private
+          format: date-time
+          type:
+            - string
+            - "null"
         updated_at:
           format: date-time
           type: string
@@ -169,6 +232,7 @@ components:
         - id
         - user_id
         - name
+        - shared_at
         - created_at
         - updated_at
       type: object
@@ -207,6 +271,13 @@ components:
         shopify_id:
           format: int64
           type: integer
+        slot:
+          enum:
+            - top
+            - bottom
+            - accessory
+            - shoe
+          type: string
         tags:
           items:
             type: string
@@ -222,6 +293,7 @@ components:
         - handle
         - title
         - product_type
+        - slot
         - tags
         - created_at
         - updated_at
@@ -302,6 +374,100 @@ components:
         - dislike
         - save
       type: object
+    RecommendationExpandedQuery:
+      additionalProperties: false
+      properties:
+        exclude_tags:
+          description: Products carrying any of these tags were left out
+          items:
+            type: string
+          type: array
+        nice_tags:
+          description: Each matching tag moved a product up the ranking
+          items:
+            type: string
+          type: array
+        slots:
+          $ref: "#/components/schemas/RecommendationExpandedSlots"
+          description: The search phrase used for each slot; an empty phrase means the slot was not searched
+      required:
+        - slots
+        - exclude_tags
+        - nice_tags
+      type: object
+    RecommendationExpandedSlots:
+      additionalProperties: false
+      properties:
+        accessory:
+          type: string
+        bottom:
+          type: string
+        top:
+          type: string
+      required:
+        - top
+        - bottom
+        - accessory
+      type: object
+    RecommendationRequest:
+      additionalProperties: false
+      properties:
+        query:
+          description: What the shopper is looking for, such as "summer wedding guest"
+          maxLength: 200
+          minLength: 1
+          type: string
+      required:
+        - query
+      type: object
+    RecommendationResponse:
+      additionalProperties: false
+      properties:
+        accessory:
+          items:
+            $ref: "#/components/schemas/Product"
+          type: array
+        bottom:
+          items:
+            $ref: "#/components/schemas/Product"
+          type: array
+        expanded_query:
+          $ref: "#/components/schemas/RecommendationExpandedQuery"
+        top:
+          items:
+            $ref: "#/components/schemas/Product"
+          type: array
+      required:
+        - expanded_query
+        - top
+        - bottom
+        - accessory
+      type: object
+    ShareOutfitResponse:
+      additionalProperties: false
+      properties:
+        url:
+          description: Public link to the outfit; stays the same across re-shares
+          type: string
+      required:
+        - url
+      type: object
+    SharedOutfitResponse:
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        products:
+          items:
+            $ref: "#/components/schemas/OutfitProduct"
+          type: array
+      required:
+        - id
+        - name
+        - products
+      type: object
     UserResponse:
       additionalProperties: false
       properties:
@@ -344,6 +510,34 @@ info:
   version: 1.0.0
 openapi: 3.1.0
 paths:
+  /api/public/outfits/{id}:
+    get:
+      description: A private outfit and a missing one both return 404.
+      operationId: get-shared-outfit
+      parameters:
+        - description: Outfit ID
+          in: path
+          name: id
+          required: true
+          schema:
+            description: Outfit ID
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SharedOutfitResponse"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      summary: Get a shared outfit without signing in
+      tags:
+        - outfits
   /api/v1/embedder/warm:
     post:
       description: "Boots a Modal container ahead of an embed call and reports how long it took: tens of seconds on a cold start, well under one when a container is already up. Modal keeps the container warm for about 60 seconds."
@@ -458,7 +652,7 @@ paths:
           description: Error
       security:
         - bearer: []
-      summary: Get an outfit with its products
+      summary: Get one of the authenticated user's outfits with its products
       tags:
         - outfits
   /api/v1/outfits/{id}/reactions:
@@ -520,6 +714,60 @@ paths:
       summary: React to an outfit
       tags:
         - outfits
+  /api/v1/outfits/{id}/share:
+    delete:
+      description: Also returns 204 if the outfit is already private.
+      operationId: unshare-outfit
+      parameters:
+        - description: Outfit ID
+          in: path
+          name: id
+          required: true
+          schema:
+            description: Outfit ID
+            type: string
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Make a shared outfit private again
+      tags:
+        - outfits
+    post:
+      operationId: share-outfit
+      parameters:
+        - description: Outfit ID
+          in: path
+          name: id
+          required: true
+          schema:
+            description: Outfit ID
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShareOutfitResponse"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Share an outfit by public link
+      tags:
+        - outfits
   /api/v1/products/{product_id}/images:
     get:
       operationId: list-product-images
@@ -553,6 +801,33 @@ paths:
       summary: List a product's images
       tags:
         - products
+  /api/v1/recommend:
+    post:
+      operationId: recommend-products
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecommendationRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecommendationResponse"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Recommend products per outfit slot for a shopper query
+      tags:
+        - recommendations
   /api/v1/users/me:
     get:
       operationId: get-current-user

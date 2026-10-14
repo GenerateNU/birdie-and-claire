@@ -140,8 +140,8 @@ func insertTestProduct(t *testing.T, db *sql.DB) uuid.UUID {
 
 	var id uuid.UUID
 	err := db.QueryRowContext(context.Background(), `
-		INSERT INTO products (shopify_id, handle, title)
-		VALUES ($1, 'test-product', 'Test product')
+		INSERT INTO products (shopify_id, handle, title, slot)
+		VALUES ($1, 'test-product', 'Test product', 'top')
 		RETURNING id
 	`, rand.Int64()).Scan(&id)
 	if err != nil {
@@ -199,5 +199,52 @@ func TestCreateOutfitForeignKeyViolations(t *testing.T) {
 				t.Fatalf("status = %d, want %d: %v", got, test.want, err)
 			}
 		})
+	}
+}
+
+// Each outfit product carries its lowest-position image, or null when it has none.
+func TestOutfitProductsCarryFirstImage(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	withImages := insertTestProduct(t, db)
+	withoutImages := insertTestProduct(t, db)
+
+	for _, image := range []struct {
+		url      string
+		position int
+	}{{"https://example.com/second.png", 2}, {"https://example.com/first.png", 1}} {
+		_, err := db.ExecContext(ctx, `
+			INSERT INTO product_images (shopify_id, product_id, url, position)
+			VALUES ($1, $2, $3, $4)
+		`, rand.Int64(), withImages, image.url, image.position)
+		if err != nil {
+			t.Fatalf("insert product image: %v", err)
+		}
+	}
+
+	outfits := repository.NewOutfitRepository(db)
+	params := models.CreateOutfitParams{Name: "fit", ProductIDs: []uuid.UUID{withImages, withoutImages}}
+	created, _, err := outfits.Create(ctx, params, insertTestUser(t, db))
+	if err != nil {
+		t.Fatalf("create outfit: %v", err)
+	}
+	t.Cleanup(func() {
+		_, _ = db.Exec(`DELETE FROM outfit_products WHERE outfit_id = $1`, created.ID)
+		_, _ = db.Exec(`DELETE FROM outfits WHERE id = $1`, created.ID)
+	})
+
+	_, products, err := outfits.GetByID(ctx, created.ID, created.UserID)
+	if err != nil {
+		t.Fatalf("get outfit: %v", err)
+	}
+	imageURLs := map[uuid.UUID]*string{}
+	for _, product := range products {
+		imageURLs[product.ID] = product.ImageURL
+	}
+	if got := imageURLs[withImages]; got == nil || *got != "https://example.com/first.png" {
+		t.Fatalf("image_url = %v, want https://example.com/first.png", got)
+	}
+	if got := imageURLs[withoutImages]; got != nil {
+		t.Fatalf("image_url = %q, want null", *got)
 	}
 }
