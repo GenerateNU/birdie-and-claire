@@ -14,7 +14,7 @@ import (
 type ProductRepository interface {
 	Exists(ctx context.Context, productID uuid.UUID) (bool, error)
 	// FindSimilar ranks a slot's products by distance to embedding, less a bonus per matching niceTag; pass the tags lowercase.
-	FindSimilar(ctx context.Context, embedding []float32, slot string, excludeTags, niceTags []string, limit int) ([]models.Product, error)
+	FindSimilar(ctx context.Context, embedding []float32, slot models.ProductSlot, excludeTags, niceTags []string, limit int) ([]models.Product, error)
 }
 
 // untuned: a guess at how much one matching nice tag is worth in cosine distance
@@ -39,9 +39,9 @@ func (r *productRepository) Exists(ctx context.Context, productID uuid.UUID) (bo
 	return exists, nil
 }
 
-func (r *productRepository) FindSimilar(ctx context.Context, embedding []float32, slot string, excludeTags, niceTags []string, limit int) ([]models.Product, error) {
+func (r *productRepository) FindSimilar(ctx context.Context, embedding []float32, slot models.ProductSlot, excludeTags, niceTags []string, limit int) ([]models.Product, error) {
 	rows, err := r.db.QueryContext(ctx, `
-		SELECT p.id, p.shopify_id, p.handle, p.title, p.product_type, p.tags, p.created_at, p.updated_at
+		SELECT p.id, p.shopify_id, p.handle, p.title, p.product_type, p.slot, p.tags, p.created_at, p.updated_at
 		FROM products p
 		WHERE p.embedding IS NOT NULL
 			AND p.slot = $2
@@ -67,6 +67,7 @@ func (r *productRepository) FindSimilar(ctx context.Context, embedding []float32
 			&product.Handle,
 			&product.Title,
 			&product.ProductType,
+			&product.Slot,
 			&product.Tags,
 			&product.CreatedAt,
 			&product.UpdatedAt,

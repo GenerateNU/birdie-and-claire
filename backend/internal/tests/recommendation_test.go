@@ -57,7 +57,7 @@ func (e *fakeEmbedder) Warm(context.Context) error { return nil }
 
 type findSimilarCall struct {
 	embedding   []float32
-	slot        string
+	slot        models.ProductSlot
 	excludeTags []string
 	niceTags    []string
 	limit       int
@@ -72,20 +72,20 @@ type fakeProducts struct {
 	calls []findSimilarCall
 }
 
-func (p *fakeProducts) FindSimilar(_ context.Context, embedding []float32, slot string, excludeTags, niceTags []string, limit int) ([]models.Product, error) {
+func (p *fakeProducts) FindSimilar(_ context.Context, embedding []float32, slot models.ProductSlot, excludeTags, niceTags []string, limit int) ([]models.Product, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.calls = append(p.calls, findSimilarCall{embedding: embedding, slot: slot, excludeTags: excludeTags, niceTags: niceTags, limit: limit})
 	if p.err != nil {
 		return nil, p.err
 	}
-	return []models.Product{{ID: uuid.New(), Title: slot, Tags: []string{}}}, nil
+	return []models.Product{{ID: uuid.New(), Title: string(slot), Slot: slot, Tags: []string{}}}, nil
 }
 
-func (p *fakeProducts) callsBySlot() map[string]findSimilarCall {
+func (p *fakeProducts) callsBySlot() map[models.ProductSlot]findSimilarCall {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	bySlot := make(map[string]findSimilarCall, len(p.calls))
+	bySlot := make(map[models.ProductSlot]findSimilarCall, len(p.calls))
 	for _, call := range p.calls {
 		bySlot[call.slot] = call
 	}
