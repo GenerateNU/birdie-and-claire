@@ -40,7 +40,7 @@ export default function OutfitList({ outfits, nextCursor, onLoadMore }: OutfitLi
   }, [nextCursor, onLoadMore]);
 
   return (
-    <ul ref={listRef} className="max-h-96 overflow-y-auto">
+    <ul ref={listRef} className="max-h-scroll-area overflow-y-auto">
       {outfits.map((outfit) => (
         <li key={outfit.id}>{outfit.name}</li>
       ))}

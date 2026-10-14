@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { apiFetch } from "@/api";
-import { Button, RadioGroup, TextField } from "@/design-system";
+import { Button, RadioGroup, Text, TextField } from "@/design-system";
 
 export const Route = createFileRoute("/_signedIn/_hasAccount/llm-test")({
   component: LlmTest,
@@ -188,17 +188,19 @@ function LlmTest() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white p-8">
-      <a className="text-gray-400 text-sm underline hover:text-white" href="/">
+    <div className="min-h-screen p-xl">
+      <a className="text-secondary text-body underline hover:text-primary" href="/">
         ← Home
       </a>
-      <h1 className="text-3xl font-bold mt-4 mb-2">LLM test</h1>
-      <p className="text-gray-400 text-sm mb-8">
-        Sign in first. Your user id must be in{" "}
-        <code className="text-gray-200">AI_DEV_USER_IDS</code> on the API.
+      <Text variant="heading" className="mt-md mb-xs">
+        LLM test
+      </Text>
+      <p className="text-secondary text-body mb-xl">
+        Sign in first. Your user id must be in <code className="text-primary">AI_DEV_USER_IDS</code>{" "}
+        on the API.
       </p>
 
-      <div className="flex flex-col gap-4 max-w-2xl">
+      <div className="flex flex-col gap-md max-w-content-lg">
         <RadioGroup
           label="Mode"
           options={MODES.map((option) => ({ label: option.label, value: option.mode }))}
@@ -227,10 +229,10 @@ function LlmTest() {
           className="self-start"
         />
 
-        {error && <p className="text-red-400 text-sm">Error: {error}</p>}
+        {error && <p className="text-error text-body">Error: {error}</p>}
 
         {output && (
-          <pre className="whitespace-pre-wrap rounded-lg bg-gray-800 border border-gray-700 p-4 text-sm">
+          <pre className="whitespace-pre-wrap rounded-lg bg-surface border p-md text-body">
             {output}
           </pre>
         )}

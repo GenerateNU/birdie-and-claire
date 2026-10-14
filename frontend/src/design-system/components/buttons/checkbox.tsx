@@ -1,7 +1,8 @@
 import { Checkbox as BaseCheckbox } from "@base-ui/react/checkbox";
+import { joinClasses } from "../../utils/join-classes";
 
 const boxClasses =
-  "flex size-md items-center justify-center rounded-xs border bg-background text-caption text-inverse data-[checked]:border-brand-500 data-[checked]:bg-brand-500 focus-ring";
+  "flex size-md items-center justify-center rounded-xs border bg-background text-caption text-inverse data-[checked]:border-primary data-[checked]:bg-primary focus-ring";
 
 type CheckboxProps = {
   label: string;
@@ -19,11 +20,11 @@ export function Checkbox({
   className,
 }: CheckboxProps) {
   const labelClasses = disabled
-    ? "inline-flex items-center gap-xs opacity-50"
+    ? "inline-flex items-center gap-xs opacity-disabled"
     : "inline-flex items-center gap-xs";
 
   return (
-    <label className={className ? `${labelClasses} ${className}` : labelClasses}>
+    <label className={joinClasses(labelClasses, className)}>
       <BaseCheckbox.Root
         checked={checked}
         onCheckedChange={onCheckedChange}

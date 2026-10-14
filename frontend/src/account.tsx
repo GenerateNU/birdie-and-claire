@@ -2,7 +2,7 @@ import { queryOptions } from "@tanstack/react-query";
 import { useRouter, useRouterState, type ErrorComponentProps } from "@tanstack/react-router";
 
 import { apiFetch } from "@/api";
-import { Button } from "@/design-system";
+import { Button, Text } from "@/design-system";
 import { supabase } from "@/supabase/client";
 
 /** Whether the signed-in user has a row in our users table. */
@@ -46,12 +46,14 @@ export function AccountError({ error }: ErrorComponentProps) {
   const retrying = useRouterState({ select: (state) => state.isLoading });
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white p-8">
-      <h1 className="text-3xl font-bold mb-2">Couldn't load your account</h1>
-      <p className="text-red-400 text-sm mb-4">
+    <div className="min-h-screen p-xl">
+      <Text variant="heading" className="mb-xs">
+        Couldn't load your account
+      </Text>
+      <p className="text-error text-body mb-md">
         Error: {error instanceof Error ? error.message : String(error)}
       </p>
-      <div className="flex gap-2">
+      <div className="flex gap-xs">
         <Button label="Retry" onClick={() => router.invalidate()} disabled={retrying} />
         <Button label="Sign out" variant="secondary" onClick={signOut} />
       </div>

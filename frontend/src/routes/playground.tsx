@@ -9,10 +9,13 @@ import {
   Button,
   Checkbox,
   Dialog,
-  ColorScale,
   Empty,
+  OutlineColor,
   ErrorState,
+  ImageCard,
+  ListCard,
   RadioGroup,
+  SearchField,
   StatusColor,
   Spinner,
   Text,
@@ -43,6 +46,9 @@ const sectionTitles = {
   checkbox: "Checkbox",
   toggle: "Toggle",
   "text-field": "Text field",
+  "search-field": "Search field",
+  "image-card": "Image card",
+  "list-card": "List card",
   spinner: "Spinner",
   empty: "Empty",
   "error-state": "Error state",
@@ -51,7 +57,6 @@ const sectionTitles = {
   dialog: "Dialog",
   toast: "Toast",
   text: "Text",
-  "color-scales": "Color scales",
   "semantic-colors": "Semantic colors",
 } as const;
 
@@ -66,6 +71,9 @@ const navGroups = [
       "checkbox",
       "toggle",
       "text-field",
+      "search-field",
+      "image-card",
+      "list-card",
       "spinner",
       "radio-group",
       "avatar",
@@ -74,14 +82,14 @@ const navGroups = [
       "text",
     ],
   },
-  { title: "Tokens", href: "#tokens", sections: ["color-scales", "semantic-colors"] },
+  { title: "Tokens", href: "#tokens", sections: ["semantic-colors"] },
 ] as const;
 
 // Stand-in photo so the Avatar demo works without network access.
 const samplePhoto =
   "data:image/svg+xml," +
   encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><defs><linearGradient id="g"><stop stop-color="#F472B6"/><stop offset="1" stop-color="#6B7280"/></linearGradient></defs><rect width="1" height="1" fill="url(#g)"/></svg>',
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><defs><linearGradient id="g"><stop stop-color="#000000"/><stop offset="1" stop-color="#FFFFFF"/></linearGradient></defs><rect width="1" height="1" fill="url(#g)"/></svg>',
   );
 
 const radioOptions = [
@@ -90,18 +98,19 @@ const radioOptions = [
   { label: "Large", value: "lg" },
 ];
 
-// Text, background, and border colors only work with their own utility, so show
+// Text, background, border, and outline colors only work with their own utility, so show
 // the class to type. Status colors work with any utility; bg- is just an example.
 const semanticGroups = [
   { title: "Text", classPrefix: "text-", colors: TextColor },
   { title: "Background", classPrefix: "bg-", colors: BackgroundColor },
   { title: "Border", classPrefix: "border-", colors: BorderColor },
+  { title: "Outline", classPrefix: "outline-", colors: OutlineColor },
   { title: "Status (any utility)", classPrefix: "bg-", colors: StatusColor },
 ] as const;
 
 function Playground() {
   return (
-    <Box className="min-h-screen bg-background text-primary font-sans">
+    <Box className="min-h-screen">
       <Box className="flex gap-xl px-lg py-xl">
         <nav className="hidden w-40 shrink-0 md:block">
           <Box className="sticky top-xl flex flex-col gap-lg">
@@ -161,6 +170,25 @@ function Playground() {
 
             <Section id="text-field">
               <TextFieldExamples />
+            </Section>
+
+            <Section id="search-field">
+              <SearchFieldExamples />
+            </Section>
+
+            <Section id="image-card">
+              <ImageCardExamples />
+            </Section>
+
+            <Section id="list-card">
+              <Box className="flex max-w-content-sm flex-col gap-xs">
+                <ListCard
+                  title="Occasion"
+                  value="Work"
+                  action={{ label: "Edit", accessibleLabel: "Edit Occasion", onClick: () => {} }}
+                />
+                <ListCard title="No action" value="Read only" />
+              </Box>
             </Section>
 
             <Section id="spinner">
@@ -225,16 +253,6 @@ function Playground() {
               Tokens
             </Text>
 
-            <Section id="color-scales">
-              {Object.entries(ColorScale).map(([scaleName, scale]) => (
-                <Box key={scaleName} className="flex flex-wrap gap-xs">
-                  {Object.entries(scale).map(([step, value]) => (
-                    <Swatch key={step} name={`${scaleName}-${step}`} value={value} />
-                  ))}
-                </Box>
-              ))}
-            </Section>
-
             <Section id="semantic-colors">
               {semanticGroups.map(({ title, classPrefix, colors }) => (
                 <Box key={title} className="flex flex-col gap-xs">
@@ -268,7 +286,7 @@ function Section({ id, children }: SectionProps) {
   return (
     <section
       id={id}
-      className="flex scroll-mt-xl flex-col gap-md rounded-lg border bg-surface p-lg"
+      className="flex scroll-mt-xl flex-col gap-md rounded-lg border bg-placeholder p-lg"
     >
       <Text variant="subheading">{sectionTitles[id]}</Text>
       {children}
@@ -319,7 +337,7 @@ function TextFieldExamples() {
   const [value, setValue] = useState("");
 
   return (
-    <Box className="flex max-w-md flex-col gap-sm">
+    <Box className="flex max-w-content-sm flex-col gap-sm">
       <TextField
         label="Text field"
         placeholder="Type here"
@@ -327,6 +345,54 @@ function TextFieldExamples() {
         onValueChange={setValue}
       />
       <TextField label="Disabled" value="Can't edit" onValueChange={() => {}} disabled />
+    </Box>
+  );
+}
+
+function SearchFieldExamples() {
+  const [value, setValue] = useState("");
+  const [submitted, setSubmitted] = useState<string | null>(null);
+
+  return (
+    <Box className="flex max-w-content-sm flex-col gap-sm">
+      <SearchField
+        label="Describe your own"
+        placeholder="Describe your own…"
+        value={value}
+        onValueChange={setValue}
+        onSubmit={() => setSubmitted(value)}
+      />
+      <Label>submitted on Enter: {submitted ?? "nothing yet"}</Label>
+      <SearchField
+        label="Inactive"
+        placeholder="Describe your own…"
+        value="Typed, but a card is selected"
+        onValueChange={() => {}}
+        onSubmit={() => {}}
+        inactive
+      />
+    </Box>
+  );
+}
+
+function ImageCardExamples() {
+  const [pressed, setPressed] = useState(false);
+
+  return (
+    <Box className="grid max-w-content-lg grid-cols-3 gap-md">
+      <ImageCard
+        label="Pressable"
+        src={samplePhoto}
+        pressed={pressed}
+        onPressedChange={setPressed}
+      />
+      <ImageCard label="No image" src={null} pressed={false} onPressedChange={() => {}} />
+      <ImageCard
+        label="Failed load"
+        src="/missing-photo.png"
+        pressed={false}
+        onPressedChange={() => {}}
+      />
     </Box>
   );
 }

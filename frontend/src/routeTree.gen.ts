@@ -15,6 +15,7 @@ import { Route as PlaygroundRouteImport } from './routes/playground'
 import { Route as SignedInHasAccountRouteImport } from './routes/_signedIn/_hasAccount'
 import { Route as SignedInCreateAccountRouteImport } from './routes/_signedIn/create-account'
 import { Route as SignedInHasAccountIndexRouteImport } from './routes/_signedIn/_hasAccount/index'
+import { Route as SignedInHasAccountCreateOutfitRouteImport } from './routes/_signedIn/_hasAccount/create-outfit'
 import { Route as SignedInHasAccountLlmTestRouteImport } from './routes/_signedIn/_hasAccount/llm-test'
 import { Route as SignedInHasAccountOutfitsRouteImport } from './routes/_signedIn/_hasAccount/outfits'
 import { Route as SignedInHasAccountProfilePictureTestRouteImport } from './routes/_signedIn/_hasAccount/profile-picture-test'
@@ -47,6 +48,12 @@ const SignedInHasAccountIndexRoute = SignedInHasAccountIndexRouteImport.update({
   path: '/',
   getParentRoute: () => SignedInHasAccountRoute,
 } as any)
+const SignedInHasAccountCreateOutfitRoute =
+  SignedInHasAccountCreateOutfitRouteImport.update({
+    id: '/create-outfit',
+    path: '/create-outfit',
+    getParentRoute: () => SignedInHasAccountRoute,
+  } as any)
 const SignedInHasAccountLlmTestRoute =
   SignedInHasAccountLlmTestRouteImport.update({
     id: '/llm-test',
@@ -71,6 +78,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/playground': typeof PlaygroundRoute
   '/create-account': typeof SignedInCreateAccountRoute
+  '/create-outfit': typeof SignedInHasAccountCreateOutfitRoute
   '/llm-test': typeof SignedInHasAccountLlmTestRoute
   '/outfits': typeof SignedInHasAccountOutfitsRoute
   '/profile-picture-test': typeof SignedInHasAccountProfilePictureTestRoute
@@ -80,6 +88,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/playground': typeof PlaygroundRoute
   '/create-account': typeof SignedInCreateAccountRoute
+  '/create-outfit': typeof SignedInHasAccountCreateOutfitRoute
   '/llm-test': typeof SignedInHasAccountLlmTestRoute
   '/outfits': typeof SignedInHasAccountOutfitsRoute
   '/profile-picture-test': typeof SignedInHasAccountProfilePictureTestRoute
@@ -91,6 +100,7 @@ export interface FileRoutesById {
   '/playground': typeof PlaygroundRoute
   '/_signedIn/_hasAccount': typeof SignedInHasAccountRouteWithChildren
   '/_signedIn/create-account': typeof SignedInCreateAccountRoute
+  '/_signedIn/_hasAccount/create-outfit': typeof SignedInHasAccountCreateOutfitRoute
   '/_signedIn/_hasAccount/llm-test': typeof SignedInHasAccountLlmTestRoute
   '/_signedIn/_hasAccount/outfits': typeof SignedInHasAccountOutfitsRoute
   '/_signedIn/_hasAccount/profile-picture-test': typeof SignedInHasAccountProfilePictureTestRoute
@@ -103,6 +113,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/playground'
     | '/create-account'
+    | '/create-outfit'
     | '/llm-test'
     | '/outfits'
     | '/profile-picture-test'
@@ -112,6 +123,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/playground'
     | '/create-account'
+    | '/create-outfit'
     | '/llm-test'
     | '/outfits'
     | '/profile-picture-test'
@@ -122,6 +134,7 @@ export interface FileRouteTypes {
     | '/playground'
     | '/_signedIn/_hasAccount'
     | '/_signedIn/create-account'
+    | '/_signedIn/_hasAccount/create-outfit'
     | '/_signedIn/_hasAccount/llm-test'
     | '/_signedIn/_hasAccount/outfits'
     | '/_signedIn/_hasAccount/profile-picture-test'
@@ -178,6 +191,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignedInHasAccountIndexRouteImport
       parentRoute: typeof SignedInHasAccountRoute
     }
+    '/_signedIn/_hasAccount/create-outfit': {
+      id: '/_signedIn/_hasAccount/create-outfit'
+      path: '/create-outfit'
+      fullPath: '/create-outfit'
+      preLoaderRoute: typeof SignedInHasAccountCreateOutfitRouteImport
+      parentRoute: typeof SignedInHasAccountRoute
+    }
     '/_signedIn/_hasAccount/llm-test': {
       id: '/_signedIn/_hasAccount/llm-test'
       path: '/llm-test'
@@ -203,6 +223,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface SignedInHasAccountRouteChildren {
+  SignedInHasAccountCreateOutfitRoute: typeof SignedInHasAccountCreateOutfitRoute
   SignedInHasAccountLlmTestRoute: typeof SignedInHasAccountLlmTestRoute
   SignedInHasAccountOutfitsRoute: typeof SignedInHasAccountOutfitsRoute
   SignedInHasAccountProfilePictureTestRoute: typeof SignedInHasAccountProfilePictureTestRoute
@@ -210,6 +231,7 @@ interface SignedInHasAccountRouteChildren {
 }
 
 const SignedInHasAccountRouteChildren: SignedInHasAccountRouteChildren = {
+  SignedInHasAccountCreateOutfitRoute: SignedInHasAccountCreateOutfitRoute,
   SignedInHasAccountLlmTestRoute: SignedInHasAccountLlmTestRoute,
   SignedInHasAccountOutfitsRoute: SignedInHasAccountOutfitsRoute,
   SignedInHasAccountProfilePictureTestRoute:

@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useRef, useState, type ChangeEvent } from "react";
 
 import { apiFetch } from "@/api";
-import { Avatar, Button } from "@/design-system";
+import { Avatar, Button, Text } from "@/design-system";
 import { supabase } from "@/supabase/client";
 
 export const Route = createFileRoute("/_signedIn/_hasAccount/profile-picture-test")({
@@ -117,16 +117,18 @@ function ProfilePictureTest() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white p-8">
-      <Link className="text-gray-400 text-sm underline hover:text-white" to="/">
+    <div className="min-h-screen p-xl">
+      <Link className="text-secondary text-body underline hover:text-primary" to="/">
         ← Home
       </Link>
-      <h1 className="text-3xl font-bold mt-4 mb-2">Profile picture test</h1>
-      <p className="text-gray-400 text-sm mb-8">
+      <Text variant="heading" className="mt-md mb-xs">
+        Profile picture test
+      </Text>
+      <p className="text-secondary text-body mb-xl">
         Sign in first, then pick an image and it uploads via a presigned URL.
       </p>
 
-      <div className="flex flex-col gap-4 max-w-md">
+      <div className="flex flex-col gap-md max-w-content-sm">
         {/* The native file input can't be restyled, so it stays hidden and the
             Button opens its file picker. */}
         <input
@@ -142,19 +144,19 @@ function ProfilePictureTest() {
           className="self-start"
         />
 
-        {status && <p className="text-gray-400 text-sm">{status}</p>}
-        {error && <p className="text-red-400 text-sm">Error: {error}</p>}
+        {status && <p className="text-secondary text-body">{status}</p>}
+        {error && <p className="text-error text-body">Error: {error}</p>}
 
         {user && (
-          <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+          <div className="bg-surface rounded-lg p-md border">
             <p className="font-semibold">{user.name || "(no name)"}</p>
-            <p className="text-gray-400 text-xs break-all">{user.id}</p>
+            <p className="text-secondary text-caption break-all">{user.id}</p>
             {user.profile_picture_url ? (
-              <div className="mt-3">
+              <div className="mt-sm">
                 <Avatar src={user.profile_picture_url} alt="profile" size="lg" />
               </div>
             ) : (
-              <p className="text-gray-500 text-sm mt-3">No profile picture</p>
+              <p className="text-secondary text-body mt-sm">No profile picture</p>
             )}
           </div>
         )}

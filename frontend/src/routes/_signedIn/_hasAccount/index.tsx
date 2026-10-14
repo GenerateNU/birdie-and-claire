@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { signOut } from "@/account";
-import { Button } from "@/design-system";
+import { Button, Text } from "@/design-system";
 
 export const Route = createFileRoute("/_signedIn/_hasAccount/")({
   component: Home,
@@ -9,25 +9,30 @@ export const Route = createFileRoute("/_signedIn/_hasAccount/")({
 
 function Home() {
   return (
-    <div className="min-h-screen bg-gray-950 text-white p-8">
-      <h1 className="text-3xl font-bold mb-2">Birdie &amp; Claire</h1>
-      <p className="text-gray-400 text-sm mb-4">
-        The API is at <code className="text-gray-200">/api/v1</code>. Docs are at{" "}
-        <a className="underline hover:text-white" href="http://localhost:8080/docs">
+    <div className="min-h-screen p-xl">
+      <Text variant="heading" className="mb-xs">
+        Birdie &amp; Claire
+      </Text>
+      <p className="text-secondary text-body mb-md">
+        The API is at <code className="text-primary">/api/v1</code>. Docs are at{" "}
+        <a className="underline hover:text-primary" href="http://localhost:8080/docs">
           localhost:8080/docs
         </a>
         .
       </p>
-      <Link className="block underline hover:text-white text-sm" to="/profile-picture-test">
+      <Link className="block underline hover:text-primary text-body" to="/profile-picture-test">
         Profile picture test →
       </Link>
-      <Link className="block underline hover:text-white text-sm" to="/outfits">
+      <Link className="block underline hover:text-primary text-body" to="/outfits">
         Outfits →
       </Link>
-      <Link className="block underline hover:text-white text-sm" to="/llm-test">
+      <Link className="block underline hover:text-primary text-body" to="/create-outfit">
+        Create an outfit →
+      </Link>
+      <Link className="block underline hover:text-primary text-body" to="/llm-test">
         LLM test →
       </Link>
-      <div className="mt-6">
+      <div className="mt-lg">
         <Button label="Sign out" onClick={signOut} />
       </div>
     </div>

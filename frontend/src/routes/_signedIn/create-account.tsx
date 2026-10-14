@@ -3,7 +3,7 @@ import { useState, type SyntheticEvent } from "react";
 
 import { AccountError, hasAccountQuery } from "@/account";
 import { apiFetch } from "@/api";
-import { Button, TextField } from "@/design-system";
+import { Button, Text, TextField } from "@/design-system";
 
 export const Route = createFileRoute("/_signedIn/create-account")({
   beforeLoad: async ({ context }) => {
@@ -50,17 +50,19 @@ function CreateAccount() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white p-8">
-      <h1 className="text-3xl font-bold mb-2">Create your account</h1>
-      <p className="text-gray-400 text-sm mb-8">
+    <div className="min-h-screen p-xl">
+      <Text variant="heading" className="mb-xs">
+        Create your account
+      </Text>
+      <p className="text-secondary text-body mb-xl">
         Placeholder form: it only sends a name to create your account.
       </p>
 
-      <form onSubmit={submit} className="flex flex-col gap-4 max-w-md">
+      <form onSubmit={submit} className="flex flex-col gap-md max-w-content-sm">
         <TextField label="Name" required value={name} onValueChange={setName} />
         <Button label="Create account" type="submit" disabled={status !== null} />
-        {status && <p className="text-gray-400 text-sm">{status}</p>}
-        {error && <p className="text-red-400 text-sm">Error: {error}</p>}
+        {status && <p className="text-secondary text-body">{status}</p>}
+        {error && <p className="text-error text-body">Error: {error}</p>}
       </form>
     </div>
   );

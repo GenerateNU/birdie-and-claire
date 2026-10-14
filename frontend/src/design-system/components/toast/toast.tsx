@@ -2,6 +2,7 @@ import { Toast as BaseToast, type ToastObject } from "@base-ui/react/toast";
 
 import { Button } from "../buttons/button";
 import { CloseButton } from "../buttons/close-button";
+import { cardFrameClasses } from "../cards/card-classes";
 
 export type ToastVariant = "neutral" | "success";
 
@@ -14,8 +15,7 @@ export type ToastData = {
   action?: ToastAction;
 };
 
-const rootClasses =
-  "flex items-start gap-md rounded-md border bg-background p-md text-primary data-[type=success]:border-success data-[limited]:hidden";
+const rootClasses = `${cardFrameClasses} flex items-start gap-md p-md data-[type=success]:border-success data-[limited]:hidden`;
 
 type ToastProps = {
   toast: ToastObject<ToastData>;
