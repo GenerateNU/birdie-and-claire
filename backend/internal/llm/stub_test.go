@@ -30,8 +30,12 @@ type stubGateway struct {
 }
 
 type chatRequest struct {
-	Model    string `json:"model"`
-	Stream   bool   `json:"stream"`
+	Model     string `json:"model"`
+	Stream    bool   `json:"stream"`
+	MaxTokens int    `json:"max_tokens"`
+	Reasoning *struct {
+		Effort string `json:"effort"`
+	} `json:"reasoning"`
 	Messages []struct {
 		Role       string `json:"role"`
 		Content    any    `json:"content"`

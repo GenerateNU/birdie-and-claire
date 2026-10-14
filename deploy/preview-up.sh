@@ -51,7 +51,17 @@ install -m 700 -d "${PROJECT_DIR}/previews"
 # stale schema, so a bad migration fails here with a clearer error.
 echo "    applying migrations"
 docker pull --quiet "$IMAGE"
-docker run --rm --network edge --env-file "$PR_ENV_FILE" --entrypoint /migrate "$IMAGE" up
+# Goose refuses an older-timestamped migration that main brought in after a
+# newer one ran here. Starting over from an empty database fixes that, and a
+# migration that is broken on its own still fails on the second attempt.
+if ! docker run --rm --network edge --env-file "$PR_ENV_FILE" --entrypoint /migrate "$IMAGE" up; then
+  # FORCE disconnects the running preview container, which still uses the database.
+  docker exec -e PGPASSWORD="$PGPASSWORD" preview-db \
+    psql -U postgres -tAc "DROP DATABASE ${DB_NAME} WITH (FORCE)" >/dev/null
+  docker exec -e PGPASSWORD="$PGPASSWORD" preview-db createdb -U postgres "${DB_NAME}"
+  echo "    migrations failed on existing database, recreated ${DB_NAME}"
+  docker run --rm --network edge --env-file "$PR_ENV_FILE" --entrypoint /migrate "$IMAGE" up
+fi
 
 # Keyed on an empty products table, not on createdb above, so any path that
 # leaves a fresh database gets seeded too. The assignment lets set -e stop the

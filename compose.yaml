@@ -42,7 +42,6 @@ services:
       AI_URL: ${AI_URL:?AI_URL is required}
       AI_API_KEY: ${AI_API_KEY:?AI_API_KEY is required}
       AI_MODEL: ${AI_MODEL:-}
-      AI_DEV_USER_IDS: ${AI_DEV_USER_IDS:-}
     ports:
       - "127.0.0.1:${API_PORT:?API_PORT is required}:8080"
     volumes:
