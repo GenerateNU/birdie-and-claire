@@ -3,18 +3,8 @@ export type Product = {
   id: string;
   title: string;
   slot: ProductSlot;
-};
-
-/** Where a product's first image is, from GET /api/v1/products/{id}/images. */
-export type ItemImage =
-  | { status: "loading" }
-  | { status: "failed" }
-  | { status: "missing" }
-  | { status: "loaded"; url: string };
-
-export type OutfitItem = {
-  product: Product;
-  image: ItemImage;
+  /** The product's first image, or null when it has none. */
+  image_url: string | null;
 };
 
 /**
@@ -91,28 +81,29 @@ const SPOTS_BY_SLOT: Record<ProductSlot, CanvasSpot[]> = {
 export const SLOTS_HEAD_TO_TOE: ProductSlot[] = ["top", "bottom", "shoe", "accessory"];
 
 /**
- * Gives each item with a photo the first free spot its slot can take, in title order. An item
- * whose photo is still loading keeps its spot, so the result doesn't change with load timing.
- * Items left without a spot show only in the details list.
+ * Gives each product with a photo the first free spot its slot can take, in title order. Products
+ * left without a spot show only in the details list.
  */
-export function placeOnCanvas(items: OutfitItem[]): { item: OutfitItem; spot: CanvasSpot }[] {
+export function placeOnCanvas(
+  products: Product[],
+): { product: Product; photoUrl: string; spot: CanvasSpot }[] {
   const takenSpots = new Set<CanvasSpot>();
   const placements = [];
-  const byTitle = [...items].sort((a, b) => a.product.title.localeCompare(b.product.title));
+  const byTitle = [...products].sort((a, b) => a.title.localeCompare(b.title));
 
-  for (const item of byTitle) {
-    if (item.image.status === "missing" || item.image.status === "failed") {
+  for (const product of byTitle) {
+    if (product.image_url === null) {
       continue;
     }
 
-    const spot = SPOTS_BY_SLOT[item.product.slot].find((candidate) => !takenSpots.has(candidate));
+    const spot = SPOTS_BY_SLOT[product.slot].find((candidate) => !takenSpots.has(candidate));
 
     if (spot === undefined) {
       continue;
     }
 
     takenSpots.add(spot);
-    placements.push({ item, spot });
+    placements.push({ product, photoUrl: product.image_url, spot });
   }
 
   return placements;

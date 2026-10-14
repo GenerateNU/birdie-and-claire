@@ -4,10 +4,10 @@ import type { CSSProperties } from "react";
 import silhouette from "@/assets/silhouette.png";
 import { Button } from "@/design-system";
 import { cutOutGarment, type GarmentBox } from "@/garmentCutout";
-import { CANVAS_SIZE, placeOnCanvas, type CanvasSpot, type OutfitItem } from "@/outfitItems";
+import { CANVAS_SIZE, placeOnCanvas, type CanvasSpot, type Product } from "@/outfitItems";
 
 type OutfitCanvasProps = {
-  items: OutfitItem[];
+  products: Product[];
 };
 
 // Where the Figma draws silhouette.png, in canvas pixels.
@@ -42,25 +42,21 @@ function garmentPlacement(spot: CanvasSpot, garment: GarmentBox): CSSProperties 
   };
 }
 
-export default function OutfitCanvas({ items }: OutfitCanvasProps) {
-  const placedItems = placeOnCanvas(items).flatMap(({ item, spot }) => {
-    // Its spot stays taken, but it isn't drawn until its photo has loaded.
-    if (item.image.status !== "loaded") {
-      return [];
-    }
-
-    return [{ spot, product: item.product, photoUrl: item.image.url }];
-  });
+export default function OutfitCanvas({ products }: OutfitCanvasProps) {
+  const placedItems = placeOnCanvas(products);
 
   const cutouts = useQueries({
     queries: placedItems.map(({ photoUrl }) => ({
       queryKey: ["garment-cutout", photoUrl],
-      // Null when the photo can't be cut out. A query that rejects has no data, so it counts as
-      // stale and goes back to pending on every window focus, which blanks its spot. A host that
-      // blocks cross-origin reads won't allow them on a later try either.
-      queryFn: () => cutOutGarment(photoUrl).catch(() => null),
+      queryFn: () => cutOutGarment(photoUrl),
       // A cut-out depends only on its photo.
       staleTime: Infinity,
+      // One retry covers a network blip. A host that blocks cross-origin reads fails every time.
+      retry: 1,
+      // A failed cut-out has no data, so a refetch would put it back to pending and blank its spot
+      // until the retry fails again. Remounting the page still retries it.
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
     })),
   });
 
@@ -87,16 +83,16 @@ export default function OutfitCanvas({ items }: OutfitCanvasProps) {
           }}
         />
         {placedItems.map(({ spot, product, photoUrl }, index) => {
-          const cutout = cutouts[index].data;
+          const cutout = cutouts[index];
 
           // Drawn once the cut-out settles, so the uncut photo never flashes on the canvas.
-          if (cutout === undefined) {
+          if (cutout.isPending) {
             return null;
           }
 
           // Usually the image host blocks cross-origin reads. multiply hides the photo's white
           // background, though the silhouette shows through the garment.
-          if (cutout === null) {
+          if (cutout.isError) {
             return (
               <img
                 key={product.id}
@@ -111,10 +107,10 @@ export default function OutfitCanvas({ items }: OutfitCanvasProps) {
           return (
             <img
               key={product.id}
-              src={cutout.url}
+              src={cutout.data.url}
               alt={product.title}
               className="absolute max-w-none"
-              style={garmentPlacement(spot, cutout.garment)}
+              style={garmentPlacement(spot, cutout.data.garment)}
             />
           );
         })}

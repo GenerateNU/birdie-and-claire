@@ -1,4 +1,4 @@
-import { useQueries, useQuery, type UseQueryResult } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
@@ -8,7 +8,7 @@ import type { Outfit } from "@/OutfitList";
 import { apiFetch } from "@/api";
 import logo from "@/assets/logo.png";
 import { Button, Empty, ErrorState, Spinner } from "@/design-system";
-import type { ItemImage, OutfitItem, Product } from "@/outfitItems";
+import type { Product } from "@/outfitItems";
 
 export const Route = createFileRoute("/_signedIn/_hasAccount/outfits/$outfitId")({
   component: OutfitPage,
@@ -16,10 +16,6 @@ export const Route = createFileRoute("/_signedIn/_hasAccount/outfits/$outfitId")
 
 type OutfitResponse = Outfit & {
   products: Product[];
-};
-
-type ProductImage = {
-  url: string;
 };
 
 type EditorFrameProps = {
@@ -42,51 +38,12 @@ async function fetchOutfit(outfitId: string, signal: AbortSignal): Promise<Outfi
   return await response.json();
 }
 
-async function fetchProductImages(productId: string, signal: AbortSignal): Promise<ProductImage[]> {
-  const response = await apiFetch(`/api/v1/products/${encodeURIComponent(productId)}/images`, {
-    signal,
-  });
-
-  if (!response.ok) {
-    throw new Error(`${response.status} ${response.statusText}`);
-  }
-
-  return await response.json();
-}
-
-/** The API orders a product's images by position, so the first is the one to show. */
-function firstImage(query: UseQueryResult<ProductImage[]>): ItemImage {
-  if (query.isPending) {
-    return { status: "loading" };
-  }
-
-  // A failed background refetch keeps the last good data, so data is checked rather than the error.
-  if (query.data === undefined) {
-    return { status: "failed" };
-  }
-
-  if (query.data.length === 0) {
-    return { status: "missing" };
-  }
-
-  return { status: "loaded", url: query.data[0].url };
-}
-
 function OutfitPage() {
   const { outfitId } = Route.useParams();
 
   const outfitQuery = useQuery({
     queryKey: ["outfit", outfitId],
     queryFn: ({ signal }) => fetchOutfit(outfitId, signal),
-  });
-
-  const products = outfitQuery.data?.products ?? [];
-
-  const imageQueries = useQueries({
-    queries: products.map((product) => ({
-      queryKey: ["product-images", product.id],
-      queryFn: ({ signal }) => fetchProductImages(product.id, signal),
-    })),
   });
 
   if (outfitQuery.isPending) {
@@ -118,19 +75,18 @@ function OutfitPage() {
     );
   }
 
-  const items: OutfitItem[] = products.map((product, index) => ({
-    product,
-    image: firstImage(imageQueries[index]),
-  }));
+  const { name, products } = outfitQuery.data;
 
   return (
     <EditorFrame>
-      <main className="flex min-h-0 flex-1 gap-xs p-xs pt-md">
-        <div className="min-w-0 flex-1">
-          <OutfitCanvas items={items} />
+      {/* Side by side from lg up. Narrower than that, the 576px details panel would squeeze the
+          canvas to nothing, so the panels stack. */}
+      <main className="flex min-h-0 flex-1 flex-col gap-xs p-xs pt-md lg:flex-row">
+        <div className="min-h-0 min-w-0 flex-1">
+          <OutfitCanvas products={products} />
         </div>
-        <div className="w-[576px] shrink-0">
-          <OutfitDetails outfitName={outfitQuery.data.name} items={items} />
+        <div className="h-2/5 lg:h-auto lg:w-[576px] lg:shrink-0">
+          <OutfitDetails outfitName={name} products={products} />
         </div>
       </main>
     </EditorFrame>

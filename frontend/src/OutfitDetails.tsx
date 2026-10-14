@@ -1,23 +1,23 @@
 import { Empty, Text } from "@/design-system";
-import { SLOTS_HEAD_TO_TOE, type ItemImage, type OutfitItem } from "@/outfitItems";
+import { SLOTS_HEAD_TO_TOE, type Product } from "@/outfitItems";
 
 type OutfitDetailsProps = {
   outfitName: string;
-  items: OutfitItem[];
+  products: Product[];
 };
 
 type ItemTileProps = {
-  image: ItemImage;
+  imageUrl: string | null;
 };
 
 /** Head to toe, matching the canvas. */
-function listPosition(item: OutfitItem): number {
-  return SLOTS_HEAD_TO_TOE.indexOf(item.product.slot);
+function listPosition(product: Product): number {
+  return SLOTS_HEAD_TO_TOE.indexOf(product.slot);
 }
 
-export default function OutfitDetails({ outfitName, items }: OutfitDetailsProps) {
-  // sort is stable, so items that share a slot keep the API's order.
-  const sortedItems = [...items].sort((a, b) => listPosition(a) - listPosition(b));
+export default function OutfitDetails({ outfitName, products }: OutfitDetailsProps) {
+  // sort is stable, so products that share a slot keep the API's order.
+  const sortedProducts = [...products].sort((a, b) => listPosition(a) - listPosition(b));
 
   return (
     <section className="flex h-full flex-col border">
@@ -27,14 +27,14 @@ export default function OutfitDetails({ outfitName, items }: OutfitDetailsProps)
           {outfitName}
         </Text>
       </header>
-      {sortedItems.length === 0 ? (
+      {sortedProducts.length === 0 ? (
         <Empty title="This outfit has no items yet" className="px-xxl py-lg" />
       ) : (
         <ul className="flex min-h-0 flex-1 flex-col gap-md overflow-y-auto px-xxl py-lg">
-          {sortedItems.map((item) => (
-            <li key={item.product.id} className="flex items-center gap-md border p-md">
-              <ItemTile image={item.image} />
-              <span className="text-subheading">{item.product.title}</span>
+          {sortedProducts.map((product) => (
+            <li key={product.id} className="flex items-center gap-md border p-md">
+              <ItemTile imageUrl={product.image_url} />
+              <Text variant="subheading">{product.title}</Text>
             </li>
           ))}
         </ul>
@@ -43,16 +43,13 @@ export default function OutfitDetails({ outfitName, items }: OutfitDetailsProps)
   );
 }
 
-function ItemTile({ image }: ItemTileProps) {
+function ItemTile({ imageUrl }: ItemTileProps) {
   return (
     <div className="flex h-[149px] w-[136px] shrink-0 items-center justify-center bg-placeholder">
       {/* Decorative: the title next to it already names the item. multiply blends the photo's
           white background into the tile, as on the canvas. */}
-      {image.status === "loaded" && (
-        <img src={image.url} alt="" className="h-full w-full object-contain mix-blend-multiply" />
-      )}
-      {image.status === "failed" && (
-        <span className="px-xs text-center text-caption">Image failed to load</span>
+      {imageUrl !== null && (
+        <img src={imageUrl} alt="" className="h-full w-full object-contain mix-blend-multiply" />
       )}
     </div>
   );
