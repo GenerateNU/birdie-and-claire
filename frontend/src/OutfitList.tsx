@@ -41,10 +41,14 @@ export default function OutfitList({ outfits, nextCursor, onLoadMore }: OutfitLi
   }, [nextCursor, onLoadMore]);
 
   return (
-    <ul ref={listRef} className="max-h-96 overflow-y-auto">
+    <ul ref={listRef} className="flex max-h-96 flex-col gap-xxs overflow-y-auto">
       {outfits.map((outfit) => (
         <li key={outfit.id}>
-          <Link className="underline" to="/outfits/$outfitId" params={{ outfitId: outfit.id }}>
+          <Link
+            className="text-body underline"
+            to="/outfits/$outfitId"
+            params={{ outfitId: outfit.id }}
+          >
             {outfit.name}
           </Link>
         </li>

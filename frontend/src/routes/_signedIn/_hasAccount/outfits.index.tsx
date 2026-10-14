@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useCallback } from "react";
 
 import OutfitList, { type Outfit } from "@/OutfitList";
-import { Button } from "@/design-system";
+import { Empty, ErrorState, Spinner } from "@/design-system";
 import { usePagination } from "@/utils/usePagination";
 
 export const Route = createFileRoute("/_signedIn/_hasAccount/outfits/")({
@@ -18,6 +18,7 @@ function OutfitsPage() {
     hasNextPage,
     isFetchingNextPage,
     isFetchNextPageError,
+    refetch,
   } = usePagination<Outfit>("/api/v1/outfits");
 
   // The cursor is unused because usePagination already tracks the next page param.
@@ -29,13 +30,20 @@ function OutfitsPage() {
   }, [fetchNextPage, isFetchingNextPage, isFetchNextPageError]);
 
   if (isPending) {
-    return <div className="min-h-screen bg-gray-950 text-white p-8">Loading…</div>;
+    return (
+      <div className="min-h-screen bg-background p-xl text-primary">
+        <Spinner />
+      </div>
+    );
   }
 
   if (!data) {
     return (
-      <div className="min-h-screen bg-gray-950 text-white p-8">
-        Failed to load outfits: {error?.message}
+      <div className="min-h-screen bg-background p-xl text-primary">
+        <ErrorState
+          message={`Failed to load outfits: ${error?.message}`}
+          onRetry={() => void refetch()}
+        />
       </div>
     );
   }
@@ -45,14 +53,20 @@ function OutfitsPage() {
   const nextCursor = hasNextPage ? lastPage.next_cursor : null;
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white p-8">
-      <h1 className="text-xl font-bold mb-2">Outfits</h1>
-      <OutfitList outfits={outfits} nextCursor={nextCursor} onLoadMore={onLoadMore} />
+    <div className="min-h-screen bg-background p-xl text-primary">
+      {/* Text's heading variant renders an h2, and the page needs an h1. */}
+      <h1 className="mb-xs text-heading">Outfits</h1>
+      {outfits.length === 0 ? (
+        <Empty title="No outfits yet" />
+      ) : (
+        <OutfitList outfits={outfits} nextCursor={nextCursor} onLoadMore={onLoadMore} />
+      )}
       {isFetchNextPageError && (
-        <p>
-          Failed to load more: {error?.message}{" "}
-          <Button label="Retry" onClick={() => void fetchNextPage()} />
-        </p>
+        <ErrorState
+          message={`Failed to load more: ${error?.message}`}
+          onRetry={() => void fetchNextPage()}
+          retryLabel="Retry"
+        />
       )}
     </div>
   );

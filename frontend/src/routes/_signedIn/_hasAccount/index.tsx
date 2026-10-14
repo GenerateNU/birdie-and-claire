@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { signOut } from "@/account";
 import { apiFetch } from "@/api";
-import { Button } from "@/design-system";
+import { Button, Text } from "@/design-system";
 
 export const Route = createFileRoute("/_signedIn/_hasAccount/")({
   component: Home,
@@ -79,35 +79,40 @@ function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white p-8">
-      <h1 className="text-3xl font-bold mb-2">Birdie &amp; Claire</h1>
-      <p className="text-gray-400 text-sm mb-4">
-        The API is at <code className="text-gray-200">/api/v1</code>. Docs are at{" "}
-        <a className="underline hover:text-white" href="http://localhost:8080/docs">
+    <div className="min-h-screen bg-background p-xl text-primary">
+      {/* Text's heading variant renders an h2, and the page needs an h1. */}
+      <h1 className="mb-xs text-heading">Birdie &amp; Claire</h1>
+      <Text variant="body" className="mb-md text-secondary">
+        The API is at <code className="text-primary">/api/v1</code>. Docs are at{" "}
+        <a className="underline" href="http://localhost:8080/docs">
           localhost:8080/docs
         </a>
         .
-      </p>
-      <Link className="block underline hover:text-white text-sm" to="/profile-picture-test">
+      </Text>
+      <Link className="block text-body underline" to="/profile-picture-test">
         Profile picture test →
       </Link>
-      <Link className="block underline hover:text-white text-sm" to="/outfits">
+      <Link className="block text-body underline" to="/outfits">
         Outfits →
       </Link>
-      <Link className="block underline hover:text-white text-sm" to="/recommend-test">
+      <Link className="block text-body underline" to="/recommend-test">
         Recommend test →
       </Link>
-      <div className="mt-6 flex flex-col items-start gap-2">
+      <div className="mt-lg flex flex-col items-start gap-xs">
         <Button
           label="Seed random outfits"
           loading={seeding}
           loadingLabel="Seeding…"
           onClick={() => void seedOutfits()}
         />
-        {seedStatus && <p className="text-gray-400 text-sm">{seedStatus}</p>}
+        {seedStatus && (
+          <Text variant="body" className="text-secondary">
+            {seedStatus}
+          </Text>
+        )}
       </div>
-      <div className="mt-6">
-        <Button label="Sign out" onClick={signOut} />
+      <div className="mt-lg">
+        <Button label="Sign out" variant="secondary" onClick={signOut} />
       </div>
     </div>
   );
