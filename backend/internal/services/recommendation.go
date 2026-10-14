@@ -27,7 +27,7 @@ const (
 )
 
 type slotSearch struct {
-	name     string
+	name     models.ProductSlot
 	phrase   string
 	products *[]models.Product
 }
@@ -69,9 +69,9 @@ func (s *recommendationService) RecommendProducts(ctx context.Context, query str
 		Accessory: []models.Product{},
 	}
 	slots := []slotSearch{
-		{name: "top", phrase: response.ExpandedQuery.Slots.Top, products: &response.Top},
-		{name: "bottom", phrase: response.ExpandedQuery.Slots.Bottom, products: &response.Bottom},
-		{name: "accessory", phrase: response.ExpandedQuery.Slots.Accessory, products: &response.Accessory},
+		{name: models.SlotTop, phrase: response.ExpandedQuery.Slots.Top, products: &response.Top},
+		{name: models.SlotBottom, phrase: response.ExpandedQuery.Slots.Bottom, products: &response.Bottom},
+		{name: models.SlotAccessory, phrase: response.ExpandedQuery.Slots.Accessory, products: &response.Accessory},
 	}
 	if err := checkExpansionLimits(slots, response.ExpandedQuery); err != nil {
 		return models.RecommendationResponse{}, err
@@ -99,7 +99,7 @@ func (s *recommendationService) RecommendProducts(ctx context.Context, query str
 	return response, nil
 }
 
-func (s *recommendationService) searchSlot(ctx context.Context, slot, phrase string, excludeTags, niceTags []string) ([]models.Product, error) {
+func (s *recommendationService) searchSlot(ctx context.Context, slot models.ProductSlot, phrase string, excludeTags, niceTags []string) ([]models.Product, error) {
 	embedding, err := s.embedder.EmbedText(ctx, phrase)
 	// a rejected phrase is the model's, not the shopper's, and Modal's detail can quote it
 	if errors.Is(err, errs.ErrInvalidInput) {

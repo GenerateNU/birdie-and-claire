@@ -15,6 +15,7 @@ interface Product {
   handle: string;
   title: string;
   product_type: string | null;
+  slot: "top" | "bottom" | "accessory" | "shoe";
   tags: string[];
   created_at: string;
   updated_at: string;

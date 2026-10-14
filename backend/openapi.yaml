@@ -221,6 +221,13 @@ components:
         shopify_id:
           format: int64
           type: integer
+        slot:
+          enum:
+            - top
+            - bottom
+            - accessory
+            - shoe
+          type: string
         tags:
           items:
             type: string
@@ -236,6 +243,7 @@ components:
         - handle
         - title
         - product_type
+        - slot
         - tags
         - created_at
         - updated_at
