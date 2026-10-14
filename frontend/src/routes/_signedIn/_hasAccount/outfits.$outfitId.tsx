@@ -107,7 +107,7 @@ function EditorHeader() {
     <header className="grid h-[144px] grid-cols-[1fr_auto_1fr] items-end border-y px-md">
       {/* Text's heading variant renders an h2, and the page needs an h1. */}
       <h1 className="pb-md text-heading">Outfit Editor</h1>
-      <Link to="/outfits" className="pb-xxxs">
+      <Link to="/profile/outfits" className="pb-xxxs">
         {/* object-bottom repeats the Figma's crop of the image's empty top edge. */}
         <img
           src={logo}
