@@ -140,8 +140,8 @@ func insertTestProduct(t *testing.T, db *sql.DB) uuid.UUID {
 
 	var id uuid.UUID
 	err := db.QueryRowContext(context.Background(), `
-		INSERT INTO products (shopify_id, handle, title)
-		VALUES ($1, 'test-product', 'Test product')
+		INSERT INTO products (shopify_id, handle, title, slot)
+		VALUES ($1, 'test-product', 'Test product', 'top')
 		RETURNING id
 	`, rand.Int64()).Scan(&id)
 	if err != nil {
