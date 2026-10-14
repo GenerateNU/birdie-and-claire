@@ -13,36 +13,37 @@ END $$;
 
 -- Real birdieandclaire.com products with fake Shopify IDs. Only flat-lay or ghost-mannequin photos, never
 -- on-model ones, because the outfit canvas draws them over a silhouette.
--- product_type values are set by hand, since the store leaves most of them blank.
+-- product_type and slot values are set by hand, since the store leaves most of them blank.
 CREATE TEMP TABLE seed_products ON COMMIT DROP AS
 SELECT *
 FROM (
     VALUES
-        (1, 'max-beanie-hat', 'Max Beanie Hat', 'Hats',
+        (1, 'max-beanie-hat', 'Max Beanie Hat', 'Hats', 'accessory',
             'https://cdn.shopify.com/s/files/1/0523/5182/8140/files/Birdie_Claire-Max_Beanie_Hat-Merino_Wool-Deep_Red_Color-Layflat_Photo.png?v=1761448206'),
-        (2, 'amanda-wrap', 'Amanda Poncho', 'Outerwear',
+        (2, 'amanda-wrap', 'Amanda Poncho', 'Outerwear', 'top',
             'https://cdn.shopify.com/s/files/1/0523/5182/8140/files/Birdie_Claire-Amanda_Poncho-Merino_Wool-Navy_Color-Mannequin_Photo.png?v=1761187576'),
-        (3, 'nora-mock-neck-sweater', 'Nora Mock Neck Sweater', 'Sweaters',
+        (3, 'nora-mock-neck-sweater', 'Nora Mock Neck Sweater', 'Sweaters', 'top',
             'https://cdn.shopify.com/s/files/1/0523/5182/8140/files/Birdie_Claire-Nora_Sweater_Wool_Offwhite_Color_Grey_Mannequin.png?v=1763606770'),
-        (4, 'annie-wool-crew-neck-sweater', 'Annie Wool Crew Neck Sweater', 'Sweaters',
+        (4, 'annie-wool-crew-neck-sweater', 'Annie Wool Crew Neck Sweater', 'Sweaters', 'top',
             'https://cdn.shopify.com/s/files/1/0523/5182/8140/files/115_ee359a38-20bd-41c0-8b7f-e85c1359cd4b.png?v=1710115766'),
-        (5, 'denise-skirt', 'Denise Skirt', 'Skirts',
+        (5, 'denise-skirt', 'Denise Skirt', 'Skirts', 'bottom',
             'https://cdn.shopify.com/s/files/1/0523/5182/8140/files/productphotoresize_7.png?v=1710117168'),
-        (6, 'birdie-claire-reusable-tote-bag', 'Birdie & Claire Reusable Tote Bag', 'Bags',
+        (6, 'birdie-claire-reusable-tote-bag', 'Birdie & Claire Reusable Tote Bag', 'Bags', 'accessory',
             'https://cdn.shopify.com/s/files/1/0523/5182/8140/products/Birdie_Claire-Reusable_Cotton_Tote_Bag-Layflat_Photo.png?v=1761188812'),
-        (7, 'mini-tote-with-your-choice-of-patch', 'Mini Tote with Your Choice of Patch', 'Bags',
+        (7, 'mini-tote-with-your-choice-of-patch', 'Mini Tote with Your Choice of Patch', 'Bags', 'accessory',
             'https://cdn.shopify.com/s/files/1/0523/5182/8140/files/product_photo_resize_21.png?v=1786377134'),
-        (8, 'randi-scarf', 'Randi Scarf', 'Scarf',
+        (8, 'randi-scarf', 'Randi Scarf', 'Scarf', 'accessory',
             'https://cdn.shopify.com/s/files/1/0523/5182/8140/files/254.png?v=1700261568'),
-        (9, 'courtney-cover-up', 'Courtney Cover Up Tunic', 'Tops',
+        (9, 'courtney-cover-up', 'Courtney Cover Up Tunic', 'Tops', 'top',
             'https://cdn.shopify.com/s/files/1/0523/5182/8140/files/458.png?v=1782507493')
-) AS seed_product (shopify_id, handle, title, product_type, image_url);
+) AS seed_product (shopify_id, handle, title, product_type, slot, image_url);
 
-INSERT INTO products (shopify_id, handle, title, product_type)
-SELECT shopify_id, handle, title, product_type
+INSERT INTO products (shopify_id, handle, title, product_type, slot)
+SELECT shopify_id, handle, title, product_type, slot::product_slot
 FROM seed_products
 ON CONFLICT (shopify_id) DO UPDATE
-SET handle = EXCLUDED.handle, title = EXCLUDED.title, product_type = EXCLUDED.product_type, updated_at = now();
+SET handle = EXCLUDED.handle, title = EXCLUDED.title, product_type = EXCLUDED.product_type, slot = EXCLUDED.slot,
+    updated_at = now();
 
 -- Replaced on every run, because product_images.shopify_id is unique and the insert below would conflict.
 DELETE FROM product_images
@@ -64,8 +65,8 @@ INSERT INTO outfits (user_id, name, created_at)
 SELECT :'user_id'::uuid, 'Seed outfit ' || seed_number, now() - (seed_number || ' minutes')::interval
 FROM generate_series(1, :'outfit_count'::int) seed_number;
 
--- Outfits cycle through three looks. Each has at most one item per canvas spot, so every item shows on
--- the silhouette. B&C sells no shoes, pants, or belts, so those spots stay empty.
+-- Outfits cycle through three looks. Each fits the canvas's spots (two tops, one bottom, three
+-- accessories), so every item shows. B&C sells no shoes, so that spot stays empty.
 INSERT INTO outfit_products (outfit_id, product_id)
 SELECT outfit.id, product.id
 FROM generate_series(1, :'outfit_count'::int) seed_number

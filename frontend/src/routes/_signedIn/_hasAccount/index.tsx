@@ -11,7 +11,7 @@ export const Route = createFileRoute("/_signedIn/_hasAccount/")({
 });
 
 // Product IDs from backend/cmd/tasks/seeds/products.sql, which every dev and preview database has.
-// A seeded outfit takes one product from each group.
+// A seeded outfit takes one product from each group: top, bottom, accessory, shoe.
 const SEED_PRODUCT_GROUPS = [
   [
     "63f8fe1f-917f-4a3d-a3b5-78c114a10aee", // Sweaters: Benetton Blue Sweater

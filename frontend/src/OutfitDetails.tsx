@@ -1,5 +1,5 @@
 import { Empty, Text } from "@/design-system";
-import { SPOTS_HEAD_TO_TOE, spotFor, type ItemImage, type OutfitItem } from "@/outfitItems";
+import { SLOTS_HEAD_TO_TOE, type ItemImage, type OutfitItem } from "@/outfitItems";
 
 type OutfitDetailsProps = {
   outfitName: string;
@@ -10,19 +10,13 @@ type ItemTileProps = {
   image: ItemImage;
 };
 
-/** Head to toe, matching the canvas. Items with no canvas spot go last. */
+/** Head to toe, matching the canvas. */
 function listPosition(item: OutfitItem): number {
-  const spot = spotFor(item.product.product_type);
-
-  if (spot === undefined) {
-    return SPOTS_HEAD_TO_TOE.length;
-  }
-
-  return SPOTS_HEAD_TO_TOE.indexOf(spot);
+  return SLOTS_HEAD_TO_TOE.indexOf(item.product.slot);
 }
 
 export default function OutfitDetails({ outfitName, items }: OutfitDetailsProps) {
-  // sort is stable, so items that share a spot keep the API's order.
+  // sort is stable, so items that share a slot keep the API's order.
   const sortedItems = [...items].sort((a, b) => listPosition(a) - listPosition(b));
 
   return (
