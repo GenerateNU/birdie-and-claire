@@ -165,6 +165,10 @@ run = "go -C backend run ./cmd/tasks db migrate status"
 description = "Seed a user's outfits in the development database"
 run = "go -C backend run ./cmd/tasks db seed outfits"
 
+[tasks."db:dev:seed:products"]
+description = "Seed the demo products and their images in the development database"
+run = "go -C backend run ./cmd/tasks db seed products"
+
 [tasks."db:dev:reset"]
 description = "Recreate the development database"
 run = "go -C backend run ./cmd/tasks db reset"

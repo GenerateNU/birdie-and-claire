@@ -22,7 +22,7 @@ PR opened or pushed                      PR closed
 preview.yml                              preview-cleanup.yml
    image :pr-<n>-<sha>                      remove container
    keyflare prod -> preview.env             DROP DATABASE pr_<n>
-   CREATE DATABASE pr_<n>, migrate
+   CREATE DATABASE pr_<n>, migrate, seed
    run at https://pr-<n>.<PREVIEW_DOMAIN>
    vercel build with /api -> pr-<n>, vercel deploy --prebuilt
 ```
@@ -49,8 +49,10 @@ environment, so it verifies tokens against production Supabase, writes uploads
 to the production storage bucket, and calls the production embedder. Do not
 exercise destructive flows on a preview.
 
-A production login works on a preview, but the preview database starts empty,
-so you create the app account again there. The database survives re-pushes and
+A production login works on a preview, but the preview database starts with
+no users, so you create the app account again there. It does start with the demo
+products from `backend/cmd/tasks/seeds/products.sql`: every push seeds them
+when the `products` table is empty. The database survives re-pushes and
 is dropped when the PR closes. Migrations run against it on every push; if you
 edit a migration that already ran, or main brings in an older-timestamped one,
 close and reopen the PR to start from a fresh database. Uploads from a preview

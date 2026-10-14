@@ -283,14 +283,21 @@ const (
 //go:embed seeds/outfits.sql
 var outfitsSeed string
 
+//go:embed seeds/products.sql
+var productsSeed string
+
 func seed(root string, args []string) error {
 	if len(args) == 0 {
-		return errors.New(seedOutfitsUsage)
+		return errors.New("usage: db seed <outfits|products>")
 	}
-	if args[0] != "outfits" {
+	switch args[0] {
+	case "outfits":
+		return seedOutfits(root, args[1:])
+	case "products":
+		return seedProducts(root, args[1:])
+	default:
 		return fmt.Errorf("unknown seed dataset %q", args[0])
 	}
-	return seedOutfits(root, args[1:])
 }
 
 // seedOutfits validates its arguments first, so bad input fails even with the database stopped.
@@ -322,6 +329,25 @@ func seedOutfits(root string, args []string) error {
 		return err
 	}
 	_, _ = fmt.Printf("seeded %d outfits for user %s\n", count, userID)
+	return nil
+}
+
+func seedProducts(root string, args []string) error {
+	if len(args) != 0 {
+		return errors.New("usage: mise run db:dev:seed:products")
+	}
+	if err := requireDatabase(root); err != nil {
+		return err
+	}
+
+	// -1 runs the file in one transaction, so a failed row leaves nothing half-seeded.
+	cmd := compose(root, "exec", "-T", "db", "sh", "-c",
+		`psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 -q -1`)
+	cmd.Stdin = strings.NewReader(productsSeed)
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	_, _ = fmt.Println("seeded the demo products")
 	return nil
 }
 
