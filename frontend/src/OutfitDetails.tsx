@@ -10,7 +10,6 @@ type ItemTileProps = {
   imageUrl: string | null;
 };
 
-/** Head to toe, matching the canvas. */
 function listPosition(product: Product): number {
   return SLOTS_HEAD_TO_TOE.indexOf(product.slot);
 }

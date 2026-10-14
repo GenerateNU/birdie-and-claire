@@ -3,7 +3,6 @@ export type Product = {
   id: string;
   title: string;
   slot: ProductSlot;
-  /** The product's first image, or null when it has none. */
   image_url: string | null;
 };
 
@@ -77,7 +76,6 @@ const SPOTS_BY_SLOT: Record<ProductSlot, CanvasSpot[]> = {
   accessory: ACCESSORIES,
 };
 
-/** Head to toe, the order of the details list. */
 export const SLOTS_HEAD_TO_TOE: ProductSlot[] = ["top", "bottom", "shoe", "accessory"];
 
 /**

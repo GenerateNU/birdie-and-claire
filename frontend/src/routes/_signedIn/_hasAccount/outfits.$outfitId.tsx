@@ -22,7 +22,6 @@ type EditorFrameProps = {
   children: ReactNode;
 };
 
-/** The outfit, or null when no outfit has this ID. */
 async function fetchOutfit(outfitId: string, signal: AbortSignal): Promise<OutfitResponse | null> {
   const response = await apiFetch(`/api/v1/outfits/${encodeURIComponent(outfitId)}`, { signal });
 
