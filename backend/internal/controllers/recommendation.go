@@ -19,13 +19,11 @@ func NewRecommendationController(service services.RecommendationService) *Recomm
 	return &RecommendationController{service: service}
 }
 
-type CreateRecommendationsInput struct {
+type RecommendProductsInput struct {
 	Body models.RecommendationRequest
 }
 
-var _ huma.Resolver = (*CreateRecommendationsInput)(nil)
-
-func (input *CreateRecommendationsInput) Resolve(huma.Context) []error {
+func (input *RecommendProductsInput) Resolve(huma.Context) []error {
 	input.Body.Query = strings.TrimSpace(input.Body.Query)
 	if input.Body.Query == "" {
 		return []error{&huma.ErrorDetail{Location: "body.query", Message: "query must not be blank"}}
@@ -33,14 +31,14 @@ func (input *CreateRecommendationsInput) Resolve(huma.Context) []error {
 	return nil
 }
 
-type RecommendationOutput struct {
+type RecommendProductsOutput struct {
 	Body models.RecommendationResponse
 }
 
-func (c *RecommendationController) Create(ctx context.Context, input *CreateRecommendationsInput) (*RecommendationOutput, error) {
-	response, err := c.service.Recommend(ctx, input.Body.Query)
+func (c *RecommendationController) RecommendProducts(ctx context.Context, input *RecommendProductsInput) (*RecommendProductsOutput, error) {
+	response, err := c.service.RecommendProducts(ctx, input.Body.Query)
 	if err != nil {
 		return nil, errs.ToHuma(ctx, err)
 	}
-	return &RecommendationOutput{Body: response}, nil
+	return &RecommendProductsOutput{Body: response}, nil
 }

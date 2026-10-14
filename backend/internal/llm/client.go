@@ -28,7 +28,9 @@ type Request struct {
 	// names a file in prompts/ without its extension; a request sets it or System and Prompt, never both
 	promptName  string
 	promptInput any
-	outputType  any
+	// zero leaves the gateway's default
+	maxOutputTokens int
+	outputType      any
 }
 
 type Response struct {

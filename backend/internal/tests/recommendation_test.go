@@ -108,7 +108,7 @@ func TestRecommendSearchesEverySlot(t *testing.T) {
 	emb := &fakeEmbedder{}
 	products := &fakeProducts{}
 
-	response, err := newRecommendationService(expandedAllSlots, emb, products).Recommend(context.Background(), "summer wedding")
+	response, err := newRecommendationService(expandedAllSlots, emb, products).RecommendProducts(context.Background(), "summer wedding")
 	if err != nil {
 		t.Fatalf("Recommend: %v", err)
 	}
@@ -140,7 +140,7 @@ func TestRecommendSkipsASlotWithNoPhrase(t *testing.T) {
 	emb := &fakeEmbedder{}
 	products := &fakeProducts{}
 
-	response, err := newRecommendationService(answer, emb, products).Recommend(context.Background(), "a blouse and skirt")
+	response, err := newRecommendationService(answer, emb, products).RecommendProducts(context.Background(), "a blouse and skirt")
 	if err != nil {
 		t.Fatalf("Recommend: %v", err)
 	}
@@ -157,7 +157,7 @@ func TestRecommendSkipsASlotWithAWhitespaceOnlyPhrase(t *testing.T) {
 	emb := &fakeEmbedder{}
 	products := &fakeProducts{}
 
-	response, err := newRecommendationService(answer, emb, products).Recommend(context.Background(), "a blouse and skirt")
+	response, err := newRecommendationService(answer, emb, products).RecommendProducts(context.Background(), "a blouse and skirt")
 	if err != nil {
 		t.Fatalf("Recommend: %v", err)
 	}
@@ -172,7 +172,7 @@ func TestRecommendSkipsASlotWithAWhitespaceOnlyPhrase(t *testing.T) {
 func TestRecommendReturnsTheExpansion(t *testing.T) {
 	answer := `{"slots":{"top":"pastel blouse","bottom":"","accessory":"straw hat"},"exclude_tags":["White","Sequins"],"nice_tags":null}`
 
-	response, err := newRecommendationService(answer, &fakeEmbedder{}, &fakeProducts{}).Recommend(context.Background(), "garden party")
+	response, err := newRecommendationService(answer, &fakeEmbedder{}, &fakeProducts{}).RecommendProducts(context.Background(), "garden party")
 	if err != nil {
 		t.Fatalf("Recommend: %v", err)
 	}
@@ -192,7 +192,7 @@ func TestRecommendTrimsSlotPhrases(t *testing.T) {
 	answer := strings.Replace(strings.Replace(expandedAllSlots, `"straw hat"`, `"   "`, 1), `"pastel blouse"`, `"  pastel blouse  "`, 1)
 	emb := &fakeEmbedder{}
 
-	response, err := newRecommendationService(answer, emb, &fakeProducts{}).Recommend(context.Background(), "summer wedding")
+	response, err := newRecommendationService(answer, emb, &fakeProducts{}).RecommendProducts(context.Background(), "summer wedding")
 	if err != nil {
 		t.Fatalf("Recommend: %v", err)
 	}
@@ -209,12 +209,56 @@ func TestRecommendHidesARejectedPhrase(t *testing.T) {
 	const modalDetail = "DETAIL-SENTINEL-5e21"
 	rejected := fmt.Errorf("embedder: 422 Unprocessable Entity: %s: %w", modalDetail, errs.ErrInvalidInput)
 
-	_, err := newRecommendationService(expandedAllSlots, &fakeEmbedder{err: rejected}, &fakeProducts{}).Recommend(context.Background(), "brunch")
+	_, err := newRecommendationService(expandedAllSlots, &fakeEmbedder{err: rejected}, &fakeProducts{}).RecommendProducts(context.Background(), "brunch")
 	if err == nil || errors.Is(err, errs.ErrInvalidInput) {
 		t.Fatalf("err = %v, want an error that is not ErrInvalidInput", err)
 	}
 	if strings.Contains(err.Error(), modalDetail) {
 		t.Errorf("err = %v, want Modal's detail left out", err)
+	}
+}
+
+// numberedTags is a JSON array of count distinct tags.
+func numberedTags(count int) string {
+	quoted := make([]string, count)
+	for i := range quoted {
+		quoted[i] = fmt.Sprintf(`"tag%d"`, i)
+	}
+	return "[" + strings.Join(quoted, ",") + "]"
+}
+
+func expansionWithTop(top, excludeTags, niceTags string) string {
+	return fmt.Sprintf(`{"slots":{"top":%q,"bottom":"","accessory":""},"exclude_tags":%s,"nice_tags":%s}`, top, excludeTags, niceTags)
+}
+
+func TestRecommendAcceptsAnExpansionAtTheLimits(t *testing.T) {
+	answer := expansionWithTop(strings.Repeat("é", 100), numberedTags(10), numberedTags(10))
+	if _, err := newRecommendationService(answer, &fakeEmbedder{}, &fakeProducts{}).RecommendProducts(context.Background(), "brunch"); err != nil {
+		t.Fatalf("RecommendProducts: %v", err)
+	}
+}
+
+func TestRecommendRejectsAnExpansionOverTheLimits(t *testing.T) {
+	tests := map[string]string{
+		"11 exclude tags":      expansionWithTop("blouse", numberedTags(11), numberedTags(0)),
+		"11 nice tags":         expansionWithTop("blouse", numberedTags(0), numberedTags(11)),
+		"101 character phrase": expansionWithTop(strings.Repeat("é", 101), numberedTags(0), numberedTags(0)),
+	}
+
+	for name, answer := range tests {
+		t.Run(name, func(t *testing.T) {
+			emb := &fakeEmbedder{}
+			_, err := newRecommendationService(answer, emb, &fakeProducts{}).RecommendProducts(context.Background(), "brunch")
+			if err == nil || errors.Is(err, errs.ErrInvalidInput) {
+				t.Fatalf("err = %v, want a server error", err)
+			}
+			if strings.Contains(err.Error(), "tag1") || strings.Contains(err.Error(), "é") {
+				t.Errorf("err = %v, want sizes only, not the model's text", err)
+			}
+			if len(emb.phrases) != 0 {
+				t.Errorf("embedded %q, want nothing sent once the expansion is over a limit", emb.phrases)
+			}
+		})
 	}
 }
 
@@ -236,7 +280,7 @@ func TestRecommendSurfacesErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := newRecommendationService(tt.answer, tt.emb, tt.products).Recommend(context.Background(), "brunch")
+			_, err := newRecommendationService(tt.answer, tt.emb, tt.products).RecommendProducts(context.Background(), "brunch")
 			if !errors.Is(err, tt.want) {
 				t.Fatalf("err = %v, want %v", err, tt.want)
 			}
@@ -256,7 +300,7 @@ func recommendationAPI(t *testing.T, fake *llmtest.Fake, emb *fakeEmbedder) huma
 	return api
 }
 
-func TestCreateRecommendationsValidatesTheQuery(t *testing.T) {
+func TestRecommendRouteValidatesTheQuery(t *testing.T) {
 	tests := []struct {
 		name       string
 		body       map[string]any
@@ -270,7 +314,7 @@ func TestCreateRecommendationsValidatesTheQuery(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			response := recommendationAPI(t, &llmtest.Fake{Text: expandedAllSlots}, &fakeEmbedder{}).Post("/api/v1/recommendations", tt.body)
+			response := recommendationAPI(t, &llmtest.Fake{Text: expandedAllSlots}, &fakeEmbedder{}).Post("/api/v1/recommend", tt.body)
 			if response.Code != tt.wantStatus {
 				t.Fatalf("status = %d, want %d: %s", response.Code, tt.wantStatus, response.Body)
 			}
@@ -278,8 +322,8 @@ func TestCreateRecommendationsValidatesTheQuery(t *testing.T) {
 	}
 }
 
-func TestCreateRecommendationsReturnsProductsPerSlot(t *testing.T) {
-	response := recommendationAPI(t, &llmtest.Fake{Text: expandedAllSlots}, &fakeEmbedder{}).Post("/api/v1/recommendations", map[string]any{"query": "summer wedding"})
+func TestRecommendRouteReturnsProductsPerSlot(t *testing.T) {
+	response := recommendationAPI(t, &llmtest.Fake{Text: expandedAllSlots}, &fakeEmbedder{}).Post("/api/v1/recommend", map[string]any{"query": "summer wedding"})
 	if response.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200: %s", response.Code, response.Body)
 	}
@@ -296,10 +340,10 @@ func TestCreateRecommendationsReturnsProductsPerSlot(t *testing.T) {
 	}
 }
 
-func TestCreateRecommendationsRejectsABlankQuery(t *testing.T) {
+func TestRecommendRouteRejectsABlankQuery(t *testing.T) {
 	fake := &llmtest.Fake{Text: expandedAllSlots}
 
-	response := recommendationAPI(t, fake, &fakeEmbedder{}).Post("/api/v1/recommendations", map[string]any{"query": "   "})
+	response := recommendationAPI(t, fake, &fakeEmbedder{}).Post("/api/v1/recommend", map[string]any{"query": "   "})
 	if response.Code != http.StatusUnprocessableEntity {
 		t.Fatalf("status = %d, want %d: %s", response.Code, http.StatusUnprocessableEntity, response.Body)
 	}
@@ -308,7 +352,7 @@ func TestCreateRecommendationsRejectsABlankQuery(t *testing.T) {
 	}
 }
 
-func TestCreateRecommendationsReturnsTheExpandedQuery(t *testing.T) {
+func TestRecommendRouteReturnsTheExpandedQuery(t *testing.T) {
 	tests := []struct {
 		name   string
 		answer string
@@ -319,7 +363,7 @@ func TestCreateRecommendationsReturnsTheExpandedQuery(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			response := recommendationAPI(t, &llmtest.Fake{Text: tt.answer}, &fakeEmbedder{}).Post("/api/v1/recommendations", map[string]any{"query": "summer wedding"})
+			response := recommendationAPI(t, &llmtest.Fake{Text: tt.answer}, &fakeEmbedder{}).Post("/api/v1/recommend", map[string]any{"query": "summer wedding"})
 			if response.Code != http.StatusOK {
 				t.Fatalf("status = %d, want 200: %s", response.Code, response.Body)
 			}
@@ -377,7 +421,7 @@ func TestRecommendBoundsTheModelCall(t *testing.T) {
 	service := services.NewRecommendationService(&repository.Repository{Product: &fakeProducts{}}, model, &fakeEmbedder{})
 
 	start := time.Now()
-	if _, err := service.Recommend(context.Background(), "summer wedding"); err != nil {
+	if _, err := service.RecommendProducts(context.Background(), "summer wedding"); err != nil {
 		t.Fatalf("Recommend: %v", err)
 	}
 	if !model.hasDeadline {
@@ -388,11 +432,11 @@ func TestRecommendBoundsTheModelCall(t *testing.T) {
 	}
 }
 
-func TestCreateRecommendationsRejectedPhraseIsAServerError(t *testing.T) {
+func TestRecommendRouteRejectedPhraseIsAServerError(t *testing.T) {
 	rejected := fmt.Errorf("embedder: 422 Unprocessable Entity: too long: %w", errs.ErrInvalidInput)
 
 	response := recommendationAPI(t, &llmtest.Fake{Text: expandedAllSlots}, &fakeEmbedder{err: rejected}).
-		Post("/api/v1/recommendations", map[string]any{"query": "summer wedding"})
+		Post("/api/v1/recommend", map[string]any{"query": "summer wedding"})
 	if response.Code != http.StatusInternalServerError {
 		t.Fatalf("status = %d, want %d: %s", response.Code, http.StatusInternalServerError, response.Body)
 	}

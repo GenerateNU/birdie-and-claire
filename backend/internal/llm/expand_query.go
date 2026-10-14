@@ -5,7 +5,11 @@ import (
 	"strings"
 )
 
-const dotpromptMarker = "<<<dotprompt:"
+const (
+	dotpromptMarker = "<<<dotprompt:"
+	// the answer is three short phrases and two short tag lists; this bounds what a padded answer can bill
+	expandQueryMaxOutputTokens = 512
+)
 
 type expandQueryInput struct {
 	Query string `json:"query"`
@@ -14,8 +18,9 @@ type expandQueryInput struct {
 // ExpandQuery reads a short shopper query as one search phrase per slot plus tags to exclude and prefer.
 func ExpandQuery(ctx context.Context, client Client, query string) (ExpandedQuery, error) {
 	return Generate[ExpandedQuery](ctx, client, Request{
-		promptName:  "expand_query",
-		promptInput: expandQueryInput{Query: stripDotpromptMarkers(query)},
+		promptName:      "expand_query",
+		promptInput:     expandQueryInput{Query: stripDotpromptMarkers(query)},
+		maxOutputTokens: expandQueryMaxOutputTokens,
 	})
 }
 

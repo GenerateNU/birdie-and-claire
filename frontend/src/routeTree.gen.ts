@@ -17,7 +17,7 @@ import { Route as SignedInCreateAccountRouteImport } from './routes/_signedIn/cr
 import { Route as SignedInHasAccountIndexRouteImport } from './routes/_signedIn/_hasAccount/index'
 import { Route as SignedInHasAccountOutfitsRouteImport } from './routes/_signedIn/_hasAccount/outfits'
 import { Route as SignedInHasAccountProfilePictureTestRouteImport } from './routes/_signedIn/_hasAccount/profile-picture-test'
-import { Route as SignedInHasAccountRecommendationsTestRouteImport } from './routes/_signedIn/_hasAccount/recommendations-test'
+import { Route as SignedInHasAccountRecommendTestRouteImport } from './routes/_signedIn/_hasAccount/recommend-test'
 
 const SignedInRoute = SignedInRouteImport.update({
   id: '/_signedIn',
@@ -59,10 +59,10 @@ const SignedInHasAccountProfilePictureTestRoute =
     path: '/profile-picture-test',
     getParentRoute: () => SignedInHasAccountRoute,
   } as any)
-const SignedInHasAccountRecommendationsTestRoute =
-  SignedInHasAccountRecommendationsTestRouteImport.update({
-    id: '/recommendations-test',
-    path: '/recommendations-test',
+const SignedInHasAccountRecommendTestRoute =
+  SignedInHasAccountRecommendTestRouteImport.update({
+    id: '/recommend-test',
+    path: '/recommend-test',
     getParentRoute: () => SignedInHasAccountRoute,
   } as any)
 
@@ -73,7 +73,7 @@ export interface FileRoutesByFullPath {
   '/create-account': typeof SignedInCreateAccountRoute
   '/outfits': typeof SignedInHasAccountOutfitsRoute
   '/profile-picture-test': typeof SignedInHasAccountProfilePictureTestRoute
-  '/recommendations-test': typeof SignedInHasAccountRecommendationsTestRoute
+  '/recommend-test': typeof SignedInHasAccountRecommendTestRoute
 }
 export interface FileRoutesByTo {
   '/': typeof SignedInHasAccountIndexRoute
@@ -82,7 +82,7 @@ export interface FileRoutesByTo {
   '/create-account': typeof SignedInCreateAccountRoute
   '/outfits': typeof SignedInHasAccountOutfitsRoute
   '/profile-picture-test': typeof SignedInHasAccountProfilePictureTestRoute
-  '/recommendations-test': typeof SignedInHasAccountRecommendationsTestRoute
+  '/recommend-test': typeof SignedInHasAccountRecommendTestRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -93,7 +93,7 @@ export interface FileRoutesById {
   '/_signedIn/create-account': typeof SignedInCreateAccountRoute
   '/_signedIn/_hasAccount/outfits': typeof SignedInHasAccountOutfitsRoute
   '/_signedIn/_hasAccount/profile-picture-test': typeof SignedInHasAccountProfilePictureTestRoute
-  '/_signedIn/_hasAccount/recommendations-test': typeof SignedInHasAccountRecommendationsTestRoute
+  '/_signedIn/_hasAccount/recommend-test': typeof SignedInHasAccountRecommendTestRoute
   '/_signedIn/_hasAccount/': typeof SignedInHasAccountIndexRoute
 }
 export interface FileRouteTypes {
@@ -105,7 +105,7 @@ export interface FileRouteTypes {
     | '/create-account'
     | '/outfits'
     | '/profile-picture-test'
-    | '/recommendations-test'
+    | '/recommend-test'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -114,7 +114,7 @@ export interface FileRouteTypes {
     | '/create-account'
     | '/outfits'
     | '/profile-picture-test'
-    | '/recommendations-test'
+    | '/recommend-test'
   id:
     | '__root__'
     | '/_signedIn'
@@ -124,7 +124,7 @@ export interface FileRouteTypes {
     | '/_signedIn/create-account'
     | '/_signedIn/_hasAccount/outfits'
     | '/_signedIn/_hasAccount/profile-picture-test'
-    | '/_signedIn/_hasAccount/recommendations-test'
+    | '/_signedIn/_hasAccount/recommend-test'
     | '/_signedIn/_hasAccount/'
   fileRoutesById: FileRoutesById
 }
@@ -192,11 +192,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignedInHasAccountProfilePictureTestRouteImport
       parentRoute: typeof SignedInHasAccountRoute
     }
-    '/_signedIn/_hasAccount/recommendations-test': {
-      id: '/_signedIn/_hasAccount/recommendations-test'
-      path: '/recommendations-test'
-      fullPath: '/recommendations-test'
-      preLoaderRoute: typeof SignedInHasAccountRecommendationsTestRouteImport
+    '/_signedIn/_hasAccount/recommend-test': {
+      id: '/_signedIn/_hasAccount/recommend-test'
+      path: '/recommend-test'
+      fullPath: '/recommend-test'
+      preLoaderRoute: typeof SignedInHasAccountRecommendTestRouteImport
       parentRoute: typeof SignedInHasAccountRoute
     }
   }
@@ -205,7 +205,7 @@ declare module '@tanstack/react-router' {
 interface SignedInHasAccountRouteChildren {
   SignedInHasAccountOutfitsRoute: typeof SignedInHasAccountOutfitsRoute
   SignedInHasAccountProfilePictureTestRoute: typeof SignedInHasAccountProfilePictureTestRoute
-  SignedInHasAccountRecommendationsTestRoute: typeof SignedInHasAccountRecommendationsTestRoute
+  SignedInHasAccountRecommendTestRoute: typeof SignedInHasAccountRecommendTestRoute
   SignedInHasAccountIndexRoute: typeof SignedInHasAccountIndexRoute
 }
 
@@ -213,8 +213,7 @@ const SignedInHasAccountRouteChildren: SignedInHasAccountRouteChildren = {
   SignedInHasAccountOutfitsRoute: SignedInHasAccountOutfitsRoute,
   SignedInHasAccountProfilePictureTestRoute:
     SignedInHasAccountProfilePictureTestRoute,
-  SignedInHasAccountRecommendationsTestRoute:
-    SignedInHasAccountRecommendationsTestRoute,
+  SignedInHasAccountRecommendTestRoute: SignedInHasAccountRecommendTestRoute,
   SignedInHasAccountIndexRoute: SignedInHasAccountIndexRoute,
 }
 

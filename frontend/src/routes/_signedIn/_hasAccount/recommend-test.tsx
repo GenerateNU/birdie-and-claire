@@ -3,8 +3,8 @@ import { useState, type SubmitEvent } from "react";
 
 import { apiFetch } from "../../../api";
 
-export const Route = createFileRoute("/_signedIn/_hasAccount/recommendations-test")({
-  component: RecommendationsTest,
+export const Route = createFileRoute("/_signedIn/_hasAccount/recommend-test")({
+  component: RecommendTest,
 });
 
 const SLOTS = ["top", "bottom", "accessory"] as const;
@@ -47,7 +47,7 @@ function errorDetail(body: string): string {
   }
 }
 
-function RecommendationsTest() {
+function RecommendTest() {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,7 +64,7 @@ function RecommendationsTest() {
     const start = performance.now();
 
     try {
-      const res = await apiFetch("/api/v1/recommendations", {
+      const res = await apiFetch("/api/v1/recommend", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query }),
@@ -76,7 +76,7 @@ function RecommendationsTest() {
         return;
       }
 
-      // SAFETY: a 2xx from POST /api/v1/recommendations is the RecommendationResponse schema in openapi.yaml.
+      // SAFETY: a 2xx from POST /api/v1/recommend is the RecommendationResponse schema in openapi.yaml.
       setResponse((await res.json()) as RecommendationResponse);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -91,7 +91,7 @@ function RecommendationsTest() {
       <Link className="text-gray-400 text-sm underline hover:text-white" to="/">
         ← Home
       </Link>
-      <h1 className="text-3xl font-bold mt-4 mb-2">Recommendations test</h1>
+      <h1 className="text-3xl font-bold mt-4 mb-2">Recommend test</h1>
       <p className="text-gray-400 text-sm mb-8">
         Describe what you are shopping for. A cold embedder can take many seconds.
       </p>

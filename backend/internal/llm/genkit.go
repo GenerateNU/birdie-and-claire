@@ -155,6 +155,9 @@ func (c *genkitClient) options(ctx context.Context, req Request, usage *callUsag
 	if req.outputType != nil {
 		opts = append(opts, ai.WithOutputType(req.outputType))
 	}
+	if req.maxOutputTokens > 0 {
+		opts = append(opts, ai.WithConfig(&openrouter.ChatConfig{MaxOutputTokens: req.maxOutputTokens}))
+	}
 	for _, tool := range req.Tools {
 		if tool.call == nil {
 			return nil, fmt.Errorf("llm: tool %q was not built with NewTool", tool.name)

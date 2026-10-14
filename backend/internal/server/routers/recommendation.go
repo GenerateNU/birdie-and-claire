@@ -19,10 +19,10 @@ func RecommendationRoutes(api huma.API, params types.RouteParams) {
 	controller := controllers.NewRecommendationController(service)
 
 	huma.Register(api, huma.Operation{
-		OperationID: "create-recommendations",
+		OperationID: "recommend-products",
 		Method:      http.MethodPost,
-		Path:        "/api/v1/recommendations",
+		Path:        "/api/v1/recommend",
 		Summary:     "Recommend products per outfit slot for a shopper query",
 		Tags:        []string{"recommendations"},
-	}, controller.Create)
+	}, controller.RecommendProducts)
 }

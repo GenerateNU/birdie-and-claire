@@ -743,9 +743,9 @@ paths:
       summary: List a product's images
       tags:
         - products
-  /api/v1/recommendations:
+  /api/v1/recommend:
     post:
-      operationId: create-recommendations
+      operationId: recommend-products
       requestBody:
         content:
           application/json:
