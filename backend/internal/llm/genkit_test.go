@@ -874,6 +874,47 @@ func TestExpandQueryCapsOutputAndTurnsOffReasoning(t *testing.T) {
 	}
 }
 
+func TestExpandQueryRetriesAnEmptyAnswerOnce(t *testing.T) {
+	client, stub := newStubClient(t, fastRetry, func(w http.ResponseWriter, r *http.Request, call int, body chatRequest) {
+		if call == 1 {
+			respondText("{}")(w, r, call, body)
+			return
+		}
+		respondText(expandedAnswer)(w, r, call, body)
+	})
+
+	got, err := ExpandQuery(context.Background(), client, "brunch")
+	if err != nil || got.Slots.Top != "light pastel blouse" {
+		t.Fatalf("got %+v, %v; want the second answer", got, err)
+	}
+	if stub.calls() != 2 {
+		t.Errorf("made %d requests, want 2", stub.calls())
+	}
+}
+
+func TestExpandQueryGivesUpAfterTwoEmptyAnswers(t *testing.T) {
+	client, stub := newStubClient(t, fastRetry, respondText("{}"))
+
+	if _, err := ExpandQuery(context.Background(), client, "brunch"); !errors.Is(err, ErrInvalidOutput) {
+		t.Fatalf("err = %v, want ErrInvalidOutput", err)
+	}
+	if stub.calls() != 2 {
+		t.Errorf("made %d requests, want 2", stub.calls())
+	}
+}
+
+func TestExpandQueryDoesNotRetryOtherErrors(t *testing.T) {
+	client, stub := newStubClient(t, fastRetry, respondStatus(http.StatusBadRequest))
+
+	_, err := ExpandQuery(context.Background(), client, "brunch")
+	if err == nil || errors.Is(err, ErrInvalidOutput) {
+		t.Fatalf("err = %v, want the gateway's 400", err)
+	}
+	if stub.calls() != 1 {
+		t.Errorf("made %d requests, want 1", stub.calls())
+	}
+}
+
 func TestExpandQueryRejectsMissingFields(t *testing.T) {
 	tests := []struct {
 		name   string
