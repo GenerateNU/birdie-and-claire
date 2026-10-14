@@ -159,4 +159,79 @@ INSERT INTO public.product_images (id, shopify_id, product_id, url, alt_text, wi
 -- PostgreSQL database dump complete
 --
 
+-- slot was added after the dump. These fill it on databases seeded before then, and leave a slot that is already set alone.
+-- The swimming goggles are tagged bottom but are an accessory.
+
+UPDATE public.products SET slot = 'top' WHERE slot IS NULL AND id IN (
+    '0ac25716-d4c9-4452-99c1-7f21a17c2395',
+    '1a1b93ed-a08a-4d0c-8872-8c7666f7b9d4',
+    '45e8e731-2a8b-4168-9143-21251b1763bd',
+    '63f8fe1f-917f-4a3d-a3b5-78c114a10aee',
+    '64dff8f1-2311-4d92-b07a-89559f4053f1',
+    '74b64b1a-3e59-459d-a45d-c9be21032812',
+    '77ed69cc-7fc3-41cc-8022-a2cedd19a892',
+    'a64a8b54-06b0-40a6-963a-ac59f17a7083',
+    'b8f3eca2-dff9-48b4-8ea9-f31d07a7a8f1',
+    'bd1592c4-487b-465e-ab74-1d34a6259f7b',
+    'c6403751-b579-4428-950c-f225ef76afa2',
+    'd870089c-53d6-4129-9eb3-f83d43cc8e3d',
+    'd9e93f1b-d0e5-4181-ac69-ebca9cc9ddc6',
+    'efadfcfa-5f45-4ca3-97e4-b267084375e1',
+    'f97a8bf9-7283-4321-a17b-a15944bbd32e'
+);
+
+UPDATE public.products SET slot = 'bottom' WHERE slot IS NULL AND id IN (
+    '0c48e46b-23f6-4a6e-ac7e-7755f9ab7114',
+    '278c8229-8ce2-449b-9e8f-5a633a57bf6e',
+    '602c3342-e66e-4200-ba6c-15cab86fc370',
+    '6ce5623c-18dd-4e5c-9d52-05f122bf3fae',
+    '742ebfa8-7c1c-43c0-b319-90ff97806007',
+    '75f69751-d04c-4551-b979-98c31006acad',
+    '7ad987ff-9c0e-4116-98fd-71b3642932f5',
+    '7b008601-b953-42f6-974d-0df62ca04424',
+    'aebf63be-6b9d-4b3b-84ce-dc26c6dc1fd6',
+    'b22d9978-87a7-45a4-96cf-a7f999bf5945',
+    'bf4493d4-664c-4be3-8664-01a13ec33cf4',
+    'c20b1d34-92a6-45e5-9a01-d9fc7d4ac9b4',
+    'cf4eef2e-a6b6-4cdd-8eb2-aaee24bfde38',
+    'd9671b58-dac9-440b-9540-51ac27bd3744'
+);
+
+UPDATE public.products SET slot = 'accessory' WHERE slot IS NULL AND id IN (
+    '00abf3c1-6464-43bc-9294-e10f505fe2e0',
+    '1d5a7fb5-e856-45d5-a80f-dcc06ec1ab48',
+    '2b94dbc7-92da-46ae-9f27-f52f58aecd57',
+    '2f3f9389-e65c-437d-bb29-14fd234a3c64',
+    '3df80eac-470d-41c5-95bc-fd59b7364ab6',
+    '49fc8c0f-a8e0-43c1-bd90-b0e01f252f36',
+    '4a8582f7-8f69-47c7-a0b5-6ad864ccba7c',
+    '5b6fda11-ceb8-40ca-a3df-132485cfe866',
+    '6617cf05-ff25-47cd-9af4-f452591bba36',
+    '72328239-a911-4404-9c85-305b290f38d6',
+    '74c103ca-477d-49fd-9f95-4ca7b3456bd6',
+    '9be46a4b-3a46-47c2-acc3-1d4d007d80aa',
+    'a53d37e9-fa8f-4b53-baec-1791d2a02ce2',
+    'edd538a1-35fd-497f-98f3-f126f6689ee3',
+    'efc1f325-4e3f-4e9a-a9cb-f6060d9c6477',
+    'fc28dbfd-36c6-412c-868b-71a79b862fd2'
+);
+
+UPDATE public.products SET slot = 'shoes' WHERE slot IS NULL AND id IN (
+    '0a3eff1e-2133-4692-8aa7-4a0401ac7ff0',
+    '4089dfe3-6f7f-4aba-8174-72168ce9a9ab',
+    '4143606a-b72c-443d-a917-78268a94e6ee',
+    '5c0527b4-32c8-4b8d-b2f5-e2df14078bc4',
+    '65dc9825-c851-4e46-aefe-a6ee1e95602b',
+    '79453d7f-90d9-442f-8d80-981e61666a56',
+    '7f07d1ea-2099-42c1-b41a-b45f45903eca',
+    '8cafedd2-2a20-46d9-a654-9f9a6f6ec9bf',
+    '95eda3c4-c086-4c38-98e8-25a6e47977d4',
+    '9d8bf7a5-793c-4323-b2ac-db5a8cfdaf3b',
+    'a466a613-8a4f-4545-bfce-e11dfb569eda',
+    'ada0b17d-0955-4c79-80ee-db54687ec640',
+    'db80543c-f6d5-4cb4-b11c-9f08f20345b5',
+    'eaa4af65-c7d2-4775-ac69-80f850d82c1b',
+    'f7578722-0e62-437c-adf4-623a2b5c5e68'
+);
+
 
