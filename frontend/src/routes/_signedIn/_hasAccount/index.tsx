@@ -2,7 +2,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 
-import { signOut } from "@/account";
 import { apiFetch } from "@/api";
 import { Button, Text } from "@/design-system";
 
@@ -92,8 +91,8 @@ function Home() {
       <Link className="block text-body underline" to="/profile-picture-test">
         Profile picture test →
       </Link>
-      <Link className="block text-body underline" to="/outfits">
-        Outfits →
+      <Link className="block text-body underline" to="/profile">
+        Profile →
       </Link>
       <Link className="block text-body underline" to="/recommend-test">
         Recommend test →
@@ -110,9 +109,6 @@ function Home() {
             {seedStatus}
           </Text>
         )}
-      </div>
-      <div className="mt-lg">
-        <Button label="Sign out" variant="secondary" onClick={signOut} />
       </div>
     </div>
   );
