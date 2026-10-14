@@ -59,6 +59,7 @@ export default function OutfitList({ outfits, nextCursor, onLoadMore }: OutfitLi
           </Link>
         </li>
       ))}
+      {/* col-span-3 must match grid-cols-3 on the <ul>, so the sentinel takes a full row. */}
       {nextCursor !== null && (
         <li ref={sentinelRef} aria-hidden="true" className="col-span-3 h-px" />
       )}

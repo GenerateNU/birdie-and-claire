@@ -28,7 +28,7 @@ function ProfileLayout() {
                     {tab.label}
                     <span
                       aria-hidden="true"
-                      className={`size-sm rounded-full border border-gray-900 ${isActive ? "bg-gray-900" : ""}`}
+                      className={`size-sm rounded-full border border-current ${isActive ? "bg-current" : ""}`}
                     />
                   </>
                 )}
