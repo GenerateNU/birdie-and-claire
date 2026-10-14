@@ -24,9 +24,9 @@ const (
 )
 
 type OutfitRepository interface {
-	Create(ctx context.Context, params models.CreateOutfitParams, userID uuid.UUID) (models.Outfit, []models.Product, error)
-	GetByID(ctx context.Context, id uuid.UUID, userID uuid.UUID) (models.Outfit, []models.Product, error)
-	GetShared(ctx context.Context, id uuid.UUID) (models.Outfit, []models.Product, error)
+	Create(ctx context.Context, params models.CreateOutfitParams, userID uuid.UUID) (models.Outfit, []models.OutfitProduct, error)
+	GetByID(ctx context.Context, id uuid.UUID, userID uuid.UUID) (models.Outfit, []models.OutfitProduct, error)
+	GetShared(ctx context.Context, id uuid.UUID) (models.Outfit, []models.OutfitProduct, error)
 	Share(ctx context.Context, id uuid.UUID, userID uuid.UUID) error
 	Unshare(ctx context.Context, id uuid.UUID, userID uuid.UUID) error
 	List(ctx context.Context, userID uuid.UUID, params pagination.CursorParams) ([]models.Outfit, error)
@@ -40,7 +40,7 @@ func NewOutfitRepository(database *sql.DB) OutfitRepository {
 	return &outfitRepository{db: database}
 }
 
-func (r *outfitRepository) Create(ctx context.Context, params models.CreateOutfitParams, userID uuid.UUID) (models.Outfit, []models.Product, error) {
+func (r *outfitRepository) Create(ctx context.Context, params models.CreateOutfitParams, userID uuid.UUID) (models.Outfit, []models.OutfitProduct, error) {
 	rows, err := r.db.QueryContext(ctx, `
 		WITH new_outfit AS (
 			INSERT INTO outfits (user_id, name)
@@ -52,11 +52,19 @@ func (r *outfitRepository) Create(ctx context.Context, params models.CreateOutfi
 			RETURNING outfit_id, product_id
 		)
 		SELECT o.id, o.user_id, o.name, o.shared_at, o.created_at, o.updated_at,
-			p.id, p.shopify_id, p.handle, p.title, p.product_type, p.slot, p.tags, p.created_at, p.updated_at
+			p.id, p.shopify_id, p.handle, p.title, p.product_type, p.slot, p.tags, p.created_at, p.updated_at,
+			first_image.url
 		-- A WITH's parts share one snapshot, so the outfit_products table can't see these rows yet.
 		FROM new_outfit_products op
 		JOIN new_outfit o ON o.id = op.outfit_id
 		JOIN products p ON p.id = op.product_id
+		LEFT JOIN LATERAL (
+			SELECT pi.url
+			FROM product_images pi
+			WHERE pi.product_id = p.id
+			ORDER BY pi.position, pi.id
+			LIMIT 1
+		) first_image ON true
 		ORDER BY p.id
 	`, userID, params.Name, params.ProductIDs)
 	var pgErr *pgconn.PgError
@@ -72,9 +80,9 @@ func (r *outfitRepository) Create(ctx context.Context, params models.CreateOutfi
 	defer func() { _ = rows.Close() }()
 
 	var outfit models.Outfit
-	products := make([]models.Product, 0, len(params.ProductIDs))
+	products := make([]models.OutfitProduct, 0, len(params.ProductIDs))
 	for rows.Next() {
-		var product models.Product
+		var product models.OutfitProduct
 		targets := []any{&outfit.ID, &outfit.UserID, &outfit.Name, &outfit.SharedAt, &outfit.CreatedAt, &outfit.UpdatedAt}
 		if err := rows.Scan(append(targets, productScanTargets(&product)...)...); err != nil {
 			return models.Outfit{}, nil, fmt.Errorf("scan created outfit: %w", err)
@@ -89,13 +97,21 @@ func (r *outfitRepository) Create(ctx context.Context, params models.CreateOutfi
 
 // GetByID returns ErrNotFound for an outfit userID does not own, so a caller
 // cannot tell someone else's outfit from a missing one.
-func (r *outfitRepository) GetByID(ctx context.Context, id uuid.UUID, userID uuid.UUID) (models.Outfit, []models.Product, error) {
+func (r *outfitRepository) GetByID(ctx context.Context, id uuid.UUID, userID uuid.UUID) (models.Outfit, []models.OutfitProduct, error) {
 	rows, err := r.db.QueryContext(ctx, `
 		SELECT o.id, o.user_id, o.name, o.shared_at, o.created_at, o.updated_at,
-			p.id, p.shopify_id, p.handle, p.title, p.product_type, p.slot, p.tags, p.created_at, p.updated_at
+			p.id, p.shopify_id, p.handle, p.title, p.product_type, p.slot, p.tags, p.created_at, p.updated_at,
+			first_image.url
 		FROM outfits o
 		LEFT JOIN outfit_products op ON op.outfit_id = o.id
 		LEFT JOIN products p ON p.id = op.product_id
+		LEFT JOIN LATERAL (
+			SELECT pi.url
+			FROM product_images pi
+			WHERE pi.product_id = p.id
+			ORDER BY pi.position, pi.id
+			LIMIT 1
+		) first_image ON true
 		WHERE o.id = $1 AND o.user_id = $2
 		ORDER BY p.id
 	`, id, userID)
@@ -112,13 +128,21 @@ func (r *outfitRepository) GetByID(ctx context.Context, id uuid.UUID, userID uui
 }
 
 // GetShared returns ErrNotFound for a private outfit as well as a missing one.
-func (r *outfitRepository) GetShared(ctx context.Context, id uuid.UUID) (models.Outfit, []models.Product, error) {
+func (r *outfitRepository) GetShared(ctx context.Context, id uuid.UUID) (models.Outfit, []models.OutfitProduct, error) {
 	rows, err := r.db.QueryContext(ctx, `
 		SELECT o.id, o.user_id, o.name, o.shared_at, o.created_at, o.updated_at,
-			p.id, p.shopify_id, p.handle, p.title, p.product_type, p.slot, p.tags, p.created_at, p.updated_at
+			p.id, p.shopify_id, p.handle, p.title, p.product_type, p.slot, p.tags, p.created_at, p.updated_at,
+			first_image.url
 		FROM outfits o
 		LEFT JOIN outfit_products op ON op.outfit_id = o.id
 		LEFT JOIN products p ON p.id = op.product_id
+		LEFT JOIN LATERAL (
+			SELECT pi.url
+			FROM product_images pi
+			WHERE pi.product_id = p.id
+			ORDER BY pi.position, pi.id
+			LIMIT 1
+		) first_image ON true
 		WHERE o.id = $1 AND o.shared_at IS NOT NULL
 		ORDER BY p.id
 	`, id)
@@ -210,8 +234,8 @@ func (r *outfitRepository) List(ctx context.Context, userID uuid.UUID, params pa
 	return outfits, nil
 }
 
-// productScanTargets matches the p.id through p.updated_at column order Create selects.
-func productScanTargets(product *models.Product) []any {
+// productScanTargets matches the p.id through first_image.url column order Create selects.
+func productScanTargets(product *models.OutfitProduct) []any {
 	return []any{
 		&product.ID,
 		&product.ShopifyID,
@@ -223,25 +247,26 @@ func productScanTargets(product *models.Product) []any {
 		&product.Tags,
 		&product.CreatedAt,
 		&product.UpdatedAt,
+		&product.ImageURL,
 	}
 }
 
 // scanOutfitWithProducts reads the o.id through o.updated_at, then p.id through
-// p.updated_at, columns GetByID and GetShared select, one row per product.
+// first_image.url, columns GetByID and GetShared select, one row per product.
 // It returns ErrNotFound when there are no rows.
-func scanOutfitWithProducts(rows *sql.Rows) (models.Outfit, []models.Product, error) {
+func scanOutfitWithProducts(rows *sql.Rows) (models.Outfit, []models.OutfitProduct, error) {
 	var outfit models.Outfit
 	found := false
-	products := make([]models.Product, 0)
+	products := make([]models.OutfitProduct, 0)
 	for rows.Next() {
 		found = true
 		var (
-			productID            uuid.NullUUID
-			shopifyID            sql.NullInt64
-			handle, title, slot  sql.NullString
-			productType          *string
-			tags                 []string
-			createdAt, updatedAt sql.NullTime
+			productID             uuid.NullUUID
+			shopifyID             sql.NullInt64
+			handle, title, slot   sql.NullString
+			productType, imageURL *string
+			tags                  []string
+			createdAt, updatedAt  sql.NullTime
 		)
 		if err := rows.Scan(
 			&outfit.ID,
@@ -259,6 +284,7 @@ func scanOutfitWithProducts(rows *sql.Rows) (models.Outfit, []models.Product, er
 			&tags,
 			&createdAt,
 			&updatedAt,
+			&imageURL,
 		); err != nil {
 			return models.Outfit{}, nil, fmt.Errorf("scan: %w", err)
 		}
@@ -266,16 +292,19 @@ func scanOutfitWithProducts(rows *sql.Rows) (models.Outfit, []models.Product, er
 		if !productID.Valid {
 			continue
 		}
-		products = append(products, models.Product{
-			ID:          productID.UUID,
-			ShopifyID:   shopifyID.Int64,
-			Handle:      handle.String,
-			Title:       title.String,
-			ProductType: productType,
-			Slot:        models.ProductSlot(slot.String),
-			Tags:        tags,
-			CreatedAt:   createdAt.Time,
-			UpdatedAt:   updatedAt.Time,
+		products = append(products, models.OutfitProduct{
+			Product: models.Product{
+				ID:          productID.UUID,
+				ShopifyID:   shopifyID.Int64,
+				Handle:      handle.String,
+				Title:       title.String,
+				ProductType: productType,
+				Slot:        models.ProductSlot(slot.String),
+				Tags:        tags,
+				CreatedAt:   createdAt.Time,
+				UpdatedAt:   updatedAt.Time,
+			},
+			ImageURL: imageURL,
 		})
 	}
 	if err := rows.Err(); err != nil {
