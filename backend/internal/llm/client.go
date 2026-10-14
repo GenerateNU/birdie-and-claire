@@ -25,7 +25,14 @@ type Request struct {
 	Prompt string
 	Tools  []Tool
 
-	outputType any
+	// names a file in prompts/ without its extension; a request sets it or System and Prompt, never both
+	promptName  string
+	promptInput any
+	// zero leaves the gateway's default
+	maxOutputTokens int
+	// a reasoning model spends max_tokens on reasoning first, so a small cap alone can leave no room for the answer
+	noReasoning bool
+	outputType  any
 }
 
 type Response struct {
