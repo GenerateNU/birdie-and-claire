@@ -234,9 +234,9 @@ function SlotResults({ slot, phrase, products, selectedId, onSelect }: SlotResul
       {products.length === 0 ? (
         <Empty title="No results" className="text-secondary" />
       ) : (
-        <ul className="grid grid-cols-2 gap-sm sm:grid-cols-3 xl:grid-cols-5">
+        <ul className="flex snap-x gap-sm overflow-x-auto pb-xs">
           {products.map((product, index) => (
-            <li key={product.id}>
+            <li key={product.id} className="w-[180px] shrink-0 snap-start">
               <button
                 type="button"
                 onClick={() => onSelect(product)}
