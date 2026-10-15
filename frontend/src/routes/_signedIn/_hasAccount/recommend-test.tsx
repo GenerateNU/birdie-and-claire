@@ -2,7 +2,17 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, type SubmitEvent } from "react";
 
 import { apiFetch } from "@/api";
-import { Button, Empty, Spinner, Text, TextField } from "@/design-system";
+import {
+  Box,
+  Button,
+  Empty,
+  ErrorState,
+  ImageCard,
+  ListCard,
+  Spinner,
+  Text,
+  TextField,
+} from "@/design-system";
 
 export const Route = createFileRoute("/_signedIn/_hasAccount/recommend-test")({
   component: RecommendTest,
@@ -59,6 +69,7 @@ function RecommendTest() {
   const [elapsedMs, setElapsedMs] = useState<number | null>(null);
   const [response, setResponse] = useState<RecommendationResponse | null>(null);
   const [selected, setSelected] = useState<Product | null>(null);
+  const [showRawJson, setShowRawJson] = useState(false);
 
   async function submit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -96,7 +107,7 @@ function RecommendTest() {
   }
 
   return (
-    <div className="min-h-screen p-xl">
+    <Box className="min-h-screen p-xl">
       <Link className="text-secondary text-body underline hover:text-primary" to="/">
         ← Home
       </Link>
@@ -125,17 +136,19 @@ function RecommendTest() {
         />
       </form>
       {elapsedMs !== null && (
-        <p className="mt-xs text-caption text-secondary">{(elapsedMs / 1000).toFixed(1)} s</p>
+        <Text variant="caption" className="mt-xs block text-secondary">
+          {(elapsedMs / 1000).toFixed(1)} s
+        </Text>
       )}
-      {error && <p className="mt-xs text-caption text-error">Error: {error}</p>}
+      {error && <ErrorState message={`Error: ${error}`} className="mt-xs text-error" />}
       {loading && <Spinner label="Finding pieces…" className="mt-lg" />}
 
       {response && (
-        <div className="mt-xl flex flex-col gap-xl">
+        <Box className="mt-xl flex flex-col gap-xl">
           <ExpandedQuery expandedQuery={response.expanded_query} />
 
-          <div className="flex flex-col gap-xl lg:flex-row lg:items-start">
-            <div className="flex min-w-0 flex-1 flex-col gap-xl">
+          <Box className="flex flex-col gap-xl lg:flex-row lg:items-start">
+            <Box className="flex min-w-0 flex-1 flex-col gap-xl">
               {SLOTS.map((slot) => (
                 <SlotResults
                   key={slot}
@@ -146,21 +159,30 @@ function RecommendTest() {
                   onSelect={setSelected}
                 />
               ))}
-            </div>
+            </Box>
             {selected && (
               <ProductDetails product={selected} niceTags={response.expanded_query.nice_tags} />
             )}
-          </div>
+          </Box>
 
-          <details className="text-caption">
-            <summary className="cursor-pointer text-secondary hover:text-primary">Raw JSON</summary>
-            <pre className="mt-xs overflow-x-auto rounded-md border bg-surface p-md">
-              {JSON.stringify(response, null, 2)}
-            </pre>
-          </details>
-        </div>
+          <Box className="flex flex-col items-start gap-xs">
+            <Button
+              label={showRawJson ? "Hide raw JSON" : "Show raw JSON"}
+              variant="secondary"
+              size="sm"
+              onClick={() => setShowRawJson(!showRawJson)}
+            />
+            {showRawJson && (
+              <Box className="w-full overflow-x-auto rounded-md border bg-surface p-md">
+                <Text variant="caption" className="whitespace-pre font-mono">
+                  {JSON.stringify(response, null, 2)}
+                </Text>
+              </Box>
+            )}
+          </Box>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }
 
@@ -170,19 +192,16 @@ type ExpandedQueryProps = {
 
 function ExpandedQuery({ expandedQuery }: ExpandedQueryProps) {
   return (
-    <section className="flex flex-col gap-md">
+    <Box className="flex flex-col gap-md">
       <Text variant="subheading">What the stylist heard</Text>
-      <div className="grid gap-sm sm:grid-cols-3">
+      <Box className="grid gap-sm sm:grid-cols-3">
         {SLOTS.map((slot) => (
-          <div key={slot} className="rounded-md bg-surface p-md">
-            <p className="text-caption capitalize text-secondary">{slot}</p>
-            <p className="text-body">{expandedQuery.slots[slot] || "Skipped"}</p>
-          </div>
+          <ListCard key={slot} title={slot} value={expandedQuery.slots[slot] || "Skipped"} />
         ))}
-      </div>
+      </Box>
       <TagRow label="Leaning toward" tags={expandedQuery.nice_tags} struck={false} />
       <TagRow label="Leaving out" tags={expandedQuery.exclude_tags} struck />
-    </section>
+    </Box>
   );
 }
 
@@ -198,21 +217,24 @@ function TagRow({ label, tags, struck }: TagRowProps) {
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-xs">
-      <span className="w-[120px] text-caption text-secondary">{label}</span>
+    <Box className="flex flex-wrap items-center gap-xs">
+      <Text variant="caption" className="w-[120px] text-secondary">
+        {label}
+      </Text>
       {tags.map((tag) => (
-        <span
+        <Text
           key={tag}
+          variant="caption"
           className={
             struck
-              ? "rounded-full border px-sm py-xxxs text-caption text-secondary line-through"
-              : "rounded-full bg-primary px-sm py-xxxs text-caption text-inverse"
+              ? "rounded-full border px-sm py-xxxs text-secondary line-through"
+              : "rounded-full bg-primary px-sm py-xxxs text-inverse"
           }
         >
           {tag}
-        </span>
+        </Text>
       ))}
-    </div>
+    </Box>
   );
 }
 
@@ -226,36 +248,32 @@ type SlotResultsProps = {
 
 function SlotResults({ slot, phrase, products, selectedId, onSelect }: SlotResultsProps) {
   return (
-    <section className="flex flex-col gap-sm">
-      <div className="flex items-baseline gap-sm">
+    <Box className="flex flex-col gap-sm">
+      <Box className="flex items-baseline gap-sm">
         <Text variant="subheading">{slot}</Text>
-        {phrase && <span className="text-caption text-secondary">“{phrase}”</span>}
-      </div>
+        {phrase && (
+          <Text variant="caption" className="text-secondary">
+            “{phrase}”
+          </Text>
+        )}
+      </Box>
       {products.length === 0 ? (
         <Empty title="No results" className="text-secondary" />
       ) : (
-        <ul className="flex snap-x gap-sm overflow-x-auto pb-xs">
+        <Box className="flex snap-x gap-sm overflow-x-auto pb-xs">
           {products.map((product, index) => (
-            <li key={product.id} className="w-[180px] shrink-0 snap-start">
-              <button
-                type="button"
-                onClick={() => onSelect(product)}
-                aria-pressed={product.id === selectedId}
-                className="focus-ring flex w-full flex-col gap-xs rounded-md border p-xs text-left aria-pressed:border-primary"
-              >
-                <span className="relative block">
-                  <ProductImage product={product} />
-                  <span className="absolute left-xs top-xs rounded-full bg-primary px-xs text-caption text-inverse">
-                    #{index + 1}
-                  </span>
-                </span>
-                <span className="line-clamp-2 text-caption">{product.title}</span>
-              </button>
-            </li>
+            <Box key={product.id} className="w-[180px] shrink-0 snap-start">
+              <ImageCard
+                label={`#${index + 1} ${product.title}`}
+                src={product.image_url}
+                pressed={product.id === selectedId}
+                onPressedChange={() => onSelect(product)}
+              />
+            </Box>
           ))}
-        </ul>
+        </Box>
       )}
-    </section>
+    </Box>
   );
 }
 
@@ -269,51 +287,45 @@ function ProductDetails({ product, niceTags }: ProductDetailsProps) {
   const wanted = new Set(niceTags.map((tag) => tag.toLowerCase()));
 
   return (
-    <aside className="flex flex-col gap-md rounded-md border p-md lg:sticky lg:top-md lg:w-[360px] lg:shrink-0">
-      <ProductImage product={product} />
-      <div>
-        <p className="text-caption capitalize text-secondary">
+    <Box className="flex flex-col gap-md rounded-md border p-md lg:sticky lg:top-md lg:w-[360px] lg:shrink-0">
+      {/* A plain img, since the design system's only image component, ImageCard, is a toggle.
+          Decorative: the title below names the item. multiply blends the photo's white
+          background into the tile, as on the outfit page. */}
+      <Box className="aspect-portrait w-full overflow-hidden rounded-sm bg-placeholder">
+        {product.image_url !== null && (
+          <img
+            src={product.image_url}
+            alt=""
+            className="h-full w-full object-contain mix-blend-multiply"
+          />
+        )}
+      </Box>
+      <Box className="flex flex-col">
+        <Text variant="caption" className="capitalize text-secondary">
           {product.slot} · {product.product_type ?? "No type"}
-        </p>
+        </Text>
         <Text variant="body" className="font-semibold">
           {product.title}
         </Text>
-        <p className="text-caption text-secondary">{product.handle}</p>
-      </div>
-      <div className="flex flex-wrap gap-xxs">
+        <Text variant="caption" className="text-secondary">
+          {product.handle}
+        </Text>
+      </Box>
+      <Box className="flex flex-wrap gap-xxs">
         {product.tags.map((tag) => (
-          <span
+          <Text
             key={tag}
+            variant="caption"
             className={
               wanted.has(tag.toLowerCase())
-                ? "rounded-full bg-primary px-xs py-xxxs text-caption text-inverse"
-                : "rounded-full bg-surface px-xs py-xxxs text-caption"
+                ? "rounded-full bg-primary px-xs py-xxxs text-inverse"
+                : "rounded-full bg-surface px-xs py-xxxs"
             }
           >
             {tag}
-          </span>
+          </Text>
         ))}
-      </div>
-    </aside>
-  );
-}
-
-type ProductImageProps = {
-  product: Product;
-};
-
-function ProductImage({ product }: ProductImageProps) {
-  return (
-    <span className="block aspect-portrait w-full overflow-hidden rounded-sm bg-placeholder">
-      {/* Decorative: the title beside it names the item. multiply blends the photo's white
-          background into the tile, as on the outfit page. */}
-      {product.image_url !== null && (
-        <img
-          src={product.image_url}
-          alt=""
-          className="h-full w-full object-contain mix-blend-multiply"
-        />
-      )}
-    </span>
+      </Box>
+    </Box>
   );
 }
