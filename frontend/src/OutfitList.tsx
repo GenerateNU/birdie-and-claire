@@ -27,7 +27,7 @@ export default function OutfitList({ outfits, nextCursor, onLoadMore }: OutfitLi
       return;
     }
 
-    // No root, so the observer watches the viewport and loads more as the page scrolls.
+    // Observes the viewport, so scrolling the page loads more.
     const observer = new IntersectionObserver((entries) => {
       if (entries[0].isIntersecting) {
         onLoadMore(nextCursor);
@@ -40,7 +40,7 @@ export default function OutfitList({ outfits, nextCursor, onLoadMore }: OutfitLi
   }, [nextCursor, onLoadMore]);
 
   return (
-    <ul className="grid grid-cols-3 gap-lg">
+    <ul className="grid grid-cols-1 gap-lg sm:grid-cols-2 lg:grid-cols-3">
       {outfits.map((outfit) => (
         <li key={outfit.id}>
           <Link
@@ -59,9 +59,9 @@ export default function OutfitList({ outfits, nextCursor, onLoadMore }: OutfitLi
           </Link>
         </li>
       ))}
-      {/* col-span-3 must match grid-cols-3 on the <ul>, so the sentinel takes a full row. */}
+      {/* A full row of its own, so it only comes into view after the last card. */}
       {nextCursor !== null && (
-        <li ref={sentinelRef} aria-hidden="true" className="col-span-3 h-px" />
+        <li ref={sentinelRef} aria-hidden="true" className="col-span-full h-px" />
       )}
     </ul>
   );

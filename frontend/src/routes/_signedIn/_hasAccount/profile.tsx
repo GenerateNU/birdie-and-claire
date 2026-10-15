@@ -14,10 +14,10 @@ const TABS = [
 
 function ProfileLayout() {
   return (
-    <div className="flex min-h-screen bg-background font-sans text-primary">
-      <nav className="sticky top-0 flex h-screen w-[412px] shrink-0 flex-col border-r px-xxl pt-xxl">
+    <div className="flex min-h-screen flex-col bg-background font-sans text-primary lg:flex-row">
+      <nav className="flex shrink-0 flex-col border-b px-xxl pb-lg pt-xxl lg:sticky lg:top-0 lg:h-screen lg:w-1/4 lg:border-b-0 lg:border-r lg:pb-0">
         <Link to="/">
-          <img src={logo} alt="Birdie & Claire" className="w-full" />
+          <img src={logo} alt="Birdie & Claire" className="w-full max-w-xs" />
         </Link>
         <ul className="mt-xxl flex flex-col gap-lg">
           {TABS.map((tab) => (
