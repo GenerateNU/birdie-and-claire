@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
 
 import {
@@ -130,10 +130,14 @@ function Playground() {
 
         <main className="flex min-w-0 flex-1 flex-col gap-xl">
           <Box>
-            <Text variant="heading">Design system playground</Text>
+            <Link className="text-secondary text-body underline hover:text-primary" to="/">
+              ← Home
+            </Link>
+            <Text variant="heading" className="mt-md">
+              Design system playground
+            </Text>
             <Text variant="body" className="text-secondary">
-              All values are placeholders until designers hand over branding. Only visible on the
-              local dev server.
+              All values are placeholders until designers hand over branding.
             </Text>
           </Box>
 

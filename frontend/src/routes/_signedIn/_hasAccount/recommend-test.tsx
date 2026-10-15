@@ -97,7 +97,7 @@ function RecommendTest() {
 
   return (
     <div className="min-h-screen p-xl">
-      <Link className="text-secondary text-caption underline hover:text-primary" to="/">
+      <Link className="text-secondary text-body underline hover:text-primary" to="/">
         ← Home
       </Link>
       <Text variant="heading" className="mt-md">
