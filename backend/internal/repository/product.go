@@ -41,25 +41,31 @@ func (r *productRepository) Exists(ctx context.Context, productID uuid.UUID) (bo
 
 func (r *productRepository) FindSimilar(ctx context.Context, embedding []float32, slot models.ProductSlot, excludeTags, niceTags []string, limit int) ([]models.RecommendedProduct, error) {
 	rows, err := r.db.QueryContext(ctx, `
-		SELECT p.id, p.shopify_id, p.handle, p.title, p.product_type, p.slot, p.tags, p.created_at, p.updated_at,
+		-- Ranked and limited before the image join, so only the returned products look up an image.
+		WITH ranked AS (
+			SELECT p.id, p.shopify_id, p.handle, p.title, p.product_type, p.slot, p.tags, p.created_at, p.updated_at,
+				-- <=> is pgvector's cosine distance, so smaller means more similar.
+				(p.embedding <=> $1)
+					- $4::float8 * (SELECT count(*) FROM unnest(p.tags) tag WHERE lower(tag) = ANY($5::text[])) AS score
+			FROM products p
+			WHERE p.embedding IS NOT NULL
+				AND p.slot = $2
+				-- stored tags keep the catalog's casing, so only that side is lowered; a NULL list matches no tag
+				AND NOT EXISTS (SELECT 1 FROM unnest(p.tags) tag WHERE lower(tag) = ANY($3::text[]))
+			ORDER BY score, p.id
+			LIMIT $6
+		)
+		SELECT r.id, r.shopify_id, r.handle, r.title, r.product_type, r.slot, r.tags, r.created_at, r.updated_at,
 			first_image.url
-		FROM products p
+		FROM ranked r
 		LEFT JOIN LATERAL (
 			SELECT pi.url
 			FROM product_images pi
-			WHERE pi.product_id = p.id
+			WHERE pi.product_id = r.id
 			ORDER BY pi.position, pi.id
 			LIMIT 1
 		) first_image ON true
-		WHERE p.embedding IS NOT NULL
-			AND p.slot = $2
-			-- stored tags keep the catalog's casing, so only that side is lowered; a NULL list matches no tag
-			AND NOT EXISTS (SELECT 1 FROM unnest(p.tags) tag WHERE lower(tag) = ANY($3::text[]))
-		-- <=> is pgvector's cosine distance, so smaller means more similar.
-		ORDER BY (p.embedding <=> $1)
-			- $4::float8 * (SELECT count(*) FROM unnest(p.tags) tag WHERE lower(tag) = ANY($5::text[])),
-			p.id
-		LIMIT $6
+		ORDER BY r.score, r.id
 	`, pgvector.NewVector(embedding), slot, excludeTags, bonusPerTag, niceTags, limit)
 	if err != nil {
 		return nil, fmt.Errorf("find similar products in slot %s: %w", slot, err)
