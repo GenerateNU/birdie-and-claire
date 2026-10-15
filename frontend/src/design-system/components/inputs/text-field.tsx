@@ -1,8 +1,9 @@
 import { Input as BaseInput } from "@base-ui/react/input";
 import type { ComponentProps } from "react";
+import { joinClasses } from "../../utils/join-classes";
 
 const inputClasses =
-  "rounded-sm border bg-background px-sm py-xs text-body text-primary focus-ring data-[disabled]:opacity-50 disabled:opacity-50";
+  "rounded-sm border bg-background px-sm py-xs text-body text-primary focus-ring data-[disabled]:opacity-disabled disabled:opacity-disabled";
 
 type SharedProps = {
   label: string;
@@ -21,7 +22,7 @@ type TextFieldProps = SingleLineProps | MultilineProps;
 
 export function TextField(props: TextFieldProps) {
   const labelClasses = "flex flex-col gap-xxs text-body";
-  const classes = props.className ? `${labelClasses} ${props.className}` : labelClasses;
+  const classes = joinClasses(labelClasses, props.className);
 
   if (props.multiline) {
     const {

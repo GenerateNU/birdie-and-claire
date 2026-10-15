@@ -1,11 +1,12 @@
 import { Radio } from "@base-ui/react/radio";
 import { RadioGroup as BaseRadioGroup } from "@base-ui/react/radio-group";
 import { useId } from "react";
+import { joinClasses } from "../../utils/join-classes";
 
 const radioClasses =
-  "flex size-md items-center justify-center rounded-full border bg-background data-[checked]:border-brand-500 focus-ring";
+  "flex size-md items-center justify-center rounded-full border bg-background data-[checked]:border-primary focus-ring";
 
-const dotClasses = "size-xs rounded-full bg-brand-500";
+const dotClasses = "size-xs rounded-full bg-primary";
 
 type RadioOption<T extends string> = {
   label: string;
@@ -30,8 +31,7 @@ export function RadioGroup<T extends string>({
   className,
 }: RadioGroupProps<T>) {
   const labelId = useId();
-  // Dims every option and the group label together.
-  const groupClasses = disabled ? "flex flex-col gap-xs opacity-50" : "flex flex-col gap-xs";
+  const groupClasses = disabled ? "flex flex-col gap-xs opacity-disabled" : "flex flex-col gap-xs";
 
   return (
     <BaseRadioGroup<T | null>
@@ -45,7 +45,7 @@ export function RadioGroup<T extends string>({
       }}
       disabled={disabled}
       aria-labelledby={label ? labelId : undefined}
-      className={className ? `${groupClasses} ${className}` : groupClasses}
+      className={joinClasses(groupClasses, className)}
     >
       {label && <span id={labelId}>{label}</span>}
       {options.map((option) => (

@@ -79,9 +79,10 @@ function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-xl text-primary">
-      {/* Text's heading variant renders an h2, and the page needs an h1. */}
-      <h1 className="mb-xs text-heading">Birdie &amp; Claire</h1>
+    <div className="min-h-screen p-xl">
+      <Text variant="heading" className="mb-xs">
+        Birdie &amp; Claire
+      </Text>
       <Text variant="body" className="mb-md text-secondary">
         The API is at <code className="text-primary">/api/v1</code>. Docs are at{" "}
         <a className="underline" href="http://localhost:8080/docs">
@@ -94,6 +95,9 @@ function Home() {
       </Link>
       <Link className="block text-body underline" to="/outfits">
         Outfits →
+      </Link>
+      <Link className="block text-body underline" to="/create-outfit">
+        Create an outfit →
       </Link>
       <Link className="block text-body underline" to="/recommend-test">
         Recommend test →

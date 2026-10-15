@@ -1,7 +1,8 @@
 type TypeStyle = [fontSize: string, config: { lineHeight: string; fontWeight: string }];
 
+// "Montserrat" must match the @font-face family in index.css.
 export const FontFamily = {
-  sans: ["system-ui", "sans-serif"],
+  sans: ["Montserrat", "system-ui", "sans-serif"],
 };
 
 // Each key becomes a `text-<key>` class that sets size, line height, and weight.

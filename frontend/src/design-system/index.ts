@@ -8,6 +8,12 @@ export { RadioGroup } from "./components/buttons/radio";
 
 export { Toggle } from "./components/buttons/toggle";
 
+export { ImageCard } from "./components/cards/image-card";
+
+export { ListCard } from "./components/cards/list-card";
+
+export { SearchField } from "./components/inputs/search-field";
+
 export { TextField } from "./components/inputs/text-field";
 
 export { Dialog } from "./components/dialog/dialog";
@@ -26,7 +32,7 @@ export { Divider } from "./primitives/divider";
 
 export { Text } from "./primitives/text";
 
-export { BackgroundColor, BorderColor, ColorScale, StatusColor, TextColor } from "./tokens/color";
+export { BackgroundColor, BorderColor, OutlineColor, StatusColor, TextColor } from "./tokens/color";
 
 export { CornerRadius } from "./tokens/corner-radius";
 

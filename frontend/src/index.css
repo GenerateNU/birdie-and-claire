@@ -2,8 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: "Montserrat";
+  src: url("./design-system/assets/fonts/Montserrat-Variable.ttf") format("truetype");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@layer base {
+  body {
+    @apply bg-background font-sans text-primary;
+  }
+}
+
 @layer components {
   .focus-ring {
-    @apply focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus;
+    @apply focus-visible:outline focus-visible:outline-focus-ring focus-visible:outline-offset-focus-ring focus-visible:outline-focus;
   }
 }

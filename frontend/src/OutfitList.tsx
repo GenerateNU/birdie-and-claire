@@ -41,7 +41,7 @@ export default function OutfitList({ outfits, nextCursor, onLoadMore }: OutfitLi
   }, [nextCursor, onLoadMore]);
 
   return (
-    <ul ref={listRef} className="flex max-h-96 flex-col gap-xxs overflow-y-auto">
+    <ul ref={listRef} className="flex max-h-scroll-area flex-col gap-xxs overflow-y-auto">
       {outfits.map((outfit) => (
         <li key={outfit.id}>
           <Link

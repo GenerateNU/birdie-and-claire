@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useCallback } from "react";
 
 import OutfitList, { type Outfit } from "@/OutfitList";
-import { Empty, ErrorState, Spinner } from "@/design-system";
+import { Empty, ErrorState, Spinner, Text } from "@/design-system";
 import { usePagination } from "@/utils/usePagination";
 
 export const Route = createFileRoute("/_signedIn/_hasAccount/outfits/")({
@@ -31,7 +31,7 @@ function OutfitsPage() {
 
   if (isPending) {
     return (
-      <div className="min-h-screen bg-background p-xl text-primary">
+      <div className="min-h-screen p-xl">
         <Spinner />
       </div>
     );
@@ -39,7 +39,7 @@ function OutfitsPage() {
 
   if (!data) {
     return (
-      <div className="min-h-screen bg-background p-xl text-primary">
+      <div className="min-h-screen p-xl">
         <ErrorState
           message={`Failed to load outfits: ${error?.message}`}
           onRetry={() => void refetch()}
@@ -53,9 +53,10 @@ function OutfitsPage() {
   const nextCursor = hasNextPage ? lastPage.next_cursor : null;
 
   return (
-    <div className="min-h-screen bg-background p-xl text-primary">
-      {/* Text's heading variant renders an h2, and the page needs an h1. */}
-      <h1 className="mb-xs text-heading">Outfits</h1>
+    <div className="min-h-screen p-xl">
+      <Text variant="heading" className="mb-xs">
+        Outfits
+      </Text>
       {outfits.length === 0 ? (
         <Empty title="No outfits yet" />
       ) : (
