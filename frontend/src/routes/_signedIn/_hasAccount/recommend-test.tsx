@@ -2,12 +2,15 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, type SubmitEvent } from "react";
 
 import { apiFetch } from "../../../api";
+import { Button, Empty, Spinner, Text, TextField } from "../../../design-system";
 
 export const Route = createFileRoute("/_signedIn/_hasAccount/recommend-test")({
   component: RecommendTest,
 });
 
 const SLOTS = ["top", "bottom", "accessory"] as const;
+
+type Slot = (typeof SLOTS)[number];
 
 interface Product {
   id: string;
@@ -19,6 +22,7 @@ interface Product {
   tags: string[];
   created_at: string;
   updated_at: string;
+  image_url: string | null;
 }
 
 interface RecommendationExpandedQuery {
@@ -54,6 +58,7 @@ function RecommendTest() {
   const [error, setError] = useState<string | null>(null);
   const [elapsedMs, setElapsedMs] = useState<number | null>(null);
   const [response, setResponse] = useState<RecommendationResponse | null>(null);
+  const [selected, setSelected] = useState<Product | null>(null);
 
   async function submit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -61,6 +66,7 @@ function RecommendTest() {
     setError(null);
     setElapsedMs(null);
     setResponse(null);
+    setSelected(null);
 
     const start = performance.now();
 
@@ -78,7 +84,9 @@ function RecommendTest() {
       }
 
       // SAFETY: a 2xx from POST /api/v1/recommend is the RecommendationResponse schema in openapi.yaml.
-      setResponse((await res.json()) as RecommendationResponse);
+      const recommendation = (await res.json()) as RecommendationResponse;
+      setResponse(recommendation);
+      setSelected(SLOTS.flatMap((slot) => recommendation[slot])[0] ?? null);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -88,92 +96,224 @@ function RecommendTest() {
   }
 
   return (
-    <div className="min-h-screen p-8">
-      <Link className="text-secondary text-sm underline hover:text-primary" to="/">
+    <div className="min-h-screen p-xl">
+      <Link className="text-secondary text-caption underline hover:text-primary" to="/">
         ← Home
       </Link>
-      <h1 className="text-3xl font-bold mt-4 mb-2">Recommend test</h1>
-      <p className="text-secondary text-sm mb-8">
+      <Text variant="heading" className="mt-md">
+        Recommend test
+      </Text>
+      <Text variant="body" className="mb-lg text-secondary">
         Describe what you are shopping for. A cold embedder can take many seconds.
-      </p>
+      </Text>
 
-      <form onSubmit={submit} className="flex flex-col gap-4 max-w-md">
-        <label className="flex flex-col gap-1 text-sm">
-          Query
-          <input
-            type="text"
-            maxLength={200}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="rounded border bg-surface px-3 py-2 text-primary"
-          />
-        </label>
-        <button
+      <form onSubmit={submit} className="flex max-w-content-lg items-end gap-sm">
+        <TextField
+          label="Query"
+          maxLength={200}
+          value={query}
+          onValueChange={setQuery}
+          placeholder="clothes for an office sunday social"
+          className="flex-1"
+        />
+        <Button
           type="submit"
-          disabled={loading || query.trim() === ""}
-          className="rounded bg-primary px-3 py-2 text-sm text-inverse disabled:opacity-50"
-        >
-          Submit
-        </button>
-
-        {loading && <p className="text-secondary text-sm">Loading...</p>}
-        {elapsedMs !== null && <p className="text-secondary text-sm">{elapsedMs} ms</p>}
-        {error && <p className="text-error text-sm">Error: {error}</p>}
+          label="Recommend"
+          loading={loading}
+          loadingLabel="Styling…"
+          disabled={query.trim() === ""}
+        />
       </form>
+      {elapsedMs !== null && (
+        <p className="mt-xs text-caption text-secondary">{(elapsedMs / 1000).toFixed(1)} s</p>
+      )}
+      {error && <p className="mt-xs text-caption text-error">Error: {error}</p>}
+      {loading && <Spinner label="Finding pieces…" className="mt-lg" />}
 
       {response && (
-        <div className="flex flex-col gap-4 max-w-md mt-8">
-          <div className="bg-surface rounded-lg p-4 border">
-            <p className="font-semibold">Expanded query</p>
-            <ul className="mt-2 flex flex-col gap-1 text-sm">
+        <div className="mt-xl flex flex-col gap-xl">
+          <ExpandedQuery expandedQuery={response.expanded_query} />
+
+          <div className="flex flex-col gap-xl lg:flex-row lg:items-start">
+            <div className="flex min-w-0 flex-1 flex-col gap-xl">
               {SLOTS.map((slot) => (
-                <li key={slot}>
-                  <span className="text-secondary capitalize">{slot}:</span>{" "}
-                  {response.expanded_query.slots[slot] || "(skipped)"}
-                </li>
+                <SlotResults
+                  key={slot}
+                  slot={slot}
+                  phrase={response.expanded_query.slots[slot]}
+                  products={response[slot]}
+                  selectedId={selected?.id ?? null}
+                  onSelect={setSelected}
+                />
               ))}
-              <li>
-                <span className="text-secondary">Exclude tags:</span>{" "}
-                {response.expanded_query.exclude_tags.join(", ") || "(none)"}
-              </li>
-              <li>
-                <span className="text-secondary">Nice tags:</span>{" "}
-                {response.expanded_query.nice_tags.join(", ") || "(none)"}
-              </li>
-            </ul>
+            </div>
+            {selected && (
+              <ProductDetails product={selected} niceTags={response.expanded_query.nice_tags} />
+            )}
           </div>
 
-          {SLOTS.map((slot) => (
-            <div key={slot} className="bg-surface rounded-lg p-4 border">
-              <p className="font-semibold capitalize">{slot}</p>
-              {response[slot].length === 0 ? (
-                <p className="text-secondary text-sm mt-2">No results</p>
-              ) : (
-                <ul className="mt-2 flex flex-col gap-2">
-                  {response[slot].map((product) => (
-                    <li key={product.id} className="text-sm">
-                      <p>{product.title}</p>
-                      <p className="text-secondary text-xs">
-                        {product.product_type ?? "(no type)"}
-                      </p>
-                      <p className="text-secondary text-xs break-all">
-                        {product.tags.length > 0 ? product.tags.join(", ") : "(no tags)"}
-                      </p>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          ))}
-
-          <details className="text-sm">
+          <details className="text-caption">
             <summary className="cursor-pointer text-secondary hover:text-primary">Raw JSON</summary>
-            <pre className="mt-2 bg-surface rounded-lg p-4 border text-xs overflow-x-auto">
+            <pre className="mt-xs overflow-x-auto rounded-md border bg-surface p-md">
               {JSON.stringify(response, null, 2)}
             </pre>
           </details>
         </div>
       )}
     </div>
+  );
+}
+
+type ExpandedQueryProps = {
+  expandedQuery: RecommendationExpandedQuery;
+};
+
+function ExpandedQuery({ expandedQuery }: ExpandedQueryProps) {
+  return (
+    <section className="flex flex-col gap-md">
+      <Text variant="subheading">What the stylist heard</Text>
+      <div className="grid gap-sm sm:grid-cols-3">
+        {SLOTS.map((slot) => (
+          <div key={slot} className="rounded-md bg-surface p-md">
+            <p className="text-caption capitalize text-secondary">{slot}</p>
+            <p className="text-body">{expandedQuery.slots[slot] || "Skipped"}</p>
+          </div>
+        ))}
+      </div>
+      <TagRow label="Leaning toward" tags={expandedQuery.nice_tags} struck={false} />
+      <TagRow label="Leaving out" tags={expandedQuery.exclude_tags} struck />
+    </section>
+  );
+}
+
+type TagRowProps = {
+  label: string;
+  tags: string[];
+  struck: boolean;
+};
+
+function TagRow({ label, tags, struck }: TagRowProps) {
+  if (tags.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-xs">
+      <span className="w-[120px] text-caption text-secondary">{label}</span>
+      {tags.map((tag) => (
+        <span
+          key={tag}
+          className={
+            struck
+              ? "rounded-full border px-sm py-xxxs text-caption text-secondary line-through"
+              : "rounded-full bg-primary px-sm py-xxxs text-caption text-inverse"
+          }
+        >
+          {tag}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+type SlotResultsProps = {
+  slot: Slot;
+  phrase: string;
+  products: Product[];
+  selectedId: string | null;
+  onSelect: (product: Product) => void;
+};
+
+function SlotResults({ slot, phrase, products, selectedId, onSelect }: SlotResultsProps) {
+  return (
+    <section className="flex flex-col gap-sm">
+      <div className="flex items-baseline gap-sm">
+        <Text variant="subheading">{slot}</Text>
+        {phrase && <span className="text-caption text-secondary">“{phrase}”</span>}
+      </div>
+      {products.length === 0 ? (
+        <Empty title="No results" className="text-secondary" />
+      ) : (
+        <ul className="grid grid-cols-2 gap-sm sm:grid-cols-3 xl:grid-cols-5">
+          {products.map((product, index) => (
+            <li key={product.id}>
+              <button
+                type="button"
+                onClick={() => onSelect(product)}
+                aria-pressed={product.id === selectedId}
+                className="focus-ring flex w-full flex-col gap-xs rounded-md border p-xs text-left aria-pressed:border-primary"
+              >
+                <span className="relative block">
+                  <ProductImage product={product} />
+                  <span className="absolute left-xs top-xs rounded-full bg-primary px-xs text-caption text-inverse">
+                    #{index + 1}
+                  </span>
+                </span>
+                <span className="line-clamp-2 text-caption">{product.title}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+type ProductDetailsProps = {
+  product: Product;
+  niceTags: string[];
+};
+
+function ProductDetails({ product, niceTags }: ProductDetailsProps) {
+  // the backend lowercases nice tags before matching, and stored tags keep the catalog's casing
+  const wanted = new Set(niceTags.map((tag) => tag.toLowerCase()));
+
+  return (
+    <aside className="flex flex-col gap-md rounded-md border p-md lg:sticky lg:top-md lg:w-[360px] lg:shrink-0">
+      <ProductImage product={product} />
+      <div>
+        <p className="text-caption capitalize text-secondary">
+          {product.slot} · {product.product_type ?? "No type"}
+        </p>
+        <Text variant="body" className="font-semibold">
+          {product.title}
+        </Text>
+        <p className="text-caption text-secondary">{product.handle}</p>
+      </div>
+      <div className="flex flex-wrap gap-xxs">
+        {product.tags.map((tag) => (
+          <span
+            key={tag}
+            className={
+              wanted.has(tag.toLowerCase())
+                ? "rounded-full bg-primary px-xs py-xxxs text-caption text-inverse"
+                : "rounded-full bg-surface px-xs py-xxxs text-caption"
+            }
+          >
+            {tag}
+          </span>
+        ))}
+      </div>
+    </aside>
+  );
+}
+
+type ProductImageProps = {
+  product: Product;
+};
+
+function ProductImage({ product }: ProductImageProps) {
+  return (
+    <span className="block aspect-portrait w-full overflow-hidden rounded-sm bg-placeholder">
+      {/* Decorative: the title beside it names the item. multiply blends the photo's white
+          background into the tile, as on the outfit page. */}
+      {product.image_url !== null && (
+        <img
+          src={product.image_url}
+          alt=""
+          className="h-full w-full object-contain mix-blend-multiply"
+        />
+      )}
+    </span>
   );
 }

@@ -14,7 +14,7 @@ import (
 type ProductRepository interface {
 	Exists(ctx context.Context, productID uuid.UUID) (bool, error)
 	// FindSimilar ranks a slot's products by distance to embedding, less a bonus per matching niceTag; pass the tags lowercase.
-	FindSimilar(ctx context.Context, embedding []float32, slot models.ProductSlot, excludeTags, niceTags []string, limit int) ([]models.Product, error)
+	FindSimilar(ctx context.Context, embedding []float32, slot models.ProductSlot, excludeTags, niceTags []string, limit int) ([]models.RecommendedProduct, error)
 }
 
 // untuned: a guess at how much one matching nice tag is worth in cosine distance
@@ -39,10 +39,18 @@ func (r *productRepository) Exists(ctx context.Context, productID uuid.UUID) (bo
 	return exists, nil
 }
 
-func (r *productRepository) FindSimilar(ctx context.Context, embedding []float32, slot models.ProductSlot, excludeTags, niceTags []string, limit int) ([]models.Product, error) {
+func (r *productRepository) FindSimilar(ctx context.Context, embedding []float32, slot models.ProductSlot, excludeTags, niceTags []string, limit int) ([]models.RecommendedProduct, error) {
 	rows, err := r.db.QueryContext(ctx, `
-		SELECT p.id, p.shopify_id, p.handle, p.title, p.product_type, p.slot, p.tags, p.created_at, p.updated_at
+		SELECT p.id, p.shopify_id, p.handle, p.title, p.product_type, p.slot, p.tags, p.created_at, p.updated_at,
+			first_image.url
 		FROM products p
+		LEFT JOIN LATERAL (
+			SELECT pi.url
+			FROM product_images pi
+			WHERE pi.product_id = p.id
+			ORDER BY pi.position, pi.id
+			LIMIT 1
+		) first_image ON true
 		WHERE p.embedding IS NOT NULL
 			AND p.slot = $2
 			-- stored tags keep the catalog's casing, so only that side is lowered; a NULL list matches no tag
@@ -58,9 +66,9 @@ func (r *productRepository) FindSimilar(ctx context.Context, embedding []float32
 	}
 	defer func() { _ = rows.Close() }()
 
-	products := make([]models.Product, 0)
+	products := make([]models.RecommendedProduct, 0)
 	for rows.Next() {
-		var product models.Product
+		var product models.RecommendedProduct
 		if err := rows.Scan(
 			&product.ID,
 			&product.ShopifyID,
@@ -71,6 +79,7 @@ func (r *productRepository) FindSimilar(ctx context.Context, embedding []float32
 			&product.Tags,
 			&product.CreatedAt,
 			&product.UpdatedAt,
+			&product.ImageURL,
 		); err != nil {
 			return nil, fmt.Errorf("scan similar product in slot %s: %w", slot, err)
 		}
