@@ -9,6 +9,11 @@
       "source": "/api/:path*",
       "destination": "https://api.birdie-and-claire.generatenu.com/api/:path*"
     },
+    { "source": "/docs", "destination": "https://api.birdie-and-claire.generatenu.com/docs" },
+    {
+      "source": "/openapi.json",
+      "destination": "https://api.birdie-and-claire.generatenu.com/openapi.json"
+    },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "git": {

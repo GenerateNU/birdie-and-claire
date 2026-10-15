@@ -12,6 +12,9 @@ export default defineConfig({
     proxy: {
       // Proxy API requests to the Go backend.
       "/api": "http://localhost:8080",
+      // The docs page loads the spec from /openapi.json.
+      "/docs": "http://localhost:8080",
+      "/openapi.json": "http://localhost:8080",
     },
   },
 });
