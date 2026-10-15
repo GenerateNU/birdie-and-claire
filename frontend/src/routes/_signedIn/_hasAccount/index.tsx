@@ -85,8 +85,8 @@ function Home() {
       </Text>
       <Text variant="body" className="mb-md text-secondary">
         The API is at <code className="text-primary">/api/v1</code>. Docs are at{" "}
-        <a className="underline" href="http://localhost:8080/docs">
-          localhost:8080/docs
+        <a className="underline" href="/docs">
+          /docs
         </a>
         .
       </Text>
@@ -101,6 +101,9 @@ function Home() {
       </Link>
       <Link className="block text-body underline" to="/recommend-test">
         Recommend test →
+      </Link>
+      <Link className="block text-body underline" to="/playground">
+        Design system playground →
       </Link>
       <div className="mt-lg flex flex-col items-start gap-xs">
         <Button

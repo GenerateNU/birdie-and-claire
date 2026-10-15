@@ -4,6 +4,13 @@
   "installCommand": "bun install --frozen-lockfile",
   "buildCommand": "bun run build",
   "outputDirectory": "dist",
+  "redirects": [
+    {
+      "source": "/docs",
+      "destination": "https://api.birdie-and-claire.generatenu.com/docs",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/:path*",

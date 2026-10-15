@@ -254,50 +254,6 @@ components:
         - next_cursor
         - has_more
       type: object
-    Product:
-      additionalProperties: false
-      properties:
-        created_at:
-          format: date-time
-          type: string
-        handle:
-          type: string
-        id:
-          type: string
-        product_type:
-          type:
-            - string
-            - "null"
-        shopify_id:
-          format: int64
-          type: integer
-        slot:
-          enum:
-            - top
-            - bottom
-            - accessory
-            - shoe
-          type: string
-        tags:
-          items:
-            type: string
-          type: array
-        title:
-          type: string
-        updated_at:
-          format: date-time
-          type: string
-      required:
-        - id
-        - shopify_id
-        - handle
-        - title
-        - product_type
-        - slot
-        - tags
-        - created_at
-        - updated_at
-      type: object
     ProductImageResponse:
       additionalProperties: false
       properties:
@@ -425,23 +381,73 @@ components:
       properties:
         accessory:
           items:
-            $ref: "#/components/schemas/Product"
+            $ref: "#/components/schemas/RecommendedProduct"
           type: array
         bottom:
           items:
-            $ref: "#/components/schemas/Product"
+            $ref: "#/components/schemas/RecommendedProduct"
           type: array
         expanded_query:
           $ref: "#/components/schemas/RecommendationExpandedQuery"
         top:
           items:
-            $ref: "#/components/schemas/Product"
+            $ref: "#/components/schemas/RecommendedProduct"
           type: array
       required:
         - expanded_query
         - top
         - bottom
         - accessory
+      type: object
+    RecommendedProduct:
+      additionalProperties: false
+      properties:
+        created_at:
+          format: date-time
+          type: string
+        handle:
+          type: string
+        id:
+          type: string
+        image_url:
+          description: URL of the product's lowest-position image, or null when it has none
+          type:
+            - string
+            - "null"
+        product_type:
+          type:
+            - string
+            - "null"
+        shopify_id:
+          format: int64
+          type: integer
+        slot:
+          enum:
+            - top
+            - bottom
+            - accessory
+            - shoe
+          type: string
+        tags:
+          items:
+            type: string
+          type: array
+        title:
+          type: string
+        updated_at:
+          format: date-time
+          type: string
+      required:
+        - image_url
+        - id
+        - shopify_id
+        - handle
+        - title
+        - product_type
+        - slot
+        - tags
+        - created_at
+        - updated_at
       type: object
     ShareOutfitResponse:
       additionalProperties: false

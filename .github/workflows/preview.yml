@@ -96,8 +96,9 @@ jobs:
           scp -p backend/cmd/tasks/seeds/products.sql "$DROPLET:/opt/birdie-and-claire/products.sql"
           ssh "$DROPLET" bash -s -- "$PR" "$IMAGE" "$PREVIEW_DOMAIN" < deploy/preview-up.sh
 
-      # vercel.json proxies /api to production. A preview rewrites that target to
-      # its own backend first, so calls stay same-origin and need no CORS.
+      # vercel.json proxies /api to production and redirects /docs there. A
+      # preview points both at its own backend first, so API calls stay
+      # same-origin and need no CORS.
       # Runs from the repo root: the Vercel project's Root Directory is
       # frontend/, and the CLI applies it relative to where it starts.
       - name: Build and deploy the preview frontend to Vercel
@@ -109,8 +110,9 @@ jobs:
           PREVIEW_HOST: pr-${{ github.event.pull_request.number }}.${{ vars.PREVIEW_DOMAIN }}
         run: |
           set -euo pipefail
-          jq --arg destination "https://${PREVIEW_HOST}/api/:path*" \
-            '(.rewrites[] | select(.source == "/api/:path*") | .destination) = $destination' \
+          jq --arg host "https://${PREVIEW_HOST}" \
+            '((.rewrites[], .redirects[]).destination | select(startswith("https://api.birdie-and-claire.generatenu.com/")))
+              |= sub("^https://api\\.birdie-and-claire\\.generatenu\\.com"; $host)' \
             frontend/vercel.json > "$RUNNER_TEMP/vercel.json"
           mv "$RUNNER_TEMP/vercel.json" frontend/vercel.json
           # A renamed rewrite source would match nothing and silently leave the
