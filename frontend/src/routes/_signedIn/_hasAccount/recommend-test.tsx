@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, type SubmitEvent } from "react";
 
-import { apiFetch } from "../../../api";
-import { Button, Empty, Spinner, Text, TextField } from "../../../design-system";
+import { apiFetch } from "@/api";
+import { Button, Empty, Spinner, Text, TextField } from "@/design-system";
 
 export const Route = createFileRoute("/_signedIn/_hasAccount/recommend-test")({
   component: RecommendTest,
