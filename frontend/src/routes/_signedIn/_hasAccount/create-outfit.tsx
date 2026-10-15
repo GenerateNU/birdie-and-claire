@@ -1,7 +1,17 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 
-import { Box, Button, ImageCard, ListCard, SearchField, Text, useToast } from "@/design-system";
+import { apiFetch } from "@/api";
+import {
+  Box,
+  Button,
+  ImageCard,
+  ListCard,
+  RadioGroup,
+  SearchField,
+  Text,
+  useToast,
+} from "@/design-system";
 
 export const Route = createFileRoute("/_signedIn/_hasAccount/create-outfit")({
   component: CreateOutfit,
@@ -21,10 +31,26 @@ const occasions = [
   { name: "Festive", src: `${occasionImageBase}/festive.png` },
 ];
 
+const weathers = ["Sunny", "Rainy", "Cold"] as const;
+
+type Weather = (typeof weathers)[number];
+
+const vibes = ["Professional", "Relaxed", "Bold"] as const;
+
+type Vibe = (typeof vibes)[number];
+
+type RecommendationResponse = {
+  top: { id: string }[];
+  bottom: { id: string }[];
+  accessory: { id: string }[];
+};
+
 function CreateOutfit() {
   const [step, setStep] = useState<Step>("occasion");
   const [cardOccasion, setCardOccasion] = useState<string | null>(null);
   const [customOccasion, setCustomOccasion] = useState("");
+  const [weather, setWeather] = useState<Weather>("Sunny");
+  const [vibe, setVibe] = useState<Vibe>("Professional");
 
   const chosenOccasion = cardOccasion ?? customOccasion.trim();
   const canContinue = chosenOccasion !== "";
@@ -47,7 +73,16 @@ function CreateOutfit() {
   }
 
   if (step === "review") {
-    return <Review occasion={chosenOccasion} onEdit={() => setStep("occasion")} />;
+    return (
+      <Review
+        occasion={chosenOccasion}
+        weather={weather}
+        vibe={vibe}
+        onEditOccasion={() => setStep("occasion")}
+        onWeatherChange={setWeather}
+        onVibeChange={setVibe}
+      />
+    );
   }
 
   return (
@@ -82,11 +117,57 @@ function CreateOutfit() {
 
 type ReviewProps = {
   occasion: string;
-  onEdit: () => void;
+  weather: Weather;
+  vibe: Vibe;
+  onEditOccasion: () => void;
+  onWeatherChange: (weather: Weather) => void;
+  onVibeChange: (vibe: Vibe) => void;
 };
 
-function Review({ occasion, onEdit }: ReviewProps) {
+function Review({
+  occasion,
+  weather,
+  vibe,
+  onEditOccasion,
+  onWeatherChange,
+  onVibeChange,
+}: ReviewProps) {
   const toast = useToast();
+  const navigate = useNavigate();
+  const [editing, setEditing] = useState<"weather" | "vibe" | null>(null);
+  const [creating, setCreating] = useState(false);
+
+  useEffect(() => {
+    // Best effort: a cold embedder takes tens of seconds, so start it while the user reviews.
+    apiFetch("/api/v1/embedder/warm", { method: "POST" }).catch(() => {});
+  }, []);
+
+  function toggleEditing(field: "weather" | "vibe") {
+    setEditing(editing === field ? null : field);
+  }
+
+  async function createOutfit() {
+    setCreating(true);
+
+    try {
+      const outfitId = await requestOutfit(occasion, weather, vibe);
+
+      if (outfitId === null) {
+        toast.show({ message: "No matching pieces, try another occasion" });
+        setCreating(false);
+
+        return;
+      }
+
+      await navigate({ to: "/outfits/$outfitId", params: { outfitId } });
+    } catch (err) {
+      toast.show({
+        message: "Couldn't create the outfit",
+        subtitle: err instanceof Error ? err.message : String(err),
+      });
+      setCreating(false);
+    }
+  }
 
   return (
     <Box className="flex min-h-screen flex-col items-center gap-lg p-xl">
@@ -95,17 +176,112 @@ function Review({ occasion, onEdit }: ReviewProps) {
         <ListCard
           title="Occasion"
           value={occasion}
-          action={{ label: "Edit", accessibleLabel: "Edit Occasion", onClick: onEdit }}
+          action={{ label: "Edit", accessibleLabel: "Edit Occasion", onClick: onEditOccasion }}
         />
-        {/* Hardcoded stand-ins, with no Edit, until the steps between the two screens exist. */}
-        <ListCard title="Weather" value="Sunny" />
-        <ListCard title="Vibe" value="Professional" />
+        <ListCard
+          title="Weather"
+          value={weather}
+          action={{
+            label: "Edit",
+            accessibleLabel: "Edit Weather",
+            onClick: () => toggleEditing("weather"),
+          }}
+        />
+        {editing === "weather" && (
+          <RadioGroup
+            label="Weather"
+            options={weathers.map((option) => ({ label: option, value: option }))}
+            value={weather}
+            onValueChange={(value) => {
+              onWeatherChange(value);
+              setEditing(null);
+            }}
+            className="px-md"
+          />
+        )}
+        <ListCard
+          title="Vibe"
+          value={vibe}
+          action={{
+            label: "Edit",
+            accessibleLabel: "Edit Vibe",
+            onClick: () => toggleEditing("vibe"),
+          }}
+        />
+        {editing === "vibe" && (
+          <RadioGroup
+            label="Vibe"
+            options={vibes.map((option) => ({ label: option, value: option }))}
+            value={vibe}
+            onValueChange={(value) => {
+              onVibeChange(value);
+              setEditing(null);
+            }}
+            className="px-md"
+          />
+        )}
+        {/* Hardcoded stand-in, with no Edit, until the endpoint can limit how many pieces it picks. */}
         <ListCard title="Items to include" value="2" />
       </Box>
       <Button
         label="Create my outfit"
-        onClick={() => toast.show({ message: "Outfit requested" })}
+        loading={creating}
+        loadingLabel="Styling your outfit…"
+        onClick={() => void createOutfit()}
       />
     </Box>
   );
+}
+
+/** Recommends products for the review answers and saves the top pick of each slot as an outfit.
+ * Returns the new outfit's ID, or null when no slot found a product. */
+async function requestOutfit(
+  occasion: string,
+  weather: Weather,
+  vibe: Vibe,
+): Promise<string | null> {
+  // The endpoint caps query at 200 characters, and a custom occasion is free text.
+  const query = `${occasion}, ${weather.toLowerCase()} weather, ${vibe.toLowerCase()} vibe`.slice(
+    0,
+    200,
+  );
+
+  const recommendRes = await apiFetch("/api/v1/recommend", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query }),
+  });
+
+  if (!recommendRes.ok) {
+    throw new Error(`Recommend failed: ${recommendRes.status} ${recommendRes.statusText}`);
+  }
+
+  // SAFETY: a 2xx from POST /api/v1/recommend is the RecommendationResponse schema in openapi.yaml.
+  const recommendation = (await recommendRes.json()) as RecommendationResponse;
+
+  // The top pick of each slot; a slot the query didn't ask for comes back empty.
+  const productIds = [recommendation.top, recommendation.bottom, recommendation.accessory].flatMap(
+    (products) => products.slice(0, 1).map((product) => product.id),
+  );
+
+  // POST /outfits requires at least one product.
+  if (productIds.length === 0) {
+    return null;
+  }
+
+  const outfitRes = await apiFetch("/api/v1/outfits", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    // The endpoint caps name at 100 characters.
+    body: JSON.stringify({ name: `${occasion} outfit`.slice(0, 100), product_ids: productIds }),
+  });
+
+  if (!outfitRes.ok) {
+    throw new Error(`Saving the outfit failed: ${outfitRes.status} ${outfitRes.statusText}`);
+  }
+
+  // SAFETY: a 2xx from POST /api/v1/outfits is the Outfit schema in openapi.yaml.
+  const outfit = (await outfitRes.json()) as { id: string };
+
+  return outfit.id;
 }
