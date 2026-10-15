@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { apiFetch } from "@/api";
 import {
@@ -136,10 +136,16 @@ function Review({
   const navigate = useNavigate();
   const [editing, setEditing] = useState<"weather" | "vibe" | null>(null);
   const [creating, setCreating] = useState(false);
+  const abortController = useRef(new AbortController());
 
   useEffect(() => {
+    // StrictMode mounts twice, and the first unmount aborts the controller, so make a fresh one.
+    abortController.current = new AbortController();
     // Best effort: a cold embedder takes tens of seconds, so start it while the user reviews.
     apiFetch("/api/v1/embedder/warm", { method: "POST" }).catch(() => {});
+
+    // Leaving the page cancels a pending create, so it can't navigate back to the new outfit.
+    return () => abortController.current.abort();
   }, []);
 
   function toggleEditing(field: "weather" | "vibe") {
@@ -147,10 +153,12 @@ function Review({
   }
 
   async function createOutfit() {
+    const { signal } = abortController.current;
     setCreating(true);
+    setEditing(null);
 
     try {
-      const outfitId = await requestOutfit(occasion, weather, vibe);
+      const outfitId = await requestOutfit(occasion, weather, vibe, signal);
 
       if (outfitId === null) {
         toast.show({ message: "No matching pieces, try another occasion" });
@@ -161,6 +169,10 @@ function Review({
 
       await navigate({ to: "/outfits/$outfitId", params: { outfitId } });
     } catch (err) {
+      if (signal.aborted) {
+        return;
+      }
+
       toast.show({
         message: "Couldn't create the outfit",
         subtitle: err instanceof Error ? err.message : String(err),
@@ -176,7 +188,12 @@ function Review({
         <ListCard
           title="Occasion"
           value={occasion}
-          action={{ label: "Edit", accessibleLabel: "Edit Occasion", onClick: onEditOccasion }}
+          action={{
+            label: "Edit",
+            accessibleLabel: "Edit Occasion",
+            onClick: onEditOccasion,
+            disabled: creating,
+          }}
         />
         <ListCard
           title="Weather"
@@ -185,6 +202,7 @@ function Review({
             label: "Edit",
             accessibleLabel: "Edit Weather",
             onClick: () => toggleEditing("weather"),
+            disabled: creating,
           }}
         />
         {editing === "weather" && (
@@ -206,6 +224,7 @@ function Review({
             label: "Edit",
             accessibleLabel: "Edit Vibe",
             onClick: () => toggleEditing("vibe"),
+            disabled: creating,
           }}
         />
         {editing === "vibe" && (
@@ -239,6 +258,7 @@ async function requestOutfit(
   occasion: string,
   weather: Weather,
   vibe: Vibe,
+  signal: AbortSignal,
 ): Promise<string | null> {
   // The endpoint caps query at 200 characters, and a custom occasion is free text.
   const query = `${occasion}, ${weather.toLowerCase()} weather, ${vibe.toLowerCase()} vibe`.slice(
@@ -250,6 +270,7 @@ async function requestOutfit(
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ query }),
+    signal,
   });
 
   if (!recommendRes.ok) {
@@ -274,6 +295,7 @@ async function requestOutfit(
     headers: { "Content-Type": "application/json" },
     // The endpoint caps name at 100 characters.
     body: JSON.stringify({ name: `${occasion} outfit`.slice(0, 100), product_ids: productIds }),
+    signal,
   });
 
   if (!outfitRes.ok) {

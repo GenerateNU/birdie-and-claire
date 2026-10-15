@@ -8,6 +8,7 @@ type ListCardAction = {
   label: string;
   accessibleLabel?: string;
   onClick: () => void;
+  disabled?: boolean;
 };
 
 type ListCardProps = {
@@ -31,6 +32,7 @@ export function ListCard({ title, value, action }: ListCardProps) {
           variant="secondary"
           size="sm"
           onClick={action.onClick}
+          disabled={action.disabled}
         />
       )}
     </div>
