@@ -12,7 +12,7 @@ B&C sells no pants, shoes, or jackets, so the recommender can't build a full out
 
 Pixabay's license allows commercial use without attribution, and nothing in it stops us from embedding images. Its terms ban scraping and bots, so we download each photo by hand, once. Nothing calls Pixabay after that, so it can't rate-limit or block us. We pick only front-on shots on plain white or transparent backgrounds, so they sit well next to B&C's product shots, and skip anything with a visible logo, since the license doesn't allow those for commercial use.
 
-Pixabay has plenty of shoes on white, but few jeans or trousers on their own. Pexels has similar terms, so we search it next for anything Pixabay lacks. Expect to generate some bottoms. Images we generate are ours to store and show under the image model's terms.
+Pixabay has plenty of shoes on white, but few jeans or trousers on their own. Pexels has similar terms, so we search it next for anything Pixabay lacks. Expect to generate some bottoms. We'd generate them with OpenAI's image API, whose terms give us ownership of the output as far as the law allows.
 
 ### Ruled out
 
@@ -31,20 +31,20 @@ About 35 basics, all womenswear, in black, white, denim, camel, and grey.
 
 - **Bottoms (12):** 5 jeans, 3 trousers, 2 skirts, 2 shorts
 - **Shoes (10):** sneakers, boots, loafers, flats, pumps, sandals
-- **Tops (7):** white and black tees, a button-down, a camisole, a trench, a blazer, a denim jacket
+- **Tops (7):** white and black tees, a button-down, a camisole, a trench, a blazer, a denim jacket (jackets use the `top` slot)
 - **Accessories (6):** 2 belts, 2 bags, gold hoops, sunglasses
 
 ---
 
 ## Labels
 
-We write each basic's slot (and category, once #86 adds it) and tags in the list, using the same tags existing products already have. An LLM drafts the tags once and a person checks them. The image comes from Pixabay, or is generated if we can't find one, and Modal embeds it when the basic is loaded. Nothing calls an LLM at load time.
+We write each basic's slot (and category, once #86 adds it) and tags in the list. The `expand_query` prompt has no fixed tag list, so we match the existing products' tags: lowercase, covering color, season, style, occasion, pattern, material, and fit. An LLM drafts the tags once and a person checks them. The list also keeps each photo's source link. The image comes from Pixabay, or is generated if we can't find one, and Modal embeds it when the basic is loaded. Nothing calls an LLM at load time.
 
 ---
 
 ## Loading
 
-Basics load through **their own task, not the Shopify sync**, since they only change when the list changes. Images are **copied to our bucket, not hotlinked**, so they can't disappear. We save them as transparent PNGs, cutting out the background where a photo has one, because the canvas removes white backgrounds and would erase a white tee.
+Basics load through **their own task, not the Shopify sync**, since they only change when the list changes. Each basic has a fixed `id` in the list, and the task upserts on it, so rerunning it doesn't add duplicates. Images are **copied to our bucket, not hotlinked**, so they can't disappear. We save them as transparent PNGs, cutting out the background where a photo has one, because the canvas removes white backgrounds and would erase a white tee.
 
 ```mermaid
 flowchart LR
@@ -65,6 +65,8 @@ ALTER TABLE products ADD COLUMN is_basic BOOLEAN GENERATED ALWAYS AS (shopify_id
 ALTER TABLE product_images ALTER COLUMN shopify_id DROP NOT NULL;
 ```
 
+`models.Product` changes `ShopifyID` and `Handle` to pointers, and the API returns them as nullable, so a basic's missing values don't break scanning or the frontend.
+
 ---
 
 ## How B&C pieces get priority
@@ -78,10 +80,10 @@ ALTER TABLE product_images ALTER COLUMN shopify_id DROP NOT NULL;
 
 - [Pixabay content license](https://pixabay.com/service/license/) and [terms](https://pixabay.com/service/terms/): commercial use, logos, and the scraping ban
 - [Pexels help center](https://help.pexels.com/hc/de-de/articles/900005880463): limits on automated collection for machine learning
-- [OpenAI terms of use](https://openai.com/policies/terms-of-use): ownership of generated images
+- [OpenAI Services Agreement](https://openai.com/policies/services-agreement/): ownership of generated images
 - [Adobe Stock license terms](https://adobe.com/content/dam/cc/en/legal/terms/enterprise/pdfs/PSLT-Stock-WW-2022v1.pdf): the AI and machine-learning ban
 - [Unsplash help center](https://help.unsplash.com/en/articles/2612332-what-do-you-mean-by-compiling-photos-to-replicate-a-similar-or-competing-service): limits on AI and machine-learning use
 - [Freepik AI usage rights](https://www.freepik.com/ai/faq/legal-aspects-and-usage-rights): attribution and paid plans
-- [Amazon Associates image caching policy](https://conductatlas.com/platform/amazon-associates/amazon-associates-program-policies/product-advertising-image-caching-limited-to-24-hours/) (third-party copy): no storing images
+- [Amazon Associates policies](https://affiliate-program.amazon.com/help/operating/policies): no storing images, and image links kept for 24 hours at most
 - [Amazon Berkeley Objects](https://registry.opendata.aws/amazon-berkeley-objects/) and [DeepFashion](https://mmlab.ie.cuhk.edu.hk/projects/DeepFashion.html): non-commercial licenses
 - [CC0 clothing dataset](https://github.com/alexeygrigorev/clothing-dataset): the 5,000 phone photos
