@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, type SyntheticEvent } from "react";
 
-import { Button, TextField } from "@/design-system";
+import { Button, Text, TextField } from "@/design-system";
 import { supabase } from "@/supabase/client";
 
 export const Route = createFileRoute("/login")({
@@ -88,21 +88,23 @@ function Login() {
   const busy = status !== null;
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white p-8">
-      <h1 className="text-3xl font-bold mb-2">Log in</h1>
+    <div className="min-h-screen p-xl">
+      <Text variant="heading" className="mb-xs">
+        Log in
+      </Text>
 
       {step === "email" ? (
-        <form onSubmit={sendCode} className="flex flex-col gap-4 max-w-md">
-          <p className="text-gray-400 text-sm">We'll email you a code.</p>
+        <form onSubmit={sendCode} className="flex flex-col gap-md max-w-content-sm">
+          <p className="text-secondary text-body">We'll email you a code.</p>
           <TextField label="Email" type="email" required value={email} onValueChange={setEmail} />
           <Button label="Send code" type="submit" disabled={busy} />
-          {status && <p className="text-gray-400 text-sm">{status}</p>}
-          {error && <p className="text-red-400 text-sm">Error: {error}</p>}
+          {status && <p className="text-secondary text-body">{status}</p>}
+          {error && <p className="text-error text-body">Error: {error}</p>}
         </form>
       ) : (
-        <form onSubmit={verifyCode} className="flex flex-col gap-4 max-w-md">
-          <p className="text-gray-400 text-sm">
-            Enter the code we sent to <span className="text-gray-200">{email}</span>.
+        <form onSubmit={verifyCode} className="flex flex-col gap-md max-w-content-sm">
+          <p className="text-secondary text-body">
+            Enter the code we sent to <span className="text-primary">{email}</span>.
           </p>
           <TextField
             label="Code"
@@ -113,13 +115,13 @@ function Login() {
             onValueChange={setCode}
           />
           <Button label="Verify" type="submit" disabled={busy} />
-          <div className="flex gap-4 text-sm">
+          <div className="flex gap-md text-body">
             <Button label="Resend code" onClick={resendCode} disabled={busy} />
             <Button label="Change email" onClick={changeEmail} disabled={busy} />
           </div>
-          {status && <p className="text-gray-400 text-sm">{status}</p>}
-          {notice && <p className="text-gray-400 text-sm">{notice}</p>}
-          {error && <p className="text-red-400 text-sm">Error: {error}</p>}
+          {status && <p className="text-secondary text-body">{status}</p>}
+          {notice && <p className="text-secondary text-body">{notice}</p>}
+          {error && <p className="text-error text-body">Error: {error}</p>}
         </form>
       )}
     </div>

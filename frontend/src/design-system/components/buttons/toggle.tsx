@@ -1,7 +1,8 @@
 import { Switch } from "@base-ui/react/switch";
+import { joinClasses } from "../../utils/join-classes";
 
 const trackClasses =
-  "flex h-md w-xl shrink-0 items-center rounded-full bg-control-off p-xxxs data-[checked]:bg-brand-500 focus-ring";
+  "flex h-md w-xl shrink-0 items-center rounded-full bg-control-off p-xxxs data-[checked]:bg-primary focus-ring";
 
 const thumbClasses =
   "size-sm rounded-full bg-background transition-transform data-[checked]:translate-x-md";
@@ -23,11 +24,11 @@ export function Toggle({
   className,
 }: ToggleProps) {
   const labelClasses = disabled
-    ? "inline-flex items-center gap-xs opacity-50"
+    ? "inline-flex items-center gap-xs opacity-disabled"
     : "inline-flex items-center gap-xs";
 
   return (
-    <label className={className ? `${labelClasses} ${className}` : labelClasses}>
+    <label className={joinClasses(labelClasses, className)}>
       <Switch.Root
         checked={checked}
         onCheckedChange={onCheckedChange}

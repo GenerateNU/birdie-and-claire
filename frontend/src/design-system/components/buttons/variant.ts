@@ -1,8 +1,9 @@
-export const buttonBaseClasses = "rounded-md focus-ring data-[disabled]:opacity-50";
+export const buttonBaseClasses =
+  "rounded-none uppercase focus-ring data-[disabled]:opacity-disabled";
 
 export const buttonVariantClasses = {
-  primary: "bg-brand-500 text-inverse",
-  secondary: "border bg-background text-primary",
+  primary: "bg-primary text-inverse",
+  secondary: "border-thick border-primary bg-background font-semibold text-primary",
 } as const;
 
 export const buttonSizeClasses = {

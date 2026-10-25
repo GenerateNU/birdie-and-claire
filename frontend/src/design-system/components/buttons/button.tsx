@@ -6,9 +6,11 @@ import {
   buttonVariantClasses,
   type ButtonVariant,
 } from "./variant";
+import { joinClasses } from "../../utils/join-classes";
 
 type ButtonProps = {
   label: string;
+  accessibleLabel?: string;
   variant?: ButtonVariant;
   size?: keyof typeof buttonSizeClasses;
   loading?: boolean;
@@ -21,6 +23,7 @@ type ButtonProps = {
 
 export function Button({
   label,
+  accessibleLabel,
   variant = "primary",
   size = "md",
   loading = false,
@@ -31,7 +34,7 @@ export function Button({
   className,
 }: ButtonProps) {
   const buttonClasses = `${buttonBaseClasses} ${buttonVariantClasses[variant]} ${buttonSizeClasses[size]}`;
-  const classes = className ? `${buttonClasses} ${className}` : buttonClasses;
+  const classes = joinClasses(buttonClasses, className);
 
   return (
     <BaseButton
@@ -39,6 +42,8 @@ export function Button({
       onClick={onClick}
       disabled={disabled || loading}
       aria-busy={loading}
+      // While loading, the visible loadingLabel is the name, so accessibleLabel steps aside.
+      aria-label={loading ? undefined : accessibleLabel}
       className={classes}
     >
       {loading ? loadingLabel : label}

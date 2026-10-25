@@ -48,8 +48,9 @@ function OutfitsPage() {
 
   return (
     <>
-      {/* Text's heading variant renders an h2, and the page needs an h1. */}
-      <h1 className="mb-xs text-heading">Saved Outfits</h1>
+      <Text variant="heading" className="mb-xs">
+        Saved Outfits
+      </Text>
       {/* No count: GET /outfits doesn't return a total. */}
       <Text variant="subheading" className="mb-lg">
         All

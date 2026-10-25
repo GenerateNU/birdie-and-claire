@@ -1,13 +1,21 @@
 import { AvatarSize } from "./src/design-system/tokens/avatar-size";
+import { BorderWidth } from "./src/design-system/tokens/border-width";
 import {
   BackgroundColor,
   BorderColor,
-  ColorScale,
   StatusColor,
+  OutlineColor,
   TextColor,
 } from "./src/design-system/tokens/color";
 import { CornerRadius } from "./src/design-system/tokens/corner-radius";
-import { PopupWidth } from "./src/design-system/tokens/layout";
+import { FocusRing } from "./src/design-system/tokens/focus-ring";
+import {
+  AspectRatio,
+  ContentWidth,
+  PopupWidth,
+  ScrollAreaHeight,
+} from "./src/design-system/tokens/layout";
+import { Opacity } from "./src/design-system/tokens/opacity";
 import { Spacing } from "./src/design-system/tokens/spacing";
 import { FontFamily, TypeScale } from "./src/design-system/tokens/typography";
 
@@ -17,19 +25,28 @@ export default {
   theme: {
     // Extends Tailwind's defaults rather than replacing them.
     extend: {
-      colors: { ...ColorScale, ...StatusColor },
+      colors: StatusColor,
       textColor: TextColor,
       backgroundColor: BackgroundColor,
       borderColor: BorderColor,
-      outlineColor: { focus: BorderColor.focus },
+      outlineColor: OutlineColor,
       spacing: Spacing,
       width: { popup: PopupWidth },
+      maxWidth: Object.fromEntries(
+        Object.entries(ContentWidth).map(([key, value]) => [`content-${key}`, value]),
+      ),
+      maxHeight: { "scroll-area": ScrollAreaHeight },
+      aspectRatio: AspectRatio,
       size: {
         "avatar-sm": AvatarSize.sm,
         "avatar-md": AvatarSize.md,
         "avatar-lg": AvatarSize.lg,
       },
       borderRadius: CornerRadius,
+      borderWidth: BorderWidth,
+      outlineWidth: { "focus-ring": FocusRing.width },
+      outlineOffset: { "focus-ring": FocusRing.offset },
+      opacity: Opacity,
       fontFamily: FontFamily,
       fontSize: TypeScale,
     },

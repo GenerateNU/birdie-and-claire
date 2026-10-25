@@ -7,9 +7,9 @@ type RecommendationRequest struct {
 // RecommendationResponse holds an empty list for a slot the query did not ask for.
 type RecommendationResponse struct {
 	ExpandedQuery RecommendationExpandedQuery `json:"expanded_query"`
-	Top           []Product                   `json:"top" nullable:"false"`
-	Bottom        []Product                   `json:"bottom" nullable:"false"`
-	Accessory     []Product                   `json:"accessory" nullable:"false"`
+	Top           []RecommendedProduct        `json:"top" nullable:"false"`
+	Bottom        []RecommendedProduct        `json:"bottom" nullable:"false"`
+	Accessory     []RecommendedProduct        `json:"accessory" nullable:"false"`
 }
 
 type RecommendationExpandedQuery struct {
@@ -22,4 +22,11 @@ type RecommendationExpandedSlots struct {
 	Top       string `json:"top"`
 	Bottom    string `json:"bottom"`
 	Accessory string `json:"accessory"`
+}
+
+// RecommendedProduct carries the product's first image so a client can show results without
+// fetching each product's images.
+type RecommendedProduct struct {
+	Product
+	ImageURL *string `json:"image_url" doc:"URL of the product's lowest-position image, or null when it has none"`
 }
