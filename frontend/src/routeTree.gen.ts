@@ -17,10 +17,14 @@ import { Route as SignedInCreateAccountRouteImport } from './routes/_signedIn/cr
 import { Route as SignedInOnboardingRouteImport } from './routes/_signedIn/onboarding'
 import { Route as SignedInHasAccountIndexRouteImport } from './routes/_signedIn/_hasAccount/index'
 import { Route as SignedInHasAccountCreateOutfitRouteImport } from './routes/_signedIn/_hasAccount/create-outfit'
+import { Route as SignedInHasAccountProfileRouteImport } from './routes/_signedIn/_hasAccount/profile'
 import { Route as SignedInHasAccountProfilePictureTestRouteImport } from './routes/_signedIn/_hasAccount/profile-picture-test'
 import { Route as SignedInHasAccountRecommendTestRouteImport } from './routes/_signedIn/_hasAccount/recommend-test'
-import { Route as SignedInHasAccountOutfitsIndexRouteImport } from './routes/_signedIn/_hasAccount/outfits.index'
 import { Route as SignedInHasAccountOutfitsOutfitIdRouteImport } from './routes/_signedIn/_hasAccount/outfits.$outfitId'
+import { Route as SignedInHasAccountProfileIndexRouteImport } from './routes/_signedIn/_hasAccount/profile/index'
+import { Route as SignedInHasAccountProfileOutfitsRouteImport } from './routes/_signedIn/_hasAccount/profile/outfits'
+import { Route as SignedInHasAccountProfilePiecesRouteImport } from './routes/_signedIn/_hasAccount/profile/pieces'
+import { Route as SignedInHasAccountProfileSettingsRouteImport } from './routes/_signedIn/_hasAccount/profile/settings'
 
 const SignedInRoute = SignedInRouteImport.update({
   id: '/_signedIn',
@@ -61,6 +65,12 @@ const SignedInHasAccountCreateOutfitRoute =
     path: '/create-outfit',
     getParentRoute: () => SignedInHasAccountRoute,
   } as any)
+const SignedInHasAccountProfileRoute =
+  SignedInHasAccountProfileRouteImport.update({
+    id: '/profile',
+    path: '/profile',
+    getParentRoute: () => SignedInHasAccountRoute,
+  } as any)
 const SignedInHasAccountProfilePictureTestRoute =
   SignedInHasAccountProfilePictureTestRouteImport.update({
     id: '/profile-picture-test',
@@ -73,17 +83,35 @@ const SignedInHasAccountRecommendTestRoute =
     path: '/recommend-test',
     getParentRoute: () => SignedInHasAccountRoute,
   } as any)
-const SignedInHasAccountOutfitsIndexRoute =
-  SignedInHasAccountOutfitsIndexRouteImport.update({
-    id: '/outfits/',
-    path: '/outfits/',
-    getParentRoute: () => SignedInHasAccountRoute,
-  } as any)
 const SignedInHasAccountOutfitsOutfitIdRoute =
   SignedInHasAccountOutfitsOutfitIdRouteImport.update({
     id: '/outfits/$outfitId',
     path: '/outfits/$outfitId',
     getParentRoute: () => SignedInHasAccountRoute,
+  } as any)
+const SignedInHasAccountProfileIndexRoute =
+  SignedInHasAccountProfileIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => SignedInHasAccountProfileRoute,
+  } as any)
+const SignedInHasAccountProfileOutfitsRoute =
+  SignedInHasAccountProfileOutfitsRouteImport.update({
+    id: '/outfits',
+    path: '/outfits',
+    getParentRoute: () => SignedInHasAccountProfileRoute,
+  } as any)
+const SignedInHasAccountProfilePiecesRoute =
+  SignedInHasAccountProfilePiecesRouteImport.update({
+    id: '/pieces',
+    path: '/pieces',
+    getParentRoute: () => SignedInHasAccountProfileRoute,
+  } as any)
+const SignedInHasAccountProfileSettingsRoute =
+  SignedInHasAccountProfileSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => SignedInHasAccountProfileRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -93,10 +121,14 @@ export interface FileRoutesByFullPath {
   '/create-account': typeof SignedInCreateAccountRoute
   '/onboarding': typeof SignedInOnboardingRoute
   '/create-outfit': typeof SignedInHasAccountCreateOutfitRoute
+  '/profile': typeof SignedInHasAccountProfileRouteWithChildren
   '/profile-picture-test': typeof SignedInHasAccountProfilePictureTestRoute
   '/recommend-test': typeof SignedInHasAccountRecommendTestRoute
   '/outfits/$outfitId': typeof SignedInHasAccountOutfitsOutfitIdRoute
-  '/outfits/': typeof SignedInHasAccountOutfitsIndexRoute
+  '/profile/outfits': typeof SignedInHasAccountProfileOutfitsRoute
+  '/profile/pieces': typeof SignedInHasAccountProfilePiecesRoute
+  '/profile/settings': typeof SignedInHasAccountProfileSettingsRoute
+  '/profile/': typeof SignedInHasAccountProfileIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof SignedInHasAccountIndexRoute
@@ -108,7 +140,10 @@ export interface FileRoutesByTo {
   '/profile-picture-test': typeof SignedInHasAccountProfilePictureTestRoute
   '/recommend-test': typeof SignedInHasAccountRecommendTestRoute
   '/outfits/$outfitId': typeof SignedInHasAccountOutfitsOutfitIdRoute
-  '/outfits': typeof SignedInHasAccountOutfitsIndexRoute
+  '/profile/outfits': typeof SignedInHasAccountProfileOutfitsRoute
+  '/profile/pieces': typeof SignedInHasAccountProfilePiecesRoute
+  '/profile/settings': typeof SignedInHasAccountProfileSettingsRoute
+  '/profile': typeof SignedInHasAccountProfileIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -119,11 +154,15 @@ export interface FileRoutesById {
   '/_signedIn/create-account': typeof SignedInCreateAccountRoute
   '/_signedIn/onboarding': typeof SignedInOnboardingRoute
   '/_signedIn/_hasAccount/create-outfit': typeof SignedInHasAccountCreateOutfitRoute
+  '/_signedIn/_hasAccount/profile': typeof SignedInHasAccountProfileRouteWithChildren
   '/_signedIn/_hasAccount/profile-picture-test': typeof SignedInHasAccountProfilePictureTestRoute
   '/_signedIn/_hasAccount/recommend-test': typeof SignedInHasAccountRecommendTestRoute
   '/_signedIn/_hasAccount/': typeof SignedInHasAccountIndexRoute
   '/_signedIn/_hasAccount/outfits/$outfitId': typeof SignedInHasAccountOutfitsOutfitIdRoute
-  '/_signedIn/_hasAccount/outfits/': typeof SignedInHasAccountOutfitsIndexRoute
+  '/_signedIn/_hasAccount/profile/outfits': typeof SignedInHasAccountProfileOutfitsRoute
+  '/_signedIn/_hasAccount/profile/pieces': typeof SignedInHasAccountProfilePiecesRoute
+  '/_signedIn/_hasAccount/profile/settings': typeof SignedInHasAccountProfileSettingsRoute
+  '/_signedIn/_hasAccount/profile/': typeof SignedInHasAccountProfileIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -134,10 +173,14 @@ export interface FileRouteTypes {
     | '/create-account'
     | '/onboarding'
     | '/create-outfit'
+    | '/profile'
     | '/profile-picture-test'
     | '/recommend-test'
     | '/outfits/$outfitId'
-    | '/outfits/'
+    | '/profile/outfits'
+    | '/profile/pieces'
+    | '/profile/settings'
+    | '/profile/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -149,7 +192,10 @@ export interface FileRouteTypes {
     | '/profile-picture-test'
     | '/recommend-test'
     | '/outfits/$outfitId'
-    | '/outfits'
+    | '/profile/outfits'
+    | '/profile/pieces'
+    | '/profile/settings'
+    | '/profile'
   id:
     | '__root__'
     | '/_signedIn'
@@ -159,11 +205,15 @@ export interface FileRouteTypes {
     | '/_signedIn/create-account'
     | '/_signedIn/onboarding'
     | '/_signedIn/_hasAccount/create-outfit'
+    | '/_signedIn/_hasAccount/profile'
     | '/_signedIn/_hasAccount/profile-picture-test'
     | '/_signedIn/_hasAccount/recommend-test'
     | '/_signedIn/_hasAccount/'
     | '/_signedIn/_hasAccount/outfits/$outfitId'
-    | '/_signedIn/_hasAccount/outfits/'
+    | '/_signedIn/_hasAccount/profile/outfits'
+    | '/_signedIn/_hasAccount/profile/pieces'
+    | '/_signedIn/_hasAccount/profile/settings'
+    | '/_signedIn/_hasAccount/profile/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -230,6 +280,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignedInHasAccountCreateOutfitRouteImport
       parentRoute: typeof SignedInHasAccountRoute
     }
+    '/_signedIn/_hasAccount/profile': {
+      id: '/_signedIn/_hasAccount/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof SignedInHasAccountProfileRouteImport
+      parentRoute: typeof SignedInHasAccountRoute
+    }
     '/_signedIn/_hasAccount/profile-picture-test': {
       id: '/_signedIn/_hasAccount/profile-picture-test'
       path: '/profile-picture-test'
@@ -244,13 +301,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignedInHasAccountRecommendTestRouteImport
       parentRoute: typeof SignedInHasAccountRoute
     }
-    '/_signedIn/_hasAccount/outfits/': {
-      id: '/_signedIn/_hasAccount/outfits/'
-      path: '/outfits'
-      fullPath: '/outfits/'
-      preLoaderRoute: typeof SignedInHasAccountOutfitsIndexRouteImport
-      parentRoute: typeof SignedInHasAccountRoute
-    }
     '/_signedIn/_hasAccount/outfits/$outfitId': {
       id: '/_signedIn/_hasAccount/outfits/$outfitId'
       path: '/outfits/$outfitId'
@@ -258,27 +308,77 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignedInHasAccountOutfitsOutfitIdRouteImport
       parentRoute: typeof SignedInHasAccountRoute
     }
+    '/_signedIn/_hasAccount/profile/': {
+      id: '/_signedIn/_hasAccount/profile/'
+      path: '/'
+      fullPath: '/profile/'
+      preLoaderRoute: typeof SignedInHasAccountProfileIndexRouteImport
+      parentRoute: typeof SignedInHasAccountProfileRoute
+    }
+    '/_signedIn/_hasAccount/profile/outfits': {
+      id: '/_signedIn/_hasAccount/profile/outfits'
+      path: '/outfits'
+      fullPath: '/profile/outfits'
+      preLoaderRoute: typeof SignedInHasAccountProfileOutfitsRouteImport
+      parentRoute: typeof SignedInHasAccountProfileRoute
+    }
+    '/_signedIn/_hasAccount/profile/pieces': {
+      id: '/_signedIn/_hasAccount/profile/pieces'
+      path: '/pieces'
+      fullPath: '/profile/pieces'
+      preLoaderRoute: typeof SignedInHasAccountProfilePiecesRouteImport
+      parentRoute: typeof SignedInHasAccountProfileRoute
+    }
+    '/_signedIn/_hasAccount/profile/settings': {
+      id: '/_signedIn/_hasAccount/profile/settings'
+      path: '/settings'
+      fullPath: '/profile/settings'
+      preLoaderRoute: typeof SignedInHasAccountProfileSettingsRouteImport
+      parentRoute: typeof SignedInHasAccountProfileRoute
+    }
   }
 }
 
+interface SignedInHasAccountProfileRouteChildren {
+  SignedInHasAccountProfileOutfitsRoute: typeof SignedInHasAccountProfileOutfitsRoute
+  SignedInHasAccountProfilePiecesRoute: typeof SignedInHasAccountProfilePiecesRoute
+  SignedInHasAccountProfileSettingsRoute: typeof SignedInHasAccountProfileSettingsRoute
+  SignedInHasAccountProfileIndexRoute: typeof SignedInHasAccountProfileIndexRoute
+}
+
+const SignedInHasAccountProfileRouteChildren: SignedInHasAccountProfileRouteChildren =
+  {
+    SignedInHasAccountProfileOutfitsRoute:
+      SignedInHasAccountProfileOutfitsRoute,
+    SignedInHasAccountProfilePiecesRoute: SignedInHasAccountProfilePiecesRoute,
+    SignedInHasAccountProfileSettingsRoute:
+      SignedInHasAccountProfileSettingsRoute,
+    SignedInHasAccountProfileIndexRoute: SignedInHasAccountProfileIndexRoute,
+  }
+
+const SignedInHasAccountProfileRouteWithChildren =
+  SignedInHasAccountProfileRoute._addFileChildren(
+    SignedInHasAccountProfileRouteChildren,
+  )
+
 interface SignedInHasAccountRouteChildren {
   SignedInHasAccountCreateOutfitRoute: typeof SignedInHasAccountCreateOutfitRoute
+  SignedInHasAccountProfileRoute: typeof SignedInHasAccountProfileRouteWithChildren
   SignedInHasAccountProfilePictureTestRoute: typeof SignedInHasAccountProfilePictureTestRoute
   SignedInHasAccountRecommendTestRoute: typeof SignedInHasAccountRecommendTestRoute
   SignedInHasAccountIndexRoute: typeof SignedInHasAccountIndexRoute
   SignedInHasAccountOutfitsOutfitIdRoute: typeof SignedInHasAccountOutfitsOutfitIdRoute
-  SignedInHasAccountOutfitsIndexRoute: typeof SignedInHasAccountOutfitsIndexRoute
 }
 
 const SignedInHasAccountRouteChildren: SignedInHasAccountRouteChildren = {
   SignedInHasAccountCreateOutfitRoute: SignedInHasAccountCreateOutfitRoute,
+  SignedInHasAccountProfileRoute: SignedInHasAccountProfileRouteWithChildren,
   SignedInHasAccountProfilePictureTestRoute:
     SignedInHasAccountProfilePictureTestRoute,
   SignedInHasAccountRecommendTestRoute: SignedInHasAccountRecommendTestRoute,
   SignedInHasAccountIndexRoute: SignedInHasAccountIndexRoute,
   SignedInHasAccountOutfitsOutfitIdRoute:
     SignedInHasAccountOutfitsOutfitIdRoute,
-  SignedInHasAccountOutfitsIndexRoute: SignedInHasAccountOutfitsIndexRoute,
 }
 
 const SignedInHasAccountRouteWithChildren =

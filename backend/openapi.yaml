@@ -542,56 +542,12 @@ components:
         - bottoms
         - shoes
       type: object
-    StylePreferencesPatch:
-      additionalProperties: false
-      properties:
-        bottoms:
-          items:
-            enum:
-              - pants
-              - dress
-              - skirt
-              - shorts
-            type: string
-          type: array
-          uniqueItems: true
-        neckline:
-          items:
-            enum:
-              - modest
-              - high
-              - low
-            type: string
-          type: array
-          uniqueItems: true
-        shoes:
-          items:
-            enum:
-              - sneakers
-              - boots
-              - sandals
-              - heels
-              - flats
-            type: string
-          type: array
-          uniqueItems: true
-        style:
-          items:
-            enum:
-              - chic_avant_garde
-              - timeless_sophisticated
-              - colorful_eclectic
-              - comfortable_relaxed
-            type: string
-          type: array
-          uniqueItems: true
-      type: object
     UpdateStylePreferencesInputBody:
       additionalProperties: false
       properties:
         style_preferences:
-          $ref: "#/components/schemas/StylePreferencesPatch"
-          description: Fields to set. The first write must include all four
+          $ref: "#/components/schemas/StylePreferences"
+          description: Replaces all four fields
       required:
         - style_preferences
       type: object
@@ -977,7 +933,7 @@ paths:
       tags:
         - users
     patch:
-      operationId: update-current-user
+      operationId: update-current-user-style-preferences
       requestBody:
         content:
           application/json:

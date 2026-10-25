@@ -78,7 +78,7 @@ func (c *UserController) CreateUser(ctx context.Context, input *CreateUserInput)
 
 type UpdateStylePreferencesInput struct {
 	Body struct {
-		StylePreferences models.StylePreferencesPatch `json:"style_preferences" doc:"Fields to set. The first write must include all four"`
+		StylePreferences models.StylePreferences `json:"style_preferences" doc:"Replaces all four fields"`
 	}
 }
 

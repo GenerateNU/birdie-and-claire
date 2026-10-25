@@ -83,7 +83,7 @@ const fitTabs: { value: FitField; label: string }[] = [
 const stepCount = 1 + fitTabs.length;
 
 function Onboarding() {
-  const [step, setStep] = useState<"style" | "fit">("style");
+  const [screen, setScreen] = useState<"style" | "fit">("style");
   const [fitTab, setFitTab] = useState<FitField>("neckline");
 
   const [preferences, setPreferences] = useState<StylePreferences>({
@@ -148,18 +148,19 @@ function Onboarding() {
   }
 
   function skipFitTab() {
+    // Passed on directly, because finish runs before the state update lands.
     const cleared = { ...preferences, [fitTab]: [] };
-    clear(fitTab);
+    setPreferences(cleared);
     nextFitTab(cleared);
   }
 
-  if (step === "style") {
+  if (screen === "style") {
     return (
       <Box className="flex min-h-screen flex-col items-center gap-lg p-xl">
         <Header step={1} onBack={null} />
         <Text variant="heading">{questions.style.title}</Text>
         <Cards field="style" preferences={preferences} onToggle={toggle} />
-        <Button label="Next" onClick={() => setStep("fit")} />
+        <Button label="Next" onClick={() => setScreen("fit")} />
         <Button
           label="Skip →"
           variant="secondary"
@@ -167,7 +168,7 @@ function Onboarding() {
           className="self-end"
           onClick={() => {
             clear("style");
-            setStep("fit");
+            setScreen("fit");
           }}
         />
       </Box>
@@ -178,7 +179,7 @@ function Onboarding() {
 
   return (
     <Box className="flex min-h-screen flex-col items-center gap-lg p-xl">
-      <Header step={2 + fitTabIndex} onBack={() => setStep("style")} />
+      <Header step={2 + fitTabIndex} onBack={() => setScreen("style")} />
       <Text variant="heading">{questions[fitTab].title}</Text>
       <Tabs tabs={fitTabs} value={fitTab} onValueChange={setFitTab}>
         <Cards field={fitTab} preferences={preferences} onToggle={toggle} />
@@ -188,7 +189,11 @@ function Onboarding() {
         loading={saving}
         onClick={() => nextFitTab(preferences)}
       />
-      {error && <p className="text-error text-body">Error: {error}</p>}
+      {error && (
+        <Text variant="body" className="text-error">
+          Error: {error}
+        </Text>
+      )}
       <Button
         label="I don't have a preference →"
         variant="secondary"

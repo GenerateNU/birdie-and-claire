@@ -85,7 +85,7 @@ type stylePreferencesProbeOutput struct {
 	}
 }
 
-// stylePreferencesProbe echoes the patch as the repository encodes it for the jsonb merge.
+// stylePreferencesProbe echoes the preferences as the repository encodes them for the jsonb column.
 func stylePreferencesProbe(t *testing.T) humatest.TestAPI {
 	t.Helper()
 
@@ -107,6 +107,13 @@ func stylePreferencesProbe(t *testing.T) humatest.TestAPI {
 	return api
 }
 
+// withField returns valid preferences with one field set to value.
+func withField(field string, value any) map[string]any {
+	preferences := map[string]any{"style": []string{}, "neckline": []string{}, "bottoms": []string{}, "shoes": []string{}}
+	preferences[field] = value
+	return preferences
+}
+
 func TestUpdateStylePreferencesInput(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -120,15 +127,10 @@ func TestUpdateStylePreferencesInput(t *testing.T) {
 			wantStatus: http.StatusOK,
 			wantStored: `{"style":["chic_avant_garde"],"neckline":[],"bottoms":["pants","skirt"],"shoes":[]}`,
 		},
-		{
-			name:       "missing fields are left out",
-			body:       map[string]any{"style_preferences": map[string]any{"shoes": []string{"heels"}}},
-			wantStatus: http.StatusOK,
-			wantStored: `{"shoes":["heels"]}`,
-		},
-		{name: "unknown value", body: map[string]any{"style_preferences": map[string]any{"neckline": []string{"plunging"}}}, wantStatus: http.StatusUnprocessableEntity},
-		{name: "duplicate value", body: map[string]any{"style_preferences": map[string]any{"shoes": []string{"heels", "heels"}}}, wantStatus: http.StatusUnprocessableEntity},
-		{name: "null field is treated as missing", body: map[string]any{"style_preferences": map[string]any{"bottoms": nil}}, wantStatus: http.StatusOK, wantStored: `{}`},
+		{name: "missing field", body: map[string]any{"style_preferences": map[string]any{"style": []string{}, "neckline": []string{}, "bottoms": []string{}}}, wantStatus: http.StatusUnprocessableEntity},
+		{name: "null field", body: map[string]any{"style_preferences": withField("bottoms", nil)}, wantStatus: http.StatusUnprocessableEntity},
+		{name: "unknown value", body: map[string]any{"style_preferences": withField("neckline", []string{"plunging"})}, wantStatus: http.StatusUnprocessableEntity},
+		{name: "duplicate value", body: map[string]any{"style_preferences": withField("shoes", []string{"heels", "heels"})}, wantStatus: http.StatusUnprocessableEntity},
 		{name: "missing style_preferences", body: map[string]any{}, wantStatus: http.StatusUnprocessableEntity},
 	}
 

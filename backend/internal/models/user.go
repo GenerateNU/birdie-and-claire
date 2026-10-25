@@ -42,12 +42,3 @@ func (p *StylePreferences) Scan(src any) error {
 	}
 	return json.Unmarshal(raw, p)
 }
-
-// StylePreferencesPatch changes only the fields it carries; a missing field keeps its stored
-// value. omitzero keeps a sent empty list (no preference) apart from a missing field (nil).
-type StylePreferencesPatch struct {
-	Style    []string `json:"style,omitzero" enum:"chic_avant_garde,timeless_sophisticated,colorful_eclectic,comfortable_relaxed" uniqueItems:"true" nullable:"false"`
-	Neckline []string `json:"neckline,omitzero" enum:"modest,high,low" uniqueItems:"true" nullable:"false"`
-	Bottoms  []string `json:"bottoms,omitzero" enum:"pants,dress,skirt,shorts" uniqueItems:"true" nullable:"false"`
-	Shoes    []string `json:"shoes,omitzero" enum:"sneakers,boots,sandals,heels,flats" uniqueItems:"true" nullable:"false"`
-}

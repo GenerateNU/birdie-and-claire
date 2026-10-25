@@ -26,7 +26,7 @@ type UserService interface {
 	GetUser(ctx context.Context) (models.CurrentUserResponse, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (models.UserResponse, error)
 	CreateUser(ctx context.Context, name string) (models.UserResponse, error)
-	UpdateStylePreferences(ctx context.Context, patch models.StylePreferencesPatch) (models.CurrentUserResponse, error)
+	UpdateStylePreferences(ctx context.Context, preferences models.StylePreferences) (models.CurrentUserResponse, error)
 	ClearStylePreferences(ctx context.Context) error
 	CreateProfilePictureUploadURL(ctx context.Context, contentType string) (storage.PresignedUpload, error)
 	ConfirmProfilePicture(ctx context.Context, key string) error
@@ -68,21 +68,9 @@ func (s *userService) CreateUser(ctx context.Context, name string) (models.UserR
 	return models.UserResponse{ID: user.ID, Name: user.Name}, nil
 }
 
-func (s *userService) UpdateStylePreferences(ctx context.Context, patch models.StylePreferencesPatch) (models.CurrentUserResponse, error) {
+func (s *userService) UpdateStylePreferences(ctx context.Context, preferences models.StylePreferences) (models.CurrentUserResponse, error) {
 	id := auth.UserID(ctx)
-	current, err := s.repo.User.GetByID(ctx, id)
-	if err != nil {
-		return models.CurrentUserResponse{}, err
-	}
-
-	// The first write ends onboarding, so it has to answer every field. Stored preferences then
-	// always have all four, and later writes can change one at a time.
-	missingField := patch.Style == nil || patch.Neckline == nil || patch.Bottoms == nil || patch.Shoes == nil
-	if current.StylePreferences == nil && missingField {
-		return models.CurrentUserResponse{}, errs.ErrInvalidInput
-	}
-
-	user, err := s.repo.User.UpdateStylePreferences(ctx, id, patch)
+	user, err := s.repo.User.UpdateStylePreferences(ctx, id, preferences)
 	if err != nil {
 		return models.CurrentUserResponse{}, err
 	}

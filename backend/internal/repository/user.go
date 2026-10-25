@@ -21,7 +21,7 @@ type UserRepository interface {
 	CreateUser(ctx context.Context, id uuid.UUID, name string) (models.User, error)
 	GetByID(ctx context.Context, id uuid.UUID) (models.User, error)
 	SetProfilePictureKey(ctx context.Context, id uuid.UUID, key string) error
-	UpdateStylePreferences(ctx context.Context, id uuid.UUID, patch models.StylePreferencesPatch) (models.User, error)
+	UpdateStylePreferences(ctx context.Context, id uuid.UUID, preferences models.StylePreferences) (models.User, error)
 	ClearStylePreferences(ctx context.Context, id uuid.UUID) error
 }
 
@@ -83,8 +83,8 @@ func (r *userRepository) SetProfilePictureKey(ctx context.Context, id uuid.UUID,
 	return nil
 }
 
-func (r *userRepository) UpdateStylePreferences(ctx context.Context, id uuid.UUID, patch models.StylePreferencesPatch) (models.User, error) {
-	encoded, err := json.Marshal(patch)
+func (r *userRepository) UpdateStylePreferences(ctx context.Context, id uuid.UUID, preferences models.StylePreferences) (models.User, error) {
+	encoded, err := json.Marshal(preferences)
 	if err != nil {
 		return models.User{}, fmt.Errorf("encode style preferences for user %s: %w", id, err)
 	}
@@ -92,7 +92,7 @@ func (r *userRepository) UpdateStylePreferences(ctx context.Context, id uuid.UUI
 	var user models.User
 	err = r.db.QueryRowContext(ctx, `
 		UPDATE users
-		SET style_preferences = COALESCE(style_preferences, '{}'::jsonb) || $1::jsonb, updated_at = now()
+		SET style_preferences = $1::jsonb, updated_at = now()
 		WHERE id = $2
 		RETURNING id, COALESCE(name, ''), profile_picture_key, style_preferences
 	`, string(encoded), id).Scan(&user.ID, &user.Name, &user.ProfilePictureKey, &user.StylePreferences)
