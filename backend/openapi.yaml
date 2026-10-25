@@ -61,6 +61,25 @@ components:
       required:
         - name
       type: object
+    CurrentUserResponse:
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        profile_picture_url:
+          type:
+            - string
+            - "null"
+        style_preferences:
+          $ref: "#/components/schemas/StylePreferences"
+          description: Missing until the user finishes the onboarding preference steps
+      required:
+        - id
+        - name
+        - profile_picture_url
+      type: object
     ErrorDetail:
       additionalProperties: false
       properties:
@@ -474,6 +493,108 @@ components:
         - name
         - products
       type: object
+    StylePreferences:
+      additionalProperties: false
+      properties:
+        bottoms:
+          items:
+            enum:
+              - pants
+              - dress
+              - skirt
+              - shorts
+            type: string
+          type: array
+          uniqueItems: true
+        neckline:
+          items:
+            enum:
+              - modest
+              - high
+              - low
+            type: string
+          type: array
+          uniqueItems: true
+        shoes:
+          items:
+            enum:
+              - sneakers
+              - boots
+              - sandals
+              - heels
+              - flats
+            type: string
+          type: array
+          uniqueItems: true
+        style:
+          items:
+            enum:
+              - chic_avant_garde
+              - timeless_sophisticated
+              - colorful_eclectic
+              - comfortable_relaxed
+            type: string
+          type: array
+          uniqueItems: true
+      required:
+        - style
+        - neckline
+        - bottoms
+        - shoes
+      type: object
+    StylePreferencesPatch:
+      additionalProperties: false
+      properties:
+        bottoms:
+          items:
+            enum:
+              - pants
+              - dress
+              - skirt
+              - shorts
+            type: string
+          type: array
+          uniqueItems: true
+        neckline:
+          items:
+            enum:
+              - modest
+              - high
+              - low
+            type: string
+          type: array
+          uniqueItems: true
+        shoes:
+          items:
+            enum:
+              - sneakers
+              - boots
+              - sandals
+              - heels
+              - flats
+            type: string
+          type: array
+          uniqueItems: true
+        style:
+          items:
+            enum:
+              - chic_avant_garde
+              - timeless_sophisticated
+              - colorful_eclectic
+              - comfortable_relaxed
+            type: string
+          type: array
+          uniqueItems: true
+      type: object
+    UpdateStylePreferencesInputBody:
+      additionalProperties: false
+      properties:
+        style_preferences:
+          $ref: "#/components/schemas/StylePreferencesPatch"
+          description: Fields to set. The first write must include all four
+      required:
+        - style_preferences
+      type: object
     UserResponse:
       additionalProperties: false
       properties:
@@ -842,7 +963,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UserResponse"
+                $ref: "#/components/schemas/CurrentUserResponse"
           description: OK
         default:
           content:
@@ -853,6 +974,32 @@ paths:
       security:
         - bearer: []
       summary: Get the caller's user
+      tags:
+        - users
+    patch:
+      operationId: update-current-user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateStylePreferencesInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrentUserResponse"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Update the caller's style preferences
       tags:
         - users
     post:
@@ -936,6 +1083,23 @@ paths:
       security:
         - bearer: []
       summary: Get a presigned URL to upload the caller's profile picture
+      tags:
+        - users
+  /api/v1/users/me/style-preferences:
+    delete:
+      operationId: clear-current-user-style-preferences
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Clear the caller's style preferences so onboarding asks for them again
       tags:
         - users
   /api/v1/users/{id}:

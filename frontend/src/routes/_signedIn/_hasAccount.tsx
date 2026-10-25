@@ -1,13 +1,17 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
-import { AccountError, hasAccountQuery } from "@/account";
+import { AccountError, accountStatusQuery } from "@/account";
 
 export const Route = createFileRoute("/_signedIn/_hasAccount")({
   beforeLoad: async ({ context }) => {
-    const hasAccount = await context.queryClient.query(hasAccountQuery(context.userId));
+    const status = await context.queryClient.query(accountStatusQuery(context.userId));
 
-    if (!hasAccount) {
+    if (status === "none") {
       throw redirect({ to: "/create-account", replace: true });
+    }
+
+    if (status === "needs-preferences") {
+      throw redirect({ to: "/onboarding", replace: true });
     }
   },
   errorComponent: AccountError,

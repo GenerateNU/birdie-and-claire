@@ -78,3 +78,79 @@ func TestCreateUserName(t *testing.T) {
 		})
 	}
 }
+
+type stylePreferencesProbeOutput struct {
+	Body struct {
+		Stored string `json:"stored"`
+	}
+}
+
+// stylePreferencesProbe echoes the patch as the repository encodes it for the jsonb merge.
+func stylePreferencesProbe(t *testing.T) humatest.TestAPI {
+	t.Helper()
+
+	_, api := humatest.New(t)
+	huma.Register(api, huma.Operation{
+		OperationID: "style-preferences-probe",
+		Method:      http.MethodPatch,
+		Path:        "/probe",
+	}, func(_ context.Context, input *controllers.UpdateStylePreferencesInput) (*stylePreferencesProbeOutput, error) {
+		encoded, err := json.Marshal(input.Body.StylePreferences)
+		if err != nil {
+			return nil, err
+		}
+		output := &stylePreferencesProbeOutput{}
+		output.Body.Stored = string(encoded)
+		return output, nil
+	})
+
+	return api
+}
+
+func TestUpdateStylePreferencesInput(t *testing.T) {
+	tests := []struct {
+		name       string
+		body       map[string]any
+		wantStatus int
+		wantStored string
+	}{
+		{
+			name:       "all four, empty list kept as no preference",
+			body:       map[string]any{"style_preferences": map[string]any{"style": []string{"chic_avant_garde"}, "neckline": []string{}, "bottoms": []string{"pants", "skirt"}, "shoes": []string{}}},
+			wantStatus: http.StatusOK,
+			wantStored: `{"style":["chic_avant_garde"],"neckline":[],"bottoms":["pants","skirt"],"shoes":[]}`,
+		},
+		{
+			name:       "missing fields are left out",
+			body:       map[string]any{"style_preferences": map[string]any{"shoes": []string{"heels"}}},
+			wantStatus: http.StatusOK,
+			wantStored: `{"shoes":["heels"]}`,
+		},
+		{name: "unknown value", body: map[string]any{"style_preferences": map[string]any{"neckline": []string{"plunging"}}}, wantStatus: http.StatusUnprocessableEntity},
+		{name: "duplicate value", body: map[string]any{"style_preferences": map[string]any{"shoes": []string{"heels", "heels"}}}, wantStatus: http.StatusUnprocessableEntity},
+		{name: "null field is treated as missing", body: map[string]any{"style_preferences": map[string]any{"bottoms": nil}}, wantStatus: http.StatusOK, wantStored: `{}`},
+		{name: "missing style_preferences", body: map[string]any{}, wantStatus: http.StatusUnprocessableEntity},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			response := stylePreferencesProbe(t).Patch("/probe", test.body)
+			if response.Code != test.wantStatus {
+				t.Fatalf("status = %d, want %d: %s", response.Code, test.wantStatus, response.Body)
+			}
+			if test.wantStatus != http.StatusOK {
+				return
+			}
+
+			var echoed struct {
+				Stored string `json:"stored"`
+			}
+			if err := json.Unmarshal(response.Body.Bytes(), &echoed); err != nil {
+				t.Fatalf("decode body %s: %v", response.Body, err)
+			}
+			if echoed.Stored != test.wantStored {
+				t.Fatalf("stored = %s, want %s", echoed.Stored, test.wantStored)
+			}
+		})
+	}
+}

@@ -37,6 +37,22 @@ func UserRoutes(api huma.API, params types.RouteParams) {
 	}, controller.CreateUser)
 
 	huma.Register(api, huma.Operation{
+		OperationID: "update-current-user",
+		Method:      http.MethodPatch,
+		Path:        "/api/v1/users/me",
+		Summary:     "Update the caller's style preferences",
+		Tags:        []string{"users"},
+	}, controller.UpdateStylePreferences)
+
+	huma.Register(api, huma.Operation{
+		OperationID: "clear-current-user-style-preferences",
+		Method:      http.MethodDelete,
+		Path:        "/api/v1/users/me/style-preferences",
+		Summary:     "Clear the caller's style preferences so onboarding asks for them again",
+		Tags:        []string{"users"},
+	}, controller.ClearStylePreferences)
+
+	huma.Register(api, huma.Operation{
 		OperationID: "get-user",
 		Method:      http.MethodGet,
 		Path:        "/api/v1/users/{id}",

@@ -47,6 +47,8 @@ function Home() {
   const queryClient = useQueryClient();
   const [seeding, setSeeding] = useState(false);
   const [seedStatus, setSeedStatus] = useState<string | null>(null);
+  const [resettingPreferences, setResettingPreferences] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
 
   async function seedOutfits() {
     setSeeding(true);
@@ -75,6 +77,25 @@ function Home() {
       // Refetch the outfits list even after a partial failure, since some outfits may exist.
       await queryClient.invalidateQueries({ queryKey: ["/api/v1/outfits"] });
       setSeeding(false);
+    }
+  }
+
+  async function resetPreferences() {
+    setResettingPreferences(true);
+    setResetError(null);
+
+    try {
+      const res = await apiFetch("/api/v1/users/me/style-preferences", { method: "DELETE" });
+
+      if (!res.ok) {
+        throw new Error(`${res.status}: ${await res.text()}`);
+      }
+
+      // A full page load refetches the cached account status, which now sends us to onboarding.
+      window.location.assign("/");
+    } catch (err) {
+      setResettingPreferences(false);
+      setResetError(err instanceof Error ? err.message : String(err));
     }
   }
 
@@ -115,6 +136,19 @@ function Home() {
         {seedStatus && (
           <Text variant="body" className="text-secondary">
             {seedStatus}
+          </Text>
+        )}
+      </div>
+      <div className="mt-lg flex flex-col items-start gap-xs">
+        <Button
+          label="Reset style preferences"
+          loading={resettingPreferences}
+          loadingLabel="Resetting…"
+          onClick={() => void resetPreferences()}
+        />
+        {resetError && (
+          <Text variant="body" className="text-error">
+            Reset failed: {resetError}
           </Text>
         )}
       </div>

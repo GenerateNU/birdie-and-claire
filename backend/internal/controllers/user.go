@@ -36,12 +36,16 @@ func (c *UserController) GetUserByID(ctx context.Context, input *GetUserByIDInpu
 	return &GetUserOutput{Body: response}, nil
 }
 
-func (c *UserController) GetUser(ctx context.Context, _ *struct{}) (*GetUserOutput, error) {
+type CurrentUserOutput struct {
+	Body models.CurrentUserResponse
+}
+
+func (c *UserController) GetUser(ctx context.Context, _ *struct{}) (*CurrentUserOutput, error) {
 	response, err := c.service.GetUser(ctx)
 	if err != nil {
 		return nil, errs.ToHuma(ctx, err)
 	}
-	return &GetUserOutput{Body: response}, nil
+	return &CurrentUserOutput{Body: response}, nil
 }
 
 type CreateUserInput struct {
@@ -70,6 +74,29 @@ func (c *UserController) CreateUser(ctx context.Context, input *CreateUserInput)
 		return nil, errs.ToHuma(ctx, err)
 	}
 	return &CreateUserOutput{Body: response}, nil
+}
+
+type UpdateStylePreferencesInput struct {
+	Body struct {
+		StylePreferences models.StylePreferencesPatch `json:"style_preferences" doc:"Fields to set. The first write must include all four"`
+	}
+}
+
+func (c *UserController) UpdateStylePreferences(ctx context.Context, input *UpdateStylePreferencesInput) (*CurrentUserOutput, error) {
+	response, err := c.service.UpdateStylePreferences(ctx, input.Body.StylePreferences)
+	if err != nil {
+		return nil, errs.ToHuma(ctx, err)
+	}
+	return &CurrentUserOutput{Body: response}, nil
+}
+
+type ClearStylePreferencesOutput struct{}
+
+func (c *UserController) ClearStylePreferences(ctx context.Context, _ *struct{}) (*ClearStylePreferencesOutput, error) {
+	if err := c.service.ClearStylePreferences(ctx); err != nil {
+		return nil, errs.ToHuma(ctx, err)
+	}
+	return &ClearStylePreferencesOutput{}, nil
 }
 
 type ProfilePictureUploadURLInput struct {

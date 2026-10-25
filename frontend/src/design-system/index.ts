@@ -16,11 +16,15 @@ export { SearchField } from "./components/inputs/search-field";
 
 export { TextField } from "./components/inputs/text-field";
 
+export { Tabs } from "./components/tabs/tabs";
+
 export { Dialog } from "./components/dialog/dialog";
 
 export { Empty } from "./components/status/empty";
 
 export { ErrorState } from "./components/status/error";
+
+export { ProgressBar } from "./components/status/progress-bar";
 
 export { Spinner } from "./components/status/spinner";
 

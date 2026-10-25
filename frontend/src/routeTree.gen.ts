@@ -14,6 +14,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as PlaygroundRouteImport } from './routes/playground'
 import { Route as SignedInHasAccountRouteImport } from './routes/_signedIn/_hasAccount'
 import { Route as SignedInCreateAccountRouteImport } from './routes/_signedIn/create-account'
+import { Route as SignedInOnboardingRouteImport } from './routes/_signedIn/onboarding'
 import { Route as SignedInHasAccountIndexRouteImport } from './routes/_signedIn/_hasAccount/index'
 import { Route as SignedInHasAccountCreateOutfitRouteImport } from './routes/_signedIn/_hasAccount/create-outfit'
 import { Route as SignedInHasAccountProfilePictureTestRouteImport } from './routes/_signedIn/_hasAccount/profile-picture-test'
@@ -42,6 +43,11 @@ const SignedInHasAccountRoute = SignedInHasAccountRouteImport.update({
 const SignedInCreateAccountRoute = SignedInCreateAccountRouteImport.update({
   id: '/create-account',
   path: '/create-account',
+  getParentRoute: () => SignedInRoute,
+} as any)
+const SignedInOnboardingRoute = SignedInOnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
   getParentRoute: () => SignedInRoute,
 } as any)
 const SignedInHasAccountIndexRoute = SignedInHasAccountIndexRouteImport.update({
@@ -85,6 +91,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/playground': typeof PlaygroundRoute
   '/create-account': typeof SignedInCreateAccountRoute
+  '/onboarding': typeof SignedInOnboardingRoute
   '/create-outfit': typeof SignedInHasAccountCreateOutfitRoute
   '/profile-picture-test': typeof SignedInHasAccountProfilePictureTestRoute
   '/recommend-test': typeof SignedInHasAccountRecommendTestRoute
@@ -96,6 +103,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/playground': typeof PlaygroundRoute
   '/create-account': typeof SignedInCreateAccountRoute
+  '/onboarding': typeof SignedInOnboardingRoute
   '/create-outfit': typeof SignedInHasAccountCreateOutfitRoute
   '/profile-picture-test': typeof SignedInHasAccountProfilePictureTestRoute
   '/recommend-test': typeof SignedInHasAccountRecommendTestRoute
@@ -109,6 +117,7 @@ export interface FileRoutesById {
   '/playground': typeof PlaygroundRoute
   '/_signedIn/_hasAccount': typeof SignedInHasAccountRouteWithChildren
   '/_signedIn/create-account': typeof SignedInCreateAccountRoute
+  '/_signedIn/onboarding': typeof SignedInOnboardingRoute
   '/_signedIn/_hasAccount/create-outfit': typeof SignedInHasAccountCreateOutfitRoute
   '/_signedIn/_hasAccount/profile-picture-test': typeof SignedInHasAccountProfilePictureTestRoute
   '/_signedIn/_hasAccount/recommend-test': typeof SignedInHasAccountRecommendTestRoute
@@ -123,6 +132,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/playground'
     | '/create-account'
+    | '/onboarding'
     | '/create-outfit'
     | '/profile-picture-test'
     | '/recommend-test'
@@ -134,6 +144,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/playground'
     | '/create-account'
+    | '/onboarding'
     | '/create-outfit'
     | '/profile-picture-test'
     | '/recommend-test'
@@ -146,6 +157,7 @@ export interface FileRouteTypes {
     | '/playground'
     | '/_signedIn/_hasAccount'
     | '/_signedIn/create-account'
+    | '/_signedIn/onboarding'
     | '/_signedIn/_hasAccount/create-outfit'
     | '/_signedIn/_hasAccount/profile-picture-test'
     | '/_signedIn/_hasAccount/recommend-test'
@@ -195,6 +207,13 @@ declare module '@tanstack/react-router' {
       path: '/create-account'
       fullPath: '/create-account'
       preLoaderRoute: typeof SignedInCreateAccountRouteImport
+      parentRoute: typeof SignedInRoute
+    }
+    '/_signedIn/onboarding': {
+      id: '/_signedIn/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof SignedInOnboardingRouteImport
       parentRoute: typeof SignedInRoute
     }
     '/_signedIn/_hasAccount/': {
@@ -268,11 +287,13 @@ const SignedInHasAccountRouteWithChildren =
 interface SignedInRouteChildren {
   SignedInHasAccountRoute: typeof SignedInHasAccountRouteWithChildren
   SignedInCreateAccountRoute: typeof SignedInCreateAccountRoute
+  SignedInOnboardingRoute: typeof SignedInOnboardingRoute
 }
 
 const SignedInRouteChildren: SignedInRouteChildren = {
   SignedInHasAccountRoute: SignedInHasAccountRouteWithChildren,
   SignedInCreateAccountRoute: SignedInCreateAccountRoute,
+  SignedInOnboardingRoute: SignedInOnboardingRoute,
 }
 
 const SignedInRouteWithChildren = SignedInRoute._addFileChildren(
