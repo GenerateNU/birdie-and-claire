@@ -28,3 +28,9 @@ type Product struct {
 	CreatedAt   time.Time   `json:"created_at"`
 	UpdatedAt   time.Time   `json:"updated_at"`
 }
+
+// ProductResponse is a product with its first image, so a client can draw it without fetching its images.
+type ProductResponse struct {
+	Product
+	ImageURL *string `json:"image_url" doc:"URL of the product's lowest-position image, or null when it has none"`
+}

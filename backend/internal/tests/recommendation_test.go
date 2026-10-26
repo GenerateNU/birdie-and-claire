@@ -72,14 +72,14 @@ type fakeProducts struct {
 	calls []findSimilarCall
 }
 
-func (p *fakeProducts) FindSimilar(_ context.Context, embedding []float32, slot models.ProductSlot, excludeTags, niceTags []string, limit int) ([]models.RecommendedProduct, error) {
+func (p *fakeProducts) FindSimilar(_ context.Context, embedding []float32, slot models.ProductSlot, excludeTags, niceTags []string, limit int) ([]models.ProductResponse, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.calls = append(p.calls, findSimilarCall{embedding: embedding, slot: slot, excludeTags: excludeTags, niceTags: niceTags, limit: limit})
 	if p.err != nil {
 		return nil, p.err
 	}
-	return []models.RecommendedProduct{{Product: models.Product{ID: uuid.New(), Title: string(slot), Slot: slot, Tags: []string{}}}}, nil
+	return []models.ProductResponse{{Product: models.Product{ID: uuid.New(), Title: string(slot), Slot: slot, Tags: []string{}}}}, nil
 }
 
 func (p *fakeProducts) callsBySlot() map[models.ProductSlot]findSimilarCall {
@@ -96,7 +96,7 @@ func newRecommendationService(answer string, emb *fakeEmbedder, products *fakePr
 	return services.NewRecommendationService(&repository.Repository{Product: products}, &llmtest.Fake{Text: answer}, emb)
 }
 
-func titles(products []models.RecommendedProduct) []string {
+func titles(products []models.ProductResponse) []string {
 	var got []string
 	for _, product := range products {
 		got = append(got, product.Title)
@@ -332,7 +332,7 @@ func TestRecommendRouteReturnsProductsPerSlot(t *testing.T) {
 	if err := json.Unmarshal(response.Body.Bytes(), &decoded); err != nil {
 		t.Fatalf("decode body %s: %v", response.Body, err)
 	}
-	productsBySlot := map[string][]models.RecommendedProduct{"top": decoded.Top, "bottom": decoded.Bottom, "accessory": decoded.Accessory}
+	productsBySlot := map[string][]models.ProductResponse{"top": decoded.Top, "bottom": decoded.Bottom, "accessory": decoded.Accessory}
 	for _, slot := range []string{"top", "bottom", "accessory"} {
 		if !slices.Equal(titles(productsBySlot[slot]), []string{slot}) {
 			t.Errorf("%s = %+v, want that slot's product", slot, productsBySlot[slot])

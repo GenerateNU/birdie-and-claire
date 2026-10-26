@@ -15,24 +15,17 @@ type Outfit struct {
 	UpdatedAt time.Time  `json:"updated_at"`
 }
 
-// OutfitProduct is a product in an outfit, with its first image so a client can draw the outfit
-// without fetching each product's images.
-type OutfitProduct struct {
-	Product
-	ImageURL *string `json:"image_url" doc:"URL of the product's lowest-position image, or null when it has none"`
-}
-
 type OutfitResponse struct {
 	Outfit
-	Products []OutfitProduct `json:"products" nullable:"false"`
+	Products []ProductResponse `json:"products" nullable:"false"`
 }
 
 // SharedOutfitResponse is what anyone with a share link sees, so it leaves out
 // the owner and timestamps.
 type SharedOutfitResponse struct {
-	ID       uuid.UUID       `json:"id"`
-	Name     string          `json:"name"`
-	Products []OutfitProduct `json:"products" nullable:"false"`
+	ID       uuid.UUID         `json:"id"`
+	Name     string            `json:"name"`
+	Products []ProductResponse `json:"products" nullable:"false"`
 }
 
 type ShareOutfitResponse struct {

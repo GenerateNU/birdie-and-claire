@@ -14,7 +14,7 @@ import (
 type ProductRepository interface {
 	Exists(ctx context.Context, productID uuid.UUID) (bool, error)
 	// FindSimilar ranks a slot's products by distance to embedding, less a bonus per matching niceTag; pass the tags lowercase.
-	FindSimilar(ctx context.Context, embedding []float32, slot models.ProductSlot, excludeTags, niceTags []string, limit int) ([]models.RecommendedProduct, error)
+	FindSimilar(ctx context.Context, embedding []float32, slot models.ProductSlot, excludeTags, niceTags []string, limit int) ([]models.ProductResponse, error)
 }
 
 // untuned: a guess at how much one matching nice tag is worth in cosine distance
@@ -39,7 +39,7 @@ func (r *productRepository) Exists(ctx context.Context, productID uuid.UUID) (bo
 	return exists, nil
 }
 
-func (r *productRepository) FindSimilar(ctx context.Context, embedding []float32, slot models.ProductSlot, excludeTags, niceTags []string, limit int) ([]models.RecommendedProduct, error) {
+func (r *productRepository) FindSimilar(ctx context.Context, embedding []float32, slot models.ProductSlot, excludeTags, niceTags []string, limit int) ([]models.ProductResponse, error) {
 	rows, err := r.db.QueryContext(ctx, `
 		-- Ranked and limited before the image join, so only the returned products look up an image.
 		WITH ranked AS (
@@ -72,9 +72,9 @@ func (r *productRepository) FindSimilar(ctx context.Context, embedding []float32
 	}
 	defer func() { _ = rows.Close() }()
 
-	products := make([]models.RecommendedProduct, 0)
+	products := make([]models.ProductResponse, 0)
 	for rows.Next() {
-		var product models.RecommendedProduct
+		var product models.ProductResponse
 		if err := rows.Scan(
 			&product.ID,
 			&product.ShopifyID,
