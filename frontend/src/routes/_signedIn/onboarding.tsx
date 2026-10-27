@@ -83,8 +83,8 @@ const fitTabs: { value: FitField; label: string }[] = [
 
 const fieldOrder: Field[] = ["style", ...fitTabs.map((tab) => tab.value)];
 
-// One step per section. Style counts once the user is past it, and the fit section counts only on
-// the last field, where Finish shows, so skipping ahead never fills the bar early.
+// One step per section. Style counts once the user is past it, and the fit section counts on the
+// last field, where Finish shows.
 const progressStepCount = 2;
 
 function progressStep(index: number) {
@@ -109,6 +109,7 @@ function Onboarding() {
 
   const currentIndex = fieldOrder.indexOf(currentField);
   const onLastField = currentIndex === fieldOrder.length - 1;
+  const onFitField = currentField !== "style";
 
   function toggle(field: Field, value: string, pressed: boolean) {
     setPreferences((current) => ({
@@ -143,11 +144,11 @@ function Onboarding() {
     }
   }
 
-  function nextFieldOrFinish(preferencesToSave: StylePreferences) {
+  function nextFieldOrFinish() {
     const next = fieldOrder[currentIndex + 1];
 
     if (next === undefined) {
-      void finish(preferencesToSave);
+      void finish(preferences);
 
       return;
     }
@@ -155,17 +156,18 @@ function Onboarding() {
     setCurrentField(next);
   }
 
-  function skipWithNoPreference() {
-    // Passed on directly, because finish runs before the state update lands.
-    const cleared = { ...preferences, [currentField]: [] };
-    setPreferences(cleared);
-    nextFieldOrFinish(cleared);
+  function nextButtonLabel() {
+    if (preferences[currentField].length === 0) {
+      return "No Preference";
+    }
+
+    return onLastField ? "Finish" : "Next";
   }
 
   return (
     <Box className="flex min-h-screen flex-col p-xl pb-xxl">
       <Box className="grid h-xl w-full grid-cols-3 items-center">
-        {currentField !== "style" && (
+        {onFitField && (
           <Button
             label="← Back"
             variant="secondary"
@@ -188,9 +190,7 @@ function Onboarding() {
           <img src={logo} alt="Birdie & Claire" className="w-full max-w-xs" />
           <Text variant="heading">{questions[currentField].title}</Text>
         </Box>
-        {currentField === "style" ? (
-          <Cards field={currentField} preferences={preferences} onToggle={toggle} />
-        ) : (
+        {onFitField ? (
           <Tabs
             tabs={fitTabs}
             value={currentField}
@@ -199,26 +199,28 @@ function Onboarding() {
           >
             <Cards field={currentField} preferences={preferences} onToggle={toggle} />
           </Tabs>
+        ) : (
+          <Cards field={currentField} preferences={preferences} onToggle={toggle} />
         )}
-        <Button
-          label={onLastField ? "Finish" : "Next"}
-          loading={saving}
-          onClick={() => nextFieldOrFinish(preferences)}
-        />
+        <Button label={nextButtonLabel()} loading={saving} onClick={nextFieldOrFinish} />
         {error && (
           <Text variant="body" className="text-error">
             Error: {error}
           </Text>
         )}
       </Box>
-      <Button
-        label="Skip →"
-        variant="secondary"
-        size="sm"
-        className="fixed bottom-lg right-lg"
-        disabled={saving}
-        onClick={skipWithNoPreference}
-      />
+      {/* Per design, Skip starts on the fit fields. It saves what's picked so far; fields the
+          user hasn't reached are still empty, so they save as no preference. */}
+      {onFitField && (
+        <Button
+          label="Skip →"
+          variant="secondary"
+          size="sm"
+          className="fixed bottom-lg right-lg"
+          disabled={saving}
+          onClick={() => void finish(preferences)}
+        />
+      )}
     </Box>
   );
 }
