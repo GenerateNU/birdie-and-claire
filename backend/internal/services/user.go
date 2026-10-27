@@ -26,7 +26,7 @@ type UserService interface {
 	GetUser(ctx context.Context) (models.CurrentUserResponse, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (models.UserResponse, error)
 	CreateUser(ctx context.Context, name string) (models.UserResponse, error)
-	UpdateStylePreferences(ctx context.Context, preferences models.StylePreferences) (models.CurrentUserResponse, error)
+	ReplaceStylePreferences(ctx context.Context, preferences models.StylePreferences) (models.CurrentUserResponse, error)
 	ClearStylePreferences(ctx context.Context) error
 	CreateProfilePictureUploadURL(ctx context.Context, contentType string) (storage.PresignedUpload, error)
 	ConfirmProfilePicture(ctx context.Context, key string) error
@@ -47,7 +47,7 @@ func (s *userService) GetUser(ctx context.Context) (models.CurrentUserResponse, 
 	if err != nil {
 		return models.CurrentUserResponse{}, err
 	}
-	return models.CurrentUserResponse{UserResponse: s.userResponse(user), StylePreferences: user.StylePreferences}, nil
+	return models.CurrentUserResponse{UserResponse: s.buildUserResponse(user), StylePreferences: user.StylePreferences}, nil
 }
 
 func (s *userService) GetUserByID(ctx context.Context, id uuid.UUID) (models.UserResponse, error) {
@@ -55,7 +55,7 @@ func (s *userService) GetUserByID(ctx context.Context, id uuid.UUID) (models.Use
 	if err != nil {
 		return models.UserResponse{}, err
 	}
-	return s.userResponse(user), nil
+	return s.buildUserResponse(user), nil
 }
 
 func (s *userService) CreateUser(ctx context.Context, name string) (models.UserResponse, error) {
@@ -68,17 +68,16 @@ func (s *userService) CreateUser(ctx context.Context, name string) (models.UserR
 	return models.UserResponse{ID: user.ID, Name: user.Name}, nil
 }
 
-func (s *userService) UpdateStylePreferences(ctx context.Context, preferences models.StylePreferences) (models.CurrentUserResponse, error) {
+func (s *userService) ReplaceStylePreferences(ctx context.Context, preferences models.StylePreferences) (models.CurrentUserResponse, error) {
 	id := auth.UserID(ctx)
-	user, err := s.repo.User.UpdateStylePreferences(ctx, id, preferences)
+	user, err := s.repo.User.ReplaceStylePreferences(ctx, id, preferences)
 	if err != nil {
 		return models.CurrentUserResponse{}, err
 	}
-	log.Debug(ctx, "updated style preferences", "user", id)
-	return models.CurrentUserResponse{UserResponse: s.userResponse(user), StylePreferences: user.StylePreferences}, nil
+	log.Debug(ctx, "replaced style preferences", "user", id)
+	return models.CurrentUserResponse{UserResponse: s.buildUserResponse(user), StylePreferences: user.StylePreferences}, nil
 }
 
-// ClearStylePreferences sends the user back through the onboarding preference steps.
 func (s *userService) ClearStylePreferences(ctx context.Context) error {
 	id := auth.UserID(ctx)
 	if err := s.repo.User.ClearStylePreferences(ctx, id); err != nil {
@@ -88,7 +87,7 @@ func (s *userService) ClearStylePreferences(ctx context.Context) error {
 	return nil
 }
 
-func (s *userService) userResponse(user models.User) models.UserResponse {
+func (s *userService) buildUserResponse(user models.User) models.UserResponse {
 	response := models.UserResponse{ID: user.ID, Name: user.Name}
 	if user.ProfilePictureKey != nil {
 		url := s.store.PublicURL(*user.ProfilePictureKey)

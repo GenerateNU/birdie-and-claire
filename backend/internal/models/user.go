@@ -35,7 +35,6 @@ type StylePreferences struct {
 	Shoes    []string `json:"shoes" enum:"sneakers,boots,sandals,heels,flats" uniqueItems:"true" nullable:"false"`
 }
 
-// Value writes the users.style_preferences jsonb column.
 func (p StylePreferences) Value() (driver.Value, error) {
 	encoded, err := json.Marshal(p)
 	if err != nil {
@@ -44,7 +43,7 @@ func (p StylePreferences) Value() (driver.Value, error) {
 	return string(encoded), nil
 }
 
-// Scan reads the users.style_preferences jsonb column. database/sql handles NULL before calling it.
+// database/sql handles a NULL column itself and never calls Scan with nil.
 func (p *StylePreferences) Scan(src any) error {
 	raw, ok := src.([]byte)
 	if !ok {

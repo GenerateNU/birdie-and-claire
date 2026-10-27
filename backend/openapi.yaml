@@ -1024,7 +1024,7 @@ paths:
       tags:
         - users
     put:
-      operationId: update-current-user-style-preferences
+      operationId: replace-current-user-style-preferences
       requestBody:
         content:
           application/json:

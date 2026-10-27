@@ -35,7 +35,6 @@ type Question = {
   options: { value: string; label: string }[];
 };
 
-// Labels are placeholders until design sends the real copy and images.
 const questions: Record<Field, Question> = {
   style: {
     title: "What describes your style best?",
@@ -81,8 +80,7 @@ const fitTabs: { value: FitField; label: string }[] = [
   { value: "shoes", label: "Shoes" },
 ];
 
-// Style is step 1, and each fit tab is one more step after it.
-const stepCount = 1 + fitTabs.length;
+const steps: Field[] = ["style", ...fitTabs.map((tab) => tab.value)];
 
 function Onboarding() {
   const [screen, setScreen] = useState<"style" | "fit">("style");
@@ -104,7 +102,7 @@ function Onboarding() {
     }));
   }
 
-  async function finish(answers: StylePreferences) {
+  async function finish(preferencesToSave: StylePreferences) {
     setError(null);
     setSaving(true);
 
@@ -112,7 +110,7 @@ function Onboarding() {
       const res = await apiFetch("/api/v1/users/me/style-preferences", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(answers),
+        body: JSON.stringify(preferencesToSave),
       });
 
       if (!res.ok) {
@@ -128,11 +126,11 @@ function Onboarding() {
     }
   }
 
-  function nextFitTabOrFinish(answers: StylePreferences) {
+  function nextFitTabOrFinish(preferencesToSave: StylePreferences) {
     const next = fitTabs[fitTabIndex + 1];
 
     if (next === undefined) {
-      void finish(answers);
+      void finish(preferencesToSave);
 
       return;
     }
@@ -147,8 +145,7 @@ function Onboarding() {
     nextFitTabOrFinish(cleared);
   }
 
-  // Skip saves "no preference" for everything so onboarding isn't shown again. Back on the
-  // style screen does the same until design decides.
+  // Skip saves "no preference" for everything so onboarding isn't shown again.
   function skipOnboarding() {
     void finish(noPreferences);
   }
@@ -173,7 +170,7 @@ function Onboarding() {
   if (screen === "style") {
     return (
       <Box className="flex min-h-screen flex-col items-center gap-lg p-xl">
-        <Header step={1} saving={saving} onBack={skipOnboarding} />
+        <Header step={steps.indexOf("style") + 1} saving={saving} onBack={skipOnboarding} />
         <Text variant="heading">{questions.style.title}</Text>
         <Cards field="style" preferences={preferences} onToggle={toggle} />
         <Button label="Next" disabled={saving} onClick={() => setScreen("fit")} />
@@ -187,7 +184,7 @@ function Onboarding() {
 
   return (
     <Box className="flex min-h-screen flex-col items-center gap-lg p-xl">
-      <Header step={2 + fitTabIndex} saving={saving} onBack={() => setScreen("style")} />
+      <Header step={steps.indexOf(fitTab) + 1} saving={saving} onBack={() => setScreen("style")} />
       <Text variant="heading">{questions[fitTab].title}</Text>
       <Tabs tabs={fitTabs} value={fitTab} onValueChange={setFitTab} disabled={saving}>
         <Cards field={fitTab} preferences={preferences} onToggle={toggle} />
@@ -229,7 +226,7 @@ function Header({ step, saving, onBack }: HeaderProps) {
         onClick={onBack}
       />
       <Box className="col-start-2 flex justify-center">
-        <ProgressBar label="Sign-up progress" step={step} stepCount={stepCount} />
+        <ProgressBar label="Sign-up progress" step={step} stepCount={steps.length} />
       </Box>
     </Box>
   );

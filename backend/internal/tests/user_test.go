@@ -89,7 +89,7 @@ func stylePreferencesProbe(t *testing.T) humatest.TestAPI {
 		OperationID: "style-preferences-probe",
 		Method:      http.MethodPut,
 		Path:        "/probe",
-	}, func(_ context.Context, _ *controllers.UpdateStylePreferencesInput) (*struct{}, error) {
+	}, func(_ context.Context, _ *controllers.ReplaceStylePreferencesInput) (*struct{}, error) {
 		return &struct{}{}, nil
 	})
 
@@ -103,7 +103,7 @@ func withField(field string, value any) map[string]any {
 	return preferences
 }
 
-func TestUpdateStylePreferencesInput(t *testing.T) {
+func TestReplaceStylePreferencesInput(t *testing.T) {
 	tests := []struct {
 		name       string
 		body       map[string]any

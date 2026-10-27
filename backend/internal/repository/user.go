@@ -20,7 +20,7 @@ type UserRepository interface {
 	CreateUser(ctx context.Context, id uuid.UUID, name string) (models.User, error)
 	GetByID(ctx context.Context, id uuid.UUID) (models.User, error)
 	SetProfilePictureKey(ctx context.Context, id uuid.UUID, key string) error
-	UpdateStylePreferences(ctx context.Context, id uuid.UUID, preferences models.StylePreferences) (models.User, error)
+	ReplaceStylePreferences(ctx context.Context, id uuid.UUID, preferences models.StylePreferences) (models.User, error)
 	ClearStylePreferences(ctx context.Context, id uuid.UUID) error
 }
 
@@ -82,7 +82,7 @@ func (r *userRepository) SetProfilePictureKey(ctx context.Context, id uuid.UUID,
 	return nil
 }
 
-func (r *userRepository) UpdateStylePreferences(ctx context.Context, id uuid.UUID, preferences models.StylePreferences) (models.User, error) {
+func (r *userRepository) ReplaceStylePreferences(ctx context.Context, id uuid.UUID, preferences models.StylePreferences) (models.User, error) {
 	var user models.User
 	err := r.db.QueryRowContext(ctx, `
 		UPDATE users
@@ -94,7 +94,7 @@ func (r *userRepository) UpdateStylePreferences(ctx context.Context, id uuid.UUI
 		return models.User{}, errs.ErrNotFound
 	}
 	if err != nil {
-		return models.User{}, fmt.Errorf("update style preferences for user %s: %w", id, err)
+		return models.User{}, fmt.Errorf("replace style preferences for user %s: %w", id, err)
 	}
 	return user, nil
 }

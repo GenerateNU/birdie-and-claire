@@ -76,12 +76,12 @@ func (c *UserController) CreateUser(ctx context.Context, input *CreateUserInput)
 	return &CreateUserOutput{Body: response}, nil
 }
 
-type UpdateStylePreferencesInput struct {
+type ReplaceStylePreferencesInput struct {
 	Body models.StylePreferences
 }
 
-func (c *UserController) UpdateStylePreferences(ctx context.Context, input *UpdateStylePreferencesInput) (*CurrentUserOutput, error) {
-	response, err := c.service.UpdateStylePreferences(ctx, input.Body)
+func (c *UserController) ReplaceStylePreferences(ctx context.Context, input *ReplaceStylePreferencesInput) (*CurrentUserOutput, error) {
+	response, err := c.service.ReplaceStylePreferences(ctx, input.Body)
 	if err != nil {
 		return nil, errs.ToHuma(ctx, err)
 	}
