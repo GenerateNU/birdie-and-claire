@@ -424,6 +424,21 @@ components:
         - name
         - products
       type: object
+    UpdateOutfitBody:
+      additionalProperties: false
+      properties:
+        name:
+          description: New display name for the outfit
+          maxLength: 100
+          minLength: 1
+          type: string
+        product_ids:
+          description: IDs of every product in the outfit; replaces the current set
+          items:
+            type: string
+          minItems: 1
+          type: array
+      type: object
     UserResponse:
       additionalProperties: false
       properties:
@@ -609,6 +624,41 @@ paths:
       security:
         - bearer: []
       summary: Get one of the authenticated user's outfits with its products
+      tags:
+        - outfits
+    patch:
+      description: product_ids replaces the whole product set. A shared outfit's public link shows the change.
+      operationId: update-outfit
+      parameters:
+        - description: Outfit ID
+          in: path
+          name: id
+          required: true
+          schema:
+            description: Outfit ID
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateOutfitBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OutfitResponse"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Rename an outfit or replace its products
       tags:
         - outfits
   /api/v1/outfits/{id}/reactions:

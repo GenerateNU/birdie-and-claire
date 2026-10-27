@@ -2,6 +2,10 @@ package controllers
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"strings"
 
 	"birdie-and-claire/internal/errs"
 	"birdie-and-claire/internal/models"
@@ -64,6 +68,92 @@ type OutfitIDInput struct {
 // Get returns one of the authenticated user's outfits with its products.
 func (c *OutfitController) Get(ctx context.Context, input *OutfitIDInput) (*OutfitOutput, error) {
 	outfit, err := c.service.Get(ctx, input.ID)
+	if err != nil {
+		return nil, errs.ToHuma(ctx, err)
+	}
+	return &OutfitOutput{Body: outfit}, nil
+}
+
+// UpdateOutfitBody records which fields arrived as null, because huma skips validating a null optional field.
+type UpdateOutfitBody struct {
+	Name           *string     `json:"name,omitempty" minLength:"1" maxLength:"100" doc:"New display name for the outfit"`
+	ProductIDs     []uuid.UUID `json:"product_ids,omitempty" nullable:"false" minItems:"1" doc:"IDs of every product in the outfit; replaces the current set"`
+	nameNull       bool
+	productIDsNull bool
+}
+
+func (body *UpdateOutfitBody) UnmarshalJSON(data []byte) error {
+	// The alias has no UnmarshalJSON method, so decoding into it does not recurse.
+	type updateOutfitFields UpdateOutfitBody
+	if err := json.Unmarshal(data, (*updateOutfitFields)(body)); err != nil {
+		return fmt.Errorf("decode update outfit body: %w", err)
+	}
+
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(data, &fields); err != nil {
+		return fmt.Errorf("decode update outfit body keys: %w", err)
+	}
+	// Case-insensitive, like Go's and huma's own key matching, so {"NAME": null} counts too.
+	nameKeys, productIDsKeys := 0, 0
+	nameNull, productIDsNull := false, false
+	for key, value := range fields {
+		isNull := string(value) == "null"
+		if strings.EqualFold(key, "name") {
+			nameKeys++
+			nameNull = nameNull || isNull
+		}
+		if strings.EqualFold(key, "product_ids") {
+			productIDsKeys++
+			productIDsNull = productIDsNull || isNull
+		}
+	}
+	// Huma reports these at location "body", so the message names the field.
+	// Huma validates one copy of a field repeated in different casing but Go keeps the last, so reject it.
+	if nameKeys > 1 {
+		return errors.New("name must not be repeated in different casing")
+	}
+	if productIDsKeys > 1 {
+		return errors.New("product_ids must not be repeated in different casing")
+	}
+	body.nameNull = nameNull
+	body.productIDsNull = productIDsNull
+	return nil
+}
+
+// UpdateOutfitInput keeps any field the client leaves out of the body.
+type UpdateOutfitInput struct {
+	OutfitIDInput
+	Body UpdateOutfitBody
+}
+
+var _ huma.Resolver = (*UpdateOutfitInput)(nil)
+
+func (input *UpdateOutfitInput) Resolve(huma.Context) []error {
+	if input.Body.nameNull {
+		return []error{&huma.ErrorDetail{Location: "body.name", Message: "name must not be null"}}
+	}
+	if input.Body.productIDsNull {
+		return []error{&huma.ErrorDetail{Location: "body.product_ids", Message: "product_ids must not be null"}}
+	}
+	if input.Body.Name == nil && input.Body.ProductIDs == nil {
+		return []error{&huma.ErrorDetail{Location: "body", Message: "body must set name or product_ids"}}
+	}
+	seen := make(map[uuid.UUID]bool, len(input.Body.ProductIDs))
+	for _, id := range input.Body.ProductIDs {
+		if seen[id] {
+			return []error{huma.Error400BadRequest("duplicate product id")}
+		}
+		seen[id] = true
+	}
+	return nil
+}
+
+// Update renames one of the authenticated user's outfits, replaces its products, or both.
+func (c *OutfitController) Update(ctx context.Context, input *UpdateOutfitInput) (*OutfitOutput, error) {
+	outfit, err := c.service.Update(ctx, input.ID, models.UpdateOutfitParams{
+		Name:       input.Body.Name,
+		ProductIDs: input.Body.ProductIDs,
+	})
 	if err != nil {
 		return nil, errs.ToHuma(ctx, err)
 	}

@@ -18,6 +18,7 @@ import (
 type OutfitService interface {
 	Create(ctx context.Context, params models.CreateOutfitParams) (models.OutfitResponse, error)
 	Get(ctx context.Context, id uuid.UUID) (models.OutfitResponse, error)
+	Update(ctx context.Context, id uuid.UUID, params models.UpdateOutfitParams) (models.OutfitResponse, error)
 	List(ctx context.Context, params pagination.CursorParams) (pagination.Page[models.Outfit], error)
 	Share(ctx context.Context, id uuid.UUID) (models.ShareOutfitResponse, error)
 	Unshare(ctx context.Context, id uuid.UUID) error
@@ -43,6 +44,14 @@ func (s *outfitService) Create(ctx context.Context, params models.CreateOutfitPa
 
 func (s *outfitService) Get(ctx context.Context, id uuid.UUID) (models.OutfitResponse, error) {
 	outfit, products, err := s.repo.Outfit.GetByID(ctx, id, auth.UserID(ctx))
+	if err != nil {
+		return models.OutfitResponse{}, err
+	}
+	return models.OutfitResponse{Outfit: outfit, Products: products}, nil
+}
+
+func (s *outfitService) Update(ctx context.Context, id uuid.UUID, params models.UpdateOutfitParams) (models.OutfitResponse, error) {
+	outfit, products, err := s.repo.Outfit.Update(ctx, id, params, auth.UserID(ctx))
 	if err != nil {
 		return models.OutfitResponse{}, err
 	}

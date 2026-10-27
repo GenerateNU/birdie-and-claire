@@ -27,6 +27,7 @@ type OutfitRepository interface {
 	Create(ctx context.Context, params models.CreateOutfitParams, userID uuid.UUID) (models.Outfit, []models.ProductResponse, error)
 	GetByID(ctx context.Context, id uuid.UUID, userID uuid.UUID) (models.Outfit, []models.ProductResponse, error)
 	GetShared(ctx context.Context, id uuid.UUID) (models.Outfit, []models.ProductResponse, error)
+	Update(ctx context.Context, id uuid.UUID, params models.UpdateOutfitParams, userID uuid.UUID) (models.Outfit, []models.ProductResponse, error)
 	Share(ctx context.Context, id uuid.UUID, userID uuid.UUID) error
 	Unshare(ctx context.Context, id uuid.UUID, userID uuid.UUID) error
 	List(ctx context.Context, userID uuid.UUID, params pagination.CursorParams) ([]models.Outfit, error)
@@ -98,7 +99,16 @@ func (r *outfitRepository) Create(ctx context.Context, params models.CreateOutfi
 // GetByID returns ErrNotFound for an outfit userID does not own, so a caller
 // cannot tell someone else's outfit from a missing one.
 func (r *outfitRepository) GetByID(ctx context.Context, id uuid.UUID, userID uuid.UUID) (models.Outfit, []models.ProductResponse, error) {
-	rows, err := r.db.QueryContext(ctx, `
+	return getOutfitByID(ctx, r.db, id, userID)
+}
+
+// querier is satisfied by both *sql.DB and *sql.Tx, so Update can read its result inside its transaction.
+type querier interface {
+	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
+}
+
+func getOutfitByID(ctx context.Context, dbOrTx querier, id uuid.UUID, userID uuid.UUID) (models.Outfit, []models.ProductResponse, error) {
+	rows, err := dbOrTx.QueryContext(ctx, `
 		SELECT o.id, o.user_id, o.name, o.shared_at, o.created_at, o.updated_at,
 			p.id, p.shopify_id, p.handle, p.title, p.product_type, p.slot, p.tags, p.created_at, p.updated_at,
 			first_image.url
@@ -123,6 +133,63 @@ func (r *outfitRepository) GetByID(ctx context.Context, id uuid.UUID, userID uui
 	outfit, products, err := scanOutfitWithProducts(rows)
 	if err != nil {
 		return models.Outfit{}, nil, fmt.Errorf("get outfit %s: %w", id, err)
+	}
+	return outfit, products, nil
+}
+
+func (r *outfitRepository) Update(ctx context.Context, id uuid.UUID, params models.UpdateOutfitParams, userID uuid.UUID) (models.Outfit, []models.ProductResponse, error) {
+	// One transaction, so a failure part-way leaves the outfit untouched.
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return models.Outfit{}, nil, fmt.Errorf("update outfit %s: begin: %w", id, err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	// Also locks the outfit row, so concurrent updates to one outfit run one after the other.
+	var updated uuid.UUID
+	err = tx.QueryRowContext(ctx, `
+		UPDATE outfits
+		SET name = COALESCE($3, name), updated_at = now()
+		WHERE id = $1 AND user_id = $2
+		RETURNING id
+	`, id, userID, params.Name).Scan(&updated)
+	if errors.Is(err, sql.ErrNoRows) {
+		return models.Outfit{}, nil, errs.ErrNotFound
+	}
+	if err != nil {
+		return models.Outfit{}, nil, fmt.Errorf("update outfit %s: %w", id, err)
+	}
+
+	if params.ProductIDs != nil {
+		// Rows already in the new set are left in place rather than deleted and reinserted.
+		_, err = tx.ExecContext(ctx, `
+			DELETE FROM outfit_products
+			WHERE outfit_id = $1 AND product_id <> ALL($2::uuid[])
+		`, id, params.ProductIDs)
+		if err != nil {
+			return models.Outfit{}, nil, fmt.Errorf("update outfit %s: remove products: %w", id, err)
+		}
+
+		_, err = tx.ExecContext(ctx, `
+			INSERT INTO outfit_products (outfit_id, product_id)
+			SELECT $1, unnest($2::uuid[])
+			ON CONFLICT DO NOTHING
+		`, id, params.ProductIDs)
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == foreignKeyViolation && pgErr.ConstraintName == outfitProductFKey {
+			return models.Outfit{}, nil, fmt.Errorf("update outfit %s: unknown product: %w", id, errs.ErrConflict)
+		}
+		if err != nil {
+			return models.Outfit{}, nil, fmt.Errorf("update outfit %s: add products: %w", id, err)
+		}
+	}
+
+	outfit, products, err := getOutfitByID(ctx, tx, id, userID)
+	if err != nil {
+		return models.Outfit{}, nil, fmt.Errorf("update outfit %s: read back: %w", id, err)
+	}
+	if err := tx.Commit(); err != nil {
+		return models.Outfit{}, nil, fmt.Errorf("update outfit %s: commit: %w", id, err)
 	}
 	return outfit, products, nil
 }

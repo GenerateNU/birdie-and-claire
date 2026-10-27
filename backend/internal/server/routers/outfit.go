@@ -32,6 +32,15 @@ func OutfitRoutes(api huma.API, params types.RouteParams) {
 	}, controller.Get)
 
 	huma.Register(api, huma.Operation{
+		OperationID: "update-outfit",
+		Method:      http.MethodPatch,
+		Path:        "/api/v1/outfits/{id}",
+		Summary:     "Rename an outfit or replace its products",
+		Description: "product_ids replaces the whole product set. A shared outfit's public link shows the change.",
+		Tags:        []string{"outfits"},
+	}, controller.Update)
+
+	huma.Register(api, huma.Operation{
 		OperationID: "list-outfits",
 		Method:      http.MethodGet,
 		Path:        "/api/v1/outfits",
