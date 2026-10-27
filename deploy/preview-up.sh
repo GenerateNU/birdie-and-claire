@@ -29,16 +29,19 @@ PGPASSWORD=$(grep -E '^PREVIEW_DB_PASSWORD=' "$SHARED_ENV" | head -1 | cut -d= -
 
 echo "==> preview for PR #${PR_NUMBER} at https://${HOST}"
 
-# Every push pulls a new pr-<n>-<sha> tag. Old tags are not dangling, so
-# `docker image prune` would keep them; remove this PR's by name instead of
-# `prune -a`, which would also take other projects' images off the droplet.
-# `docker rmi` refuses any image a container still uses, so the running preview
-# keeps its own. Run before the pull too, so a nearly full disk does not fail
-# it before cleanup is ever reached.
+# Every push pulls a new pr-<n>-<sha> tag. Old tags are not dangling, so `docker
+# image prune` would keep them; remove this PR's by name instead of `prune -a`,
+# which would also take other projects' images off the droplet. Images any
+# container uses are skipped by ID: when several tags share one image (a preview
+# and a release built from the same commit), `docker rmi` of one tag only untags
+# it, even while a container runs it. Run before the pull too, so a nearly full
+# disk does not fail it before cleanup is ever reached.
 remove_unused_pr_images() {
   echo "    removing unused images for PR #${PR_NUMBER}"
-  docker images --format '{{.Repository}}:{{.Tag}}' \
-    | grep -F "${IMAGE%:*}:pr-${PR_NUMBER}-" \
+  docker images --no-trunc --format '{{.ID}} {{.Repository}}:{{.Tag}}' \
+    | grep -F " ${IMAGE%:*}:pr-${PR_NUMBER}-" \
+    | grep -vFf <(docker ps -aq | xargs -r docker inspect -f '{{.Image}}') \
+    | cut -d' ' -f2 \
     | xargs -r docker rmi >/dev/null 2>&1 || true
 }
 remove_unused_pr_images
