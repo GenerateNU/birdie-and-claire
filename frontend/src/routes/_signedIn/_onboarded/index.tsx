@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { apiFetch } from "@/api";
 import { Button, Text } from "@/design-system";
+import { clearStylePreferences } from "@/style-preferences";
 
 export const Route = createFileRoute("/_signedIn/_onboarded/")({
   component: Home,
@@ -46,6 +47,8 @@ function Home() {
   const queryClient = useQueryClient();
   const [seeding, setSeeding] = useState(false);
   const [seedStatus, setSeedStatus] = useState<string | null>(null);
+  const [restartingOnboarding, setRestartingOnboarding] = useState(false);
+  const [restartError, setRestartError] = useState<string | null>(null);
 
   async function seedOutfits() {
     setSeeding(true);
@@ -74,6 +77,21 @@ function Home() {
       // Refetch the outfits list even after a partial failure, since some outfits may exist.
       await queryClient.invalidateQueries({ queryKey: ["/api/v1/outfits"] });
       setSeeding(false);
+    }
+  }
+
+  async function restartOnboarding() {
+    setRestartingOnboarding(true);
+    setRestartError(null);
+
+    try {
+      await clearStylePreferences();
+
+      // A full page load refetches the cached account status, which now sends us to onboarding.
+      window.location.assign("/");
+    } catch (err) {
+      setRestartingOnboarding(false);
+      setRestartError(err instanceof Error ? err.message : String(err));
     }
   }
 
@@ -117,6 +135,19 @@ function Home() {
         {seedStatus && (
           <Text variant="body" className="text-secondary">
             {seedStatus}
+          </Text>
+        )}
+      </div>
+      <div className="mt-lg flex flex-col items-start gap-xs">
+        <Button
+          label="Restart onboarding"
+          loading={restartingOnboarding}
+          loadingLabel="Restarting…"
+          onClick={() => void restartOnboarding()}
+        />
+        {restartError && (
+          <Text variant="body" className="text-error">
+            Restart failed: {restartError}
           </Text>
         )}
       </div>
