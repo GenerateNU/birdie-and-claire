@@ -2,14 +2,13 @@ import { apiFetch } from "@/api";
 
 export type PreferenceField = "style" | "neckline" | "bottoms" | "shoes";
 
-export type FitField = Exclude<PreferenceField, "style">;
+type FitField = Exclude<PreferenceField, "style">;
 
 // Matches StylePreferences in backend/openapi.yaml. An empty list means no preference.
 export type StylePreferences = Record<PreferenceField, string[]>;
 
 export const noPreferences: StylePreferences = { style: [], neckline: [], bottoms: [], shoes: [] };
 
-// name labels the field in settings and the onboarding tabs; prompt is the onboarding question.
 type Question = {
   readonly name: string;
   readonly prompt: string;
@@ -85,5 +84,13 @@ export async function saveStylePreferences(preferences: StylePreferences) {
 
   if (!res.ok) {
     throw new Error(`PUT /api/v1/users/me/style-preferences failed: ${res.status}`);
+  }
+}
+
+export async function clearStylePreferences() {
+  const res = await apiFetch("/api/v1/users/me/style-preferences", { method: "DELETE" });
+
+  if (!res.ok) {
+    throw new Error(`DELETE /api/v1/users/me/style-preferences failed: ${res.status}`);
   }
 }

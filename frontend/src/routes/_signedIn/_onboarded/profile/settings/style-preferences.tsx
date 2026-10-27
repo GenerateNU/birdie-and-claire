@@ -25,7 +25,7 @@ async function fetchSavedPreferences(signal: AbortSignal): Promise<StylePreferen
   // The route guard sends users without preferences to onboarding, so this only happens when
   // they were cleared (DELETE from /docs) after the account status was cached.
   if (user?.style_preferences === undefined) {
-    throw new Error("none are saved yet");
+    throw new Error("no style preferences are saved yet");
   }
 
   return user.style_preferences;
@@ -165,7 +165,6 @@ type PreferenceRowProps = {
   onToggle: (field: PreferenceField, value: string, pressed: boolean) => void;
 };
 
-// Viewing shows only the picks; editing shows every option to choose from.
 function PreferenceRow({ field, preferences, editing, saving, onToggle }: PreferenceRowProps) {
   const { name, options } = questions[field];
   const picked = preferences[field];
