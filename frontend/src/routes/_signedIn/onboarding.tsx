@@ -3,6 +3,7 @@ import { useState } from "react";
 
 import { AccountError, accountStatusQuery } from "@/account";
 import { apiFetch } from "@/api";
+import logo from "@/assets/logo.png";
 import { Box, Button, ImageCard, ProgressBar, Tabs, Text } from "@/design-system";
 
 export const Route = createFileRoute("/_signedIn/onboarding")({
@@ -80,18 +81,34 @@ const fitTabs: { value: FitField; label: string }[] = [
   { value: "shoes", label: "Shoes" },
 ];
 
-const steps: Field[] = ["style", ...fitTabs.map((tab) => tab.value)];
+const fieldOrder: Field[] = ["style", ...fitTabs.map((tab) => tab.value)];
+
+// One step per section. Style counts once the user is past it, and the fit section counts only on
+// the last field, where Finish shows, so skipping ahead never fills the bar early.
+const progressStepCount = 2;
+
+function progressStep(index: number) {
+  if (index === 0) {
+    return 0;
+  }
+
+  if (index === fieldOrder.length - 1) {
+    return progressStepCount;
+  }
+
+  return 1;
+}
 
 function Onboarding() {
-  const [screen, setScreen] = useState<"style" | "fit">("style");
-  const [fitTab, setFitTab] = useState<FitField>("neckline");
+  const [currentField, setCurrentField] = useState<Field>("style");
 
   const [preferences, setPreferences] = useState<StylePreferences>(noPreferences);
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fitTabIndex = fitTabs.findIndex((tab) => tab.value === fitTab);
+  const currentIndex = fieldOrder.indexOf(currentField);
+  const onLastField = currentIndex === fieldOrder.length - 1;
 
   function toggle(field: Field, value: string, pressed: boolean) {
     setPreferences((current) => ({
@@ -126,8 +143,8 @@ function Onboarding() {
     }
   }
 
-  function nextFitTabOrFinish(preferencesToSave: StylePreferences) {
-    const next = fitTabs[fitTabIndex + 1];
+  function nextFieldOrFinish(preferencesToSave: StylePreferences) {
+    const next = fieldOrder[currentIndex + 1];
 
     if (next === undefined) {
       void finish(preferencesToSave);
@@ -135,99 +152,73 @@ function Onboarding() {
       return;
     }
 
-    setFitTab(next.value);
+    setCurrentField(next);
   }
 
-  function skipFitTab() {
+  function skipWithNoPreference() {
     // Passed on directly, because finish runs before the state update lands.
-    const cleared = { ...preferences, [fitTab]: [] };
+    const cleared = { ...preferences, [currentField]: [] };
     setPreferences(cleared);
-    nextFitTabOrFinish(cleared);
+    nextFieldOrFinish(cleared);
   }
-
-  // Skip saves "no preference" for everything so onboarding isn't shown again.
-  function skipOnboarding() {
-    void finish(noPreferences);
-  }
-
-  const errorMessage = error && (
-    <Text variant="body" className="text-error">
-      Error: {error}
-    </Text>
-  );
-
-  const skipButton = (
-    <Button
-      label="Skip →"
-      variant="secondary"
-      size="sm"
-      className="self-end"
-      disabled={saving}
-      onClick={skipOnboarding}
-    />
-  );
-
-  if (screen === "style") {
-    return (
-      <Box className="flex min-h-screen flex-col items-center gap-lg p-xl">
-        <Header step={steps.indexOf("style") + 1} saving={saving} onBack={skipOnboarding} />
-        <Text variant="heading">{questions.style.title}</Text>
-        <Cards field="style" preferences={preferences} onToggle={toggle} />
-        <Button label="Next" disabled={saving} onClick={() => setScreen("fit")} />
-        {errorMessage}
-        {skipButton}
-      </Box>
-    );
-  }
-
-  const onLastTab = fitTabIndex === fitTabs.length - 1;
 
   return (
-    <Box className="flex min-h-screen flex-col items-center gap-lg p-xl">
-      <Header step={steps.indexOf(fitTab) + 1} saving={saving} onBack={() => setScreen("style")} />
-      <Text variant="heading">{questions[fitTab].title}</Text>
-      <Tabs tabs={fitTabs} value={fitTab} onValueChange={setFitTab} disabled={saving}>
-        <Cards field={fitTab} preferences={preferences} onToggle={toggle} />
-      </Tabs>
-      <Button
-        label={onLastTab ? "Finish" : "Next"}
-        loading={saving}
-        onClick={() => nextFitTabOrFinish(preferences)}
-      />
-      {errorMessage}
-      <Button
-        label="I don't have a preference →"
-        variant="secondary"
-        size="sm"
-        className="self-end"
-        disabled={saving}
-        onClick={skipFitTab}
-      />
-      {skipButton}
-    </Box>
-  );
-}
-
-type HeaderProps = {
-  step: number;
-  saving: boolean;
-  onBack: () => void;
-};
-
-function Header({ step, saving, onBack }: HeaderProps) {
-  return (
-    <Box className="grid h-xxl w-full grid-cols-3 items-center">
-      <Button
-        label="← Back"
-        variant="secondary"
-        size="sm"
-        className="justify-self-start"
-        disabled={saving}
-        onClick={onBack}
-      />
-      <Box className="col-start-2 flex justify-center">
-        <ProgressBar label="Sign-up progress" step={step} stepCount={steps.length} />
+    <Box className="flex min-h-screen flex-col p-xl pb-xxl">
+      <Box className="grid h-xl w-full grid-cols-3 items-center">
+        {currentField !== "style" && (
+          <Button
+            label="← Back"
+            variant="secondary"
+            size="sm"
+            className="justify-self-start"
+            disabled={saving}
+            onClick={() => setCurrentField("style")}
+          />
+        )}
+        <Box className="col-start-2 flex justify-center">
+          <ProgressBar
+            label="Sign-up progress"
+            step={progressStep(currentIndex)}
+            stepCount={progressStepCount}
+          />
+        </Box>
       </Box>
+      <Box className="flex flex-1 flex-col items-center gap-lg">
+        <Box className="flex flex-col items-center gap-xs">
+          <img src={logo} alt="Birdie & Claire" className="w-full max-w-xs" />
+          <Text variant="heading">{questions[currentField].title}</Text>
+        </Box>
+        {currentField === "style" ? (
+          <Cards field={currentField} preferences={preferences} onToggle={toggle} />
+        ) : (
+          <Tabs
+            tabs={fitTabs}
+            value={currentField}
+            onValueChange={setCurrentField}
+            disabled={saving}
+          >
+            <Cards field={currentField} preferences={preferences} onToggle={toggle} />
+          </Tabs>
+        )}
+        <Button
+          label={onLastField ? "Finish" : "Next"}
+          loading={saving}
+          onClick={() => nextFieldOrFinish(preferences)}
+        />
+        {error && (
+          <Text variant="body" className="text-error">
+            Error: {error}
+          </Text>
+        )}
+      </Box>
+      <Button
+        label="Skip →"
+        variant="secondary"
+        size="sm"
+        className="fixed bottom-lg right-lg"
+        disabled={saving}
+        onClick={skipWithNoPreference}
+      />
     </Box>
   );
 }
