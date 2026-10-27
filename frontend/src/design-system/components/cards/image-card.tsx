@@ -5,10 +5,11 @@ import { cardFrameClasses } from "./card-classes";
 
 const imageCardClasses = `${cardFrameClasses} flex flex-col gap-xs p-xs text-body focus-ring data-[pressed]:border-primary`;
 
-const imageClasses = "aspect-portrait w-full rounded-xs";
-
-const minSizeClasses = {
-  lg: "min-w-card-lg min-h-card-lg",
+// fill takes the width its container gives it.
+const sizeClasses = {
+  fill: { card: "", image: "aspect-portrait" },
+  sm: { card: "w-card-sm min-h-card-sm", image: "aspect-landscape" },
+  lg: { card: "w-card-lg min-h-card-lg", image: "aspect-portrait" },
 };
 
 type ImageCardProps = {
@@ -16,18 +17,28 @@ type ImageCardProps = {
   src: string | null;
   pressed: boolean;
   onPressedChange: (pressed: boolean) => void;
-  minSize?: keyof typeof minSizeClasses;
+  size?: keyof typeof sizeClasses;
+  disabled?: boolean;
 };
 
-/** A pressable card with a portrait image and its label underneath. */
-export function ImageCard({ label, src, pressed, onPressedChange, minSize }: ImageCardProps) {
+/** A pressable card with an image and its label underneath. */
+export function ImageCard({
+  label,
+  src,
+  pressed,
+  onPressedChange,
+  size = "fill",
+  disabled = false,
+}: ImageCardProps) {
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const imageClasses = `${sizeClasses[size].image} w-full rounded-xs`;
 
   return (
     <BaseToggle
       pressed={pressed}
       onPressedChange={onPressedChange}
-      className={minSize ? `${imageCardClasses} ${minSizeClasses[minSize]}` : imageCardClasses}
+      disabled={disabled}
+      className={`${imageCardClasses} ${sizeClasses[size].card}`}
     >
       {src === null || src === failedSrc ? (
         <span className={`block bg-placeholder ${imageClasses}`} />

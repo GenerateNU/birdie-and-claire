@@ -2,9 +2,17 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { AccountError, requireAccountStatus } from "@/account";
-import { apiFetch } from "@/api";
 import logo from "@/assets/logo.png";
 import { Box, Button, ImageCard, ProgressBar, Tabs, Text } from "@/design-system";
+import {
+  fitFields,
+  noPreferences,
+  questions,
+  saveStylePreferences,
+  togglePreference,
+  type PreferenceField,
+  type StylePreferences,
+} from "@/style-preferences";
 
 export const Route = createFileRoute("/_signedIn/onboarding")({
   // Finished users may come back to redo it; saving replaces their preferences.
@@ -13,66 +21,9 @@ export const Route = createFileRoute("/_signedIn/onboarding")({
   component: Onboarding,
 });
 
-type Field = "style" | "neckline" | "bottoms" | "shoes";
+const fitTabs = fitFields.map((field) => ({ value: field, label: questions[field].name }));
 
-type FitField = Exclude<Field, "style">;
-
-// Matches StylePreferences in backend/openapi.yaml. An empty list means no preference.
-type StylePreferences = Record<Field, string[]>;
-
-const noPreferences: StylePreferences = { style: [], neckline: [], bottoms: [], shoes: [] };
-
-type Question = {
-  title: string;
-  options: { value: string; label: string }[];
-};
-
-const questions: Record<Field, Question> = {
-  style: {
-    title: "What describes your style best?",
-    options: [
-      { value: "chic_avant_garde", label: "Chic & avant-garde" },
-      { value: "timeless_sophisticated", label: "Timeless & sophisticated" },
-      { value: "colorful_eclectic", label: "Colorful & eclectic" },
-      { value: "comfortable_relaxed", label: "Comfortable & relaxed" },
-    ],
-  },
-  neckline: {
-    title: "What neckline do you prefer?",
-    options: [
-      { value: "modest", label: "Modest" },
-      { value: "high", label: "High" },
-      { value: "low", label: "Low" },
-    ],
-  },
-  bottoms: {
-    title: "What bottoms do you prefer?",
-    options: [
-      { value: "pants", label: "Pants" },
-      { value: "dress", label: "Dress" },
-      { value: "skirt", label: "Skirt" },
-      { value: "shorts", label: "Shorts" },
-    ],
-  },
-  shoes: {
-    title: "What shoes do you prefer?",
-    options: [
-      { value: "sneakers", label: "Sneakers" },
-      { value: "boots", label: "Boots" },
-      { value: "sandals", label: "Sandals" },
-      { value: "heels", label: "Heels" },
-      { value: "flats", label: "Flats" },
-    ],
-  },
-};
-
-const fitTabs: { value: FitField; label: string }[] = [
-  { value: "neckline", label: "Neckline" },
-  { value: "bottoms", label: "Bottoms" },
-  { value: "shoes", label: "Shoes" },
-];
-
-const fieldOrder: Field[] = ["style", ...fitTabs.map((tab) => tab.value)];
+const fieldOrder: PreferenceField[] = ["style", ...fitFields];
 
 // Out of 2: empty on style, half full on the fit fields, and full only on the last field, where
 // Finish shows.
@@ -91,7 +42,7 @@ function progressStep(index: number) {
 }
 
 function Onboarding() {
-  const [currentField, setCurrentField] = useState<Field>("style");
+  const [currentField, setCurrentField] = useState<PreferenceField>("style");
 
   const [preferences, setPreferences] = useState<StylePreferences>(noPreferences);
 
@@ -102,13 +53,8 @@ function Onboarding() {
   const onLastField = currentIndex === fieldOrder.length - 1;
   const onFirstField = currentIndex === 0;
 
-  function toggle(field: Field, value: string, pressed: boolean) {
-    setPreferences((current) => ({
-      ...current,
-      [field]: pressed
-        ? [...current[field], value]
-        : current[field].filter((picked) => picked !== value),
-    }));
+  function toggle(field: PreferenceField, value: string, pressed: boolean) {
+    setPreferences((current) => togglePreference(current, field, value, pressed));
   }
 
   async function finish() {
@@ -116,15 +62,7 @@ function Onboarding() {
     setSaving(true);
 
     try {
-      const res = await apiFetch("/api/v1/users/me/style-preferences", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(preferences),
-      });
-
-      if (!res.ok) {
-        throw new Error(`PUT /api/v1/users/me/style-preferences failed: ${res.status}`);
-      }
+      await saveStylePreferences(preferences);
 
       // Has to stay a full page load. The cached account status never expires, so a router
       // navigation would send the user straight back here.
@@ -180,13 +118,13 @@ function Onboarding() {
       <Box className="flex flex-1 flex-col items-center gap-lg">
         <Box className="flex flex-col items-center gap-xs">
           <img src={logo} alt="Birdie & Claire" className="w-full max-w-xs" />
-          <Text variant="heading">{questions[currentField].title}</Text>
+          <Text variant="heading">{questions[currentField].prompt}</Text>
         </Box>
-        {/* Tabs<Field> because the index check can't narrow currentField to a fit field. */}
+        {/* Tabs<PreferenceField> because the index check can't narrow currentField to a fit field. */}
         {onFirstField ? (
           <Cards field={currentField} preferences={preferences} onToggle={toggle} />
         ) : (
-          <Tabs<Field>
+          <Tabs<PreferenceField>
             tabs={fitTabs}
             value={currentField}
             onValueChange={setCurrentField}
@@ -219,9 +157,9 @@ function Onboarding() {
 }
 
 type CardsProps = {
-  field: Field;
+  field: PreferenceField;
   preferences: StylePreferences;
-  onToggle: (field: Field, value: string, pressed: boolean) => void;
+  onToggle: (field: PreferenceField, value: string, pressed: boolean) => void;
 };
 
 function Cards({ field, preferences, onToggle }: CardsProps) {
@@ -236,7 +174,7 @@ function Cards({ field, preferences, onToggle }: CardsProps) {
           src={null}
           pressed={preferences[field].includes(option.value)}
           onPressedChange={(pressed) => onToggle(field, option.value, pressed)}
-          minSize="lg"
+          size="lg"
         />
       ))}
     </Box>
