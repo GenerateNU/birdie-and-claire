@@ -1,6 +1,8 @@
 # Deployment
 
-The backend runs on the DigitalOcean droplet shared with inspirate-consulting.
+The backend runs on the DigitalOcean droplet shared with other Generate
+projects; the droplet itself is documented in
+[GenerateNU/droplet](https://github.com/GenerateNU/droplet).
 The frontend runs on Vercel. Production data and auth stay in Supabase.
 
 ```
@@ -60,30 +62,13 @@ stay in the bucket after the PR closes.
 
 ## One-time setup
 
-### 1. Shared stack: switch the preview database to pgvector
+### 1. Shared stack
 
-Our migrations run `CREATE EXTENSION vector`, which the `postgres:17-alpine`
-image in inspirate's `deploy/shared` does not have. `deploy/shared` here is
-their file with the image swapped for `pgvector/pgvector:pg17`.
-
-The droplet runs one copy of this stack, so agree the change with whoever owns
-the droplet before applying it. The new image is Debian-based, and the old
-volume was initialised under Alpine, so recreate the volume instead of reusing
-it. That wipes every open preview database, ours and theirs. The previews come
-back on their next push.
-
-This replaces only the preview database, so Caddy and every production
-backend keep serving. Run it from the repo root on your machine:
-
-```sh
-scp deploy/shared/docker-compose.yml deploy@<droplet>:/opt/shared/docker-compose.yml
-ssh deploy@<droplet> 'cd /opt/shared && docker compose rm -sf preview-db \
-  && docker volume rm shared_preview_db_data && docker compose up -d preview-db'
-```
-
-`.env` there needs `ACME_EMAIL` and `PREVIEW_DB_PASSWORD` (see
-`deploy/shared/.env.example`). Preview scripts read the password from that
-file, so it never leaves the droplet.
+Caddy and the preview database are shared by every project on the droplet and
+live in [GenerateNU/droplet](https://github.com/GenerateNU/droplet), which
+already runs `pgvector/pgvector:pg17` for our `CREATE EXTENSION vector`
+migrations. Preview scripts read `PREVIEW_DB_PASSWORD` from `/opt/shared/.env`,
+so it never leaves the droplet.
 
 ### 2. DNS
 
@@ -212,7 +197,9 @@ Keyflare prod is 5432. The transaction pooler on 6543 cannot hold goose's
 advisory lock.
 
 **Preview fails with `extension "vector" is not available`.** The shared
-preview database is still on `postgres:17-alpine`. See step 1.
+preview database is not on the pgvector image. See
+[GenerateNU/droplet](https://github.com/GenerateNU/droplet)'s
+`shared/docker-compose.yml`.
 
 **API calls 404 on Vercel but the API is up.** Check that the `/api/:path*`
 rewrite in `frontend/vercel.json` points at the current `API_DOMAIN`.
