@@ -83,6 +83,7 @@ docker run -d \
   --network edge \
   --restart unless-stopped \
   --env-file "$PR_ENV_FILE" \
+  --log-opt max-size=10m --log-opt max-file=3 \
   --label "caddy=${HOST}" \
   --label "caddy.reverse_proxy={{upstreams 8080}}" \
   "$IMAGE" >/dev/null
