@@ -1,6 +1,7 @@
 package models
 
 import (
+	"database/sql/driver"
 	"encoding/json"
 	"fmt"
 
@@ -32,6 +33,15 @@ type StylePreferences struct {
 	Neckline []string `json:"neckline" enum:"modest,high,low" uniqueItems:"true" nullable:"false"`
 	Bottoms  []string `json:"bottoms" enum:"pants,dress,skirt,shorts" uniqueItems:"true" nullable:"false"`
 	Shoes    []string `json:"shoes" enum:"sneakers,boots,sandals,heels,flats" uniqueItems:"true" nullable:"false"`
+}
+
+// Value writes the users.style_preferences jsonb column.
+func (p StylePreferences) Value() (driver.Value, error) {
+	encoded, err := json.Marshal(p)
+	if err != nil {
+		return nil, fmt.Errorf("encode style preferences: %w", err)
+	}
+	return string(encoded), nil
 }
 
 // Scan reads the users.style_preferences jsonb column. database/sql handles NULL before calling it.

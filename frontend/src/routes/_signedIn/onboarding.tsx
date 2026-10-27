@@ -25,8 +25,10 @@ type Field = "style" | "neckline" | "bottoms" | "shoes";
 
 type FitField = Exclude<Field, "style">;
 
-// An empty list means no preference. Values match StylePreferences in backend/openapi.yaml.
+// Matches StylePreferences in backend/openapi.yaml. An empty list means no preference.
 type StylePreferences = Record<Field, string[]>;
+
+const noPreferences: StylePreferences = { style: [], neckline: [], bottoms: [], shoes: [] };
 
 type Question = {
   title: string;
@@ -79,19 +81,14 @@ const fitTabs: { value: FitField; label: string }[] = [
   { value: "shoes", label: "Shoes" },
 ];
 
-// One step per question: style, then each fit tab.
+// Style is step 1, and each fit tab is one more step after it.
 const stepCount = 1 + fitTabs.length;
 
 function Onboarding() {
   const [screen, setScreen] = useState<"style" | "fit">("style");
   const [fitTab, setFitTab] = useState<FitField>("neckline");
 
-  const [preferences, setPreferences] = useState<StylePreferences>({
-    style: [],
-    neckline: [],
-    bottoms: [],
-    shoes: [],
-  });
+  const [preferences, setPreferences] = useState<StylePreferences>(noPreferences);
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -107,23 +104,19 @@ function Onboarding() {
     }));
   }
 
-  function clear(field: Field) {
-    setPreferences((current) => ({ ...current, [field]: [] }));
-  }
-
-  async function finish(finalPreferences: StylePreferences) {
+  async function finish(answers: StylePreferences) {
     setError(null);
     setSaving(true);
 
     try {
-      const res = await apiFetch("/api/v1/users/me", {
-        method: "PATCH",
+      const res = await apiFetch("/api/v1/users/me/style-preferences", {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ style_preferences: finalPreferences }),
+        body: JSON.stringify(answers),
       });
 
       if (!res.ok) {
-        throw new Error(`PATCH /api/v1/users/me failed: ${res.status}`);
+        throw new Error(`PUT /api/v1/users/me/style-preferences failed: ${res.status}`);
       }
 
       // Has to stay a full page load. The cached account status never expires, so a router
@@ -135,11 +128,11 @@ function Onboarding() {
     }
   }
 
-  function nextFitTab(finalPreferences: StylePreferences) {
+  function nextFitTabOrFinish(answers: StylePreferences) {
     const next = fitTabs[fitTabIndex + 1];
 
     if (next === undefined) {
-      void finish(finalPreferences);
+      void finish(answers);
 
       return;
     }
@@ -151,26 +144,41 @@ function Onboarding() {
     // Passed on directly, because finish runs before the state update lands.
     const cleared = { ...preferences, [fitTab]: [] };
     setPreferences(cleared);
-    nextFitTab(cleared);
+    nextFitTabOrFinish(cleared);
   }
+
+  // Skip saves "no preference" for everything so onboarding isn't shown again. Back on the
+  // style screen does the same until design decides.
+  function skipOnboarding() {
+    void finish(noPreferences);
+  }
+
+  const errorMessage = error && (
+    <Text variant="body" className="text-error">
+      Error: {error}
+    </Text>
+  );
+
+  const skipButton = (
+    <Button
+      label="Skip →"
+      variant="secondary"
+      size="sm"
+      className="self-end"
+      disabled={saving}
+      onClick={skipOnboarding}
+    />
+  );
 
   if (screen === "style") {
     return (
       <Box className="flex min-h-screen flex-col items-center gap-lg p-xl">
-        <Header step={1} onBack={null} />
+        <Header step={1} saving={saving} onBack={skipOnboarding} />
         <Text variant="heading">{questions.style.title}</Text>
         <Cards field="style" preferences={preferences} onToggle={toggle} />
-        <Button label="Next" onClick={() => setScreen("fit")} />
-        <Button
-          label="Skip →"
-          variant="secondary"
-          size="sm"
-          className="self-end"
-          onClick={() => {
-            clear("style");
-            setScreen("fit");
-          }}
-        />
+        <Button label="Next" disabled={saving} onClick={() => setScreen("fit")} />
+        {errorMessage}
+        {skipButton}
       </Box>
     );
   }
@@ -179,21 +187,17 @@ function Onboarding() {
 
   return (
     <Box className="flex min-h-screen flex-col items-center gap-lg p-xl">
-      <Header step={2 + fitTabIndex} onBack={() => setScreen("style")} />
+      <Header step={2 + fitTabIndex} saving={saving} onBack={() => setScreen("style")} />
       <Text variant="heading">{questions[fitTab].title}</Text>
-      <Tabs tabs={fitTabs} value={fitTab} onValueChange={setFitTab}>
+      <Tabs tabs={fitTabs} value={fitTab} onValueChange={setFitTab} disabled={saving}>
         <Cards field={fitTab} preferences={preferences} onToggle={toggle} />
       </Tabs>
       <Button
         label={onLastTab ? "Finish" : "Next"}
         loading={saving}
-        onClick={() => nextFitTab(preferences)}
+        onClick={() => nextFitTabOrFinish(preferences)}
       />
-      {error && (
-        <Text variant="body" className="text-error">
-          Error: {error}
-        </Text>
-      )}
+      {errorMessage}
       <Button
         label="I don't have a preference →"
         variant="secondary"
@@ -202,28 +206,28 @@ function Onboarding() {
         disabled={saving}
         onClick={skipFitTab}
       />
+      {skipButton}
     </Box>
   );
 }
 
 type HeaderProps = {
   step: number;
-  onBack: (() => void) | null;
+  saving: boolean;
+  onBack: () => void;
 };
 
-// A fixed-height row on every screen, so showing or hiding Back doesn't move the page.
-function Header({ step, onBack }: HeaderProps) {
+function Header({ step, saving, onBack }: HeaderProps) {
   return (
     <Box className="grid h-xxl w-full grid-cols-3 items-center">
-      {onBack && (
-        <Button
-          label="← Back"
-          variant="secondary"
-          size="sm"
-          className="justify-self-start"
-          onClick={onBack}
-        />
-      )}
+      <Button
+        label="← Back"
+        variant="secondary"
+        size="sm"
+        className="justify-self-start"
+        disabled={saving}
+        onClick={onBack}
+      />
       <Box className="col-start-2 flex justify-center">
         <ProgressBar label="Sign-up progress" step={step} stepCount={stepCount} />
       </Box>
@@ -249,8 +253,7 @@ function Cards({ field, preferences, onToggle }: CardsProps) {
           src={null}
           pressed={preferences[field].includes(option.value)}
           onPressedChange={(pressed) => onToggle(field, option.value, pressed)}
-          showCheckbox
-          className="min-h-card min-w-card"
+          minSize="lg"
         />
       ))}
     </Box>

@@ -96,7 +96,6 @@ function CreateOutfit() {
             src={src}
             pressed={cardOccasion === name}
             onPressedChange={(pressed) => selectCard(name, pressed)}
-            showCheckbox={false}
           />
         ))}
       </Box>

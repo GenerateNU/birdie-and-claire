@@ -77,13 +77,11 @@ func (c *UserController) CreateUser(ctx context.Context, input *CreateUserInput)
 }
 
 type UpdateStylePreferencesInput struct {
-	Body struct {
-		StylePreferences models.StylePreferences `json:"style_preferences" doc:"Replaces all four fields"`
-	}
+	Body models.StylePreferences
 }
 
 func (c *UserController) UpdateStylePreferences(ctx context.Context, input *UpdateStylePreferencesInput) (*CurrentUserOutput, error) {
-	response, err := c.service.UpdateStylePreferences(ctx, input.Body.StylePreferences)
+	response, err := c.service.UpdateStylePreferences(ctx, input.Body)
 	if err != nil {
 		return nil, errs.ToHuma(ctx, err)
 	}

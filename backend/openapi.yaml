@@ -542,15 +542,6 @@ components:
         - bottoms
         - shoes
       type: object
-    UpdateStylePreferencesInputBody:
-      additionalProperties: false
-      properties:
-        style_preferences:
-          $ref: "#/components/schemas/StylePreferences"
-          description: Replaces all four fields
-      required:
-        - style_preferences
-      type: object
     UserResponse:
       additionalProperties: false
       properties:
@@ -932,32 +923,6 @@ paths:
       summary: Get the caller's user
       tags:
         - users
-    patch:
-      operationId: update-current-user-style-preferences
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UpdateStylePreferencesInputBody"
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CurrentUserResponse"
-          description: OK
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearer: []
-      summary: Update the caller's style preferences
-      tags:
-        - users
     post:
       operationId: create-current-user
       requestBody:
@@ -1056,6 +1021,32 @@ paths:
       security:
         - bearer: []
       summary: Clear the caller's style preferences so onboarding asks for them again
+      tags:
+        - users
+    put:
+      operationId: update-current-user-style-preferences
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StylePreferences"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrentUserResponse"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Replace the caller's style preferences
       tags:
         - users
   /api/v1/users/{id}:

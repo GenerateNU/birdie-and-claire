@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -84,18 +83,13 @@ func (r *userRepository) SetProfilePictureKey(ctx context.Context, id uuid.UUID,
 }
 
 func (r *userRepository) UpdateStylePreferences(ctx context.Context, id uuid.UUID, preferences models.StylePreferences) (models.User, error) {
-	encoded, err := json.Marshal(preferences)
-	if err != nil {
-		return models.User{}, fmt.Errorf("encode style preferences for user %s: %w", id, err)
-	}
-
 	var user models.User
-	err = r.db.QueryRowContext(ctx, `
+	err := r.db.QueryRowContext(ctx, `
 		UPDATE users
 		SET style_preferences = $1::jsonb, updated_at = now()
 		WHERE id = $2
 		RETURNING id, COALESCE(name, ''), profile_picture_key, style_preferences
-	`, string(encoded), id).Scan(&user.ID, &user.Name, &user.ProfilePictureKey, &user.StylePreferences)
+	`, preferences, id).Scan(&user.ID, &user.Name, &user.ProfilePictureKey, &user.StylePreferences)
 	if errors.Is(err, sql.ErrNoRows) {
 		return models.User{}, errs.ErrNotFound
 	}

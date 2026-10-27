@@ -15,11 +15,18 @@ type TabsProps<T extends string> = {
   tabs: TabOption<T>[];
   value: T;
   onValueChange: (value: T) => void;
+  disabled: boolean;
   children: ReactNode;
 };
 
 /** A segmented row of tabs above one panel. `children` is the active tab's content. */
-export function Tabs<T extends string>({ tabs, value, onValueChange, children }: TabsProps<T>) {
+export function Tabs<T extends string>({
+  tabs,
+  value,
+  onValueChange,
+  disabled,
+  children,
+}: TabsProps<T>) {
   return (
     <BaseTabs.Root
       value={value}
@@ -29,7 +36,12 @@ export function Tabs<T extends string>({ tabs, value, onValueChange, children }:
     >
       <BaseTabs.List className={listClasses}>
         {tabs.map((tab) => (
-          <BaseTabs.Tab key={tab.value} value={tab.value} className={tabClasses}>
+          <BaseTabs.Tab
+            key={tab.value}
+            value={tab.value}
+            disabled={disabled}
+            className={tabClasses}
+          >
             {tab.label}
           </BaseTabs.Tab>
         ))}

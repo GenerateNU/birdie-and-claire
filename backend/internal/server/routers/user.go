@@ -38,9 +38,9 @@ func UserRoutes(api huma.API, params types.RouteParams) {
 
 	huma.Register(api, huma.Operation{
 		OperationID: "update-current-user-style-preferences",
-		Method:      http.MethodPatch,
-		Path:        "/api/v1/users/me",
-		Summary:     "Update the caller's style preferences",
+		Method:      http.MethodPut,
+		Path:        "/api/v1/users/me/style-preferences",
+		Summary:     "Replace the caller's style preferences",
 		Tags:        []string{"users"},
 	}, controller.UpdateStylePreferences)
 

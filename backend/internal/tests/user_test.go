@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"birdie-and-claire/internal/controllers"
+	"birdie-and-claire/internal/models"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/humatest"
@@ -79,29 +80,17 @@ func TestCreateUserName(t *testing.T) {
 	}
 }
 
-type stylePreferencesProbeOutput struct {
-	Body struct {
-		Stored string `json:"stored"`
-	}
-}
-
-// stylePreferencesProbe echoes the preferences as the repository encodes them for the jsonb column.
+// stylePreferencesProbe accepts what the replace-style-preferences route accepts.
 func stylePreferencesProbe(t *testing.T) humatest.TestAPI {
 	t.Helper()
 
 	_, api := humatest.New(t)
 	huma.Register(api, huma.Operation{
 		OperationID: "style-preferences-probe",
-		Method:      http.MethodPatch,
+		Method:      http.MethodPut,
 		Path:        "/probe",
-	}, func(_ context.Context, input *controllers.UpdateStylePreferencesInput) (*stylePreferencesProbeOutput, error) {
-		encoded, err := json.Marshal(input.Body.StylePreferences)
-		if err != nil {
-			return nil, err
-		}
-		output := &stylePreferencesProbeOutput{}
-		output.Body.Stored = string(encoded)
-		return output, nil
+	}, func(_ context.Context, _ *controllers.UpdateStylePreferencesInput) (*struct{}, error) {
+		return &struct{}{}, nil
 	})
 
 	return api
@@ -119,40 +108,33 @@ func TestUpdateStylePreferencesInput(t *testing.T) {
 		name       string
 		body       map[string]any
 		wantStatus int
-		wantStored string
 	}{
-		{
-			name:       "all four, empty list kept as no preference",
-			body:       map[string]any{"style_preferences": map[string]any{"style": []string{"chic_avant_garde"}, "neckline": []string{}, "bottoms": []string{"pants", "skirt"}, "shoes": []string{}}},
-			wantStatus: http.StatusOK,
-			wantStored: `{"style":["chic_avant_garde"],"neckline":[],"bottoms":["pants","skirt"],"shoes":[]}`,
-		},
-		{name: "missing field", body: map[string]any{"style_preferences": map[string]any{"style": []string{}, "neckline": []string{}, "bottoms": []string{}}}, wantStatus: http.StatusUnprocessableEntity},
-		{name: "null field", body: map[string]any{"style_preferences": withField("bottoms", nil)}, wantStatus: http.StatusUnprocessableEntity},
-		{name: "unknown value", body: map[string]any{"style_preferences": withField("neckline", []string{"plunging"})}, wantStatus: http.StatusUnprocessableEntity},
-		{name: "duplicate value", body: map[string]any{"style_preferences": withField("shoes", []string{"heels", "heels"})}, wantStatus: http.StatusUnprocessableEntity},
-		{name: "missing style_preferences", body: map[string]any{}, wantStatus: http.StatusUnprocessableEntity},
+		{name: "all four", body: withField("bottoms", []string{"pants", "skirt"}), wantStatus: http.StatusNoContent},
+		{name: "missing field", body: map[string]any{"style": []string{}, "neckline": []string{}, "bottoms": []string{}}, wantStatus: http.StatusUnprocessableEntity},
+		{name: "null field", body: withField("bottoms", nil), wantStatus: http.StatusUnprocessableEntity},
+		{name: "unknown value", body: withField("neckline", []string{"plunging"}), wantStatus: http.StatusUnprocessableEntity},
+		{name: "duplicate value", body: withField("shoes", []string{"heels", "heels"}), wantStatus: http.StatusUnprocessableEntity},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			response := stylePreferencesProbe(t).Patch("/probe", test.body)
+			response := stylePreferencesProbe(t).Put("/probe", test.body)
 			if response.Code != test.wantStatus {
 				t.Fatalf("status = %d, want %d: %s", response.Code, test.wantStatus, response.Body)
 			}
-			if test.wantStatus != http.StatusOK {
-				return
-			}
-
-			var echoed struct {
-				Stored string `json:"stored"`
-			}
-			if err := json.Unmarshal(response.Body.Bytes(), &echoed); err != nil {
-				t.Fatalf("decode body %s: %v", response.Body, err)
-			}
-			if echoed.Stored != test.wantStored {
-				t.Fatalf("stored = %s, want %s", echoed.Stored, test.wantStored)
-			}
 		})
+	}
+}
+
+func TestStylePreferencesValueKeepsEmptyLists(t *testing.T) {
+	preferences := models.StylePreferences{Style: []string{"chic_avant_garde"}, Neckline: []string{}, Bottoms: []string{"pants"}, Shoes: []string{}}
+
+	value, err := preferences.Value()
+	if err != nil {
+		t.Fatalf("value: %v", err)
+	}
+	want := `{"style":["chic_avant_garde"],"neckline":[],"bottoms":["pants"],"shoes":[]}`
+	if value != want {
+		t.Fatalf("value = %v, want %s", value, want)
 	}
 }

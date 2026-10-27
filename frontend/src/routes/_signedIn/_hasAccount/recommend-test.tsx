@@ -268,7 +268,6 @@ function SlotResults({ slot, phrase, products, selectedId, onSelect }: SlotResul
                 src={product.image_url}
                 pressed={product.id === selectedId}
                 onPressedChange={() => onSelect(product)}
-                showCheckbox={false}
               />
             </Box>
           ))}

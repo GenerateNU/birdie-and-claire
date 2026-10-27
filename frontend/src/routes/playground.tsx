@@ -376,7 +376,6 @@ function SearchFieldExamples() {
 
 function ImageCardExamples() {
   const [pressed, setPressed] = useState(false);
-  const [checked, setChecked] = useState(true);
 
   return (
     <Box className="grid max-w-content-lg grid-cols-3 gap-md">
@@ -385,28 +384,13 @@ function ImageCardExamples() {
         src={samplePhoto}
         pressed={pressed}
         onPressedChange={setPressed}
-        showCheckbox={false}
       />
-      <ImageCard
-        label="With checkbox"
-        src={samplePhoto}
-        pressed={checked}
-        onPressedChange={setChecked}
-        showCheckbox
-      />
-      <ImageCard
-        label="No image"
-        src={null}
-        pressed={false}
-        onPressedChange={() => {}}
-        showCheckbox={false}
-      />
+      <ImageCard label="No image" src={null} pressed={false} onPressedChange={() => {}} />
       <ImageCard
         label="Failed load"
         src="/missing-photo.png"
         pressed={false}
         onPressedChange={() => {}}
-        showCheckbox={false}
       />
     </Box>
   );
