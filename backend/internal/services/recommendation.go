@@ -108,7 +108,7 @@ func (s *recommendationService) searchSlot(ctx context.Context, slot models.Prod
 	if err != nil {
 		return nil, fmt.Errorf("embed %s phrase: %w", slot, err)
 	}
-	return s.repo.Product.FindSimilar(ctx, embedding, slot, excludeTags, niceTags, recommendationsPerSlot)
+	return s.repo.Product.FindSimilar(ctx, embedding, slot, excludeTags, niceTags, nil, recommendationsPerSlot)
 }
 
 // the errors give sizes only, since the phrases and tags are the model's reading of shopper text

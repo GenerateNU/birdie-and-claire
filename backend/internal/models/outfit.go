@@ -32,6 +32,11 @@ type ShareOutfitResponse struct {
 	URL string `json:"url" doc:"Public link to the outfit; stays the same across re-shares"`
 }
 
+// OutfitSuggestionsResponse lists products that suit one item of an outfit, closest first.
+type OutfitSuggestionsResponse struct {
+	Products []ProductResponse `json:"products" nullable:"false"`
+}
+
 type CreateOutfitParams struct {
 	Name       string
 	ProductIDs []uuid.UUID

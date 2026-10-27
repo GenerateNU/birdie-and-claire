@@ -4,8 +4,11 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"slices"
 
 	"birdie-and-claire/internal/auth"
+	"birdie-and-claire/internal/errs"
+	"birdie-and-claire/internal/log"
 	"birdie-and-claire/internal/models"
 	"birdie-and-claire/internal/repository"
 	"birdie-and-claire/internal/utils/pagination"
@@ -23,6 +26,8 @@ type OutfitService interface {
 	Share(ctx context.Context, id uuid.UUID) (models.ShareOutfitResponse, error)
 	Unshare(ctx context.Context, id uuid.UUID) error
 	GetShared(ctx context.Context, id uuid.UUID) (models.SharedOutfitResponse, error)
+	// Suggest returns products like one of the outfit's products, leaving out everything already in the outfit.
+	Suggest(ctx context.Context, id, productID uuid.UUID, limit int) (models.OutfitSuggestionsResponse, error)
 }
 
 type outfitService struct {
@@ -101,4 +106,35 @@ func (s *outfitService) GetShared(ctx context.Context, id uuid.UUID) (models.Sha
 		return models.SharedOutfitResponse{}, err
 	}
 	return models.SharedOutfitResponse{ID: outfit.ID, Name: outfit.Name, Products: products}, nil
+}
+
+func (s *outfitService) Suggest(ctx context.Context, id, productID uuid.UUID, limit int) (models.OutfitSuggestionsResponse, error) {
+	_, products, err := s.repo.Outfit.GetByID(ctx, id, auth.UserID(ctx))
+	if err != nil {
+		return models.OutfitSuggestionsResponse{}, err
+	}
+
+	outfitProductIDs := make([]uuid.UUID, 0, len(products))
+	for _, product := range products {
+		outfitProductIDs = append(outfitProductIDs, product.ID)
+	}
+	if !slices.Contains(outfitProductIDs, productID) {
+		return models.OutfitSuggestionsResponse{}, fmt.Errorf("product is not in this outfit: %w", errs.ErrUnprocessable)
+	}
+
+	embedding, slot, err := s.repo.Product.GetEmbedding(ctx, productID)
+	if err != nil {
+		return models.OutfitSuggestionsResponse{}, err
+	}
+	if embedding == nil {
+		log.Warn(ctx, "outfit product has no embedding, so it gets no suggestions", "outfit", id, "product", productID)
+		return models.OutfitSuggestionsResponse{Products: []models.ProductResponse{}}, nil
+	}
+
+	// nil tag lists: FindSimilar treats a NULL list as matching no tag
+	similar, err := s.repo.Product.FindSimilar(ctx, embedding, slot, nil, nil, outfitProductIDs, limit)
+	if err != nil {
+		return models.OutfitSuggestionsResponse{}, err
+	}
+	return models.OutfitSuggestionsResponse{Products: similar}, nil
 }

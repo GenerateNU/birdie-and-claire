@@ -3,8 +3,10 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
+	"birdie-and-claire/internal/errs"
 	"birdie-and-claire/internal/models"
 
 	"github.com/google/uuid"
@@ -14,7 +16,10 @@ import (
 type ProductRepository interface {
 	Exists(ctx context.Context, productID uuid.UUID) (bool, error)
 	// FindSimilar ranks a slot's products by distance to embedding, less a bonus per matching niceTag; pass the tags lowercase.
-	FindSimilar(ctx context.Context, embedding []float32, slot models.ProductSlot, excludeTags, niceTags []string, limit int) ([]models.ProductResponse, error)
+	// excludeProductIDs may be nil.
+	FindSimilar(ctx context.Context, embedding []float32, slot models.ProductSlot, excludeTags, niceTags []string, excludeProductIDs []uuid.UUID, limit int) ([]models.ProductResponse, error)
+	// GetEmbedding returns a nil embedding for a product that has none yet, and ErrNotFound for a missing product.
+	GetEmbedding(ctx context.Context, productID uuid.UUID) ([]float32, models.ProductSlot, error)
 }
 
 // untuned: a guess at how much one matching nice tag is worth in cosine distance
@@ -39,7 +44,27 @@ func (r *productRepository) Exists(ctx context.Context, productID uuid.UUID) (bo
 	return exists, nil
 }
 
-func (r *productRepository) FindSimilar(ctx context.Context, embedding []float32, slot models.ProductSlot, excludeTags, niceTags []string, limit int) ([]models.ProductResponse, error) {
+func (r *productRepository) GetEmbedding(ctx context.Context, productID uuid.UUID) ([]float32, models.ProductSlot, error) {
+	var embedding *pgvector.Vector
+	var slot models.ProductSlot
+	err := r.db.QueryRowContext(ctx, `
+		SELECT embedding, slot
+		FROM products
+		WHERE id = $1
+	`, productID).Scan(&embedding, &slot)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, "", errs.ErrNotFound
+	}
+	if err != nil {
+		return nil, "", fmt.Errorf("get embedding of product %s: %w", productID, err)
+	}
+	if embedding == nil {
+		return nil, slot, nil
+	}
+	return embedding.Slice(), slot, nil
+}
+
+func (r *productRepository) FindSimilar(ctx context.Context, embedding []float32, slot models.ProductSlot, excludeTags, niceTags []string, excludeProductIDs []uuid.UUID, limit int) ([]models.ProductResponse, error) {
 	rows, err := r.db.QueryContext(ctx, `
 		-- Ranked and limited before the image join, so only the returned products look up an image.
 		WITH ranked AS (
@@ -52,6 +77,8 @@ func (r *productRepository) FindSimilar(ctx context.Context, embedding []float32
 				AND p.slot = $2
 				-- stored tags keep the catalog's casing, so only that side is lowered; a NULL list matches no tag
 				AND NOT EXISTS (SELECT 1 FROM unnest(p.tags) tag WHERE lower(tag) = ANY($3::text[]))
+				-- <> ALL over a NULL array is NULL and would drop every row, so a nil list becomes an empty one
+				AND p.id <> ALL(COALESCE($7::uuid[], '{}'))
 			ORDER BY score, p.id
 			LIMIT $6
 		)
@@ -66,7 +93,7 @@ func (r *productRepository) FindSimilar(ctx context.Context, embedding []float32
 			LIMIT 1
 		) first_image ON true
 		ORDER BY r.score, r.id
-	`, pgvector.NewVector(embedding), slot, excludeTags, bonusPerTag, niceTags, limit)
+	`, pgvector.NewVector(embedding), slot, excludeTags, bonusPerTag, niceTags, limit, excludeProductIDs)
 	if err != nil {
 		return nil, fmt.Errorf("find similar products in slot %s: %w", slot, err)
 	}

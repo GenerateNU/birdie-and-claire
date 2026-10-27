@@ -41,6 +41,15 @@ func OutfitRoutes(api huma.API, params types.RouteParams) {
 	}, controller.Update)
 
 	huma.Register(api, huma.Operation{
+		OperationID: "suggest-outfit-items",
+		Method:      http.MethodGet,
+		Path:        "/api/v1/outfits/{id}/suggestions",
+		Summary:     "Suggest products similar to one of an outfit's products",
+		Description: "Closest first, in the same slot, leaving out every product already in the outfit. A product without an embedding gets an empty list.",
+		Tags:        []string{"outfits"},
+	}, controller.SuggestItems)
+
+	huma.Register(api, huma.Operation{
 		OperationID: "list-outfits",
 		Method:      http.MethodGet,
 		Path:        "/api/v1/outfits",

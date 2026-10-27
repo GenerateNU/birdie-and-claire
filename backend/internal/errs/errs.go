@@ -15,12 +15,13 @@ import (
 // controller use these instead of HTTP errors so that non-HTTP callers, such as
 // background workers, can consume the same services.
 var (
-	ErrNotFound     = errors.New("not found")
-	ErrDuplicate    = errors.New("already exists")
-	ErrConflict     = errors.New("conflicting state")
-	ErrInvalidInput = errors.New("invalid input")
-	ErrBadCursor    = errors.New("invalid cursor")
-	ErrForbidden    = errors.New("forbidden")
+	ErrNotFound      = errors.New("not found")
+	ErrDuplicate     = errors.New("already exists")
+	ErrConflict      = errors.New("conflicting state")
+	ErrInvalidInput  = errors.New("invalid input")
+	ErrBadCursor     = errors.New("invalid cursor")
+	ErrForbidden     = errors.New("forbidden")
+	ErrUnprocessable = errors.New("unprocessable")
 )
 
 // ToHuma maps a service error to an HTTP error. An unrecognised error becomes a
@@ -42,6 +43,9 @@ func ToHuma(ctx context.Context, err error) error {
 	case errors.Is(err, ErrForbidden):
 		// the wrapping message is the reason shown to the caller, so wrap it with client-safe text only
 		return huma.Error403Forbidden(err.Error())
+	case errors.Is(err, ErrUnprocessable):
+		// like ErrForbidden, the wrapping message is the reason shown to the caller, so wrap it with client-safe text only
+		return huma.Error422UnprocessableEntity(err.Error())
 	default:
 		log.Error(ctx, "request failed", "error", err)
 		return huma.Error500InternalServerError("internal server error")

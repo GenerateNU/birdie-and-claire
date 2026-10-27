@@ -67,6 +67,7 @@ func TestToHumaDoesNotLogSentinels(t *testing.T) {
 		want int
 	}{
 		{name: "not found", err: errs.ErrNotFound, want: http.StatusNotFound},
+		{name: "wrapped unprocessable", err: fmt.Errorf("product is not in this outfit: %w", errs.ErrUnprocessable), want: http.StatusUnprocessableEntity},
 		{name: "wrapped bad cursor", err: fmt.Errorf("list outfits for user u-123: after cursor id: %w", errs.ErrBadCursor), want: http.StatusBadRequest},
 	}
 
@@ -92,5 +93,15 @@ func TestToHumaNilIsNil(t *testing.T) {
 	}
 	if logs.Len() != 0 {
 		t.Fatalf("logs = %s, want nothing logged", logs)
+	}
+}
+
+// The wrapped text is the client-facing reason, as with ErrForbidden.
+func TestToHumaUnprocessableShowsTheReason(t *testing.T) {
+	err := errs.ToHuma(context.Background(), fmt.Errorf("product is not in this outfit: %w", errs.ErrUnprocessable))
+
+	var model *huma.ErrorModel
+	if !errors.As(err, &model) || !strings.Contains(model.Detail, "product is not in this outfit") {
+		t.Fatalf("ToHuma() = %v, want the reason in its detail", err)
 	}
 }

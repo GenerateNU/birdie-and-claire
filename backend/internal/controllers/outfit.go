@@ -210,3 +210,22 @@ func (c *OutfitController) List(ctx context.Context, input *ListOutfitsInput) (*
 	}
 	return &ListOutfitsOutput{Body: page}, nil
 }
+
+type SuggestOutfitItemsInput struct {
+	OutfitIDInput
+	ProductID uuid.UUID `query:"product_id" required:"true" doc:"The outfit product to find similar products for"`
+	Limit     int       `query:"limit" default:"12" minimum:"1" maximum:"30" doc:"Most products to return"`
+}
+
+type SuggestOutfitItemsOutput struct {
+	Body models.OutfitSuggestionsResponse
+}
+
+// SuggestItems returns products similar to one of the outfit's products, closest first.
+func (c *OutfitController) SuggestItems(ctx context.Context, input *SuggestOutfitItemsInput) (*SuggestOutfitItemsOutput, error) {
+	suggestions, err := c.service.Suggest(ctx, input.ID, input.ProductID, input.Limit)
+	if err != nil {
+		return nil, errs.ToHuma(ctx, err)
+	}
+	return &SuggestOutfitItemsOutput{Body: suggestions}, nil
+}
