@@ -5,11 +5,13 @@ import { apiFetch } from "@/api";
 import {
   Box,
   Button,
+  Empty,
   ImageCard,
   ListCard,
   OptionCardGroup,
   SearchField,
   Text,
+  TextField,
   useToast,
 } from "@/design-system";
 import { vibes, weathers } from "@/occasionOptions";
@@ -18,9 +20,8 @@ export const Route = createFileRoute("/_signedIn/_hasAccount/create-outfit")({
   component: CreateOutfit,
 });
 
-type Step = "occasion" | "weather" | "vibe" | "review";
+type Step = "occasion" | "weather" | "vibe" | "specifics" | "custom" | "review";
 
-// The steps the step bar shows, in order; specifics and custom have no screen yet.
 const barSteps = ["weather", "vibe", "specifics", "custom"] as const;
 
 type BarStep = (typeof barSteps)[number];
@@ -41,6 +42,13 @@ type Weather = (typeof weathers)[number];
 
 type Vibe = (typeof vibes)[number];
 
+type SpecificsAnswer = "yes" | "no";
+
+const specificsOptions: { label: string; value: SpecificsAnswer }[] = [
+  { label: "Yes", value: "yes" },
+  { label: "No", value: "no" },
+];
+
 type RecommendationResponse = {
   outfits: {
     top: { id: string };
@@ -58,8 +66,12 @@ function CreateOutfit() {
   const [customOccasion, setCustomOccasion] = useState("");
   const [weather, setWeather] = useState<Weather | null>(null);
   const [vibe, setVibe] = useState<Vibe | null>(null);
+  // Held only to drive the screen: picking B&C items to style is out of scope, so it is never sent.
+  const [specificsAnswer, setSpecificsAnswer] = useState<SpecificsAnswer | null>(null);
+  const [customDetails, setCustomDetails] = useState("");
 
   const chosenOccasion = cardOccasion ?? customOccasion.trim();
+  const otherDetails = customDetails.trim();
   const canContinue = chosenOccasion !== "";
 
   function selectCard(occasion: string, pressed: boolean) {
@@ -121,7 +133,7 @@ function CreateOutfit() {
         step="vibe"
         canContinue={vibe !== null}
         onBack={() => setStep("weather")}
-        onNext={() => advanceTo("review")}
+        onNext={() => advanceTo("specifics")}
       >
         <Box className="capitalize">
           <OptionCardGroup
@@ -136,6 +148,55 @@ function CreateOutfit() {
     );
   }
 
+  if (step === "specifics") {
+    return (
+      <StepScreen
+        step="specifics"
+        canContinue={specificsAnswer !== null}
+        onBack={() => setStep("vibe")}
+        onNext={() => advanceTo("custom")}
+      >
+        <Box className="flex flex-col gap-lg">
+          <OptionCardGroup
+            label="Are there any Birdie & Claire items you would like to style?"
+            options={specificsOptions}
+            value={specificsAnswer}
+            onValueChange={setSpecificsAnswer}
+            className="grid grid-cols-1 gap-md"
+          />
+          {specificsAnswer === "yes" && (
+            <Empty
+              title="Coming soon"
+              description="Styling your Birdie & Claire pieces is on its way. Tap Next to keep going."
+            />
+          )}
+        </Box>
+      </StepScreen>
+    );
+  }
+
+  if (step === "custom") {
+    return (
+      <StepScreen
+        step="custom"
+        canContinue
+        onBack={() => setStep("specifics")}
+        onNext={() => advanceTo("review")}
+      >
+        <TextField
+          multiline
+          label="Enter any other details you would like considered."
+          placeholder="i.e. Outfit for a chill night out with long sleeves and rainy weather"
+          // The endpoint caps custom at 200 characters.
+          maxLength={200}
+          rows={4}
+          value={customDetails}
+          onValueChange={setCustomDetails}
+        />
+      </StepScreen>
+    );
+  }
+
   if (step === "review") {
     // Next on weather and vibe stays disabled until each is picked, so Review always has both.
     if (weather === null || vibe === null) {
@@ -143,7 +204,13 @@ function CreateOutfit() {
     }
 
     return (
-      <Review occasion={chosenOccasion} weather={weather} vibe={vibe} onEdit={editFromReview} />
+      <Review
+        occasion={chosenOccasion}
+        weather={weather}
+        vibe={vibe}
+        otherDetails={otherDetails}
+        onEdit={editFromReview}
+      />
     );
   }
 
@@ -230,10 +297,12 @@ type ReviewProps = {
   occasion: string;
   weather: Weather;
   vibe: Vibe;
+  // Empty when the shopper skipped Custom.
+  otherDetails: string;
   onEdit: (step: Step) => void;
 };
 
-function Review({ occasion, weather, vibe, onEdit }: ReviewProps) {
+function Review({ occasion, weather, vibe, otherDetails, onEdit }: ReviewProps) {
   const toast = useToast();
   const navigate = useNavigate();
   const [creating, setCreating] = useState(false);
@@ -254,7 +323,7 @@ function Review({ occasion, weather, vibe, onEdit }: ReviewProps) {
     setCreating(true);
 
     try {
-      const outfitId = await requestOutfit(occasion, weather, vibe, signal);
+      const outfitId = await requestOutfit(occasion, weather, vibe, otherDetails, signal);
 
       if (outfitId === null) {
         toast.show({ message: "No matching pieces, try another occasion" });
@@ -317,8 +386,16 @@ function Review({ occasion, weather, vibe, onEdit }: ReviewProps) {
             }}
           />
         </Box>
-        {/* Hardcoded stand-in, with no Edit, until the endpoint can limit how many pieces it picks. */}
-        <ListCard title="Items to include" value="2" />
+        <ListCard
+          title="Other details"
+          value={otherDetails === "" ? "None" : otherDetails}
+          action={{
+            label: "Edit",
+            accessibleLabel: "Edit Other details",
+            onClick: () => onEdit("custom"),
+            disabled: creating,
+          }}
+        />
       </Box>
       <Button
         label="Create my outfit"
@@ -336,12 +413,18 @@ async function requestOutfit(
   occasion: string,
   weather: Weather,
   vibe: Vibe,
+  otherDetails: string,
   signal: AbortSignal,
 ): Promise<string | null> {
-  const details = [
+  const details: { key: string; value: string }[] = [
     { key: "weather", value: weather },
     { key: "vibe", value: vibe },
   ];
+
+  // The endpoint rejects a blank custom value, and an empty field means the shopper skipped it.
+  if (otherDetails !== "") {
+    details.push({ key: "custom", value: otherDetails });
+  }
 
   const recommendRes = await apiFetch("/api/v1/recommend", {
     method: "POST",
