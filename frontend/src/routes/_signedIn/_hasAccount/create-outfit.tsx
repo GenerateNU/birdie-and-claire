@@ -1,56 +1,74 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { apiFetch } from "@/api";
 import {
   Box,
   Button,
+  Empty,
   ImageCard,
   ListCard,
-  RadioGroup,
+  OptionCardGroup,
   SearchField,
   Text,
+  TextField,
   useToast,
 } from "@/design-system";
+import { vibes, weathers } from "@/occasionOptions";
 
 export const Route = createFileRoute("/_signedIn/_hasAccount/create-outfit")({
   component: CreateOutfit,
 });
 
-type Step = "occasion" | "review";
+type Step = "occasion" | "weather" | "vibe" | "specifics" | "custom" | "review";
+
+const barSteps = ["weather", "vibe", "specifics", "custom"] as const;
+
+type BarStep = (typeof barSteps)[number];
 
 // Photos live in the public Supabase bucket the product images use, until occasions
-// come from the backend.
+// come from the backend. Travel reuses festive.png until it has a photo of its own.
 const occasionImageBase =
   "https://zrjwxlrjnnohojbassya.supabase.co/storage/v1/object/public/image_data/occasions";
 
 const occasions = [
-  { name: "Work", src: `${occasionImageBase}/workwear.png` },
-  { name: "Night out", src: `${occasionImageBase}/nightout.png` },
-  { name: "Casual", src: `${occasionImageBase}/casual.png` },
-  { name: "Festive", src: `${occasionImageBase}/festive.png` },
+  { name: "Workday", src: `${occasionImageBase}/workwear.png` },
+  { name: "Night Out", src: `${occasionImageBase}/nightout.png` },
+  { name: "Weekend", src: `${occasionImageBase}/casual.png` },
+  { name: "Travel", src: `${occasionImageBase}/festive.png` },
 ];
-
-const weathers = ["Sunny", "Rainy", "Cold"] as const;
 
 type Weather = (typeof weathers)[number];
 
-const vibes = ["Professional", "Relaxed", "Bold"] as const;
-
 type Vibe = (typeof vibes)[number];
 
+type SpecificsAnswer = "yes" | "no";
+
+const specificsOptions: { label: string; value: SpecificsAnswer }[] = [
+  { label: "Yes", value: "yes" },
+  { label: "No", value: "no" },
+];
+
 type RecommendationResponse = {
-  top: { id: string }[];
-  bottom: { id: string }[];
-  accessory: { id: string }[];
+  outfits: {
+    top: { id: string };
+    bottom: { id: string };
+    accessory: { id: string };
+    shoe: { id: string };
+  }[];
 };
 
 function CreateOutfit() {
   const [step, setStep] = useState<Step>("occasion");
+  // Set by Review's Edit buttons, so Next on the edited step goes back to Review.
+  const [returnToReview, setReturnToReview] = useState(false);
   const [cardOccasion, setCardOccasion] = useState<string | null>(null);
   const [customOccasion, setCustomOccasion] = useState("");
-  const [weather, setWeather] = useState<Weather>("Sunny");
-  const [vibe, setVibe] = useState<Vibe>("Professional");
+  const [weather, setWeather] = useState<Weather | null>(null);
+  const [vibe, setVibe] = useState<Vibe | null>(null);
+  // Held only to drive the screen: picking B&C items to style is out of scope, so it is never sent.
+  const [specificsAnswer, setSpecificsAnswer] = useState<SpecificsAnswer | null>(null);
+  const [otherDetails, setOtherDetails] = useState("");
 
   const chosenOccasion = cardOccasion ?? customOccasion.trim();
   const canContinue = chosenOccasion !== "";
@@ -64,23 +82,133 @@ function CreateOutfit() {
     setCardOccasion(null);
   }
 
-  function continueToReview() {
+  function advanceTo(next: Step) {
+    if (returnToReview) {
+      setReturnToReview(false);
+      setStep("review");
+
+      return;
+    }
+
+    setStep(next);
+  }
+
+  function editFromReview(target: Step) {
+    setReturnToReview(true);
+    setStep(target);
+  }
+
+  function continueFromOccasion() {
     if (!canContinue) {
       return;
     }
 
-    setStep("review");
+    advanceTo("weather");
+  }
+
+  if (step === "weather") {
+    return (
+      <StepScreen
+        step="weather"
+        canContinue={weather !== null}
+        onBack={() => setStep("occasion")}
+        onNext={() => advanceTo("vibe")}
+      >
+        <Box className="capitalize">
+          <OptionCardGroup
+            label="Weather"
+            options={weathers.map((option) => ({ label: option, value: option }))}
+            value={weather}
+            onValueChange={setWeather}
+          />
+        </Box>
+      </StepScreen>
+    );
+  }
+
+  if (step === "vibe") {
+    return (
+      <StepScreen
+        step="vibe"
+        canContinue={vibe !== null}
+        onBack={() => setStep("weather")}
+        onNext={() => advanceTo("specifics")}
+      >
+        <Box className="capitalize">
+          <OptionCardGroup
+            label="Vibe"
+            options={vibes.map((option) => ({ label: option, value: option }))}
+            value={vibe}
+            onValueChange={setVibe}
+            className="grid grid-cols-2 gap-md md:grid-cols-5"
+          />
+        </Box>
+      </StepScreen>
+    );
+  }
+
+  if (step === "specifics") {
+    return (
+      <StepScreen
+        step="specifics"
+        canContinue={specificsAnswer !== null}
+        onBack={() => setStep("vibe")}
+        onNext={() => advanceTo("custom")}
+      >
+        <Box className="flex flex-col gap-lg">
+          <OptionCardGroup
+            label="Are there any Birdie & Claire items you would like to style?"
+            options={specificsOptions}
+            value={specificsAnswer}
+            onValueChange={setSpecificsAnswer}
+            className="grid grid-cols-1 gap-md"
+          />
+          {specificsAnswer === "yes" && (
+            <Empty
+              title="Coming soon"
+              description="Styling your Birdie & Claire pieces is on its way. Tap Next to keep going."
+            />
+          )}
+        </Box>
+      </StepScreen>
+    );
+  }
+
+  if (step === "custom") {
+    return (
+      <StepScreen
+        step="custom"
+        canContinue
+        onBack={() => setStep("specifics")}
+        onNext={() => advanceTo("review")}
+      >
+        <TextField
+          multiline
+          label="Enter any other details you would like considered."
+          placeholder="i.e. Outfit for a chill night out with long sleeves and rainy weather"
+          // The endpoint caps custom at 200 characters.
+          maxLength={200}
+          rows={4}
+          value={otherDetails}
+          onValueChange={setOtherDetails}
+        />
+      </StepScreen>
+    );
   }
 
   if (step === "review") {
+    // Next on weather and vibe stays disabled until each is picked, so Review always has both.
+    if (weather === null || vibe === null) {
+      throw new Error("Reached Review before weather and vibe were picked");
+    }
+
     return (
       <Review
         occasion={chosenOccasion}
         weather={weather}
         vibe={vibe}
-        onEditOccasion={() => setStep("occasion")}
-        onWeatherChange={setWeather}
-        onVibeChange={setVibe}
+        otherDetails={otherDetails.trim()}
+        onEdit={editFromReview}
       />
     );
   }
@@ -105,13 +233,62 @@ function CreateOutfit() {
         placeholder="Describe your own…"
         value={customOccasion}
         onValueChange={switchToCustomOccasion}
-        onSubmit={continueToReview}
+        onSubmit={continueFromOccasion}
         onClick={() => setCardOccasion(null)}
+        // The endpoint caps occasion at 100 characters.
+        maxLength={100}
         inactive={cardOccasion !== null}
         className="max-w-content-md"
       />
-      <Button label="Continue" disabled={!canContinue} onClick={continueToReview} />
+      <Button label="Continue" disabled={!canContinue} onClick={continueFromOccasion} />
     </Box>
+  );
+}
+
+type StepScreenProps = {
+  step: BarStep;
+  canContinue: boolean;
+  onBack: () => void;
+  onNext: () => void;
+  children: ReactNode;
+};
+
+function StepScreen({ step, canContinue, onBack, onNext, children }: StepScreenProps) {
+  return (
+    <Box className="flex min-h-screen flex-col items-center gap-lg p-xl">
+      <Text variant="heading">Describe the occasion</Text>
+      <StepBar current={step} />
+      <Box className="w-full max-w-content-lg">{children}</Box>
+      <Box className="mt-auto flex w-full max-w-content-lg justify-between">
+        <Button label="Back" variant="secondary" onClick={onBack} />
+        <Button label="Next" disabled={!canContinue} onClick={onNext} />
+      </Box>
+    </Box>
+  );
+}
+
+type StepBarProps = {
+  current: BarStep;
+};
+
+/** Shows where the shopper is in the flow. Display only: Back and Next are the way to move. */
+function StepBar({ current }: StepBarProps) {
+  return (
+    <ol aria-label="Steps" className="flex rounded-full border">
+      {barSteps.map((barStep) => (
+        <li
+          key={barStep}
+          aria-current={barStep === current ? "step" : undefined}
+          className={
+            barStep === current
+              ? "rounded-full bg-primary px-md py-xxs text-caption uppercase text-inverse"
+              : "px-md py-xxs text-caption uppercase"
+          }
+        >
+          {barStep}
+        </li>
+      ))}
+    </ol>
   );
 }
 
@@ -119,22 +296,14 @@ type ReviewProps = {
   occasion: string;
   weather: Weather;
   vibe: Vibe;
-  onEditOccasion: () => void;
-  onWeatherChange: (weather: Weather) => void;
-  onVibeChange: (vibe: Vibe) => void;
+  // Empty when the shopper skipped Custom.
+  otherDetails: string;
+  onEdit: (step: Step) => void;
 };
 
-function Review({
-  occasion,
-  weather,
-  vibe,
-  onEditOccasion,
-  onWeatherChange,
-  onVibeChange,
-}: ReviewProps) {
+function Review({ occasion, weather, vibe, otherDetails, onEdit }: ReviewProps) {
   const toast = useToast();
   const navigate = useNavigate();
-  const [editing, setEditing] = useState<"weather" | "vibe" | null>(null);
   const [creating, setCreating] = useState(false);
   const abortController = useRef(new AbortController());
 
@@ -148,17 +317,12 @@ function Review({
     return () => abortController.current.abort();
   }, []);
 
-  function toggleEditing(field: "weather" | "vibe") {
-    setEditing(editing === field ? null : field);
-  }
-
   async function createOutfit() {
     const { signal } = abortController.current;
     setCreating(true);
-    setEditing(null);
 
     try {
-      const outfitId = await requestOutfit(occasion, weather, vibe, signal);
+      const outfitId = await requestOutfit(occasion, weather, vibe, otherDetails, signal);
 
       if (outfitId === null) {
         toast.show({ message: "No matching pieces, try another occasion" });
@@ -191,56 +355,46 @@ function Review({
           action={{
             label: "Edit",
             accessibleLabel: "Edit Occasion",
-            onClick: onEditOccasion,
+            onClick: () => onEdit("occasion"),
             disabled: creating,
           }}
         />
-        <ListCard
-          title="Weather"
-          value={weather}
-          action={{
-            label: "Edit",
-            accessibleLabel: "Edit Weather",
-            onClick: () => toggleEditing("weather"),
-            disabled: creating,
-          }}
-        />
-        {editing === "weather" && (
-          <RadioGroup
-            label="Weather"
-            options={weathers.map((option) => ({ label: option, value: option }))}
+        {/* Only the weather and vibe values are lowercase list values; the occasion is the
+            shopper's own text, so it is not capitalized. */}
+        <Box className="capitalize">
+          <ListCard
+            title="Weather"
             value={weather}
-            onValueChange={(value) => {
-              onWeatherChange(value);
-              setEditing(null);
+            action={{
+              label: "Edit",
+              accessibleLabel: "Edit Weather",
+              onClick: () => onEdit("weather"),
+              disabled: creating,
             }}
-            className="px-md"
           />
-        )}
+        </Box>
+        <Box className="capitalize">
+          <ListCard
+            title="Vibe"
+            value={vibe}
+            action={{
+              label: "Edit",
+              accessibleLabel: "Edit Vibe",
+              onClick: () => onEdit("vibe"),
+              disabled: creating,
+            }}
+          />
+        </Box>
         <ListCard
-          title="Vibe"
-          value={vibe}
+          title="Other details"
+          value={otherDetails === "" ? "None" : otherDetails}
           action={{
             label: "Edit",
-            accessibleLabel: "Edit Vibe",
-            onClick: () => toggleEditing("vibe"),
+            accessibleLabel: "Edit Other details",
+            onClick: () => onEdit("custom"),
             disabled: creating,
           }}
         />
-        {editing === "vibe" && (
-          <RadioGroup
-            label="Vibe"
-            options={vibes.map((option) => ({ label: option, value: option }))}
-            value={vibe}
-            onValueChange={(value) => {
-              onVibeChange(value);
-              setEditing(null);
-            }}
-            className="px-md"
-          />
-        )}
-        {/* Hardcoded stand-in, with no Edit, until the endpoint can limit how many pieces it picks. */}
-        <ListCard title="Items to include" value="2" />
       </Box>
       <Button
         label="Create my outfit"
@@ -252,24 +406,29 @@ function Review({
   );
 }
 
-/** Recommends products for the review answers and saves the top pick of each slot as an outfit.
- * Returns the new outfit's ID, or null when no slot found a product. */
+/** Recommends outfits for the answers and saves the first one.
+ * Returns the new outfit's ID, or null when no outfit could be built. */
 async function requestOutfit(
   occasion: string,
   weather: Weather,
   vibe: Vibe,
+  otherDetails: string,
   signal: AbortSignal,
 ): Promise<string | null> {
-  // The endpoint caps query at 200 characters, and a custom occasion is free text.
-  const query = `${occasion}, ${weather.toLowerCase()} weather, ${vibe.toLowerCase()} vibe`.slice(
-    0,
-    200,
-  );
+  const details: { key: string; value: string }[] = [
+    { key: "weather", value: weather },
+    { key: "vibe", value: vibe },
+  ];
+
+  // The endpoint rejects a blank custom value, and an empty field means the shopper skipped it.
+  if (otherDetails !== "") {
+    details.push({ key: "custom", value: otherDetails });
+  }
 
   const recommendRes = await apiFetch("/api/v1/recommend", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query }),
+    body: JSON.stringify({ occasion, details }),
     signal,
   });
 
@@ -280,13 +439,10 @@ async function requestOutfit(
   // SAFETY: a 2xx from POST /api/v1/recommend is the RecommendationResponse schema in openapi.yaml.
   const recommendation = (await recommendRes.json()) as RecommendationResponse;
 
-  // The top pick of each slot; a slot the query didn't ask for comes back empty.
-  const productIds = [recommendation.top, recommendation.bottom, recommendation.accessory].flatMap(
-    (products) => products.slice(0, 1).map((product) => product.id),
-  );
+  // Empty when some slot had no matching product.
+  const firstOutfit = recommendation.outfits.at(0);
 
-  // POST /outfits requires at least one product.
-  if (productIds.length === 0) {
+  if (firstOutfit === undefined) {
     return null;
   }
 
@@ -294,7 +450,15 @@ async function requestOutfit(
     method: "POST",
     headers: { "Content-Type": "application/json" },
     // The endpoint caps name at 100 characters.
-    body: JSON.stringify({ name: `${occasion} outfit`.slice(0, 100), product_ids: productIds }),
+    body: JSON.stringify({
+      name: `${occasion} outfit`.slice(0, 100),
+      product_ids: [
+        firstOutfit.top.id,
+        firstOutfit.bottom.id,
+        firstOutfit.accessory.id,
+        firstOutfit.shoe.id,
+      ],
+    }),
     signal,
   });
 

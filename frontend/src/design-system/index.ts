@@ -12,6 +12,8 @@ export { ImageCard } from "./components/cards/image-card";
 
 export { ListCard } from "./components/cards/list-card";
 
+export { OptionCardGroup } from "./components/cards/option-card-group";
+
 export { SearchField } from "./components/inputs/search-field";
 
 export { TextField } from "./components/inputs/text-field";
