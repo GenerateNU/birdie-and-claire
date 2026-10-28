@@ -21,6 +21,8 @@ const (
 )
 
 // RecommendationWeathers and RecommendationVibes are the values the occasion flow's buttons send.
+// frontend/src/occasionOptions.ts holds the same lists, and TestOccasionOptionsMatchTheBackend
+// fails when the two differ.
 var (
 	RecommendationWeathers = []string{"hot", "warm", "chilly", "cold", "rainy", "windy", "snowy", "storm"}
 	RecommendationVibes    = []string{"professional", "chic", "casual", "sophisticated", "colorful"}
