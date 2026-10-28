@@ -42,8 +42,8 @@ type CreateOutfitParams struct {
 	ProductIDs []uuid.UUID
 }
 
-// UpdateOutfitParams leaves a nil field unchanged; ProductIDs, when set, replaces the whole product set.
+// UpdateOutfitParams leaves an empty field unchanged; ProductIDs, when set, replaces the whole product set.
 type UpdateOutfitParams struct {
-	Name       *string
+	Name       string
 	ProductIDs []uuid.UUID
 }

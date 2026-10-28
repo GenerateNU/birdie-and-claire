@@ -145,11 +145,11 @@ func (r *outfitRepository) Update(ctx context.Context, id uuid.UUID, params mode
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	// Also locks the outfit row, so concurrent updates to one outfit run one after the other.
+	// Verifies the outfit exists and is userID's, and locks its row so concurrent updates run one at a time.
 	var updated uuid.UUID
 	err = tx.QueryRowContext(ctx, `
 		UPDATE outfits
-		SET name = COALESCE($3, name), updated_at = now()
+		SET name = COALESCE(NULLIF($3, ''), name), updated_at = now()
 		WHERE id = $1 AND user_id = $2
 		RETURNING id
 	`, id, userID, params.Name).Scan(&updated)
@@ -160,17 +160,14 @@ func (r *outfitRepository) Update(ctx context.Context, id uuid.UUID, params mode
 		return models.Outfit{}, nil, fmt.Errorf("update outfit %s: %w", id, err)
 	}
 
-	if params.ProductIDs != nil {
-		// Rows already in the new set are left in place rather than deleted and reinserted.
+	// An empty list would delete every product (product_id <> ALL('{}') is true for every row).
+	if len(params.ProductIDs) > 0 {
+		// Kept rows are neither deleted nor reinserted, so the two writes touch disjoint rows and can share a snapshot.
 		_, err = tx.ExecContext(ctx, `
-			DELETE FROM outfit_products
-			WHERE outfit_id = $1 AND product_id <> ALL($2::uuid[])
-		`, id, params.ProductIDs)
-		if err != nil {
-			return models.Outfit{}, nil, fmt.Errorf("update outfit %s: remove products: %w", id, err)
-		}
-
-		_, err = tx.ExecContext(ctx, `
+			WITH removed AS (
+				DELETE FROM outfit_products
+				WHERE outfit_id = $1 AND product_id <> ALL($2::uuid[])
+			)
 			INSERT INTO outfit_products (outfit_id, product_id)
 			SELECT $1, unnest($2::uuid[])
 			ON CONFLICT DO NOTHING
@@ -180,7 +177,7 @@ func (r *outfitRepository) Update(ctx context.Context, id uuid.UUID, params mode
 			return models.Outfit{}, nil, fmt.Errorf("update outfit %s: unknown product: %w", id, errs.ErrConflict)
 		}
 		if err != nil {
-			return models.Outfit{}, nil, fmt.Errorf("update outfit %s: add products: %w", id, err)
+			return models.Outfit{}, nil, fmt.Errorf("update outfit %s: replace products: %w", id, err)
 		}
 	}
 

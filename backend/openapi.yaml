@@ -434,7 +434,7 @@ components:
         - name
         - products
       type: object
-    UpdateOutfitBody:
+    UpdateOutfitInputBody:
       additionalProperties: false
       properties:
         name:
@@ -651,7 +651,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UpdateOutfitBody"
+              $ref: "#/components/schemas/UpdateOutfitInputBody"
         required: true
       responses:
         "200":
