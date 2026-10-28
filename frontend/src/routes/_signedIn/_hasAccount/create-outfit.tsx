@@ -68,10 +68,9 @@ function CreateOutfit() {
   const [vibe, setVibe] = useState<Vibe | null>(null);
   // Held only to drive the screen: picking B&C items to style is out of scope, so it is never sent.
   const [specificsAnswer, setSpecificsAnswer] = useState<SpecificsAnswer | null>(null);
-  const [customDetails, setCustomDetails] = useState("");
+  const [otherDetails, setOtherDetails] = useState("");
 
   const chosenOccasion = cardOccasion ?? customOccasion.trim();
-  const otherDetails = customDetails.trim();
   const canContinue = chosenOccasion !== "";
 
   function selectCard(occasion: string, pressed: boolean) {
@@ -190,8 +189,8 @@ function CreateOutfit() {
           // The endpoint caps custom at 200 characters.
           maxLength={200}
           rows={4}
-          value={customDetails}
-          onValueChange={setCustomDetails}
+          value={otherDetails}
+          onValueChange={setOtherDetails}
         />
       </StepScreen>
     );
@@ -208,7 +207,7 @@ function CreateOutfit() {
         occasion={chosenOccasion}
         weather={weather}
         vibe={vibe}
-        otherDetails={otherDetails}
+        otherDetails={otherDetails.trim()}
         onEdit={editFromReview}
       />
     );

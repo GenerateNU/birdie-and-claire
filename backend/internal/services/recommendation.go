@@ -18,12 +18,13 @@ import (
 )
 
 const (
-	outfitsPerRequest = 3
+	// outfit n takes every slot's nth product, so this is also the most outfits a request returns
+	productsPerSlot = 3
 	// the prompt states both limits, so a longer answer means the model ignored them
 	maxTagsPerList  = 10
 	maxPhraseLength = 100
 	// the llm client sets no timeout of its own, so a hung gateway would hold the request open
-	expandQueryTimeout = 30 * time.Second
+	expandAnswersTimeout = 30 * time.Second
 )
 
 type slotSearch struct {
@@ -52,22 +53,22 @@ func (s *recommendationService) RecommendProducts(ctx context.Context, request m
 		answers[models.DetailPromptLabels[detail.Key]] = detail.Value
 	}
 
-	expandCtx, cancel := context.WithTimeout(ctx, expandQueryTimeout)
-	expanded, err := llm.ExpandQuery(expandCtx, s.llm, answers)
+	expandCtx, cancel := context.WithTimeout(ctx, expandAnswersTimeout)
+	rawExpansion, err := llm.ExpandAnswers(expandCtx, s.llm, answers)
 	cancel()
 	if err != nil {
-		return models.RecommendationResponse{}, fmt.Errorf("expand recommendation query: %w", err)
+		return models.RecommendationResponse{}, fmt.Errorf("expand shopper answers: %w", err)
 	}
 
 	expandedQuery := models.RecommendationExpandedQuery{
 		Slots: models.RecommendationExpandedSlots{
-			Top:       strings.TrimSpace(expanded.Slots.Top),
-			Bottom:    strings.TrimSpace(expanded.Slots.Bottom),
-			Accessory: strings.TrimSpace(expanded.Slots.Accessory),
-			Shoe:      strings.TrimSpace(expanded.Slots.Shoe),
+			Top:       strings.TrimSpace(rawExpansion.Slots.Top),
+			Bottom:    strings.TrimSpace(rawExpansion.Slots.Bottom),
+			Accessory: strings.TrimSpace(rawExpansion.Slots.Accessory),
+			Shoe:      strings.TrimSpace(rawExpansion.Slots.Shoe),
 		},
-		ExcludeTags: lowercaseTags(expanded.ExcludeTags),
-		NiceTags:    lowercaseTags(expanded.NiceTags),
+		ExcludeTags: lowercaseTags(rawExpansion.ExcludeTags),
+		NiceTags:    lowercaseTags(rawExpansion.NiceTags),
 	}
 	var tops, bottoms, accessories, shoes []models.RecommendedProduct
 	slots := []slotSearch{
@@ -118,7 +119,7 @@ func (s *recommendationService) searchSlot(ctx context.Context, slot models.Prod
 	if err != nil {
 		return nil, fmt.Errorf("embed %s phrase: %w", slot, err)
 	}
-	return s.repo.Product.FindSimilar(ctx, embedding, slot, excludeTags, niceTags, outfitsPerRequest)
+	return s.repo.Product.FindSimilar(ctx, embedding, slot, excludeTags, niceTags, productsPerSlot)
 }
 
 // the errors give sizes only, since the phrases and tags are the model's reading of shopper text

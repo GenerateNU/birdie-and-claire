@@ -29,8 +29,8 @@ import (
 	"github.com/google/uuid"
 )
 
-// mirrors outfitsPerRequest, which is unexported in services
-const outfitsPerRequest = 3
+// mirrors productsPerSlot, which is unexported in services
+const productsPerSlot = 3
 
 const expandedAllSlots = `{"slots":{"top":"pastel blouse","bottom":"linen skirt","accessory":"straw hat","shoe":"tan sandals"},` +
 	`"exclude_tags":["white"],"nice_tags":["pastel"]}`
@@ -137,8 +137,8 @@ func TestRecommendSearchesEverySlot(t *testing.T) {
 	if shoe.embedding[0] != float32(len("tan sandals")) {
 		t.Errorf("shoe searched with embedding %v, want the shoe phrase's", shoe.embedding)
 	}
-	if !slices.Equal(shoe.excludeTags, []string{"white"}) || !slices.Equal(shoe.niceTags, []string{"pastel"}) || shoe.limit != outfitsPerRequest {
-		t.Errorf("shoe call = %+v, want the expanded tags and a limit of %d", shoe, outfitsPerRequest)
+	if !slices.Equal(shoe.excludeTags, []string{"white"}) || !slices.Equal(shoe.niceTags, []string{"pastel"}) || shoe.limit != productsPerSlot {
+		t.Errorf("shoe call = %+v, want the expanded tags and a limit of %d", shoe, productsPerSlot)
 	}
 }
 
@@ -147,8 +147,8 @@ func TestRecommendBuildsEachOutfitFromOneRank(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Recommend: %v", err)
 	}
-	if len(response.Outfits) != outfitsPerRequest {
-		t.Fatalf("got %d outfits, want %d", len(response.Outfits), outfitsPerRequest)
+	if len(response.Outfits) != productsPerSlot {
+		t.Fatalf("got %d outfits, want %d", len(response.Outfits), productsPerSlot)
 	}
 	for i, outfit := range response.Outfits {
 		rank := i + 1
@@ -430,8 +430,8 @@ func TestRecommendRouteReturnsOutfits(t *testing.T) {
 	if err := json.Unmarshal(response.Body.Bytes(), &decoded); err != nil {
 		t.Fatalf("decode body %s: %v", response.Body, err)
 	}
-	if len(decoded.Outfits) != outfitsPerRequest {
-		t.Fatalf("got %d outfits, want %d: %s", len(decoded.Outfits), outfitsPerRequest, response.Body)
+	if len(decoded.Outfits) != productsPerSlot {
+		t.Fatalf("got %d outfits, want %d: %s", len(decoded.Outfits), productsPerSlot, response.Body)
 	}
 	if got := outfitTitles(decoded.Outfits[0]); !slices.Equal(got, []string{"top 1", "bottom 1", "accessory 1", "shoe 1"}) {
 		t.Errorf("first outfit = %q, want each slot's first product", got)
@@ -500,8 +500,8 @@ func (d *deadlineLLM) GenerateStream(context.Context, llm.Request) (llm.ChunkRea
 }
 
 func TestRecommendBoundsTheModelCall(t *testing.T) {
-	// mirrors expandQueryTimeout, which is unexported in services
-	const expandQueryTimeout = 30 * time.Second
+	// mirrors expandAnswersTimeout, which is unexported in services
+	const expandAnswersTimeout = 30 * time.Second
 	model := &deadlineLLM{}
 	service := services.NewRecommendationService(&repository.Repository{Product: &fakeProducts{}}, model, &fakeEmbedder{})
 
@@ -512,8 +512,8 @@ func TestRecommendBoundsTheModelCall(t *testing.T) {
 	if !model.hasDeadline {
 		t.Fatal("the model was called without a deadline")
 	}
-	if model.deadline.Before(start) || model.deadline.After(time.Now().Add(expandQueryTimeout)) {
-		t.Errorf("deadline = %v, want within %v of %v", model.deadline, expandQueryTimeout, start)
+	if model.deadline.Before(start) || model.deadline.After(time.Now().Add(expandAnswersTimeout)) {
+		t.Errorf("deadline = %v, want within %v of %v", model.deadline, expandAnswersTimeout, start)
 	}
 }
 

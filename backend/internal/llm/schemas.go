@@ -8,7 +8,7 @@ type ExpandedQuery struct {
 	NiceTags []string `json:"nice_tags"`
 }
 
-// one product search phrase per outfit slot; ExpandQuery rejects a blank one
+// one product search phrase per outfit slot; ExpandAnswers rejects a blank one
 type ExpandedSlots struct {
 	Top       string `json:"top"`
 	Bottom    string `json:"bottom"`

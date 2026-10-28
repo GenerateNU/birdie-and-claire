@@ -11,18 +11,18 @@ import (
 const (
 	dotpromptMarker = "<<<dotprompt:"
 	// the answer is four short phrases and two short tag lists; this bounds what a padded answer can bill
-	expandQueryMaxOutputTokens = 512
-	// the default free model sometimes answers {}, and in replays it never did so twice for the same query
-	expandQueryAttempts = 2
+	expandAnswersMaxOutputTokens = 512
+	// the default free model sometimes answers {}, and in replays it never did so twice for the same answers
+	expandAnswersAttempts = 2
 )
 
-type expandQueryInput struct {
+type expandAnswersInput struct {
 	Answers string `json:"answers"`
 }
 
-// ExpandQuery reads the shopper's answers, keyed by the label the prompt shows for each, as one
+// ExpandAnswers reads the shopper's answers, keyed by the label the prompt shows for each, as one
 // search phrase per slot plus tags to exclude and prefer. Every slot of a nil-error result has a phrase.
-func ExpandQuery(ctx context.Context, client Client, answers map[string]string) (ExpandedQuery, error) {
+func ExpandAnswers(ctx context.Context, client Client, answers map[string]string) (ExpandedQuery, error) {
 	stripped := make(map[string]string, len(answers))
 	for label, answer := range answers {
 		stripped[label] = stripDotpromptMarkers(answer)
@@ -35,11 +35,11 @@ func ExpandQuery(ctx context.Context, client Client, answers map[string]string) 
 
 	req := Request{
 		promptName:      "expand_query",
-		promptInput:     expandQueryInput{Answers: string(encoded)},
-		maxOutputTokens: expandQueryMaxOutputTokens,
+		promptInput:     expandAnswersInput{Answers: string(encoded)},
+		maxOutputTokens: expandAnswersMaxOutputTokens,
 		noReasoning:     true,
 	}
-	for range expandQueryAttempts {
+	for range expandAnswersAttempts {
 		var expanded ExpandedQuery
 		expanded, err = Generate[ExpandedQuery](ctx, client, req)
 		if err == nil {

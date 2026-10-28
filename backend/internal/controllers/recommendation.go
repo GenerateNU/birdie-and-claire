@@ -25,6 +25,8 @@ type RecommendProductsInput struct {
 	Body models.RecommendationRequest
 }
 
+var _ huma.Resolver = (*RecommendProductsInput)(nil)
+
 // Resolve checks what the struct tags cannot: blank text, repeated keys, and values that depend on the key.
 func (input *RecommendProductsInput) Resolve(huma.Context) []error {
 	var problems []error
@@ -55,7 +57,7 @@ func (input *RecommendProductsInput) Resolve(huma.Context) []error {
 		case models.DetailCustom:
 			detail.Value = strings.TrimSpace(detail.Value)
 			if detail.Value == "" {
-				problems = append(problems, &huma.ErrorDetail{Location: location + ".value", Message: "custom must not be blank"})
+				problems = append(problems, &huma.ErrorDetail{Location: location + ".value", Message: "value must not be blank"})
 			}
 		}
 	}
