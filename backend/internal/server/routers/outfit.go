@@ -44,8 +44,8 @@ func OutfitRoutes(api huma.API, params types.RouteParams) {
 		OperationID: "suggest-outfit-items",
 		Method:      http.MethodGet,
 		Path:        "/api/v1/outfits/{id}/suggestions",
-		Summary:     "Suggest products similar to one of an outfit's products",
-		Description: "Closest first, in the same slot, leaving out every product already in the outfit. A product without an embedding gets an empty list.",
+		Summary:     "Suggest products similar to products of an outfit",
+		Description: "Repeat product_id for each catalog product, up to 10; the products need not be in the saved outfit, so unsaved swaps work. Results are keyed by product ID, closest first, in the same slot, leaving out the outfit's products and the requested ones. A product without an embedding gets an empty list; a product not in the catalog gets an empty list and an error message while the request still returns 200. Most calls ask about one product; batching saves round trips when the editor opens. The database work is one embedding lookup and one similarity query per product either way.",
 		Tags:        []string{"outfits"},
 	}, controller.SuggestItems)
 

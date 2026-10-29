@@ -10,7 +10,6 @@ import (
 
 	"birdie-and-claire/internal/auth"
 	"birdie-and-claire/internal/controllers"
-	"birdie-and-claire/internal/errs"
 	"birdie-and-claire/internal/models"
 	"birdie-and-claire/internal/repository"
 	"birdie-and-claire/internal/services"
@@ -65,6 +64,36 @@ func TestSuggestOutfitItemsDefaultsLimitTo12(t *testing.T) {
 	}
 }
 
+func TestSuggestOutfitItemsProductIDBounds(t *testing.T) {
+	ids := func(count int) string {
+		var query string
+		for range count {
+			query += "&product_id=" + uuid.NewString()
+		}
+		return "?" + query[1:]
+	}
+	tests := []struct {
+		name  string
+		query string
+		want  int
+	}{
+		{name: "one id", query: ids(1), want: http.StatusOK},
+		{name: "ten ids", query: ids(10), want: http.StatusOK},
+		{name: "eleven ids", query: ids(11), want: http.StatusUnprocessableEntity},
+		{name: "duplicate id", query: "?product_id=" + productIDLower + "&product_id=" + strings.ToUpper(productIDLower), want: http.StatusBadRequest},
+		{name: "not a uuid", query: "?product_id=nope", want: http.StatusUnprocessableEntity},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			response := suggestionsProbe(t).Get("/probe/" + uuid.NewString() + "/suggestions" + test.query)
+			if response.Code != test.want {
+				t.Fatalf("status = %d, want %d: %s", response.Code, test.want, response.Body)
+			}
+		})
+	}
+}
+
 func TestSuggestOutfitItemsRequiresProductID(t *testing.T) {
 	response := suggestionsProbe(t).Get("/probe/" + uuid.NewString() + "/suggestions")
 	if response.Code != http.StatusUnprocessableEntity {
@@ -110,28 +139,84 @@ func TestSuggestNonOwnerAndMissingOutfitReturnNotFound(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			ctx := auth.WithUserID(context.Background(), strangerID)
-			_, err := service.Suggest(ctx, test.outfitID, product, 12)
+			_, err := service.Suggest(ctx, test.outfitID, []uuid.UUID{product}, 12)
 			wantNotFound(t, err)
 		})
 	}
 }
 
-func TestSuggestProductOutsideOutfitIsUnprocessable(t *testing.T) {
+func TestSuggestAcceptsProductOutsideOutfit(t *testing.T) {
 	db := openTestDB(t)
 	service := newSuggestionService(db)
 	inOutfit := insertSlotProduct(t, db, testProduct{slot: models.SlotTop, embedding: productEmbedding(0.1)})
-	outside := insertSlotProduct(t, db, testProduct{slot: models.SlotTop, embedding: productEmbedding(0.2)})
+	unsaved := insertSlotProduct(t, db, testProduct{slot: models.SlotTop, embedding: productEmbedding(0.2)})
+	near := insertSlotProduct(t, db, testProduct{slot: models.SlotTop, embedding: productEmbedding(0.25)})
 	outfitID, ownerID := insertSuggestionOutfit(t, db, inOutfit)
 
-	_, err := service.Suggest(auth.WithUserID(context.Background(), ownerID), outfitID, outside, 12)
+	got, err := service.Suggest(auth.WithUserID(context.Background(), ownerID), outfitID, []uuid.UUID{unsaved}, 30)
+	if err != nil {
+		t.Fatalf("Suggest: %v", err)
+	}
+	ids := suggestedIDs(got.Suggestions[unsaved], []uuid.UUID{inOutfit, unsaved, near})
+	if want := []uuid.UUID{near}; !slices.Equal(ids, want) {
+		t.Fatalf("own products returned = %v, want %v: the requested product and the saved outfit's are excluded", ids, want)
+	}
+}
 
-	humaErr := errs.ToHuma(context.Background(), err)
-	if got := statusOf(t, humaErr); got != http.StatusUnprocessableEntity {
-		t.Fatalf("status = %d, want %d: %v", got, http.StatusUnprocessableEntity, err)
+func TestSuggestUnknownProductGetsErrorEntry(t *testing.T) {
+	db := openTestDB(t)
+	service := newSuggestionService(db)
+	known := insertSlotProduct(t, db, testProduct{slot: models.SlotTop, embedding: productEmbedding(0.1)})
+	unknown := uuid.New()
+	outfitID, ownerID := insertSuggestionOutfit(t, db, known)
+
+	got, err := service.Suggest(auth.WithUserID(context.Background(), ownerID), outfitID, []uuid.UUID{known, unknown}, 12)
+	if err != nil {
+		t.Fatalf("Suggest: %v", err)
 	}
-	if !strings.Contains(humaErr.Error(), "product is not in this outfit") {
-		t.Fatalf("error = %v, want the reason in it", humaErr)
+	entry, ok := got.Suggestions[unknown]
+	if !ok || entry.Error != "product not in catalog" || entry.Products == nil || len(entry.Products) != 0 {
+		t.Fatalf("entry = %+v, want an empty non-nil list and the catalog error", entry)
 	}
+	if got.Suggestions[known].Error != "" {
+		t.Fatalf("known product error = %q, want none", got.Suggestions[known].Error)
+	}
+}
+
+func TestSuggestAnswersEveryRequestedProduct(t *testing.T) {
+	db := openTestDB(t)
+	service := newSuggestionService(db)
+	top := insertSlotProduct(t, db, testProduct{slot: models.SlotTop, embedding: productEmbedding(0)})
+	bottom := insertSlotProduct(t, db, testProduct{slot: models.SlotBottom, embedding: productEmbedding(0)})
+	nearTop := insertSlotProduct(t, db, testProduct{slot: models.SlotTop, embedding: productEmbedding(0.1)})
+	nearBottom := insertSlotProduct(t, db, testProduct{slot: models.SlotBottom, embedding: productEmbedding(0.1)})
+	outfitID, ownerID := insertSuggestionOutfit(t, db, top, bottom)
+	ownIDs := []uuid.UUID{top, bottom, nearTop, nearBottom}
+
+	got, err := service.Suggest(auth.WithUserID(context.Background(), ownerID), outfitID, []uuid.UUID{top, bottom}, 30)
+	if err != nil {
+		t.Fatalf("Suggest: %v", err)
+	}
+	if len(got.Suggestions) != 2 {
+		t.Fatalf("got %d entries, want 2", len(got.Suggestions))
+	}
+	if ids, want := suggestedIDs(got.Suggestions[top], ownIDs), []uuid.UUID{nearTop}; !slices.Equal(ids, want) {
+		t.Fatalf("top suggestions = %v, want %v", ids, want)
+	}
+	if ids, want := suggestedIDs(got.Suggestions[bottom], ownIDs), []uuid.UUID{nearBottom}; !slices.Equal(ids, want) {
+		t.Fatalf("bottom suggestions = %v, want %v", ids, want)
+	}
+}
+
+// suggestedIDs keeps only ownIDs, since seeded products can share the slot.
+func suggestedIDs(entry models.ProductSuggestionsEntry, ownIDs []uuid.UUID) []uuid.UUID {
+	var ids []uuid.UUID
+	for _, product := range entry.Products {
+		if slices.Contains(ownIDs, product.ID) {
+			ids = append(ids, product.ID)
+		}
+	}
+	return ids
 }
 
 func TestSuggestWithoutEmbeddingReturnsEmptyList(t *testing.T) {
@@ -142,12 +227,13 @@ func TestSuggestWithoutEmbeddingReturnsEmptyList(t *testing.T) {
 	insertSlotProduct(t, db, testProduct{slot: models.SlotTop, embedding: productEmbedding(0.1)})
 	outfitID, ownerID := insertSuggestionOutfit(t, db, noEmbedding)
 
-	got, err := service.Suggest(auth.WithUserID(context.Background(), ownerID), outfitID, noEmbedding, 12)
+	got, err := service.Suggest(auth.WithUserID(context.Background(), ownerID), outfitID, []uuid.UUID{noEmbedding}, 12)
 	if err != nil {
 		t.Fatalf("Suggest: %v", err)
 	}
-	if got.Products == nil || len(got.Products) != 0 {
-		t.Fatalf("products = %v, want a non-nil empty list", got.Products)
+	entry := got.Suggestions[noEmbedding]
+	if entry.Products == nil || len(entry.Products) != 0 || entry.Error != "" {
+		t.Fatalf("entry = %+v, want a non-nil empty list and no error", entry)
 	}
 	if !strings.Contains(logs.String(), `"level":"WARN"`) {
 		t.Fatalf("logs = %s, want a warning", logs)
@@ -166,16 +252,11 @@ func TestSuggestNeverReturnsTheOutfitsProducts(t *testing.T) {
 	outfitID, ownerID := insertSuggestionOutfit(t, db, anchor, sibling)
 	ownIDs := []uuid.UUID{anchor, sibling, near, far, otherSlot}
 
-	got, err := service.Suggest(auth.WithUserID(context.Background(), ownerID), outfitID, anchor, 30)
+	got, err := service.Suggest(auth.WithUserID(context.Background(), ownerID), outfitID, []uuid.UUID{anchor}, 30)
 	if err != nil {
 		t.Fatalf("Suggest: %v", err)
 	}
-	var ids []uuid.UUID
-	for _, product := range got.Products {
-		if slices.Contains(ownIDs, product.ID) {
-			ids = append(ids, product.ID)
-		}
-	}
+	ids := suggestedIDs(got.Suggestions[anchor], ownIDs)
 	if want := []uuid.UUID{near, far}; !slices.Equal(ids, want) {
 		t.Fatalf("own products returned = %v, want %v, closest first", ids, want)
 	}
@@ -189,11 +270,11 @@ func TestSuggestRespectsLimit(t *testing.T) {
 	insertSlotProduct(t, db, testProduct{slot: models.SlotTop, embedding: productEmbedding(0.2)})
 	outfitID, ownerID := insertSuggestionOutfit(t, db, anchor)
 
-	got, err := service.Suggest(auth.WithUserID(context.Background(), ownerID), outfitID, anchor, 1)
+	got, err := service.Suggest(auth.WithUserID(context.Background(), ownerID), outfitID, []uuid.UUID{anchor}, 1)
 	if err != nil {
 		t.Fatalf("Suggest: %v", err)
 	}
-	if len(got.Products) != 1 {
-		t.Fatalf("got %d products, want 1", len(got.Products))
+	if len(got.Suggestions[anchor].Products) != 1 {
+		t.Fatalf("got %d products, want 1", len(got.Suggestions[anchor].Products))
 	}
 }

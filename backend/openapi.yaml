@@ -189,12 +189,12 @@ components:
     OutfitSuggestionsResponse:
       additionalProperties: false
       properties:
-        products:
-          items:
-            $ref: "#/components/schemas/ProductResponse"
-          type: array
+        suggestions:
+          additionalProperties:
+            $ref: "#/components/schemas/ProductSuggestionsEntry"
+          type: object
       required:
-        - products
+        - suggestions
       type: object
     PageOutfit:
       additionalProperties: false
@@ -303,6 +303,20 @@ components:
         - tags
         - created_at
         - updated_at
+      type: object
+    ProductSuggestionsEntry:
+      additionalProperties: false
+      properties:
+        error:
+          description: Why this product got no suggestions, or empty when it did or has none yet
+          type: string
+        products:
+          items:
+            $ref: "#/components/schemas/ProductResponse"
+          type: array
+      required:
+        - products
+        - error
       type: object
     ProfilePictureUploadResponse:
       additionalProperties: false
@@ -786,7 +800,7 @@ paths:
         - outfits
   /api/v1/outfits/{id}/suggestions:
     get:
-      description: Closest first, in the same slot, leaving out every product already in the outfit. A product without an embedding gets an empty list.
+      description: Repeat product_id for each catalog product, up to 10; the products need not be in the saved outfit, so unsaved swaps work. Results are keyed by product ID, closest first, in the same slot, leaving out the outfit's products and the requested ones. A product without an embedding gets an empty list; a product not in the catalog gets an empty list and an error message while the request still returns 200. Most calls ask about one product; batching saves round trips when the editor opens. The database work is one embedding lookup and one similarity query per product either way.
       operationId: suggest-outfit-items
       parameters:
         - description: Outfit ID
@@ -796,21 +810,27 @@ paths:
           schema:
             description: Outfit ID
             type: string
-        - description: The outfit product to find similar products for
-          explode: false
+        - description: Catalog products to find similar products for; repeat the parameter, up to 10 times
+          explode: true
           in: query
           name: product_id
           required: true
           schema:
-            description: The outfit product to find similar products for
-            type: string
-        - description: Most products to return
+            description: Catalog products to find similar products for; repeat the parameter, up to 10 times
+            items:
+              type: string
+            maxItems: 10
+            minItems: 1
+            type:
+              - array
+              - "null"
+        - description: Most products to return for each product
           explode: false
           in: query
           name: limit
           schema:
             default: 12
-            description: Most products to return
+            description: Most products to return for each product
             format: int64
             maximum: 30
             minimum: 1
@@ -830,7 +850,7 @@ paths:
           description: Error
       security:
         - bearer: []
-      summary: Suggest products similar to one of an outfit's products
+      summary: Suggest products similar to products of an outfit
       tags:
         - outfits
   /api/v1/products/{product_id}/images:

@@ -159,17 +159,31 @@ func (c *OutfitController) List(ctx context.Context, input *ListOutfitsInput) (*
 
 type SuggestOutfitItemsInput struct {
 	OutfitIDInput
-	ProductID uuid.UUID `query:"product_id" required:"true" doc:"The outfit product to find similar products for"`
-	Limit     int       `query:"limit" default:"12" minimum:"1" maximum:"30" doc:"Most products to return"`
+	ProductIDs []uuid.UUID `query:"product_id,explode" required:"true" minItems:"1" maxItems:"10" doc:"Catalog products to find similar products for; repeat the parameter, up to 10 times"`
+	Limit      int         `query:"limit" default:"12" minimum:"1" maximum:"30" doc:"Most products to return for each product"`
+}
+
+var _ huma.Resolver = (*SuggestOutfitItemsInput)(nil)
+
+// Resolve compares parsed UUIDs, so differently cased spellings of one ID still count as duplicates.
+func (input *SuggestOutfitItemsInput) Resolve(huma.Context) []error {
+	seen := make(map[uuid.UUID]bool, len(input.ProductIDs))
+	for _, id := range input.ProductIDs {
+		if seen[id] {
+			return []error{huma.Error400BadRequest("duplicate product id")}
+		}
+		seen[id] = true
+	}
+	return nil
 }
 
 type SuggestOutfitItemsOutput struct {
 	Body models.OutfitSuggestionsResponse
 }
 
-// SuggestItems returns products similar to one of the outfit's products, closest first.
+// SuggestItems returns, for each requested product, similar products closest first.
 func (c *OutfitController) SuggestItems(ctx context.Context, input *SuggestOutfitItemsInput) (*SuggestOutfitItemsOutput, error) {
-	suggestions, err := c.service.Suggest(ctx, input.ID, input.ProductID, input.Limit)
+	suggestions, err := c.service.Suggest(ctx, input.ID, input.ProductIDs, input.Limit)
 	if err != nil {
 		return nil, errs.ToHuma(ctx, err)
 	}
