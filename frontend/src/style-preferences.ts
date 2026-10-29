@@ -86,11 +86,3 @@ export async function saveStylePreferences(preferences: StylePreferences) {
     throw new Error(`PUT /api/v1/users/me/style-preferences failed: ${res.status}`);
   }
 }
-
-export async function clearStylePreferences() {
-  const res = await apiFetch("/api/v1/users/me/style-preferences", { method: "DELETE" });
-
-  if (!res.ok) {
-    throw new Error(`DELETE /api/v1/users/me/style-preferences failed: ${res.status}`);
-  }
-}

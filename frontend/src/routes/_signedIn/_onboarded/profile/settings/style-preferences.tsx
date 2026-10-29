@@ -22,8 +22,8 @@ const stylePreferencesKey = ["style-preferences"];
 async function fetchSavedPreferences(signal: AbortSignal): Promise<StylePreferences> {
   const user = await fetchCurrentUser(signal);
 
-  // The route guard sends users without preferences to onboarding, so this only happens when
-  // they were cleared (DELETE from /docs) after the account status was cached.
+  // The route guard sends users without preferences to onboarding, so this only happens if the
+  // row changed after the account status was cached.
   if (user?.style_preferences === undefined) {
     throw new Error("no style preferences are saved yet");
   }
