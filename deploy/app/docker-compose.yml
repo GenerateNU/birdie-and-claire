@@ -9,6 +9,13 @@ services:
     image: ${BACKEND_IMAGE:?set BACKEND_IMAGE}
     container_name: birdie-and-claire-backend
     restart: unless-stopped
+    # Docker keeps container logs forever by default; a crash loop can fill
+    # the shared disk with them.
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
     env_file:
       - backend.env
     networks:
