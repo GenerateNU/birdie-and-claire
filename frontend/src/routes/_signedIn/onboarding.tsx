@@ -8,7 +8,7 @@ import { Box, Button, ImageCard, ProgressBar, Tabs, Text } from "@/design-system
 
 export const Route = createFileRoute("/_signedIn/onboarding")({
   // Finished users may come back to redo it; saving replaces their preferences.
-  beforeLoad: ({ context }) => requireAccountStatus(context, ["needs-preferences", "ready"]),
+  beforeLoad: ({ context }) => requireAccountStatus(context, ["needs-preferences", "onboarded"]),
   errorComponent: AccountError,
   component: Onboarding,
 });
@@ -74,8 +74,8 @@ const fitTabs: { value: FitField; label: string }[] = [
 
 const fieldOrder: Field[] = ["style", ...fitTabs.map((tab) => tab.value)];
 
-// One step per section. Style counts once the user is past it, and the fit section counts on the
-// last field, where Finish shows.
+// Out of 2: empty on style, half full on the fit fields, and full only on the last field, where
+// Finish shows.
 const progressStepCount = 2;
 
 function progressStep(index: number) {
@@ -101,7 +101,6 @@ function Onboarding() {
   const currentIndex = fieldOrder.indexOf(currentField);
   const onLastField = currentIndex === fieldOrder.length - 1;
   const onFirstField = currentIndex === 0;
-  const onFitField = currentField !== "style";
 
   function toggle(field: Field, value: string, pressed: boolean) {
     setPreferences((current) => ({
@@ -112,7 +111,7 @@ function Onboarding() {
     }));
   }
 
-  async function finish(preferencesToSave: StylePreferences) {
+  async function finish() {
     setError(null);
     setSaving(true);
 
@@ -120,7 +119,7 @@ function Onboarding() {
       const res = await apiFetch("/api/v1/users/me/style-preferences", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(preferencesToSave),
+        body: JSON.stringify(preferences),
       });
 
       if (!res.ok) {
@@ -140,7 +139,7 @@ function Onboarding() {
     const next = fieldOrder[currentIndex + 1];
 
     if (next === undefined) {
-      void finish(preferences);
+      void finish();
 
       return;
     }
@@ -159,6 +158,7 @@ function Onboarding() {
   return (
     <Box className="flex min-h-screen flex-col p-xl pb-xxl">
       <Box className="grid h-xl w-full grid-cols-3 items-center">
+        {/* Back always returns to style; the fit fields switch through the tabs. */}
         {!onFirstField && (
           <Button
             label="← Back"
@@ -182,8 +182,11 @@ function Onboarding() {
           <img src={logo} alt="Birdie & Claire" className="w-full max-w-xs" />
           <Text variant="heading">{questions[currentField].title}</Text>
         </Box>
-        {onFitField ? (
-          <Tabs
+        {/* Tabs<Field> because the index check can't narrow currentField to a fit field. */}
+        {onFirstField ? (
+          <Cards field={currentField} preferences={preferences} onToggle={toggle} />
+        ) : (
+          <Tabs<Field>
             tabs={fitTabs}
             value={currentField}
             onValueChange={setCurrentField}
@@ -191,8 +194,6 @@ function Onboarding() {
           >
             <Cards field={currentField} preferences={preferences} onToggle={toggle} />
           </Tabs>
-        ) : (
-          <Cards field={currentField} preferences={preferences} onToggle={toggle} />
         )}
         <Button label={nextButtonLabel()} loading={saving} onClick={nextFieldOrFinish} />
         {error && (
@@ -201,16 +202,16 @@ function Onboarding() {
           </Text>
         )}
       </Box>
-      {/* Per design, Skip starts on the fit fields. It saves what's picked so far; fields the
-          user hasn't reached are still empty, so they save as no preference. */}
-      {onFitField && (
+      {/* Per design, Skip starts after the first field. It saves what's picked so far, and
+          fields left empty save as no preference. */}
+      {!onFirstField && (
         <Button
           label="Skip →"
           variant="secondary"
           size="sm"
           className="fixed bottom-lg right-lg"
           disabled={saving}
-          onClick={() => void finish(preferences)}
+          onClick={() => void finish()}
         />
       )}
     </Box>

@@ -29,7 +29,7 @@ function CreateAccount() {
       });
 
       if (res.status === 201 || res.status === 409) {
-        // Has to stay a full page load. The cached "no account" answer never expires,
+        // Has to stay a full page load. The cached "none" status never expires,
         // so a router navigation would send the user straight back here.
         window.location.assign("/");
 

@@ -14,13 +14,13 @@ import { supabase } from "@/supabase/client";
  * Where the signed-in user is in sign-up: no row in our users table yet, an account that
  * hasn't finished the onboarding preference steps, or done.
  */
-export type AccountStatus = "none" | "needs-preferences" | "ready";
+type AccountStatus = "none" | "needs-preferences" | "onboarded";
 
 type CurrentUserResponse = {
   style_preferences?: object;
 };
 
-export function accountStatusQuery(userId: string) {
+function accountStatusQuery(userId: string) {
   return queryOptions({
     queryKey: ["account-status", userId],
     // Checked once per page load. Login, account creation, finishing onboarding, and sign-out
@@ -42,7 +42,7 @@ export function accountStatusQuery(userId: string) {
       // until onboarding is finished.
       const user = (await res.json()) as CurrentUserResponse;
 
-      return user.style_preferences === undefined ? "needs-preferences" : "ready";
+      return user.style_preferences === undefined ? "needs-preferences" : "onboarded";
     },
   });
 }
@@ -52,7 +52,7 @@ export function accountStatusQuery(userId: string) {
 const statusRoutes = {
   none: "/create-account",
   "needs-preferences": "/onboarding",
-  ready: "/",
+  onboarded: "/",
 } as const satisfies Record<AccountStatus, string>;
 
 /** For a route's beforeLoad: sends the user to their status's route unless it is in `allowed`. */
