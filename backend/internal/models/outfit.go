@@ -15,31 +15,41 @@ type Outfit struct {
 	UpdatedAt time.Time  `json:"updated_at"`
 }
 
-// OutfitProduct is a product in an outfit, with its first image so a client can draw the outfit
-// without fetching each product's images.
-type OutfitProduct struct {
-	Product
-	ImageURL *string `json:"image_url" doc:"URL of the product's lowest-position image, or null when it has none"`
-}
-
 type OutfitResponse struct {
 	Outfit
-	Products []OutfitProduct `json:"products" nullable:"false"`
+	Products []ProductResponse `json:"products" nullable:"false"`
 }
 
 // SharedOutfitResponse is what anyone with a share link sees, so it leaves out
 // the owner and timestamps.
 type SharedOutfitResponse struct {
-	ID       uuid.UUID       `json:"id"`
-	Name     string          `json:"name"`
-	Products []OutfitProduct `json:"products" nullable:"false"`
+	ID       uuid.UUID         `json:"id"`
+	Name     string            `json:"name"`
+	Products []ProductResponse `json:"products" nullable:"false"`
 }
 
 type ShareOutfitResponse struct {
 	URL string `json:"url" doc:"Public link to the outfit; stays the same across re-shares"`
 }
 
+// ProductSuggestionsEntry holds the products that suit one requested product, closest first.
+type ProductSuggestionsEntry struct {
+	Products []ProductResponse `json:"products" nullable:"false"`
+	Error    string            `json:"error" doc:"Why this product got no suggestions, or empty when it did or has none yet"`
+}
+
+// OutfitSuggestionsResponse maps each requested product ID to its suggestions.
+type OutfitSuggestionsResponse struct {
+	Suggestions map[uuid.UUID]ProductSuggestionsEntry `json:"suggestions" nullable:"false"`
+}
+
 type CreateOutfitParams struct {
+	Name       string
+	ProductIDs []uuid.UUID
+}
+
+// UpdateOutfitParams leaves an empty field unchanged; ProductIDs, when set, replaces the whole product set.
+type UpdateOutfitParams struct {
 	Name       string
 	ProductIDs []uuid.UUID
 }

@@ -152,56 +152,6 @@ components:
         - created_at
         - updated_at
       type: object
-    OutfitProduct:
-      additionalProperties: false
-      properties:
-        created_at:
-          format: date-time
-          type: string
-        handle:
-          type: string
-        id:
-          type: string
-        image_url:
-          description: URL of the product's lowest-position image, or null when it has none
-          type:
-            - string
-            - "null"
-        product_type:
-          type:
-            - string
-            - "null"
-        shopify_id:
-          format: int64
-          type: integer
-        slot:
-          enum:
-            - top
-            - bottom
-            - accessory
-            - shoe
-          type: string
-        tags:
-          items:
-            type: string
-          type: array
-        title:
-          type: string
-        updated_at:
-          format: date-time
-          type: string
-      required:
-        - image_url
-        - id
-        - shopify_id
-        - handle
-        - title
-        - product_type
-        - slot
-        - tags
-        - created_at
-        - updated_at
-      type: object
     OutfitResponse:
       additionalProperties: false
       properties:
@@ -214,7 +164,7 @@ components:
           type: string
         products:
           items:
-            $ref: "#/components/schemas/OutfitProduct"
+            $ref: "#/components/schemas/ProductResponse"
           type: array
         shared_at:
           description: When the outfit was shared by link, or null while it is private
@@ -235,6 +185,16 @@ components:
         - shared_at
         - created_at
         - updated_at
+      type: object
+    OutfitSuggestionsResponse:
+      additionalProperties: false
+      properties:
+        suggestions:
+          additionalProperties:
+            $ref: "#/components/schemas/ProductSuggestionsEntry"
+          type: object
+      required:
+        - suggestions
       type: object
     PageOutfit:
       additionalProperties: false
@@ -293,6 +253,70 @@ components:
         - position
         - created_at
         - updated_at
+      type: object
+    ProductResponse:
+      additionalProperties: false
+      properties:
+        created_at:
+          format: date-time
+          type: string
+        handle:
+          type: string
+        id:
+          type: string
+        image_url:
+          description: URL of the product's lowest-position image, or null when it has none
+          type:
+            - string
+            - "null"
+        product_type:
+          type:
+            - string
+            - "null"
+        shopify_id:
+          format: int64
+          type: integer
+        slot:
+          enum:
+            - top
+            - bottom
+            - accessory
+            - shoe
+          type: string
+        tags:
+          items:
+            type: string
+          type: array
+        title:
+          type: string
+        updated_at:
+          format: date-time
+          type: string
+      required:
+        - image_url
+        - id
+        - shopify_id
+        - handle
+        - title
+        - product_type
+        - slot
+        - tags
+        - created_at
+        - updated_at
+      type: object
+    ProductSuggestionsEntry:
+      additionalProperties: false
+      properties:
+        error:
+          description: Why this product got no suggestions, or empty when it did or has none yet
+          type: string
+        products:
+          items:
+            $ref: "#/components/schemas/ProductResponse"
+          type: array
+      required:
+        - products
+        - error
       type: object
     ProfilePictureUploadResponse:
       additionalProperties: false
@@ -381,73 +405,23 @@ components:
       properties:
         accessory:
           items:
-            $ref: "#/components/schemas/RecommendedProduct"
+            $ref: "#/components/schemas/ProductResponse"
           type: array
         bottom:
           items:
-            $ref: "#/components/schemas/RecommendedProduct"
+            $ref: "#/components/schemas/ProductResponse"
           type: array
         expanded_query:
           $ref: "#/components/schemas/RecommendationExpandedQuery"
         top:
           items:
-            $ref: "#/components/schemas/RecommendedProduct"
+            $ref: "#/components/schemas/ProductResponse"
           type: array
       required:
         - expanded_query
         - top
         - bottom
         - accessory
-      type: object
-    RecommendedProduct:
-      additionalProperties: false
-      properties:
-        created_at:
-          format: date-time
-          type: string
-        handle:
-          type: string
-        id:
-          type: string
-        image_url:
-          description: URL of the product's lowest-position image, or null when it has none
-          type:
-            - string
-            - "null"
-        product_type:
-          type:
-            - string
-            - "null"
-        shopify_id:
-          format: int64
-          type: integer
-        slot:
-          enum:
-            - top
-            - bottom
-            - accessory
-            - shoe
-          type: string
-        tags:
-          items:
-            type: string
-          type: array
-        title:
-          type: string
-        updated_at:
-          format: date-time
-          type: string
-      required:
-        - image_url
-        - id
-        - shopify_id
-        - handle
-        - title
-        - product_type
-        - slot
-        - tags
-        - created_at
-        - updated_at
       type: object
     ShareOutfitResponse:
       additionalProperties: false
@@ -467,12 +441,27 @@ components:
           type: string
         products:
           items:
-            $ref: "#/components/schemas/OutfitProduct"
+            $ref: "#/components/schemas/ProductResponse"
           type: array
       required:
         - id
         - name
         - products
+      type: object
+    UpdateOutfitInputBody:
+      additionalProperties: false
+      properties:
+        name:
+          description: New display name for the outfit
+          maxLength: 100
+          minLength: 1
+          type: string
+        product_ids:
+          description: IDs of every product in the outfit; replaces the current set
+          items:
+            type: string
+          minItems: 1
+          type: array
       type: object
     UserResponse:
       additionalProperties: false
@@ -661,6 +650,41 @@ paths:
       summary: Get one of the authenticated user's outfits with its products
       tags:
         - outfits
+    patch:
+      description: product_ids replaces the whole product set. A shared outfit's public link shows the change.
+      operationId: update-outfit
+      parameters:
+        - description: Outfit ID
+          in: path
+          name: id
+          required: true
+          schema:
+            description: Outfit ID
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateOutfitInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OutfitResponse"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Rename an outfit or replace its products
+      tags:
+        - outfits
   /api/v1/outfits/{id}/reactions:
     get:
       operationId: get-outfit-reaction-counts
@@ -772,6 +796,61 @@ paths:
       security:
         - bearer: []
       summary: Share an outfit by public link
+      tags:
+        - outfits
+  /api/v1/outfits/{id}/suggestions:
+    get:
+      description: Repeat product_id for each catalog product, up to 10; the products need not be in the saved outfit, so unsaved swaps work. Results are keyed by product ID, closest first, in the same slot, leaving out the outfit's products and the requested ones. A product without an embedding gets an empty list; a product not in the catalog gets an empty list and an error message while the request still returns 200. Most calls ask about one product; batching saves round trips when the editor opens. The database work is one embedding lookup and one similarity query per product either way.
+      operationId: suggest-outfit-items
+      parameters:
+        - description: Outfit ID
+          in: path
+          name: id
+          required: true
+          schema:
+            description: Outfit ID
+            type: string
+        - description: Catalog products to find similar products for; repeat the parameter, up to 10 times
+          explode: true
+          in: query
+          name: product_id
+          required: true
+          schema:
+            description: Catalog products to find similar products for; repeat the parameter, up to 10 times
+            items:
+              type: string
+            maxItems: 10
+            minItems: 1
+            type:
+              - array
+              - "null"
+        - description: Most products to return for each product
+          explode: false
+          in: query
+          name: limit
+          schema:
+            default: 12
+            description: Most products to return for each product
+            format: int64
+            maximum: 30
+            minimum: 1
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OutfitSuggestionsResponse"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Suggest products similar to products of an outfit
       tags:
         - outfits
   /api/v1/products/{product_id}/images:

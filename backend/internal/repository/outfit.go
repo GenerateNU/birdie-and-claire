@@ -24,9 +24,10 @@ const (
 )
 
 type OutfitRepository interface {
-	Create(ctx context.Context, params models.CreateOutfitParams, userID uuid.UUID) (models.Outfit, []models.OutfitProduct, error)
-	GetByID(ctx context.Context, id uuid.UUID, userID uuid.UUID) (models.Outfit, []models.OutfitProduct, error)
-	GetShared(ctx context.Context, id uuid.UUID) (models.Outfit, []models.OutfitProduct, error)
+	Create(ctx context.Context, params models.CreateOutfitParams, userID uuid.UUID) (models.Outfit, []models.ProductResponse, error)
+	GetByID(ctx context.Context, id uuid.UUID, userID uuid.UUID) (models.Outfit, []models.ProductResponse, error)
+	GetShared(ctx context.Context, id uuid.UUID) (models.Outfit, []models.ProductResponse, error)
+	Update(ctx context.Context, id uuid.UUID, params models.UpdateOutfitParams, userID uuid.UUID) (models.Outfit, []models.ProductResponse, error)
 	Share(ctx context.Context, id uuid.UUID, userID uuid.UUID) error
 	Unshare(ctx context.Context, id uuid.UUID, userID uuid.UUID) error
 	List(ctx context.Context, userID uuid.UUID, params pagination.CursorParams) ([]models.Outfit, error)
@@ -40,7 +41,7 @@ func NewOutfitRepository(database *sql.DB) OutfitRepository {
 	return &outfitRepository{db: database}
 }
 
-func (r *outfitRepository) Create(ctx context.Context, params models.CreateOutfitParams, userID uuid.UUID) (models.Outfit, []models.OutfitProduct, error) {
+func (r *outfitRepository) Create(ctx context.Context, params models.CreateOutfitParams, userID uuid.UUID) (models.Outfit, []models.ProductResponse, error) {
 	rows, err := r.db.QueryContext(ctx, `
 		WITH new_outfit AS (
 			INSERT INTO outfits (user_id, name)
@@ -80,9 +81,9 @@ func (r *outfitRepository) Create(ctx context.Context, params models.CreateOutfi
 	defer func() { _ = rows.Close() }()
 
 	var outfit models.Outfit
-	products := make([]models.OutfitProduct, 0, len(params.ProductIDs))
+	products := make([]models.ProductResponse, 0, len(params.ProductIDs))
 	for rows.Next() {
-		var product models.OutfitProduct
+		var product models.ProductResponse
 		targets := []any{&outfit.ID, &outfit.UserID, &outfit.Name, &outfit.SharedAt, &outfit.CreatedAt, &outfit.UpdatedAt}
 		if err := rows.Scan(append(targets, productScanTargets(&product)...)...); err != nil {
 			return models.Outfit{}, nil, fmt.Errorf("scan created outfit: %w", err)
@@ -97,8 +98,17 @@ func (r *outfitRepository) Create(ctx context.Context, params models.CreateOutfi
 
 // GetByID returns ErrNotFound for an outfit userID does not own, so a caller
 // cannot tell someone else's outfit from a missing one.
-func (r *outfitRepository) GetByID(ctx context.Context, id uuid.UUID, userID uuid.UUID) (models.Outfit, []models.OutfitProduct, error) {
-	rows, err := r.db.QueryContext(ctx, `
+func (r *outfitRepository) GetByID(ctx context.Context, id uuid.UUID, userID uuid.UUID) (models.Outfit, []models.ProductResponse, error) {
+	return getOutfitByID(ctx, r.db, id, userID)
+}
+
+// querier is satisfied by both *sql.DB and *sql.Tx, so Update can read its result inside its transaction.
+type querier interface {
+	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
+}
+
+func getOutfitByID(ctx context.Context, dbOrTx querier, id uuid.UUID, userID uuid.UUID) (models.Outfit, []models.ProductResponse, error) {
+	rows, err := dbOrTx.QueryContext(ctx, `
 		SELECT o.id, o.user_id, o.name, o.shared_at, o.created_at, o.updated_at,
 			p.id, p.shopify_id, p.handle, p.title, p.product_type, p.slot, p.tags, p.created_at, p.updated_at,
 			first_image.url
@@ -127,8 +137,62 @@ func (r *outfitRepository) GetByID(ctx context.Context, id uuid.UUID, userID uui
 	return outfit, products, nil
 }
 
+func (r *outfitRepository) Update(ctx context.Context, id uuid.UUID, params models.UpdateOutfitParams, userID uuid.UUID) (models.Outfit, []models.ProductResponse, error) {
+	// One transaction, so a failure part-way leaves the outfit untouched.
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return models.Outfit{}, nil, fmt.Errorf("update outfit %s: begin: %w", id, err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	// Verifies the outfit exists and is userID's, and locks its row so concurrent updates run one at a time.
+	var updated uuid.UUID
+	err = tx.QueryRowContext(ctx, `
+		UPDATE outfits
+		SET name = COALESCE(NULLIF($3, ''), name), updated_at = now()
+		WHERE id = $1 AND user_id = $2
+		RETURNING id
+	`, id, userID, params.Name).Scan(&updated)
+	if errors.Is(err, sql.ErrNoRows) {
+		return models.Outfit{}, nil, errs.ErrNotFound
+	}
+	if err != nil {
+		return models.Outfit{}, nil, fmt.Errorf("update outfit %s: %w", id, err)
+	}
+
+	// An empty list would delete every product (product_id <> ALL('{}') is true for every row).
+	if len(params.ProductIDs) > 0 {
+		// Kept rows are neither deleted nor reinserted, so the two writes touch disjoint rows and can share a snapshot.
+		_, err = tx.ExecContext(ctx, `
+			WITH removed AS (
+				DELETE FROM outfit_products
+				WHERE outfit_id = $1 AND product_id <> ALL($2::uuid[])
+			)
+			INSERT INTO outfit_products (outfit_id, product_id)
+			SELECT $1, unnest($2::uuid[])
+			ON CONFLICT DO NOTHING
+		`, id, params.ProductIDs)
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == foreignKeyViolation && pgErr.ConstraintName == outfitProductFKey {
+			return models.Outfit{}, nil, fmt.Errorf("update outfit %s: unknown product: %w", id, errs.ErrConflict)
+		}
+		if err != nil {
+			return models.Outfit{}, nil, fmt.Errorf("update outfit %s: replace products: %w", id, err)
+		}
+	}
+
+	outfit, products, err := getOutfitByID(ctx, tx, id, userID)
+	if err != nil {
+		return models.Outfit{}, nil, fmt.Errorf("update outfit %s: read back: %w", id, err)
+	}
+	if err := tx.Commit(); err != nil {
+		return models.Outfit{}, nil, fmt.Errorf("update outfit %s: commit: %w", id, err)
+	}
+	return outfit, products, nil
+}
+
 // GetShared returns ErrNotFound for a private outfit as well as a missing one.
-func (r *outfitRepository) GetShared(ctx context.Context, id uuid.UUID) (models.Outfit, []models.OutfitProduct, error) {
+func (r *outfitRepository) GetShared(ctx context.Context, id uuid.UUID) (models.Outfit, []models.ProductResponse, error) {
 	rows, err := r.db.QueryContext(ctx, `
 		SELECT o.id, o.user_id, o.name, o.shared_at, o.created_at, o.updated_at,
 			p.id, p.shopify_id, p.handle, p.title, p.product_type, p.slot, p.tags, p.created_at, p.updated_at,
@@ -235,7 +299,7 @@ func (r *outfitRepository) List(ctx context.Context, userID uuid.UUID, params pa
 }
 
 // productScanTargets matches the p.id through first_image.url column order Create selects.
-func productScanTargets(product *models.OutfitProduct) []any {
+func productScanTargets(product *models.ProductResponse) []any {
 	return []any{
 		&product.ID,
 		&product.ShopifyID,
@@ -254,10 +318,10 @@ func productScanTargets(product *models.OutfitProduct) []any {
 // scanOutfitWithProducts reads the o.id through o.updated_at, then p.id through
 // first_image.url, columns GetByID and GetShared select, one row per product.
 // It returns ErrNotFound when there are no rows.
-func scanOutfitWithProducts(rows *sql.Rows) (models.Outfit, []models.OutfitProduct, error) {
+func scanOutfitWithProducts(rows *sql.Rows) (models.Outfit, []models.ProductResponse, error) {
 	var outfit models.Outfit
 	found := false
-	products := make([]models.OutfitProduct, 0)
+	products := make([]models.ProductResponse, 0)
 	for rows.Next() {
 		found = true
 		var (
@@ -292,7 +356,7 @@ func scanOutfitWithProducts(rows *sql.Rows) (models.Outfit, []models.OutfitProdu
 		if !productID.Valid {
 			continue
 		}
-		products = append(products, models.OutfitProduct{
+		products = append(products, models.ProductResponse{
 			Product: models.Product{
 				ID:          productID.UUID,
 				ShopifyID:   shopifyID.Int64,

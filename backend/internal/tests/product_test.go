@@ -66,7 +66,7 @@ func insertSlotProduct(t *testing.T, db *sql.DB, product testProduct) uuid.UUID 
 func findSimilarIDs(t *testing.T, db *sql.DB, ownIDs []uuid.UUID, excludeTags, niceTags []string) []uuid.UUID {
 	t.Helper()
 
-	products, err := repository.NewProductRepository(db).FindSimilar(context.Background(), queryEmbedding, models.SlotTop, excludeTags, niceTags, findSimilarLimit)
+	products, err := repository.NewProductRepository(db).FindSimilar(context.Background(), queryEmbedding, models.SlotTop, excludeTags, niceTags, nil, findSimilarLimit)
 	if err != nil {
 		t.Fatalf("FindSimilar: %v", err)
 	}
@@ -158,5 +158,26 @@ func TestFindSimilarMatchesStoredTagsCaseInsensitively(t *testing.T) {
 	}
 	if got := findSimilarIDs(t, db, ownIDs, nil, []string{"sage"}); !slices.Equal(got, []uuid.UUID{sage, near, white}) {
 		t.Errorf("nice tag sage: got %v, want the stored Sage row first", got)
+	}
+}
+
+func TestFindSimilarExcludesProductIDs(t *testing.T) {
+	db := openTestDB(t)
+
+	kept := insertSlotProduct(t, db, testProduct{slot: models.SlotTop, embedding: productEmbedding(0.1)})
+	excluded := insertSlotProduct(t, db, testProduct{slot: models.SlotTop, embedding: productEmbedding(0.2)})
+
+	products, err := repository.NewProductRepository(db).FindSimilar(context.Background(), queryEmbedding, models.SlotTop, nil, nil, []uuid.UUID{excluded}, findSimilarLimit)
+	if err != nil {
+		t.Fatalf("FindSimilar: %v", err)
+	}
+	var got []uuid.UUID
+	for _, product := range products {
+		if slices.Contains([]uuid.UUID{kept, excluded}, product.ID) {
+			got = append(got, product.ID)
+		}
+	}
+	if want := []uuid.UUID{kept}; !slices.Equal(got, want) {
+		t.Fatalf("own products returned = %v, want %v", got, want)
 	}
 }

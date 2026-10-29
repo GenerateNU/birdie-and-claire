@@ -32,6 +32,24 @@ func OutfitRoutes(api huma.API, params types.RouteParams) {
 	}, controller.Get)
 
 	huma.Register(api, huma.Operation{
+		OperationID: "update-outfit",
+		Method:      http.MethodPatch,
+		Path:        "/api/v1/outfits/{id}",
+		Summary:     "Rename an outfit or replace its products",
+		Description: "product_ids replaces the whole product set. A shared outfit's public link shows the change.",
+		Tags:        []string{"outfits"},
+	}, controller.Update)
+
+	huma.Register(api, huma.Operation{
+		OperationID: "suggest-outfit-items",
+		Method:      http.MethodGet,
+		Path:        "/api/v1/outfits/{id}/suggestions",
+		Summary:     "Suggest products similar to products of an outfit",
+		Description: "Repeat product_id for each catalog product, up to 10; the products need not be in the saved outfit, so unsaved swaps work. Results are keyed by product ID, closest first, in the same slot, leaving out the outfit's products and the requested ones. A product without an embedding gets an empty list; a product not in the catalog gets an empty list and an error message while the request still returns 200. Most calls ask about one product; batching saves round trips when the editor opens. The database work is one embedding lookup and one similarity query per product either way.",
+		Tags:        []string{"outfits"},
+	}, controller.SuggestItems)
+
+	huma.Register(api, huma.Operation{
 		OperationID: "list-outfits",
 		Method:      http.MethodGet,
 		Path:        "/api/v1/outfits",

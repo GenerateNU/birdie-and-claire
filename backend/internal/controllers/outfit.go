@@ -70,6 +70,42 @@ func (c *OutfitController) Get(ctx context.Context, input *OutfitIDInput) (*Outf
 	return &OutfitOutput{Body: outfit}, nil
 }
 
+type UpdateOutfitInput struct {
+	OutfitIDInput
+	// An empty name or product list is not a meaningful update, so a zero value means not provided.
+	Body struct {
+		Name       string      `json:"name,omitempty" minLength:"1" maxLength:"100" doc:"New display name for the outfit"`
+		ProductIDs []uuid.UUID `json:"product_ids,omitempty" nullable:"false" minItems:"1" doc:"IDs of every product in the outfit; replaces the current set"`
+	}
+}
+
+var _ huma.Resolver = (*UpdateOutfitInput)(nil)
+
+func (input *UpdateOutfitInput) Resolve(huma.Context) []error {
+	if input.Body.Name == "" && len(input.Body.ProductIDs) == 0 {
+		return []error{&huma.ErrorDetail{Location: "body", Message: "body must set name or product_ids"}}
+	}
+	seen := make(map[uuid.UUID]bool, len(input.Body.ProductIDs))
+	for _, id := range input.Body.ProductIDs {
+		if seen[id] {
+			return []error{huma.Error400BadRequest("duplicate product id")}
+		}
+		seen[id] = true
+	}
+	return nil
+}
+
+func (c *OutfitController) Update(ctx context.Context, input *UpdateOutfitInput) (*OutfitOutput, error) {
+	outfit, err := c.service.Update(ctx, input.ID, models.UpdateOutfitParams{
+		Name:       input.Body.Name,
+		ProductIDs: input.Body.ProductIDs,
+	})
+	if err != nil {
+		return nil, errs.ToHuma(ctx, err)
+	}
+	return &OutfitOutput{Body: outfit}, nil
+}
+
 type ShareOutfitOutput struct {
 	Body models.ShareOutfitResponse
 }
@@ -119,4 +155,37 @@ func (c *OutfitController) List(ctx context.Context, input *ListOutfitsInput) (*
 		return nil, errs.ToHuma(ctx, err)
 	}
 	return &ListOutfitsOutput{Body: page}, nil
+}
+
+type SuggestOutfitItemsInput struct {
+	OutfitIDInput
+	ProductIDs []uuid.UUID `query:"product_id,explode" required:"true" minItems:"1" maxItems:"10" doc:"Catalog products to find similar products for; repeat the parameter, up to 10 times"`
+	Limit      int         `query:"limit" default:"12" minimum:"1" maximum:"30" doc:"Most products to return for each product"`
+}
+
+var _ huma.Resolver = (*SuggestOutfitItemsInput)(nil)
+
+// Resolve compares parsed UUIDs, so differently cased spellings of one ID still count as duplicates.
+func (input *SuggestOutfitItemsInput) Resolve(huma.Context) []error {
+	seen := make(map[uuid.UUID]bool, len(input.ProductIDs))
+	for _, id := range input.ProductIDs {
+		if seen[id] {
+			return []error{huma.Error400BadRequest("duplicate product id")}
+		}
+		seen[id] = true
+	}
+	return nil
+}
+
+type SuggestOutfitItemsOutput struct {
+	Body models.OutfitSuggestionsResponse
+}
+
+// SuggestItems returns, for each requested product, similar products closest first.
+func (c *OutfitController) SuggestItems(ctx context.Context, input *SuggestOutfitItemsInput) (*SuggestOutfitItemsOutput, error) {
+	suggestions, err := c.service.Suggest(ctx, input.ID, input.ProductIDs, input.Limit)
+	if err != nil {
+		return nil, errs.ToHuma(ctx, err)
+	}
+	return &SuggestOutfitItemsOutput{Body: suggestions}, nil
 }
