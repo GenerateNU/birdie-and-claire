@@ -5,7 +5,7 @@ import OutfitList, { type Outfit } from "@/OutfitList";
 import { Empty, ErrorState, Spinner, Text } from "@/design-system";
 import { usePagination } from "@/utils/usePagination";
 
-export const Route = createFileRoute("/_signedIn/_hasAccount/profile/outfits")({
+export const Route = createFileRoute("/_signedIn/_onboarded/profile/outfits")({
   component: OutfitsPage,
 });
 

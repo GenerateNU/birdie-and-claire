@@ -20,6 +20,7 @@ type UserRepository interface {
 	CreateUser(ctx context.Context, id uuid.UUID, name string) (models.User, error)
 	GetByID(ctx context.Context, id uuid.UUID) (models.User, error)
 	SetProfilePictureKey(ctx context.Context, id uuid.UUID, key string) error
+	ReplaceStylePreferences(ctx context.Context, id uuid.UUID, preferences models.StylePreferences) (models.User, error)
 }
 
 type userRepository struct {
@@ -50,10 +51,10 @@ func (r *userRepository) CreateUser(ctx context.Context, id uuid.UUID, name stri
 func (r *userRepository) GetByID(ctx context.Context, id uuid.UUID) (models.User, error) {
 	var user models.User
 	err := r.db.QueryRowContext(ctx, `
-		SELECT id, COALESCE(name, ''), profile_picture_key
+		SELECT id, COALESCE(name, ''), profile_picture_key, style_preferences
 		FROM users
 		WHERE id = $1
-	`, id).Scan(&user.ID, &user.Name, &user.ProfilePictureKey)
+	`, id).Scan(&user.ID, &user.Name, &user.ProfilePictureKey, &user.StylePreferences)
 	if errors.Is(err, sql.ErrNoRows) {
 		return models.User{}, errs.ErrNotFound
 	}
@@ -78,4 +79,21 @@ func (r *userRepository) SetProfilePictureKey(ctx context.Context, id uuid.UUID,
 		return fmt.Errorf("set profile picture key for user %s: %w", id, err)
 	}
 	return nil
+}
+
+func (r *userRepository) ReplaceStylePreferences(ctx context.Context, id uuid.UUID, preferences models.StylePreferences) (models.User, error) {
+	var user models.User
+	err := r.db.QueryRowContext(ctx, `
+		UPDATE users
+		SET style_preferences = $1::jsonb, updated_at = now()
+		WHERE id = $2
+		RETURNING id, COALESCE(name, ''), profile_picture_key, style_preferences
+	`, preferences, id).Scan(&user.ID, &user.Name, &user.ProfilePictureKey, &user.StylePreferences)
+	if errors.Is(err, sql.ErrNoRows) {
+		return models.User{}, errs.ErrNotFound
+	}
+	if err != nil {
+		return models.User{}, fmt.Errorf("replace style preferences for user %s: %w", id, err)
+	}
+	return user, nil
 }

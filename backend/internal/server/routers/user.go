@@ -37,6 +37,14 @@ func UserRoutes(api huma.API, params types.RouteParams) {
 	}, controller.CreateUser)
 
 	huma.Register(api, huma.Operation{
+		OperationID: "replace-current-user-style-preferences",
+		Method:      http.MethodPut,
+		Path:        "/api/v1/users/me/style-preferences",
+		Summary:     "Replace the caller's style preferences",
+		Tags:        []string{"users"},
+	}, controller.ReplaceStylePreferences)
+
+	huma.Register(api, huma.Operation{
 		OperationID: "get-user",
 		Method:      http.MethodGet,
 		Path:        "/api/v1/users/{id}",

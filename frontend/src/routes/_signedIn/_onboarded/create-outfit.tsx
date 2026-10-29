@@ -13,7 +13,7 @@ import {
   useToast,
 } from "@/design-system";
 
-export const Route = createFileRoute("/_signedIn/_hasAccount/create-outfit")({
+export const Route = createFileRoute("/_signedIn/_onboarded/create-outfit")({
   component: CreateOutfit,
 });
 

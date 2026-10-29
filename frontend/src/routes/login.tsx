@@ -81,7 +81,7 @@ function Login() {
       return;
     }
 
-    // The _hasAccount route checks for an account and sends the user to /create-account if there isn't one.
+    // The _onboarded route checks the account status and sends the user to account creation or onboarding if needed.
     window.location.assign("/");
   }
 

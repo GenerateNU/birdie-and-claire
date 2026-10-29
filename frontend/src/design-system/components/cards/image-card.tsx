@@ -7,19 +7,28 @@ const imageCardClasses = `${cardFrameClasses} flex flex-col gap-xs p-xs text-bod
 
 const imageClasses = "aspect-portrait w-full rounded-xs";
 
+const minSizeClasses = {
+  lg: "min-w-card-lg min-h-card-lg",
+};
+
 type ImageCardProps = {
   label: string;
   src: string | null;
   pressed: boolean;
   onPressedChange: (pressed: boolean) => void;
+  minSize?: keyof typeof minSizeClasses;
 };
 
 /** A pressable card with a portrait image and its label underneath. */
-export function ImageCard({ label, src, pressed, onPressedChange }: ImageCardProps) {
+export function ImageCard({ label, src, pressed, onPressedChange, minSize }: ImageCardProps) {
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
 
   return (
-    <BaseToggle pressed={pressed} onPressedChange={onPressedChange} className={imageCardClasses}>
+    <BaseToggle
+      pressed={pressed}
+      onPressedChange={onPressedChange}
+      className={minSize ? `${imageCardClasses} ${minSizeClasses[minSize]}` : imageCardClasses}
+    >
       {src === null || src === failedSrc ? (
         <span className={`block bg-placeholder ${imageClasses}`} />
       ) : (
