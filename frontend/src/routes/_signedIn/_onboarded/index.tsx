@@ -5,7 +5,7 @@ import { useState } from "react";
 import { apiFetch } from "@/api";
 import { Button, Text } from "@/design-system";
 
-export const Route = createFileRoute("/_signedIn/_hasAccount/")({
+export const Route = createFileRoute("/_signedIn/_onboarded/")({
   component: Home,
 });
 
@@ -103,6 +103,9 @@ function Home() {
       </Link>
       <Link className="block text-body underline" to="/playground">
         Design system playground →
+      </Link>
+      <Link className="block text-body underline" to="/onboarding">
+        Restart onboarding →
       </Link>
       <div className="mt-lg flex flex-col items-start gap-xs">
         <Button

@@ -61,6 +61,25 @@ components:
       required:
         - name
       type: object
+    CurrentUserResponse:
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        profile_picture_url:
+          type:
+            - string
+            - "null"
+        style_preferences:
+          $ref: "#/components/schemas/StylePreferences"
+          description: Missing until the user finishes the onboarding preference steps
+      required:
+        - id
+        - name
+        - profile_picture_url
+      type: object
     ErrorDetail:
       additionalProperties: false
       properties:
@@ -474,6 +493,55 @@ components:
         - name
         - products
       type: object
+    StylePreferences:
+      additionalProperties: false
+      properties:
+        bottoms:
+          items:
+            enum:
+              - pants
+              - dress
+              - skirt
+              - shorts
+            type: string
+          type: array
+          uniqueItems: true
+        neckline:
+          items:
+            enum:
+              - modest
+              - high
+              - low
+            type: string
+          type: array
+          uniqueItems: true
+        shoes:
+          items:
+            enum:
+              - sneakers
+              - boots
+              - sandals
+              - heels
+              - flats
+            type: string
+          type: array
+          uniqueItems: true
+        style:
+          items:
+            enum:
+              - chic_avant_garde
+              - timeless_sophisticated
+              - colorful_eclectic
+              - comfortable_relaxed
+            type: string
+          type: array
+          uniqueItems: true
+      required:
+        - style
+        - neckline
+        - bottoms
+        - shoes
+      type: object
     UserResponse:
       additionalProperties: false
       properties:
@@ -842,7 +910,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UserResponse"
+                $ref: "#/components/schemas/CurrentUserResponse"
           description: OK
         default:
           content:
@@ -936,6 +1004,33 @@ paths:
       security:
         - bearer: []
       summary: Get a presigned URL to upload the caller's profile picture
+      tags:
+        - users
+  /api/v1/users/me/style-preferences:
+    put:
+      operationId: replace-current-user-style-preferences
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StylePreferences"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrentUserResponse"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Replace the caller's style preferences
       tags:
         - users
   /api/v1/users/{id}:

@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"birdie-and-claire/internal/controllers"
+	"birdie-and-claire/internal/models"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/humatest"
@@ -76,5 +77,64 @@ func TestCreateUserName(t *testing.T) {
 				t.Fatalf("name = %q, want %q", echoed.Name, test.wantName)
 			}
 		})
+	}
+}
+
+// stylePreferencesProbe accepts what the replace-style-preferences route accepts.
+func stylePreferencesProbe(t *testing.T) humatest.TestAPI {
+	t.Helper()
+
+	_, api := humatest.New(t)
+	huma.Register(api, huma.Operation{
+		OperationID: "style-preferences-probe",
+		Method:      http.MethodPut,
+		Path:        "/probe",
+	}, func(_ context.Context, _ *controllers.ReplaceStylePreferencesInput) (*struct{}, error) {
+		return &struct{}{}, nil
+	})
+
+	return api
+}
+
+// withField returns valid preferences with one field set to value.
+func withField(field string, value any) map[string]any {
+	preferences := map[string]any{"style": []string{}, "neckline": []string{}, "bottoms": []string{}, "shoes": []string{}}
+	preferences[field] = value
+	return preferences
+}
+
+func TestReplaceStylePreferencesInput(t *testing.T) {
+	tests := []struct {
+		name       string
+		body       map[string]any
+		wantStatus int
+	}{
+		{name: "all four", body: withField("bottoms", []string{"pants", "skirt"}), wantStatus: http.StatusNoContent},
+		{name: "missing field", body: map[string]any{"style": []string{}, "neckline": []string{}, "bottoms": []string{}}, wantStatus: http.StatusUnprocessableEntity},
+		{name: "null field", body: withField("bottoms", nil), wantStatus: http.StatusUnprocessableEntity},
+		{name: "unknown value", body: withField("neckline", []string{"plunging"}), wantStatus: http.StatusUnprocessableEntity},
+		{name: "duplicate value", body: withField("shoes", []string{"heels", "heels"}), wantStatus: http.StatusUnprocessableEntity},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			response := stylePreferencesProbe(t).Put("/probe", test.body)
+			if response.Code != test.wantStatus {
+				t.Fatalf("status = %d, want %d: %s", response.Code, test.wantStatus, response.Body)
+			}
+		})
+	}
+}
+
+func TestStylePreferencesValueKeepsEmptyLists(t *testing.T) {
+	preferences := models.StylePreferences{Style: []string{"chic_avant_garde"}, Neckline: []string{}, Bottoms: []string{"pants"}, Shoes: []string{}}
+
+	value, err := preferences.Value()
+	if err != nil {
+		t.Fatalf("value: %v", err)
+	}
+	want := `{"style":["chic_avant_garde"],"neckline":[],"bottoms":["pants"],"shoes":[]}`
+	if value != want {
+		t.Fatalf("value = %v, want %s", value, want)
 	}
 }

@@ -5,7 +5,7 @@ import { apiFetch } from "@/api";
 import { Avatar, Button, Text } from "@/design-system";
 import { supabase } from "@/supabase/client";
 
-export const Route = createFileRoute("/_signedIn/_hasAccount/profile-picture-test")({
+export const Route = createFileRoute("/_signedIn/_onboarded/profile-picture-test")({
   component: ProfilePictureTest,
 });
 

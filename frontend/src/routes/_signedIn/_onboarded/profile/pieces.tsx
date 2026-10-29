@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { Empty } from "@/design-system";
 
-export const Route = createFileRoute("/_signedIn/_hasAccount/profile/pieces")({
+export const Route = createFileRoute("/_signedIn/_onboarded/profile/pieces")({
   component: PiecesPage,
 });
 

@@ -36,12 +36,16 @@ func (c *UserController) GetUserByID(ctx context.Context, input *GetUserByIDInpu
 	return &GetUserOutput{Body: response}, nil
 }
 
-func (c *UserController) GetUser(ctx context.Context, _ *struct{}) (*GetUserOutput, error) {
+type CurrentUserOutput struct {
+	Body models.CurrentUserResponse
+}
+
+func (c *UserController) GetUser(ctx context.Context, _ *struct{}) (*CurrentUserOutput, error) {
 	response, err := c.service.GetUser(ctx)
 	if err != nil {
 		return nil, errs.ToHuma(ctx, err)
 	}
-	return &GetUserOutput{Body: response}, nil
+	return &CurrentUserOutput{Body: response}, nil
 }
 
 type CreateUserInput struct {
@@ -70,6 +74,18 @@ func (c *UserController) CreateUser(ctx context.Context, input *CreateUserInput)
 		return nil, errs.ToHuma(ctx, err)
 	}
 	return &CreateUserOutput{Body: response}, nil
+}
+
+type ReplaceStylePreferencesInput struct {
+	Body models.StylePreferences
+}
+
+func (c *UserController) ReplaceStylePreferences(ctx context.Context, input *ReplaceStylePreferencesInput) (*CurrentUserOutput, error) {
+	response, err := c.service.ReplaceStylePreferences(ctx, input.Body)
+	if err != nil {
+		return nil, errs.ToHuma(ctx, err)
+	}
+	return &CurrentUserOutput{Body: response}, nil
 }
 
 type ProfilePictureUploadURLInput struct {
