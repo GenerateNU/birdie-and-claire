@@ -21,7 +21,6 @@ type UserRepository interface {
 	GetByID(ctx context.Context, id uuid.UUID) (models.User, error)
 	SetProfilePictureKey(ctx context.Context, id uuid.UUID, key string) error
 	ReplaceStylePreferences(ctx context.Context, id uuid.UUID, preferences models.StylePreferences) (models.User, error)
-	ClearStylePreferences(ctx context.Context, id uuid.UUID) error
 }
 
 type userRepository struct {
@@ -97,21 +96,4 @@ func (r *userRepository) ReplaceStylePreferences(ctx context.Context, id uuid.UU
 		return models.User{}, fmt.Errorf("replace style preferences for user %s: %w", id, err)
 	}
 	return user, nil
-}
-
-func (r *userRepository) ClearStylePreferences(ctx context.Context, id uuid.UUID) error {
-	var updated uuid.UUID
-	err := r.db.QueryRowContext(ctx, `
-		UPDATE users
-		SET style_preferences = NULL, updated_at = now()
-		WHERE id = $1
-		RETURNING id
-	`, id).Scan(&updated)
-	if errors.Is(err, sql.ErrNoRows) {
-		return errs.ErrNotFound
-	}
-	if err != nil {
-		return fmt.Errorf("clear style preferences for user %s: %w", id, err)
-	}
-	return nil
 }

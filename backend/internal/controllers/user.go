@@ -88,15 +88,6 @@ func (c *UserController) ReplaceStylePreferences(ctx context.Context, input *Rep
 	return &CurrentUserOutput{Body: response}, nil
 }
 
-type ClearStylePreferencesOutput struct{}
-
-func (c *UserController) ClearStylePreferences(ctx context.Context, _ *struct{}) (*ClearStylePreferencesOutput, error) {
-	if err := c.service.ClearStylePreferences(ctx); err != nil {
-		return nil, errs.ToHuma(ctx, err)
-	}
-	return &ClearStylePreferencesOutput{}, nil
-}
-
 type ProfilePictureUploadURLInput struct {
 	ContentType string `query:"content_type" required:"true" enum:"image/jpeg,image/png,image/webp" doc:"MIME type of the image to upload"`
 }

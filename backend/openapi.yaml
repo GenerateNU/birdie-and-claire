@@ -1007,22 +1007,6 @@ paths:
       tags:
         - users
   /api/v1/users/me/style-preferences:
-    delete:
-      operationId: clear-current-user-style-preferences
-      responses:
-        "204":
-          description: No Content
-        default:
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ErrorModel"
-          description: Error
-      security:
-        - bearer: []
-      summary: Clear the caller's style preferences so onboarding asks for them again
-      tags:
-        - users
     put:
       operationId: replace-current-user-style-preferences
       requestBody:

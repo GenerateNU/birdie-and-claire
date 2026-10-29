@@ -1,5 +1,10 @@
-import { queryOptions } from "@tanstack/react-query";
-import { useRouter, useRouterState, type ErrorComponentProps } from "@tanstack/react-router";
+import { queryOptions, type QueryClient } from "@tanstack/react-query";
+import {
+  redirect,
+  useRouter,
+  useRouterState,
+  type ErrorComponentProps,
+} from "@tanstack/react-router";
 
 import { apiFetch } from "@/api";
 import { Button, Text } from "@/design-system";
@@ -40,6 +45,26 @@ export function accountStatusQuery(userId: string) {
       return user.style_preferences === undefined ? "needs-preferences" : "ready";
     },
   });
+}
+
+// The route each status belongs on. Typed against AccountStatus, so a new status won't compile
+// until it has a route.
+const statusRoutes = {
+  none: "/create-account",
+  "needs-preferences": "/onboarding",
+  ready: "/",
+} as const satisfies Record<AccountStatus, string>;
+
+/** For a route's beforeLoad: sends the user to their status's route unless it is in `allowed`. */
+export async function requireAccountStatus(
+  context: { queryClient: QueryClient; userId: string },
+  allowed: AccountStatus[],
+) {
+  const status = await context.queryClient.query(accountStatusQuery(context.userId));
+
+  if (!allowed.includes(status)) {
+    throw redirect({ to: statusRoutes[status], replace: true });
+  }
 }
 
 // supabase-js clears the local session even when the server revoke fails, so the

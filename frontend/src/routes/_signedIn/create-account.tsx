@@ -1,18 +1,12 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useState, type SyntheticEvent } from "react";
 
-import { AccountError, accountStatusQuery } from "@/account";
+import { AccountError, requireAccountStatus } from "@/account";
 import { apiFetch } from "@/api";
 import { Button, Text, TextField } from "@/design-system";
 
 export const Route = createFileRoute("/_signedIn/create-account")({
-  beforeLoad: async ({ context }) => {
-    const status = await context.queryClient.query(accountStatusQuery(context.userId));
-
-    if (status !== "none") {
-      throw redirect({ to: "/", replace: true });
-    }
-  },
+  beforeLoad: ({ context }) => requireAccountStatus(context, ["none"]),
   errorComponent: AccountError,
   component: CreateAccount,
 });

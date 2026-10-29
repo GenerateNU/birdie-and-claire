@@ -1,23 +1,14 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
-import { AccountError, accountStatusQuery } from "@/account";
+import { AccountError, requireAccountStatus } from "@/account";
 import { apiFetch } from "@/api";
 import logo from "@/assets/logo.png";
 import { Box, Button, ImageCard, ProgressBar, Tabs, Text } from "@/design-system";
 
 export const Route = createFileRoute("/_signedIn/onboarding")({
-  beforeLoad: async ({ context }) => {
-    const status = await context.queryClient.query(accountStatusQuery(context.userId));
-
-    if (status === "none") {
-      throw redirect({ to: "/create-account", replace: true });
-    }
-
-    if (status === "ready") {
-      throw redirect({ to: "/", replace: true });
-    }
-  },
+  // Finished users may come back to redo it; saving replaces their preferences.
+  beforeLoad: ({ context }) => requireAccountStatus(context, ["needs-preferences", "ready"]),
   errorComponent: AccountError,
   component: Onboarding,
 });
@@ -109,6 +100,7 @@ function Onboarding() {
 
   const currentIndex = fieldOrder.indexOf(currentField);
   const onLastField = currentIndex === fieldOrder.length - 1;
+  const onFirstField = currentIndex === 0;
   const onFitField = currentField !== "style";
 
   function toggle(field: Field, value: string, pressed: boolean) {
@@ -167,7 +159,7 @@ function Onboarding() {
   return (
     <Box className="flex min-h-screen flex-col p-xl pb-xxl">
       <Box className="grid h-xl w-full grid-cols-3 items-center">
-        {onFitField && (
+        {!onFirstField && (
           <Button
             label="← Back"
             variant="secondary"

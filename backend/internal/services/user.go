@@ -27,7 +27,6 @@ type UserService interface {
 	GetUserByID(ctx context.Context, id uuid.UUID) (models.UserResponse, error)
 	CreateUser(ctx context.Context, name string) (models.UserResponse, error)
 	ReplaceStylePreferences(ctx context.Context, preferences models.StylePreferences) (models.CurrentUserResponse, error)
-	ClearStylePreferences(ctx context.Context) error
 	CreateProfilePictureUploadURL(ctx context.Context, contentType string) (storage.PresignedUpload, error)
 	ConfirmProfilePicture(ctx context.Context, key string) error
 }
@@ -74,17 +73,7 @@ func (s *userService) ReplaceStylePreferences(ctx context.Context, preferences m
 	if err != nil {
 		return models.CurrentUserResponse{}, err
 	}
-	log.Debug(ctx, "replaced style preferences", "user", id)
 	return models.CurrentUserResponse{UserResponse: s.buildUserResponse(user), StylePreferences: user.StylePreferences}, nil
-}
-
-func (s *userService) ClearStylePreferences(ctx context.Context) error {
-	id := auth.UserID(ctx)
-	if err := s.repo.User.ClearStylePreferences(ctx, id); err != nil {
-		return err
-	}
-	log.Debug(ctx, "cleared style preferences", "user", id)
-	return nil
 }
 
 func (s *userService) buildUserResponse(user models.User) models.UserResponse {
