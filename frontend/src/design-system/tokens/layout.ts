@@ -12,12 +12,15 @@ export const ContentWidth = {
 // Max height of a scrolling list (`max-h-scroll-area`).
 export const ScrollAreaHeight = "384px";
 
-// Smallest sizes of an image card (`min-w-card-*`, `min-h-card-*`). lg is the onboarding cards
-// in Figma. Keeps cards the same size however many share a row.
-export const CardMinSize = {
+// Fixed width and smallest height of an image card (`w-card-*`, `min-h-card-*`), from Figma: sm is
+// the settings cards, lg the onboarding cards. A fixed width makes long labels wrap instead of
+// widening one card.
+export const CardSize = {
+  sm: { width: "193px", height: "200px" },
   lg: { width: "236px", height: "408px" },
 } as const;
 
 export const AspectRatio = {
   portrait: "3 / 4",
+  landscape: "3 / 2",
 } as const;

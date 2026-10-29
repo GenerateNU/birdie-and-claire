@@ -8,6 +8,7 @@ import {
 
 import { apiFetch } from "@/api";
 import { Button, Text } from "@/design-system";
+import type { StylePreferences } from "@/style-preferences";
 import { supabase } from "@/supabase/client";
 
 /**
@@ -16,9 +17,27 @@ import { supabase } from "@/supabase/client";
  */
 export type AccountStatus = "none" | "needs-preferences" | "ready";
 
+// CurrentUserResponse in backend/openapi.yaml, trimmed to the fields the frontend reads.
 type CurrentUserResponse = {
-  style_preferences?: object;
+  style_preferences?: StylePreferences;
 };
+
+/** The caller's user, or null when they haven't created an account yet. */
+export async function fetchCurrentUser(signal?: AbortSignal): Promise<CurrentUserResponse | null> {
+  const res = await apiFetch("/api/v1/users/me", { signal });
+
+  if (res.status === 404) {
+    return null;
+  }
+
+  if (!res.ok) {
+    throw new Error(`GET /api/v1/users/me failed: ${res.status}`);
+  }
+
+  // SAFETY: a 2xx is CurrentUserResponse in backend/openapi.yaml. style_preferences is left out
+  // until onboarding is finished.
+  return (await res.json()) as CurrentUserResponse;
+}
 
 export function accountStatusQuery(userId: string) {
   return queryOptions({
@@ -28,19 +47,11 @@ export function accountStatusQuery(userId: string) {
     staleTime: Infinity,
     gcTime: Infinity,
     queryFn: async (): Promise<AccountStatus> => {
-      const res = await apiFetch("/api/v1/users/me");
+      const user = await fetchCurrentUser();
 
-      if (res.status === 404) {
+      if (user === null) {
         return "none";
       }
-
-      if (res.status !== 200) {
-        throw new Error(`GET /api/v1/users/me failed: ${res.status}`);
-      }
-
-      // SAFETY: CurrentUserResponse in backend/openapi.yaml. style_preferences is left out
-      // until onboarding is finished.
-      const user = (await res.json()) as CurrentUserResponse;
 
       return user.style_preferences === undefined ? "needs-preferences" : "ready";
     },
