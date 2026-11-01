@@ -29,14 +29,21 @@ type CreateOutfitInput struct {
 
 var _ huma.Resolver = (*CreateOutfitInput)(nil)
 
-// Resolve compares parsed UUIDs, so differently cased spellings of one ID still count as duplicates.
-func (input *CreateOutfitInput) Resolve(huma.Context) []error {
-	seen := make(map[uuid.UUID]bool, len(input.Body.ProductIDs))
-	for _, id := range input.Body.ProductIDs {
+// checkDuplicateProductIDs compares parsed UUIDs, so differently cased spellings of one ID still count as duplicates.
+func checkDuplicateProductIDs(ids []uuid.UUID) error {
+	seen := make(map[uuid.UUID]bool, len(ids))
+	for _, id := range ids {
 		if seen[id] {
-			return []error{huma.Error400BadRequest("duplicate product id")}
+			return huma.Error400BadRequest("duplicate product id")
 		}
 		seen[id] = true
+	}
+	return nil
+}
+
+func (input *CreateOutfitInput) Resolve(huma.Context) []error {
+	if err := checkDuplicateProductIDs(input.Body.ProductIDs); err != nil {
+		return []error{err}
 	}
 	return nil
 }
@@ -85,12 +92,8 @@ func (input *UpdateOutfitInput) Resolve(huma.Context) []error {
 	if input.Body.Name == "" && len(input.Body.ProductIDs) == 0 {
 		return []error{&huma.ErrorDetail{Location: "body", Message: "body must set name or product_ids"}}
 	}
-	seen := make(map[uuid.UUID]bool, len(input.Body.ProductIDs))
-	for _, id := range input.Body.ProductIDs {
-		if seen[id] {
-			return []error{huma.Error400BadRequest("duplicate product id")}
-		}
-		seen[id] = true
+	if err := checkDuplicateProductIDs(input.Body.ProductIDs); err != nil {
+		return []error{err}
 	}
 	return nil
 }
@@ -165,14 +168,9 @@ type SuggestOutfitItemsInput struct {
 
 var _ huma.Resolver = (*SuggestOutfitItemsInput)(nil)
 
-// Resolve compares parsed UUIDs, so differently cased spellings of one ID still count as duplicates.
 func (input *SuggestOutfitItemsInput) Resolve(huma.Context) []error {
-	seen := make(map[uuid.UUID]bool, len(input.ProductIDs))
-	for _, id := range input.ProductIDs {
-		if seen[id] {
-			return []error{huma.Error400BadRequest("duplicate product id")}
-		}
-		seen[id] = true
+	if err := checkDuplicateProductIDs(input.ProductIDs); err != nil {
+		return []error{err}
 	}
 	return nil
 }
