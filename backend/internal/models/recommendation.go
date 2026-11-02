@@ -34,12 +34,12 @@ const OccasionPromptLabel = "occasion"
 var DetailPromptLabels = map[RecommendationDetailKey]string{
 	DetailWeather: "weather",
 	DetailVibe:    "vibe",
-	DetailCustom:  "other details",
+	DetailCustom:  "custom",
 }
 
 type RecommendationResponse struct {
-	ExpandedQuery RecommendationExpandedQuery `json:"expanded_query"`
-	Outfits       []RecommendedOutfit         `json:"outfits" nullable:"false" doc:"Up to 3 outfits, best first; fewer when a slot has fewer matching products"`
+	ExpandedAnswers RecommendationExpandedAnswers `json:"expanded_answers"`
+	Outfits         []RecommendedOutfit           `json:"outfits" nullable:"false" doc:"Up to 3 outfits, best first; fewer when a slot has fewer matching products"`
 }
 
 // RecommendedOutfit takes the same rank from each slot's search, so outfit n holds every slot's nth match.
@@ -50,7 +50,7 @@ type RecommendedOutfit struct {
 	Shoe      RecommendedProduct `json:"shoe"`
 }
 
-type RecommendationExpandedQuery struct {
+type RecommendationExpandedAnswers struct {
 	Slots       RecommendationExpandedSlots `json:"slots" doc:"The search phrase used for each slot"`
 	ExcludeTags []string                    `json:"exclude_tags" nullable:"false" doc:"Products carrying any of these tags were left out"`
 	NiceTags    []string                    `json:"nice_tags" nullable:"false" doc:"Each matching tag moved a product up the ranking"`

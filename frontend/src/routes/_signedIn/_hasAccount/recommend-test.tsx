@@ -35,7 +35,7 @@ interface Product {
   image_url: string | null;
 }
 
-interface RecommendationExpandedQuery {
+interface RecommendationExpandedAnswers {
   slots: Record<Slot, string>;
   exclude_tags: string[];
   nice_tags: string[];
@@ -44,7 +44,7 @@ interface RecommendationExpandedQuery {
 type Outfit = Record<Slot, Product>;
 
 interface RecommendationResponse {
-  expanded_query: RecommendationExpandedQuery;
+  expanded_answers: RecommendationExpandedAnswers;
   outfits: Outfit[];
 }
 
@@ -145,7 +145,7 @@ function RecommendTest() {
 
       {response && (
         <Box className="mt-xl flex flex-col gap-xl">
-          <ExpandedQuery expandedQuery={response.expanded_query} />
+          <ExpandedAnswers expandedAnswers={response.expanded_answers} />
 
           <Box className="flex flex-col gap-xl lg:flex-row lg:items-start">
             <Box className="flex min-w-0 flex-1 flex-col gap-xl">
@@ -164,7 +164,7 @@ function RecommendTest() {
               )}
             </Box>
             {selected && (
-              <ProductDetails product={selected} niceTags={response.expanded_query.nice_tags} />
+              <ProductDetails product={selected} niceTags={response.expanded_answers.nice_tags} />
             )}
           </Box>
 
@@ -189,21 +189,21 @@ function RecommendTest() {
   );
 }
 
-type ExpandedQueryProps = {
-  expandedQuery: RecommendationExpandedQuery;
+type ExpandedAnswersProps = {
+  expandedAnswers: RecommendationExpandedAnswers;
 };
 
-function ExpandedQuery({ expandedQuery }: ExpandedQueryProps) {
+function ExpandedAnswers({ expandedAnswers }: ExpandedAnswersProps) {
   return (
     <Box className="flex flex-col gap-md">
       <Text variant="subheading">What the stylist heard</Text>
       <Box className="grid gap-sm sm:grid-cols-4">
         {SLOTS.map((slot) => (
-          <ListCard key={slot} title={slot} value={expandedQuery.slots[slot]} />
+          <ListCard key={slot} title={slot} value={expandedAnswers.slots[slot]} />
         ))}
       </Box>
-      <TagRow label="Leaning toward" tags={expandedQuery.nice_tags} struck={false} />
-      <TagRow label="Leaving out" tags={expandedQuery.exclude_tags} struck />
+      <TagRow label="Leaning toward" tags={expandedAnswers.nice_tags} struck={false} />
+      <TagRow label="Leaving out" tags={expandedAnswers.exclude_tags} struck />
     </Box>
   );
 }

@@ -348,7 +348,7 @@ components:
         - key
         - value
       type: object
-    RecommendationExpandedQuery:
+    RecommendationExpandedAnswers:
       additionalProperties: false
       properties:
         exclude_tags:
@@ -407,15 +407,15 @@ components:
     RecommendationResponse:
       additionalProperties: false
       properties:
-        expanded_query:
-          $ref: "#/components/schemas/RecommendationExpandedQuery"
+        expanded_answers:
+          $ref: "#/components/schemas/RecommendationExpandedAnswers"
         outfits:
           description: Up to 3 outfits, best first; fewer when a slot has fewer matching products
           items:
             $ref: "#/components/schemas/RecommendedOutfit"
           type: array
       required:
-        - expanded_query
+        - expanded_answers
         - outfits
       type: object
     RecommendedOutfit:
@@ -867,7 +867,7 @@ paths:
           description: Error
       security:
         - bearer: []
-      summary: Recommend products per outfit slot for a shopper query
+      summary: Recommend up to three outfits for an occasion and the shopper's answers
       tags:
         - recommendations
   /api/v1/users/me:

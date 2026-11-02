@@ -27,7 +27,6 @@ type RecommendProductsInput struct {
 
 var _ huma.Resolver = (*RecommendProductsInput)(nil)
 
-// Resolve checks what the struct tags cannot: blank text, repeated keys, and values that depend on the key.
 func (input *RecommendProductsInput) Resolve(huma.Context) []error {
 	var problems []error
 	input.Body.Occasion = strings.TrimSpace(input.Body.Occasion)

@@ -68,7 +68,7 @@ function CreateOutfit() {
   const [vibe, setVibe] = useState<Vibe | null>(null);
   // Held only to drive the screen: picking B&C items to style is out of scope, so it is never sent.
   const [specificsAnswer, setSpecificsAnswer] = useState<SpecificsAnswer | null>(null);
-  const [otherDetails, setOtherDetails] = useState("");
+  const [custom, setCustom] = useState("");
 
   const chosenOccasion = cardOccasion ?? customOccasion.trim();
   const canContinue = chosenOccasion !== "";
@@ -189,8 +189,8 @@ function CreateOutfit() {
           // The endpoint caps custom at 200 characters.
           maxLength={200}
           rows={4}
-          value={otherDetails}
-          onValueChange={setOtherDetails}
+          value={custom}
+          onValueChange={setCustom}
         />
       </StepScreen>
     );
@@ -207,7 +207,7 @@ function CreateOutfit() {
         occasion={chosenOccasion}
         weather={weather}
         vibe={vibe}
-        otherDetails={otherDetails.trim()}
+        custom={custom.trim()}
         onEdit={editFromReview}
       />
     );
@@ -297,11 +297,11 @@ type ReviewProps = {
   weather: Weather;
   vibe: Vibe;
   // Empty when the shopper skipped Custom.
-  otherDetails: string;
+  custom: string;
   onEdit: (step: Step) => void;
 };
 
-function Review({ occasion, weather, vibe, otherDetails, onEdit }: ReviewProps) {
+function Review({ occasion, weather, vibe, custom, onEdit }: ReviewProps) {
   const toast = useToast();
   const navigate = useNavigate();
   const [creating, setCreating] = useState(false);
@@ -322,10 +322,13 @@ function Review({ occasion, weather, vibe, otherDetails, onEdit }: ReviewProps) 
     setCreating(true);
 
     try {
-      const outfitId = await requestOutfit(occasion, weather, vibe, otherDetails, signal);
+      const outfitId = await requestOutfit(occasion, weather, vibe, custom, signal);
 
       if (outfitId === null) {
-        toast.show({ message: "No matching pieces, try another occasion" });
+        toast.show({
+          message:
+            "Couldn't build a full outfit for that, try changing the weather, vibe or custom details",
+        });
         setCreating(false);
 
         return;
@@ -386,11 +389,11 @@ function Review({ occasion, weather, vibe, otherDetails, onEdit }: ReviewProps) 
           />
         </Box>
         <ListCard
-          title="Other details"
-          value={otherDetails === "" ? "None" : otherDetails}
+          title="Custom"
+          value={custom === "" ? "None" : custom}
           action={{
             label: "Edit",
-            accessibleLabel: "Edit Other details",
+            accessibleLabel: "Edit Custom",
             onClick: () => onEdit("custom"),
             disabled: creating,
           }}
@@ -412,7 +415,7 @@ async function requestOutfit(
   occasion: string,
   weather: Weather,
   vibe: Vibe,
-  otherDetails: string,
+  custom: string,
   signal: AbortSignal,
 ): Promise<string | null> {
   const details: { key: string; value: string }[] = [
@@ -421,8 +424,8 @@ async function requestOutfit(
   ];
 
   // The endpoint rejects a blank custom value, and an empty field means the shopper skipped it.
-  if (otherDetails !== "") {
-    details.push({ key: "custom", value: otherDetails });
+  if (custom !== "") {
+    details.push({ key: "custom", value: custom });
   }
 
   const recommendRes = await apiFetch("/api/v1/recommend", {

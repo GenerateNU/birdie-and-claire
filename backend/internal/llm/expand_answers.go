@@ -20,9 +20,8 @@ type expandAnswersInput struct {
 	Answers string `json:"answers"`
 }
 
-// ExpandAnswers reads the shopper's answers, keyed by the label the prompt shows for each, as one
-// search phrase per slot plus tags to exclude and prefer. Every slot of a nil-error result has a phrase.
-func ExpandAnswers(ctx context.Context, client Client, answers map[string]string) (ExpandedQuery, error) {
+// ExpandAnswers takes answers keyed by their prompt label. Every slot of a nil-error result has a phrase.
+func ExpandAnswers(ctx context.Context, client Client, answers map[string]string) (ExpandedAnswers, error) {
 	stripped := make(map[string]string, len(answers))
 	for label, answer := range answers {
 		stripped[label] = stripDotpromptMarkers(answer)
@@ -30,27 +29,27 @@ func ExpandAnswers(ctx context.Context, client Client, answers map[string]string
 	// json.Marshal escapes quotes and angle brackets, so shopper text cannot close the object or the block around it
 	encoded, err := json.Marshal(stripped)
 	if err != nil {
-		return ExpandedQuery{}, fmt.Errorf("encode shopper answers: %w", err)
+		return ExpandedAnswers{}, fmt.Errorf("encode shopper answers: %w", err)
 	}
 
 	req := Request{
-		promptName:      "expand_query",
+		promptName:      "expand_answers",
 		promptInput:     expandAnswersInput{Answers: string(encoded)},
 		maxOutputTokens: expandAnswersMaxOutputTokens,
 		noReasoning:     true,
 	}
 	for range expandAnswersAttempts {
-		var expanded ExpandedQuery
-		expanded, err = Generate[ExpandedQuery](ctx, client, req)
+		var expandedAnswers ExpandedAnswers
+		expandedAnswers, err = Generate[ExpandedAnswers](ctx, client, req)
 		if err == nil {
-			err = requireEverySlot(expanded.Slots)
+			err = requireEverySlot(expandedAnswers.Slots)
 		}
 		// the client already retries transport errors, 429 and 5xx, so only a bad answer is retried here
 		if !errors.Is(err, ErrInvalidOutput) {
-			return expanded, err
+			return expandedAnswers, err
 		}
 	}
-	return ExpandedQuery{}, err
+	return ExpandedAnswers{}, err
 }
 
 // the embedder rejects blank text, and an outfit needs a product in every slot

@@ -54,37 +54,37 @@ func (s *recommendationService) RecommendProducts(ctx context.Context, request m
 	}
 
 	expandCtx, cancel := context.WithTimeout(ctx, expandAnswersTimeout)
-	rawExpansion, err := llm.ExpandAnswers(expandCtx, s.llm, answers)
+	rawExpandedAnswers, err := llm.ExpandAnswers(expandCtx, s.llm, answers)
 	cancel()
 	if err != nil {
 		return models.RecommendationResponse{}, fmt.Errorf("expand shopper answers: %w", err)
 	}
 
-	expandedQuery := models.RecommendationExpandedQuery{
+	expandedAnswers := models.RecommendationExpandedAnswers{
 		Slots: models.RecommendationExpandedSlots{
-			Top:       strings.TrimSpace(rawExpansion.Slots.Top),
-			Bottom:    strings.TrimSpace(rawExpansion.Slots.Bottom),
-			Accessory: strings.TrimSpace(rawExpansion.Slots.Accessory),
-			Shoe:      strings.TrimSpace(rawExpansion.Slots.Shoe),
+			Top:       strings.TrimSpace(rawExpandedAnswers.Slots.Top),
+			Bottom:    strings.TrimSpace(rawExpandedAnswers.Slots.Bottom),
+			Accessory: strings.TrimSpace(rawExpandedAnswers.Slots.Accessory),
+			Shoe:      strings.TrimSpace(rawExpandedAnswers.Slots.Shoe),
 		},
-		ExcludeTags: lowercaseTags(rawExpansion.ExcludeTags),
-		NiceTags:    lowercaseTags(rawExpansion.NiceTags),
+		ExcludeTags: lowercaseTags(rawExpandedAnswers.ExcludeTags),
+		NiceTags:    lowercaseTags(rawExpandedAnswers.NiceTags),
 	}
 	var tops, bottoms, accessories, shoes []models.RecommendedProduct
 	slots := []slotSearch{
-		{name: models.SlotTop, phrase: expandedQuery.Slots.Top, products: &tops},
-		{name: models.SlotBottom, phrase: expandedQuery.Slots.Bottom, products: &bottoms},
-		{name: models.SlotAccessory, phrase: expandedQuery.Slots.Accessory, products: &accessories},
-		{name: models.SlotShoe, phrase: expandedQuery.Slots.Shoe, products: &shoes},
+		{name: models.SlotTop, phrase: expandedAnswers.Slots.Top, products: &tops},
+		{name: models.SlotBottom, phrase: expandedAnswers.Slots.Bottom, products: &bottoms},
+		{name: models.SlotAccessory, phrase: expandedAnswers.Slots.Accessory, products: &accessories},
+		{name: models.SlotShoe, phrase: expandedAnswers.Slots.Shoe, products: &shoes},
 	}
-	if err := checkExpansionLimits(slots, expandedQuery); err != nil {
+	if err := checkExpansionLimits(slots, expandedAnswers); err != nil {
 		return models.RecommendationResponse{}, err
 	}
 
 	group, groupCtx := errgroup.WithContext(ctx)
 	for _, slot := range slots {
 		group.Go(func() error {
-			products, err := s.searchSlot(groupCtx, slot.name, slot.phrase, expandedQuery.ExcludeTags, expandedQuery.NiceTags)
+			products, err := s.searchSlot(groupCtx, slot.name, slot.phrase, expandedAnswers.ExcludeTags, expandedAnswers.NiceTags)
 			if err != nil {
 				return err
 			}
@@ -107,7 +107,7 @@ func (s *recommendationService) RecommendProducts(ctx context.Context, request m
 			Shoe:      shoes[rank],
 		})
 	}
-	return models.RecommendationResponse{ExpandedQuery: expandedQuery, Outfits: outfits}, nil
+	return models.RecommendationResponse{ExpandedAnswers: expandedAnswers, Outfits: outfits}, nil
 }
 
 func (s *recommendationService) searchSlot(ctx context.Context, slot models.ProductSlot, phrase string, excludeTags, niceTags []string) ([]models.RecommendedProduct, error) {
@@ -123,10 +123,10 @@ func (s *recommendationService) searchSlot(ctx context.Context, slot models.Prod
 }
 
 // the errors give sizes only, since the phrases and tags are the model's reading of shopper text
-func checkExpansionLimits(slots []slotSearch, expanded models.RecommendationExpandedQuery) error {
-	if len(expanded.ExcludeTags) > maxTagsPerList || len(expanded.NiceTags) > maxTagsPerList {
-		return fmt.Errorf("expanded query has %d exclude and %d nice tags, more than %d per list",
-			len(expanded.ExcludeTags), len(expanded.NiceTags), maxTagsPerList)
+func checkExpansionLimits(slots []slotSearch, expandedAnswers models.RecommendationExpandedAnswers) error {
+	if len(expandedAnswers.ExcludeTags) > maxTagsPerList || len(expandedAnswers.NiceTags) > maxTagsPerList {
+		return fmt.Errorf("expanded answers have %d exclude and %d nice tags, more than %d per list",
+			len(expandedAnswers.ExcludeTags), len(expandedAnswers.NiceTags), maxTagsPerList)
 	}
 	for _, slot := range slots {
 		if length := utf8.RuneCountInString(slot.phrase); length > maxPhraseLength {

@@ -1,6 +1,6 @@
 package llm
 
-type ExpandedQuery struct {
+type ExpandedAnswers struct {
 	Slots ExpandedSlots `json:"slots"`
 	// products carrying any of these are never shown
 	ExcludeTags []string `json:"exclude_tags"`

@@ -214,14 +214,14 @@ func TestRecommendReturnsTheExpansion(t *testing.T) {
 		t.Fatalf("Recommend: %v", err)
 	}
 	wantSlots := models.RecommendationExpandedSlots{Top: "pastel blouse", Bottom: "linen skirt", Accessory: "straw hat", Shoe: "tan sandals"}
-	if response.ExpandedQuery.Slots != wantSlots {
-		t.Errorf("Slots = %+v, want %+v", response.ExpandedQuery.Slots, wantSlots)
+	if response.ExpandedAnswers.Slots != wantSlots {
+		t.Errorf("Slots = %+v, want %+v", response.ExpandedAnswers.Slots, wantSlots)
 	}
-	if !slices.Equal(response.ExpandedQuery.ExcludeTags, []string{"white", "sequins"}) {
-		t.Errorf("ExcludeTags = %q, want the model's tags lowercased", response.ExpandedQuery.ExcludeTags)
+	if !slices.Equal(response.ExpandedAnswers.ExcludeTags, []string{"white", "sequins"}) {
+		t.Errorf("ExcludeTags = %q, want the model's tags lowercased", response.ExpandedAnswers.ExcludeTags)
 	}
-	if response.ExpandedQuery.NiceTags == nil || len(response.ExpandedQuery.NiceTags) != 0 {
-		t.Errorf("NiceTags = %#v, want an empty, non-nil slice for a null answer", response.ExpandedQuery.NiceTags)
+	if response.ExpandedAnswers.NiceTags == nil || len(response.ExpandedAnswers.NiceTags) != 0 {
+		t.Errorf("NiceTags = %#v, want an empty, non-nil slice for a null answer", response.ExpandedAnswers.NiceTags)
 	}
 }
 
@@ -233,8 +233,8 @@ func TestRecommendTrimsSlotPhrases(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Recommend: %v", err)
 	}
-	if response.ExpandedQuery.Slots.Top != "pastel blouse" {
-		t.Errorf("Top = %q, want the trimmed phrase", response.ExpandedQuery.Slots.Top)
+	if response.ExpandedAnswers.Slots.Top != "pastel blouse" {
+		t.Errorf("Top = %q, want the trimmed phrase", response.ExpandedAnswers.Slots.Top)
 	}
 	if !slices.Contains(emb.phrases, "pastel blouse") {
 		t.Errorf("embedded %q, want the trimmed top phrase", emb.phrases)
@@ -409,7 +409,7 @@ func TestRecommendRouteSendsEachAnswerUnderItsLabel(t *testing.T) {
 		t.Fatalf("status = %d, want 200: %s", response.Code, response.Body)
 	}
 
-	answers, _ := json.Marshal(map[string]string{"occasion": "Workday", "weather": "chilly", "vibe": "chic", "other details": "no heels"})
+	answers, _ := json.Marshal(map[string]string{"occasion": "Workday", "weather": "chilly", "vibe": "chic", "custom": "no heels"})
 	// the gateway body carries the prompt as a JSON string, so the answers appear there string-escaped
 	escaped, _ := json.Marshal(string(answers))
 	mu.Lock()
@@ -454,7 +454,7 @@ func TestRecommendRouteReturnsAnEmptyListWhenNoOutfitFits(t *testing.T) {
 	}
 }
 
-func TestRecommendRouteReturnsTheExpandedQuery(t *testing.T) {
+func TestRecommendRouteReturnsTheExpandedAnswers(t *testing.T) {
 	response := recommendationAPI(t, &llmtest.Fake{Text: expandedAllSlots}, &fakeProducts{}, &fakeEmbedder{}).
 		Post("/api/v1/recommend", map[string]any{"occasion": "summer wedding"})
 	if response.Code != http.StatusOK {
@@ -462,24 +462,24 @@ func TestRecommendRouteReturnsTheExpandedQuery(t *testing.T) {
 	}
 
 	var body struct {
-		ExpandedQuery map[string]json.RawMessage `json:"expanded_query"`
+		ExpandedAnswers map[string]json.RawMessage `json:"expanded_answers"`
 	}
 	if err := json.Unmarshal(response.Body.Bytes(), &body); err != nil {
 		t.Fatalf("decode body %s: %v", response.Body, err)
 	}
 	var slots map[string]*string
-	if err := json.Unmarshal(body.ExpandedQuery["slots"], &slots); err != nil {
-		t.Fatalf("decode expanded_query.slots in %s: %v", response.Body, err)
+	if err := json.Unmarshal(body.ExpandedAnswers["slots"], &slots); err != nil {
+		t.Fatalf("decode expanded_answers.slots in %s: %v", response.Body, err)
 	}
 	for _, slot := range []string{"top", "bottom", "accessory", "shoe"} {
 		if slots[slot] == nil {
-			t.Errorf("expanded_query.slots lacks %s: %s", slot, response.Body)
+			t.Errorf("expanded_answers.slots lacks %s: %s", slot, response.Body)
 		}
 	}
 	for _, key := range []string{"exclude_tags", "nice_tags"} {
 		var tags []string
-		if err := json.Unmarshal(body.ExpandedQuery[key], &tags); err != nil || tags == nil {
-			t.Errorf("expanded_query.%s = %s, want an array", key, body.ExpandedQuery[key])
+		if err := json.Unmarshal(body.ExpandedAnswers[key], &tags); err != nil || tags == nil {
+			t.Errorf("expanded_answers.%s = %s, want an array", key, body.ExpandedAnswers[key])
 		}
 	}
 }
