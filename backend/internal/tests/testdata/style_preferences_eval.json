@@ -1,0 +1,2070 @@
+{
+  "inputs": [
+    {
+      "name": "wedding_guest",
+      "occasion": "Wedding guest",
+      "details": [],
+      "occasion_fit": {
+        "top": [
+          "1a1b93ed-a08a-4d0c-8872-8c7666f7b9d4",
+          "b8f3eca2-dff9-48b4-8ea9-f31d07a7a8f1"
+        ],
+        "bottom": [
+          "602c3342-e66e-4200-ba6c-15cab86fc370",
+          "bf4493d4-664c-4be3-8664-01a13ec33cf4"
+        ],
+        "accessory": [
+          "2b94dbc7-92da-46ae-9f27-f52f58aecd57",
+          "2f3f9389-e65c-437d-bb29-14fd234a3c64",
+          "3df80eac-470d-41c5-95bc-fd59b7364ab6",
+          "49fc8c0f-a8e0-43c1-bd90-b0e01f252f36",
+          "4a8582f7-8f69-47c7-a0b5-6ad864ccba7c",
+          "9be46a4b-3a46-47c2-acc3-1d4d007d80aa",
+          "a53d37e9-fa8f-4b53-baec-1791d2a02ce2"
+        ],
+        "shoe": [
+          "4143606a-b72c-443d-a917-78268a94e6ee",
+          "95eda3c4-c086-4c38-98e8-25a6e47977d4",
+          "db80543c-f6d5-4cb4-b11c-9f08f20345b5",
+          "f7578722-0e62-437c-adf4-623a2b5c5e68"
+        ]
+      },
+      "baseline_expansions": [
+        {
+          "slots": {
+            "top": "light pastel blouse, breathable fabric",
+            "bottom": "midi skirt, flowing fabric",
+            "accessory": "elegant clutch bag, neutral tone",
+            "shoe": "mid heel sandals, open toe"
+          },
+          "exclude_tags": [
+            "white",
+            "ivory",
+            "cream"
+          ],
+          "nice_tags": [
+            "elegant",
+            "formal",
+            "pastel",
+            "wedding guest"
+          ]
+        },
+        {
+          "slots": {
+            "top": "cream lace sleeveless blouse",
+            "bottom": "midi chiffon skirt",
+            "accessory": "pearl drop earrings",
+            "shoe": "nude block heel pumps"
+          },
+          "exclude_tags": [
+            "white",
+            "ivory"
+          ],
+          "nice_tags": [
+            "elegant",
+            "festive",
+            "modest",
+            "lace",
+            "chiffon",
+            "pearl",
+            "nude",
+            "cream",
+            "block heel",
+            "midi"
+          ]
+        },
+        {
+          "slots": {
+            "top": "light pastel blouse, breathable fabric",
+            "bottom": "knee-length pleated skirt, flowing",
+            "accessory": "statement earrings, elegant gold",
+            "shoe": "nude block heels, comfortable"
+          },
+          "exclude_tags": [
+            "white"
+          ],
+          "nice_tags": [
+            "pastel",
+            "elegant",
+            "formal",
+            "knee-length",
+            "nude"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "workday",
+      "occasion": "Workday",
+      "details": [],
+      "occasion_fit": {
+        "top": [
+          "0ac25716-d4c9-4452-99c1-7f21a17c2395",
+          "1a1b93ed-a08a-4d0c-8872-8c7666f7b9d4",
+          "45e8e731-2a8b-4168-9143-21251b1763bd",
+          "77ed69cc-7fc3-41cc-8022-a2cedd19a892"
+        ],
+        "bottom": [
+          "602c3342-e66e-4200-ba6c-15cab86fc370",
+          "b22d9978-87a7-45a4-96cf-a7f999bf5945",
+          "bf4493d4-664c-4be3-8664-01a13ec33cf4"
+        ],
+        "accessory": [
+          "00abf3c1-6464-43bc-9294-e10f505fe2e0",
+          "1d5a7fb5-e856-45d5-a80f-dcc06ec1ab48",
+          "2f3f9389-e65c-437d-bb29-14fd234a3c64",
+          "3df80eac-470d-41c5-95bc-fd59b7364ab6",
+          "49fc8c0f-a8e0-43c1-bd90-b0e01f252f36",
+          "4a8582f7-8f69-47c7-a0b5-6ad864ccba7c",
+          "9be46a4b-3a46-47c2-acc3-1d4d007d80aa",
+          "a53d37e9-fa8f-4b53-baec-1791d2a02ce2"
+        ],
+        "shoe": [
+          "4143606a-b72c-443d-a917-78268a94e6ee",
+          "95eda3c4-c086-4c38-98e8-25a6e47977d4",
+          "9d8bf7a5-793c-4323-b2ac-db5a8cfdaf3b",
+          "db80543c-f6d5-4cb4-b11c-9f08f20345b5"
+        ]
+      },
+      "baseline_expansions": [
+        {
+          "slots": {
+            "top": "white button-down shirt",
+            "bottom": "tailored black trousers",
+            "accessory": "leather belt",
+            "shoe": "polished oxford shoes"
+          },
+          "exclude_tags": [],
+          "nice_tags": [
+            "professional",
+            "neutral",
+            "structured",
+            "classic",
+            "comfortable"
+          ]
+        },
+        {
+          "slots": {
+            "top": "classic button-down shirt, cotton",
+            "bottom": "tailored trousers, stretch fabric",
+            "accessory": "minimalist leather belt",
+            "shoe": "closed-toe pumps, mid heel"
+          },
+          "exclude_tags": [],
+          "nice_tags": [
+            "neutral",
+            "polished",
+            "comfortable",
+            "professional",
+            "versatile"
+          ]
+        },
+        {
+          "slots": {
+            "top": "button-down blouse, breathable fabric",
+            "bottom": "tailored trousers, straight-leg",
+            "accessory": "minimalist leather watch",
+            "shoe": "polished leather pumps"
+          },
+          "exclude_tags": [],
+          "nice_tags": [
+            "office",
+            "professional",
+            "neutral"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "beach_day",
+      "occasion": "Beach day",
+      "details": [],
+      "occasion_fit": {
+        "top": [
+          "45e8e731-2a8b-4168-9143-21251b1763bd",
+          "64dff8f1-2311-4d92-b07a-89559f4053f1",
+          "efadfcfa-5f45-4ca3-97e4-b267084375e1"
+        ],
+        "bottom": [
+          "602c3342-e66e-4200-ba6c-15cab86fc370"
+        ],
+        "accessory": [
+          "3df80eac-470d-41c5-95bc-fd59b7364ab6",
+          "a53d37e9-fa8f-4b53-baec-1791d2a02ce2",
+          "edd538a1-35fd-497f-98f3-f126f6689ee3"
+        ],
+        "shoe": [
+          "f7578722-0e62-437c-adf4-623a2b5c5e68"
+        ]
+      },
+      "baseline_expansions": [
+        {
+          "slots": {
+            "top": "light beach cover-up, breathable fabric",
+            "bottom": "linen shorts, breathable fabric",
+            "accessory": "wide-brim straw hat, sun protection",
+            "shoe": "woven espadrilles, casual comfort"
+          },
+          "exclude_tags": [],
+          "nice_tags": [
+            "beach",
+            "summer",
+            "sun protection",
+            "breathable",
+            "casual"
+          ]
+        },
+        {
+          "slots": {
+            "top": "breathable beach cover-up",
+            "bottom": "flowy beach skirt",
+            "accessory": "wide-brim sun hat",
+            "shoe": "comfortable sandals"
+          },
+          "exclude_tags": [],
+          "nice_tags": [
+            "beach",
+            "breathable",
+            "lightweight",
+            "casual",
+            "sun protection",
+            "summer",
+            "relaxed",
+            "cotton",
+            "sand resistant",
+            "vacation"
+          ]
+        },
+        {
+          "slots": {
+            "top": "lightweight cover-up or tank top",
+            "bottom": "breathable beach shorts",
+            "accessory": "wide-brim sun hat",
+            "shoe": "comfortable flip-flops"
+          },
+          "exclude_tags": [
+            "black",
+            "dark colors",
+            "formal"
+          ],
+          "nice_tags": [
+            "lightweight",
+            "breathable",
+            "sun protection",
+            "casual",
+            "beach-ready"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "brunch",
+      "occasion": "Brunch",
+      "details": [],
+      "occasion_fit": {
+        "top": [
+          "0ac25716-d4c9-4452-99c1-7f21a17c2395",
+          "45e8e731-2a8b-4168-9143-21251b1763bd",
+          "64dff8f1-2311-4d92-b07a-89559f4053f1",
+          "77ed69cc-7fc3-41cc-8022-a2cedd19a892",
+          "efadfcfa-5f45-4ca3-97e4-b267084375e1"
+        ],
+        "bottom": [
+          "602c3342-e66e-4200-ba6c-15cab86fc370",
+          "b22d9978-87a7-45a4-96cf-a7f999bf5945",
+          "bf4493d4-664c-4be3-8664-01a13ec33cf4"
+        ],
+        "accessory": [
+          "2f3f9389-e65c-437d-bb29-14fd234a3c64",
+          "3df80eac-470d-41c5-95bc-fd59b7364ab6",
+          "49fc8c0f-a8e0-43c1-bd90-b0e01f252f36",
+          "4a8582f7-8f69-47c7-a0b5-6ad864ccba7c",
+          "9be46a4b-3a46-47c2-acc3-1d4d007d80aa",
+          "a53d37e9-fa8f-4b53-baec-1791d2a02ce2"
+        ],
+        "shoe": [
+          "4143606a-b72c-443d-a917-78268a94e6ee",
+          "79453d7f-90d9-442f-8d80-981e61666a56",
+          "9d8bf7a5-793c-4323-b2ac-db5a8cfdaf3b",
+          "db80543c-f6d5-4cb4-b11c-9f08f20345b5",
+          "f7578722-0e62-437c-adf4-623a2b5c5e68"
+        ]
+      },
+      "baseline_expansions": [
+        {
+          "slots": {
+            "top": "light pastel blouse",
+            "bottom": "midi skirt",
+            "accessory": "straw tote bag",
+            "shoe": "flat sandals"
+          },
+          "exclude_tags": [],
+          "nice_tags": [
+            "pastel",
+            "breathable",
+            "casual"
+          ]
+        },
+        {
+          "slots": {
+            "top": "relaxed fit cotton blouse",
+            "bottom": "denim shorts",
+            "accessory": "woven crossbody bag",
+            "shoe": "comfortable espadrille flats"
+          },
+          "exclude_tags": [
+            "white",
+            "black tie"
+          ],
+          "nice_tags": [
+            "pastel",
+            "linen",
+            "casual"
+          ]
+        },
+        {
+          "slots": {
+            "top": "light pastel blouse, breathable fabric",
+            "bottom": "slim-fit casual trousers",
+            "accessory": "small crossbody bag",
+            "shoe": "comfortable flat sneakers"
+          },
+          "exclude_tags": [],
+          "nice_tags": [
+            "pastel",
+            "brunch",
+            "casual",
+            "comfortable",
+            "breathable"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "party",
+      "occasion": "Party",
+      "details": [],
+      "occasion_fit": {
+        "top": [
+          "1a1b93ed-a08a-4d0c-8872-8c7666f7b9d4",
+          "64dff8f1-2311-4d92-b07a-89559f4053f1",
+          "77ed69cc-7fc3-41cc-8022-a2cedd19a892",
+          "efadfcfa-5f45-4ca3-97e4-b267084375e1"
+        ],
+        "bottom": [
+          "602c3342-e66e-4200-ba6c-15cab86fc370",
+          "b22d9978-87a7-45a4-96cf-a7f999bf5945",
+          "bf4493d4-664c-4be3-8664-01a13ec33cf4"
+        ],
+        "accessory": [
+          "2b94dbc7-92da-46ae-9f27-f52f58aecd57",
+          "2f3f9389-e65c-437d-bb29-14fd234a3c64",
+          "3df80eac-470d-41c5-95bc-fd59b7364ab6",
+          "49fc8c0f-a8e0-43c1-bd90-b0e01f252f36",
+          "4a8582f7-8f69-47c7-a0b5-6ad864ccba7c",
+          "9be46a4b-3a46-47c2-acc3-1d4d007d80aa"
+        ],
+        "shoe": [
+          "95eda3c4-c086-4c38-98e8-25a6e47977d4",
+          "db80543c-f6d5-4cb4-b11c-9f08f20345b5",
+          "f7578722-0e62-437c-adf4-623a2b5c5e68"
+        ]
+      },
+      "baseline_expansions": [
+        {
+          "slots": {
+            "top": "sequin top",
+            "bottom": "black heels",
+            "accessory": "statement earrings",
+            "shoe": "black pumps"
+          },
+          "exclude_tags": [],
+          "nice_tags": [
+            "party",
+            "glamorous",
+            "evening",
+            "dressy",
+            "festive"
+          ]
+        },
+        {
+          "slots": {
+            "top": "sleek satin camisole",
+            "bottom": "high-waisted wide-leg trousers",
+            "accessory": "statement clutch bag",
+            "shoe": "strappy metallic heels"
+          },
+          "exclude_tags": [],
+          "nice_tags": [
+            "glamorous",
+            "evening",
+            "cocktail",
+            "fashionable",
+            "elegant"
+          ]
+        },
+        {
+          "slots": {
+            "top": "sparkling sequin top",
+            "bottom": "satin midi skirt",
+            "accessory": "statement clutch",
+            "shoe": "strappy block heels"
+          },
+          "exclude_tags": [
+            "white"
+          ],
+          "nice_tags": [
+            "black",
+            "red",
+            "glamorous",
+            "evening"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "date_night",
+      "occasion": "Date night",
+      "details": [],
+      "occasion_fit": {
+        "top": [
+          "1a1b93ed-a08a-4d0c-8872-8c7666f7b9d4",
+          "77ed69cc-7fc3-41cc-8022-a2cedd19a892",
+          "efadfcfa-5f45-4ca3-97e4-b267084375e1"
+        ],
+        "bottom": [
+          "602c3342-e66e-4200-ba6c-15cab86fc370",
+          "b22d9978-87a7-45a4-96cf-a7f999bf5945",
+          "bf4493d4-664c-4be3-8664-01a13ec33cf4"
+        ],
+        "accessory": [
+          "2b94dbc7-92da-46ae-9f27-f52f58aecd57",
+          "2f3f9389-e65c-437d-bb29-14fd234a3c64",
+          "3df80eac-470d-41c5-95bc-fd59b7364ab6",
+          "49fc8c0f-a8e0-43c1-bd90-b0e01f252f36",
+          "4a8582f7-8f69-47c7-a0b5-6ad864ccba7c",
+          "9be46a4b-3a46-47c2-acc3-1d4d007d80aa"
+        ],
+        "shoe": [
+          "95eda3c4-c086-4c38-98e8-25a6e47977d4",
+          "db80543c-f6d5-4cb4-b11c-9f08f20345b5",
+          "f7578722-0e62-437c-adf4-623a2b5c5e68"
+        ]
+      },
+      "baseline_expansions": [
+        {
+          "slots": {
+            "top": "silk camisole top",
+            "bottom": "black slim trousers",
+            "accessory": "delicate gold necklace",
+            "shoe": "strappy heels"
+          },
+          "exclude_tags": [
+            "white"
+          ],
+          "nice_tags": [
+            "black",
+            "silk",
+            "heels"
+          ]
+        },
+        {
+          "slots": {
+            "top": "elegant dark blouse, fitted silhouette",
+            "bottom": "dark fitted trousers, elegant cut",
+            "accessory": "delicate silver necklace",
+            "shoe": "strappy high heels"
+          },
+          "exclude_tags": [
+            "white"
+          ],
+          "nice_tags": [
+            "black",
+            "romantic",
+            "evening"
+          ]
+        },
+        {
+          "slots": {
+            "top": "elegant date night blouse",
+            "bottom": "sleek date night skirt",
+            "accessory": "statement date night necklace",
+            "shoe": "date night heels"
+          },
+          "exclude_tags": [],
+          "nice_tags": [
+            "romantic",
+            "elegant",
+            "classic",
+            "date night",
+            "night",
+            "date",
+            "night out"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "funeral",
+      "occasion": "Funeral",
+      "details": [],
+      "occasion_fit": {
+        "top": [
+          "1a1b93ed-a08a-4d0c-8872-8c7666f7b9d4"
+        ],
+        "bottom": [],
+        "accessory": [
+          "2f3f9389-e65c-437d-bb29-14fd234a3c64",
+          "49fc8c0f-a8e0-43c1-bd90-b0e01f252f36",
+          "4a8582f7-8f69-47c7-a0b5-6ad864ccba7c",
+          "9be46a4b-3a46-47c2-acc3-1d4d007d80aa"
+        ],
+        "shoe": [
+          "95eda3c4-c086-4c38-98e8-25a6e47977d4",
+          "9d8bf7a5-793c-4323-b2ac-db5a8cfdaf3b"
+        ]
+      },
+      "baseline_expansions": [
+        {
+          "slots": {
+            "top": "black long sleeve modest blouse",
+            "bottom": "black knee length skirt",
+            "accessory": "simple black pearl earrings",
+            "shoe": "black closed toe low heel pumps"
+          },
+          "exclude_tags": [
+            "red",
+            "white",
+            "neon",
+            "sequins",
+            "sleeveless",
+            "shorts",
+            "sandals",
+            "rainbow",
+            "floral",
+            "bright"
+          ],
+          "nice_tags": [
+            "black",
+            "navy",
+            "charcoal",
+            "matte",
+            "modest",
+            "subdued"
+          ]
+        },
+        {
+          "slots": {
+            "top": "black formal blouse",
+            "bottom": "black pencil skirt",
+            "accessory": "simple pearl earrings",
+            "shoe": "black closed-toe pumps"
+          },
+          "exclude_tags": [
+            "white"
+          ],
+          "nice_tags": [
+            "black",
+            "modest",
+            "dark"
+          ]
+        },
+        {
+          "slots": {
+            "top": "black long-sleeve blouse",
+            "bottom": "black straight-leg trousers",
+            "accessory": "black silk scarf",
+            "shoe": "black closed-toe pumps"
+          },
+          "exclude_tags": [],
+          "nice_tags": [
+            "black",
+            "modest",
+            "dark",
+            "matte",
+            "respectful"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "date_night_casual",
+      "occasion": "Date night",
+      "details": [
+        {
+          "key": "vibe",
+          "value": "casual"
+        }
+      ],
+      "occasion_fit": {
+        "top": [
+          "0ac25716-d4c9-4452-99c1-7f21a17c2395",
+          "45e8e731-2a8b-4168-9143-21251b1763bd",
+          "64dff8f1-2311-4d92-b07a-89559f4053f1",
+          "efadfcfa-5f45-4ca3-97e4-b267084375e1"
+        ],
+        "bottom": [
+          "602c3342-e66e-4200-ba6c-15cab86fc370",
+          "b22d9978-87a7-45a4-96cf-a7f999bf5945",
+          "bf4493d4-664c-4be3-8664-01a13ec33cf4"
+        ],
+        "accessory": [
+          "2f3f9389-e65c-437d-bb29-14fd234a3c64",
+          "3df80eac-470d-41c5-95bc-fd59b7364ab6",
+          "49fc8c0f-a8e0-43c1-bd90-b0e01f252f36",
+          "4a8582f7-8f69-47c7-a0b5-6ad864ccba7c",
+          "9be46a4b-3a46-47c2-acc3-1d4d007d80aa",
+          "a53d37e9-fa8f-4b53-baec-1791d2a02ce2"
+        ],
+        "shoe": [
+          "4143606a-b72c-443d-a917-78268a94e6ee",
+          "79453d7f-90d9-442f-8d80-981e61666a56",
+          "9d8bf7a5-793c-4323-b2ac-db5a8cfdaf3b",
+          "db80543c-f6d5-4cb4-b11c-9f08f20345b5",
+          "f7578722-0e62-437c-adf4-623a2b5c5e68"
+        ]
+      },
+      "baseline_expansions": [
+        {
+          "slots": {
+            "top": "soft casual blouse, date night outfit",
+            "bottom": "fitted dark jeans, date night look",
+            "accessory": "dainty gold necklace, date night accessory",
+            "shoe": "ankle boots, casual date night shoes"
+          },
+          "exclude_tags": [],
+          "nice_tags": [
+            "casual",
+            "date night",
+            "soft",
+            "fitted",
+            "dainty",
+            "ankle"
+          ]
+        },
+        {
+          "slots": {
+            "top": "light pastel blouse, breathable fabric",
+            "bottom": "blue slim fit jeans",
+            "accessory": "small crossbody bag",
+            "shoe": "white canvas sneakers"
+          },
+          "exclude_tags": [],
+          "nice_tags": [
+            "casual",
+            "date night"
+          ]
+        },
+        {
+          "slots": {
+            "top": "soft knit top",
+            "bottom": "dark wash jeans",
+            "accessory": "crossbody bag",
+            "shoe": "ankle boots"
+          },
+          "exclude_tags": [],
+          "nice_tags": [
+            "casual",
+            "date night",
+            "comfortable"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "workday_no_heels",
+      "occasion": "Workday",
+      "details": [
+        {
+          "key": "custom",
+          "value": "no heels"
+        }
+      ],
+      "occasion_fit": {
+        "top": [
+          "0ac25716-d4c9-4452-99c1-7f21a17c2395",
+          "1a1b93ed-a08a-4d0c-8872-8c7666f7b9d4",
+          "45e8e731-2a8b-4168-9143-21251b1763bd",
+          "77ed69cc-7fc3-41cc-8022-a2cedd19a892"
+        ],
+        "bottom": [
+          "602c3342-e66e-4200-ba6c-15cab86fc370",
+          "b22d9978-87a7-45a4-96cf-a7f999bf5945",
+          "bf4493d4-664c-4be3-8664-01a13ec33cf4"
+        ],
+        "accessory": [
+          "00abf3c1-6464-43bc-9294-e10f505fe2e0",
+          "1d5a7fb5-e856-45d5-a80f-dcc06ec1ab48",
+          "2f3f9389-e65c-437d-bb29-14fd234a3c64",
+          "3df80eac-470d-41c5-95bc-fd59b7364ab6",
+          "49fc8c0f-a8e0-43c1-bd90-b0e01f252f36",
+          "4a8582f7-8f69-47c7-a0b5-6ad864ccba7c",
+          "9be46a4b-3a46-47c2-acc3-1d4d007d80aa",
+          "a53d37e9-fa8f-4b53-baec-1791d2a02ce2"
+        ],
+        "shoe": [
+          "4143606a-b72c-443d-a917-78268a94e6ee",
+          "9d8bf7a5-793c-4323-b2ac-db5a8cfdaf3b",
+          "db80543c-f6d5-4cb4-b11c-9f08f20345b5"
+        ]
+      },
+      "baseline_expansions": [
+        {
+          "slots": {
+            "top": "classic white blouse",
+            "bottom": "navy tailored trousers",
+            "accessory": "leather belt",
+            "shoe": "black leather loafers"
+          },
+          "exclude_tags": [
+            "red",
+            "heels"
+          ],
+          "nice_tags": [
+            "professional",
+            "comfortable",
+            "office"
+          ]
+        },
+        {
+          "slots": {
+            "top": "structured blouse, breathable fabric",
+            "bottom": "tailored trousers, stretch fabric",
+            "accessory": "leather belt, classic buckle",
+            "shoe": "comfortable flats, low heel"
+          },
+          "exclude_tags": [
+            "white"
+          ],
+          "nice_tags": [
+            "professional",
+            "office appropriate",
+            "comfortable",
+            "stretch fabric",
+            "leather"
+          ]
+        },
+        {
+          "slots": {
+            "top": "silk blouse, long sleeve",
+            "bottom": "tailored trousers, straight leg",
+            "accessory": "leather tote bag",
+            "shoe": "loafers, flat"
+          },
+          "exclude_tags": [],
+          "nice_tags": [
+            "workday",
+            "professional",
+            "comfortable",
+            "flat"
+          ]
+        }
+      ]
+    }
+  ],
+  "pairs": [
+    {
+      "number": 1,
+      "input": "wedding_guest",
+      "style_preferences": {
+        "style": [],
+        "neckline": [],
+        "bottoms": [],
+        "shoes": [
+          "heels"
+        ]
+      },
+      "expansions": [
+        {
+          "slots": {
+            "top": "flowy midi dress in ivory tone",
+            "bottom": "matching skirt with flowing hem",
+            "accessory": "statement clutch bag",
+            "shoe": "elegant nude pumps"
+          },
+          "exclude_tags": [
+            "white"
+          ],
+          "nice_tags": [
+            "heels",
+            "pastel",
+            "elegant"
+          ]
+        },
+        {
+          "slots": {
+            "top": "light pastel dressy top, formal fabric",
+            "bottom": "light pastel formal skirt",
+            "accessory": "small clutch bag, formal style",
+            "shoe": "pastel heels, formal wedding style"
+          },
+          "exclude_tags": [
+            "white",
+            "ivory",
+            "cream",
+            "denim",
+            "casual",
+            "sneakers"
+          ],
+          "nice_tags": [
+            "pastel",
+            "formal",
+            "elegant",
+            "heels",
+            "clutch"
+          ]
+        },
+        {
+          "slots": {
+            "top": "elegant sleeveless dress",
+            "bottom": "matching dress skirt",
+            "accessory": "clutch bag",
+            "shoe": "formal heels"
+          },
+          "exclude_tags": [
+            "white",
+            "ivory",
+            "off-white",
+            "cream"
+          ],
+          "nice_tags": [
+            "elegant",
+            "dressy",
+            "wedding guest appropriate",
+            "formal",
+            "heels"
+          ]
+        }
+      ]
+    },
+    {
+      "number": 2,
+      "input": "wedding_guest",
+      "style_preferences": {
+        "style": [],
+        "neckline": [],
+        "bottoms": [],
+        "shoes": [
+          "sneakers"
+        ]
+      },
+      "expansions": [
+        {
+          "slots": {
+            "top": "light pastel blouse, breathable fabric",
+            "bottom": "knee length skirt, elegant fit",
+            "accessory": "clutch bag, subtle shimmer",
+            "shoe": "white sneakers, clean leather"
+          },
+          "exclude_tags": [
+            "white"
+          ],
+          "nice_tags": [
+            "pastel",
+            "elegant",
+            "formal",
+            "wedding",
+            "guest",
+            "breathable",
+            "lightweight"
+          ]
+        },
+        {
+          "slots": {
+            "top": "elegant lace blouse",
+            "bottom": "satin midi skirt",
+            "accessory": "pearl clutch",
+            "shoe": "comfortable sneakers"
+          },
+          "exclude_tags": [
+            "white",
+            "ivory"
+          ],
+          "nice_tags": [
+            "formal",
+            "pastel",
+            "elegant"
+          ]
+        },
+        {
+          "slots": {
+            "top": "elegant lace dress top, breathable fabric",
+            "bottom": "knee length skirt, soft material",
+            "accessory": "pearl drop earrings",
+            "shoe": "white sneakers, comfortable fit"
+          },
+          "exclude_tags": [
+            "white"
+          ],
+          "nice_tags": [
+            "lace",
+            "knee length",
+            "pearl",
+            "sneakers"
+          ]
+        }
+      ]
+    },
+    {
+      "number": 3,
+      "input": "beach_day",
+      "style_preferences": {
+        "style": [],
+        "neckline": [],
+        "bottoms": [],
+        "shoes": [
+          "heels"
+        ]
+      },
+      "expansions": [
+        {
+          "slots": {
+            "top": "lightweight linen top, breathable fabric",
+            "bottom": "flowy maxi skirt, beach-ready",
+            "accessory": "wide-brim sun hat, uv protection",
+            "shoe": "elegant wedge heels, sand-friendly"
+          },
+          "exclude_tags": [
+            "white",
+            "black tie",
+            "heavy wool",
+            "leather"
+          ],
+          "nice_tags": [
+            "linen",
+            "cotton",
+            "straw",
+            "cork"
+          ]
+        },
+        {
+          "slots": {
+            "top": "light cover-up, breathable fabric",
+            "bottom": "linen shorts, relaxed fit",
+            "accessory": "wide-brim straw hat",
+            "shoe": "flat sandals"
+          },
+          "exclude_tags": [],
+          "nice_tags": []
+        },
+        {
+          "slots": {
+            "top": "lightweight beach cover-up, breezy fabric",
+            "bottom": "flowy maxi skirt, easy movement",
+            "accessory": "wide-brim sun hat, shade protection",
+            "shoe": "wedding guest heels, elegant style"
+          },
+          "exclude_tags": [
+            "white",
+            "ivory",
+            "cream"
+          ],
+          "nice_tags": [
+            "sand",
+            "ocean",
+            "breathable",
+            "sun protection",
+            "elegant"
+          ]
+        }
+      ]
+    },
+    {
+      "number": 4,
+      "input": "workday",
+      "style_preferences": {
+        "style": [],
+        "neckline": [],
+        "bottoms": [
+          "skirt"
+        ],
+        "shoes": []
+      },
+      "expansions": [
+        {
+          "slots": {
+            "top": "long-sleeve blouse, professional fit",
+            "bottom": "knee-length skirt, work-appropriate",
+            "accessory": "structured tote bag",
+            "shoe": "closed-toe pumps, comfortable heel"
+          },
+          "exclude_tags": [],
+          "nice_tags": [
+            "professional",
+            "office",
+            "skirt"
+          ]
+        },
+        {
+          "slots": {
+            "top": "button-down shirt, wrinkle-resistant",
+            "bottom": "knee-length skirt, professional cut",
+            "accessory": "leather belt, simple buckle",
+            "shoe": "low heel pumps, comfortable"
+          },
+          "exclude_tags": [],
+          "nice_tags": [
+            "skirt",
+            "office",
+            "business casual"
+          ]
+        },
+        {
+          "slots": {
+            "top": "light pastel blouse, breathable fabric",
+            "bottom": "knee-length pencil skirt",
+            "accessory": "minimalist gold watch",
+            "shoe": "black pointed-toe flats"
+          },
+          "exclude_tags": [
+            "white"
+          ],
+          "nice_tags": [
+            "business casual",
+            "skirt",
+            "comfortable"
+          ]
+        }
+      ]
+    },
+    {
+      "number": 5,
+      "input": "workday",
+      "style_preferences": {
+        "style": [],
+        "neckline": [],
+        "bottoms": [
+          "pants"
+        ],
+        "shoes": []
+      },
+      "expansions": [
+        {
+          "slots": {
+            "top": "structured blouse, breathable cotton",
+            "bottom": "tailored trousers, classic fit",
+            "accessory": "minimalist watch, leather strap",
+            "shoe": "closed-toe pumps, low heel"
+          },
+          "exclude_tags": [],
+          "nice_tags": [
+            "cotton",
+            "trousers",
+            "leather",
+            "structured"
+          ]
+        },
+        {
+          "slots": {
+            "top": "button-down shirt, breathable cotton",
+            "bottom": "tailored trousers, classic fit",
+            "accessory": "leather belt, simple design",
+            "shoe": "leather oxfords, polished"
+          },
+          "exclude_tags": [
+            "white"
+          ],
+          "nice_tags": [
+            "professional",
+            "neutral colors",
+            "pants"
+          ]
+        },
+        {
+          "slots": {
+            "top": "button-down shirt, wrinkle-free cotton",
+            "bottom": "tailored pants, slim fit",
+            "accessory": "leather belt, classic buckle",
+            "shoe": "leather oxfords, polished"
+          },
+          "exclude_tags": [],
+          "nice_tags": [
+            "pants",
+            "cotton",
+            "leather",
+            "button-down"
+          ]
+        }
+      ]
+    },
+    {
+      "number": 6,
+      "input": "beach_day",
+      "style_preferences": {
+        "style": [],
+        "neckline": [],
+        "bottoms": [
+          "shorts"
+        ],
+        "shoes": []
+      },
+      "expansions": [
+        {
+          "slots": {
+            "top": "breathable cotton tank top",
+            "bottom": "comfortable denim shorts",
+            "accessory": "straw sun hat",
+            "shoe": "comfortable sandals"
+          },
+          "exclude_tags": [
+            "white"
+          ],
+          "nice_tags": [
+            "breathable",
+            "casual",
+            "summer"
+          ]
+        },
+        {
+          "slots": {
+            "top": "light pastel blouse, breathable fabric",
+            "bottom": "lightweight shorts",
+            "accessory": "straw hat",
+            "shoe": "flat sandals"
+          },
+          "exclude_tags": [
+            "black",
+            "dark brown",
+            "navy",
+            "charcoal"
+          ],
+          "nice_tags": [
+            "beach",
+            "lightweight",
+            "breathable",
+            "pastel"
+          ]
+        },
+        {
+          "slots": {
+            "top": "light linen tank top",
+            "bottom": "cotton shorts",
+            "accessory": "wide brim sun hat",
+            "shoe": "canvas sneakers"
+          },
+          "exclude_tags": [
+            "white"
+          ],
+          "nice_tags": [
+            "beach",
+            "breathable",
+            "lightweight",
+            "casual",
+            "comfortable"
+          ]
+        }
+      ]
+    },
+    {
+      "number": 7,
+      "input": "beach_day",
+      "style_preferences": {
+        "style": [],
+        "neckline": [],
+        "bottoms": [],
+        "shoes": [
+          "sandals"
+        ]
+      },
+      "expansions": [
+        {
+          "slots": {
+            "top": "light linen tank top",
+            "bottom": "flowy sarong",
+            "accessory": "wide-brim sun hat",
+            "shoe": "comfortable flat sandals"
+          },
+          "exclude_tags": [
+            "white"
+          ],
+          "nice_tags": [
+            "linen",
+            "cotton",
+            "breathable",
+            "flowy",
+            "sun-safe",
+            "sandals",
+            "beachwear",
+            "lightweight"
+          ]
+        },
+        {
+          "slots": {
+            "top": "light cover-up, breathable fabric",
+            "bottom": "swim trunks, comfortable fit",
+            "accessory": "wide-brimmed hat, sun protection",
+            "shoe": "flip-flop sandals, beach style"
+          },
+          "exclude_tags": [
+            "closed-toe",
+            "heels"
+          ],
+          "nice_tags": [
+            "cotton",
+            "lightweight",
+            "sun-protective",
+            "quick-dry"
+          ]
+        },
+        {
+          "slots": {
+            "top": "lightweight linen tank top",
+            "bottom": "breathable linen shorts",
+            "accessory": "wide-brimmed sun hat",
+            "shoe": "flat sandals"
+          },
+          "exclude_tags": [],
+          "nice_tags": [
+            "sandals",
+            "linen",
+            "sun hat",
+            "breathable"
+          ]
+        }
+      ]
+    },
+    {
+      "number": 8,
+      "input": "brunch",
+      "style_preferences": {
+        "style": [],
+        "neckline": [],
+        "bottoms": [],
+        "shoes": [
+          "flats"
+        ]
+      },
+      "expansions": [
+        {
+          "slots": {
+            "top": "light pastel blouse, breathable fabric",
+            "bottom": "casual denim shorts",
+            "accessory": "small woven crossbody bag",
+            "shoe": "comfortable ballet flats"
+          },
+          "exclude_tags": [
+            "white"
+          ],
+          "nice_tags": [
+            "pastel",
+            "casual",
+            "flats",
+            "breathable"
+          ]
+        },
+        {
+          "slots": {
+            "top": "light pastel blouse",
+            "bottom": "causal trousers",
+            "accessory": "delicate gold necklace",
+            "shoe": "comfortable flats"
+          },
+          "exclude_tags": [],
+          "nice_tags": [
+            "brunch",
+            "pastel",
+            "flats"
+          ]
+        },
+        {
+          "slots": {
+            "top": "light pastel blouse, breathable fabric",
+            "bottom": "white jeans, comfortable fit",
+            "accessory": "tote bag, neutral color",
+            "shoe": "black flats, comfortable walking"
+          },
+          "exclude_tags": [],
+          "nice_tags": [
+            "pastel",
+            "breathable",
+            "comfortable",
+            "flats",
+            "brunch",
+            "casual"
+          ]
+        }
+      ]
+    },
+    {
+      "number": 9,
+      "input": "party",
+      "style_preferences": {
+        "style": [],
+        "neckline": [],
+        "bottoms": [],
+        "shoes": [
+          "heels",
+          "flats"
+        ]
+      },
+      "expansions": [
+        {
+          "slots": {
+            "top": "sparkly crop top",
+            "bottom": "black mini skirt",
+            "accessory": "statement earrings",
+            "shoe": "strappy heels"
+          },
+          "exclude_tags": [],
+          "nice_tags": [
+            "party",
+            "sparkly",
+            "heels"
+          ]
+        },
+        {
+          "slots": {
+            "top": "sparkly evening top",
+            "bottom": "black cocktail dress",
+            "accessory": "statement earrings",
+            "shoe": "strappy heels"
+          },
+          "exclude_tags": [
+            "white"
+          ],
+          "nice_tags": [
+            "black",
+            "sparkly",
+            "heels",
+            "elegant"
+          ]
+        },
+        {
+          "slots": {
+            "top": "sexy sequin crop top",
+            "bottom": "mini leather skirt",
+            "accessory": "statement earrings",
+            "shoe": "stiletto heels"
+          },
+          "exclude_tags": [],
+          "nice_tags": [
+            "sequins",
+            "leather",
+            "heels"
+          ]
+        }
+      ]
+    },
+    {
+      "number": 10,
+      "input": "party",
+      "style_preferences": {
+        "style": [],
+        "neckline": [],
+        "bottoms": [],
+        "shoes": [
+          "boots"
+        ]
+      },
+      "expansions": [
+        {
+          "slots": {
+            "top": "sequin tank top",
+            "bottom": "straight leg jeans",
+            "accessory": "crossbody bag",
+            "shoe": "ankle boots"
+          },
+          "exclude_tags": [],
+          "nice_tags": [
+            "party",
+            "boots"
+          ]
+        },
+        {
+          "slots": {
+            "top": "sequin top",
+            "bottom": "midi skirt",
+            "accessory": "clutch bag",
+            "shoe": "ankle boots"
+          },
+          "exclude_tags": [],
+          "nice_tags": [
+            "party",
+            "boots",
+            "glamorous",
+            "evening"
+          ]
+        },
+        {
+          "slots": {
+            "top": "sequin top",
+            "bottom": "black skirt",
+            "accessory": "statement earrings",
+            "shoe": "ankle boots"
+          },
+          "exclude_tags": [
+            "white"
+          ],
+          "nice_tags": [
+            "sequin",
+            "glamorous",
+            "ankle boots"
+          ]
+        }
+      ]
+    },
+    {
+      "number": 11,
+      "input": "brunch",
+      "style_preferences": {
+        "style": [],
+        "neckline": [],
+        "bottoms": [
+          "dress"
+        ],
+        "shoes": []
+      },
+      "expansions": [
+        {
+          "slots": {
+            "top": "light pastel blouse, breathable fabric",
+            "bottom": "knee-length sundress, flowy fabric",
+            "accessory": "woven straw tote bag",
+            "shoe": "tan leather espadrilles"
+          },
+          "exclude_tags": [],
+          "nice_tags": [
+            "pastel",
+            "breathable",
+            "flowy",
+            "sundress",
+            "espadrilles",
+            "straw"
+          ]
+        },
+        {
+          "slots": {
+            "top": "light blouse, breathable fabric",
+            "bottom": "midi dress, flowy silhouette",
+            "accessory": "straw tote bag",
+            "shoe": "flat espadrille sandals"
+          },
+          "exclude_tags": [
+            "white"
+          ],
+          "nice_tags": [
+            "pastel",
+            "bright",
+            "floral",
+            "cotton",
+            "linen",
+            "espadrille",
+            "tote"
+          ]
+        },
+        {
+          "slots": {
+            "top": "lightweight short-sleeve blouse",
+            "bottom": "floral midi dress",
+            "accessory": "small crossbody bag",
+            "shoe": "flat sandals"
+          },
+          "exclude_tags": [],
+          "nice_tags": [
+            "floral",
+            "lightweight",
+            "pastel",
+            "casual",
+            "comfortable"
+          ]
+        }
+      ]
+    },
+    {
+      "number": 12,
+      "input": "brunch",
+      "style_preferences": {
+        "style": [],
+        "neckline": [
+          "low"
+        ],
+        "bottoms": [],
+        "shoes": []
+      },
+      "expansions": [
+        {
+          "slots": {
+            "top": "flowy blouse with low neckline",
+            "bottom": "light wash denim shorts",
+            "accessory": "woven straw tote bag",
+            "shoe": "white sneakers"
+          },
+          "exclude_tags": [],
+          "nice_tags": [
+            "low neckline",
+            "denim",
+            "straw",
+            "sneakers"
+          ]
+        },
+        {
+          "slots": {
+            "top": "low neckline blouse",
+            "bottom": "casual pants",
+            "accessory": "leather belt",
+            "shoe": "loafers"
+          },
+          "exclude_tags": [],
+          "nice_tags": [
+            "low neckline"
+          ]
+        },
+        {
+          "slots": {
+            "top": "pastel blouse, low neckline",
+            "bottom": "white denim jeans",
+            "accessory": "gold hoop earrings",
+            "shoe": "strappy sandals"
+          },
+          "exclude_tags": [
+            "black"
+          ],
+          "nice_tags": [
+            "brunch",
+            "light colors",
+            "casual chic"
+          ]
+        }
+      ]
+    },
+    {
+      "number": 13,
+      "input": "workday",
+      "style_preferences": {
+        "style": [],
+        "neckline": [],
+        "bottoms": [],
+        "shoes": [
+          "sneakers",
+          "boots",
+          "sandals",
+          "heels",
+          "flats"
+        ]
+      },
+      "expansions": [
+        {
+          "slots": {
+            "top": "button-down shirt, cotton",
+            "bottom": "tailored trousers, wool blend",
+            "accessory": "leather belt, simple buckle",
+            "shoe": "polished leather loafers, comfortable fit"
+          },
+          "exclude_tags": [],
+          "nice_tags": [
+            "sneakers",
+            "boots",
+            "sandals",
+            "heels",
+            "flats"
+          ]
+        },
+        {
+          "slots": {
+            "top": "light pastel blouse, breathable fabric",
+            "bottom": "straight-leg trousers, tailored fit",
+            "accessory": "classic leather watch, minimalist face",
+            "shoe": "comfortable flats, professional style"
+          },
+          "exclude_tags": [
+            "white"
+          ],
+          "nice_tags": [
+            "neutral colors",
+            "comfortable",
+            "office-appropriate"
+          ]
+        },
+        {
+          "slots": {
+            "top": "button down shirt, cotton",
+            "bottom": "trousers, tailored fit",
+            "accessory": "watch, leather strap",
+            "shoe": "loafers, leather"
+          },
+          "exclude_tags": [
+            "white"
+          ],
+          "nice_tags": [
+            "neutral colors",
+            "professional",
+            "business casual"
+          ]
+        }
+      ]
+    },
+    {
+      "number": 14,
+      "input": "workday",
+      "style_preferences": {
+        "style": [],
+        "neckline": [],
+        "bottoms": [
+          "pants",
+          "skirt",
+          "shorts"
+        ],
+        "shoes": []
+      },
+      "expansions": [
+        {
+          "slots": {
+            "top": "structured blouse, breathable fabric",
+            "bottom": "tailored trousers, knee-length",
+            "accessory": "minimalist leather watch",
+            "shoe": "leather loafers"
+          },
+          "exclude_tags": [],
+          "nice_tags": [
+            "blouse",
+            "trousers",
+            "watch",
+            "loafers"
+          ]
+        },
+        {
+          "slots": {
+            "top": "silk button-down blouse",
+            "bottom": "tailored trousers",
+            "accessory": "leather tote bag",
+            "shoe": "pointed-toe pumps"
+          },
+          "exclude_tags": [],
+          "nice_tags": [
+            "blazer",
+            "trousers",
+            "tote",
+            "pumps",
+            "silk"
+          ]
+        },
+        {
+          "slots": {
+            "top": "professional blouse",
+            "bottom": "tailored trousers",
+            "accessory": "leather watch",
+            "shoe": "comfortable flats"
+          },
+          "exclude_tags": [],
+          "nice_tags": [
+            "workwear",
+            "professional",
+            "pants",
+            "pumps",
+            "blazer"
+          ]
+        }
+      ]
+    },
+    {
+      "number": 15,
+      "input": "date_night",
+      "style_preferences": {
+        "style": [
+          "colorful_eclectic"
+        ],
+        "neckline": [],
+        "bottoms": [],
+        "shoes": []
+      },
+      "expansions": [
+        {
+          "slots": {
+            "top": "colorful satin camisole",
+            "bottom": "high-waisted wide-leg trousers",
+            "accessory": "statement earrings",
+            "shoe": "strappy heeled sandals"
+          },
+          "exclude_tags": [],
+          "nice_tags": [
+            "colorful",
+            "eclectic",
+            "date night",
+            "evening",
+            "satin",
+            "strappy heels"
+          ]
+        },
+        {
+          "slots": {
+            "top": "colorful patterned silk camisole",
+            "bottom": "black leather mini skirt",
+            "accessory": "statement gold hoop earrings",
+            "shoe": "strappy red heels"
+          },
+          "exclude_tags": [],
+          "nice_tags": [
+            "colorful",
+            "eclectic",
+            "silk",
+            "leather",
+            "gold",
+            "statement"
+          ]
+        },
+        {
+          "slots": {
+            "top": "colorful blouse with eye-catching pattern",
+            "bottom": "fitted eclectic pants",
+            "accessory": "statement earrings",
+            "shoe": "strappy heeled sandals"
+          },
+          "exclude_tags": [
+            "white"
+          ],
+          "nice_tags": [
+            "colorful",
+            "eclectic",
+            "bold print",
+            "vibrant",
+            "playful"
+          ]
+        }
+      ]
+    },
+    {
+      "number": 16,
+      "input": "workday",
+      "style_preferences": {
+        "style": [
+          "comfortable_relaxed"
+        ],
+        "neckline": [],
+        "bottoms": [],
+        "shoes": []
+      },
+      "expansions": [
+        {
+          "slots": {
+            "top": "soft relaxed fit blouse",
+            "bottom": "relaxed fit trousers",
+            "accessory": "simple crossbody bag",
+            "shoe": "comfortable flat shoes"
+          },
+          "exclude_tags": [
+            "white"
+          ],
+          "nice_tags": [
+            "comfortable",
+            "relaxed"
+          ]
+        },
+        {
+          "slots": {
+            "top": "soft oversized knit top, breathable cotton",
+            "bottom": "relaxed fit trousers, stretch waistband",
+            "accessory": "minimalist crossbody bag, soft leather",
+            "shoe": "cushioned slip-on loafers, comfortable walking"
+          },
+          "exclude_tags": [],
+          "nice_tags": [
+            "comfortable",
+            "relaxed",
+            "casual",
+            "soft",
+            "breathable",
+            "stretch",
+            "workwear"
+          ]
+        },
+        {
+          "slots": {
+            "top": "oversized cotton tee, comfortable fit",
+            "bottom": "relaxed jogger pants, soft fabric",
+            "accessory": "minimalist canvas tote, relaxed style",
+            "shoe": "cushioned slip-on sneakers, comfortable sole"
+          },
+          "exclude_tags": [],
+          "nice_tags": [
+            "comfortable",
+            "relaxed",
+            "soft",
+            "casual"
+          ]
+        }
+      ]
+    },
+    {
+      "number": 17,
+      "input": "funeral",
+      "style_preferences": {
+        "style": [
+          "colorful_eclectic"
+        ],
+        "neckline": [],
+        "bottoms": [],
+        "shoes": []
+      },
+      "expansions": [
+        {
+          "slots": {
+            "top": "dark long sleeve blouse",
+            "bottom": "black knee length skirt",
+            "accessory": "pearl stud earrings",
+            "shoe": "black closed toe pumps"
+          },
+          "exclude_tags": [
+            "white",
+            "red",
+            "bright",
+            "neon",
+            "floral"
+          ],
+          "nice_tags": [
+            "black",
+            "navy",
+            "charcoal",
+            "subdued",
+            "modest"
+          ]
+        },
+        {
+          "slots": {
+            "top": "modest black blazer, conservative cut",
+            "bottom": "dark knee-length skirt, matte fabric",
+            "accessory": "simple black clutch, understated hardware",
+            "shoe": "closed-toe black pumps, low heel"
+          },
+          "exclude_tags": [
+            "bright",
+            "colorful",
+            "patterned",
+            "sequined",
+            "neon",
+            "white"
+          ],
+          "nice_tags": [
+            "black",
+            "dark",
+            "conservative",
+            "matte",
+            "simple"
+          ]
+        },
+        {
+          "slots": {
+            "top": "dark solid blouse, matte fabric",
+            "bottom": "black trousers, straight cut",
+            "accessory": "simple black tote bag",
+            "shoe": "black closed-toe heels, low heel"
+          },
+          "exclude_tags": [
+            "colorful",
+            "eclectic",
+            "white",
+            "bright colors",
+            "patterns",
+            "sequins",
+            "casual",
+            "shorts",
+            "sneakers",
+            "sandals"
+          ],
+          "nice_tags": [
+            "black",
+            "navy",
+            "charcoal",
+            "matte",
+            "simple",
+            "modest",
+            "respectful",
+            "dark",
+            "solid",
+            "subdued"
+          ]
+        }
+      ]
+    },
+    {
+      "number": 18,
+      "input": "date_night_casual",
+      "style_preferences": {
+        "style": [
+          "timeless_sophisticated"
+        ],
+        "neckline": [],
+        "bottoms": [],
+        "shoes": []
+      },
+      "expansions": [
+        {
+          "slots": {
+            "top": "black camisole top, silk blend",
+            "bottom": "dark wash slim jeans",
+            "accessory": "gold hoop earrings",
+            "shoe": "strappy block heel sandals"
+          },
+          "exclude_tags": [],
+          "nice_tags": [
+            "black",
+            "jeans",
+            "gold",
+            "heels"
+          ]
+        },
+        {
+          "slots": {
+            "top": "silk camisole",
+            "bottom": "dark wash jeans",
+            "accessory": "delicate necklace",
+            "shoe": "strappy heels"
+          },
+          "exclude_tags": [],
+          "nice_tags": [
+            "timeless",
+            "sophisticated",
+            "casual"
+          ]
+        },
+        {
+          "slots": {
+            "top": "classic white blouse",
+            "bottom": "dark wash slim jeans",
+            "accessory": "delicate gold pendant necklace",
+            "shoe": "black leather ankle boots"
+          },
+          "exclude_tags": [
+            "neon",
+            "sequins",
+            "logo prints"
+          ],
+          "nice_tags": [
+            "timeless",
+            "sophisticated",
+            "minimalist",
+            "elevated",
+            "versatile"
+          ]
+        }
+      ]
+    },
+    {
+      "number": 19,
+      "input": "workday_no_heels",
+      "style_preferences": {
+        "style": [],
+        "neckline": [],
+        "bottoms": [],
+        "shoes": [
+          "heels"
+        ]
+      },
+      "expansions": [
+        {
+          "slots": {
+            "top": "silk button-down blouse",
+            "bottom": "tailored trousers",
+            "accessory": "leather belt",
+            "shoe": "loafers"
+          },
+          "exclude_tags": [],
+          "nice_tags": [
+            "blouse",
+            "trousers",
+            "loafers",
+            "belt"
+          ]
+        },
+        {
+          "slots": {
+            "top": "button-down shirt",
+            "bottom": "trousers",
+            "accessory": "tote bag",
+            "shoe": "flats"
+          },
+          "exclude_tags": [],
+          "nice_tags": [
+            "office",
+            "professional",
+            "casual",
+            "comfortable"
+          ]
+        },
+        {
+          "slots": {
+            "top": "smart casual blouse, breathable fabric",
+            "bottom": "tailored trousers, comfortable fit",
+            "accessory": "minimalist watch, classic design",
+            "shoe": "flat loafers, leather"
+          },
+          "exclude_tags": [
+            "heels",
+            "high heels"
+          ],
+          "nice_tags": [
+            "workwear",
+            "office",
+            "comfortable",
+            "smart casual"
+          ]
+        }
+      ]
+    },
+    {
+      "number": 20,
+      "input": "brunch",
+      "style_preferences": {
+        "style": [
+          "chic_avant_garde"
+        ],
+        "neckline": [],
+        "bottoms": [
+          "skirt"
+        ],
+        "shoes": [
+          "flats"
+        ]
+      },
+      "expansions": [
+        {
+          "slots": {
+            "top": "structured avant-garde blouse",
+            "bottom": "chic midi skirt",
+            "accessory": "statement earrings",
+            "shoe": "pointed-toe flats"
+          },
+          "exclude_tags": [
+            "white"
+          ],
+          "nice_tags": [
+            "chic",
+            "avant-garde",
+            "skirt",
+            "flats",
+            "brunch"
+          ]
+        },
+        {
+          "slots": {
+            "top": "chic asymmetrical blouse",
+            "bottom": "avant-garde midi skirt",
+            "accessory": "statement geometric earrings",
+            "shoe": "elegant ballet flats"
+          },
+          "exclude_tags": [],
+          "nice_tags": [
+            "chic",
+            "avant-garde",
+            "skirt",
+            "flats"
+          ]
+        },
+        {
+          "slots": {
+            "top": "chic avant-garde blouse",
+            "bottom": "avant-garde skirt",
+            "accessory": "statement earrings",
+            "shoe": "chic ballet flats"
+          },
+          "exclude_tags": [],
+          "nice_tags": [
+            "chic",
+            "avant-garde",
+            "skirt",
+            "flats"
+          ]
+        }
+      ]
+    }
+  ]
+}
