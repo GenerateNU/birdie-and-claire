@@ -32,15 +32,9 @@ type ShareOutfitResponse struct {
 	URL string `json:"url" doc:"Public link to the outfit; stays the same across re-shares"`
 }
 
-// ProductSuggestionsEntry holds the products that suit one requested product, closest first.
-type ProductSuggestionsEntry struct {
-	Products []ProductResponse `json:"products" nullable:"false"`
-	Error    string            `json:"error" doc:"Why this product got no suggestions, or empty when it did or has none yet"`
-}
-
-// OutfitSuggestionsResponse maps each requested product ID to its suggestions.
+// OutfitSuggestionsResponse maps each requested product ID to the products that suit it, closest first.
 type OutfitSuggestionsResponse struct {
-	Suggestions map[uuid.UUID]ProductSuggestionsEntry `json:"suggestions" nullable:"false"`
+	Suggestions map[uuid.UUID][]ProductResponse `json:"suggestions" nullable:"false"`
 }
 
 type CreateOutfitParams struct {

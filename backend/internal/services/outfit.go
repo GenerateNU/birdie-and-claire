@@ -2,13 +2,11 @@ package services
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/url"
 	"slices"
 
 	"birdie-and-claire/internal/auth"
-	"birdie-and-claire/internal/errs"
 	"birdie-and-claire/internal/log"
 	"birdie-and-claire/internal/models"
 	"birdie-and-claire/internal/repository"
@@ -121,19 +119,15 @@ func (s *outfitService) Suggest(ctx context.Context, id uuid.UUID, productIDs []
 		excludeProductIDs = append(excludeProductIDs, product.ID)
 	}
 
-	suggestions := make(map[uuid.UUID]models.ProductSuggestionsEntry, len(productIDs))
+	suggestions := make(map[uuid.UUID][]models.ProductResponse, len(productIDs))
 	for _, productID := range productIDs {
 		embedding, slot, err := s.repo.Product.GetEmbedding(ctx, productID)
-		if errors.Is(err, errs.ErrNotFound) {
-			suggestions[productID] = models.ProductSuggestionsEntry{Products: []models.ProductResponse{}, Error: "product not in catalog"}
-			continue
-		}
 		if err != nil {
 			return models.OutfitSuggestionsResponse{}, err
 		}
 		if embedding == nil {
 			log.Warn(ctx, "product has no embedding, so it gets no suggestions", "outfit", id, "product", productID)
-			suggestions[productID] = models.ProductSuggestionsEntry{Products: []models.ProductResponse{}}
+			suggestions[productID] = []models.ProductResponse{}
 			continue
 		}
 
@@ -142,7 +136,7 @@ func (s *outfitService) Suggest(ctx context.Context, id uuid.UUID, productIDs []
 		if err != nil {
 			return models.OutfitSuggestionsResponse{}, err
 		}
-		suggestions[productID] = models.ProductSuggestionsEntry{Products: similar}
+		suggestions[productID] = similar
 	}
 	return models.OutfitSuggestionsResponse{Suggestions: suggestions}, nil
 }

@@ -163,24 +163,14 @@ func TestSuggestAcceptsProductOutsideOutfit(t *testing.T) {
 	}
 }
 
-func TestSuggestUnknownProductGetsErrorEntry(t *testing.T) {
+func TestSuggestUnknownProductReturnsNotFound(t *testing.T) {
 	db := openTestDB(t)
 	service := newSuggestionService(db)
 	known := insertSlotProduct(t, db, testProduct{slot: models.SlotTop, embedding: productEmbedding(0.1)})
-	unknown := uuid.New()
 	outfitID, ownerID := insertSuggestionOutfit(t, db, known)
 
-	got, err := service.Suggest(auth.WithUserID(context.Background(), ownerID), outfitID, []uuid.UUID{known, unknown}, 12)
-	if err != nil {
-		t.Fatalf("Suggest: %v", err)
-	}
-	entry, ok := got.Suggestions[unknown]
-	if !ok || entry.Error != "product not in catalog" || entry.Products == nil || len(entry.Products) != 0 {
-		t.Fatalf("entry = %+v, want an empty non-nil list and the catalog error", entry)
-	}
-	if got.Suggestions[known].Error != "" {
-		t.Fatalf("known product error = %q, want none", got.Suggestions[known].Error)
-	}
+	_, err := service.Suggest(auth.WithUserID(context.Background(), ownerID), outfitID, []uuid.UUID{known, uuid.New()}, 12)
+	wantNotFound(t, err)
 }
 
 func TestSuggestAnswersEveryRequestedProduct(t *testing.T) {
@@ -209,9 +199,9 @@ func TestSuggestAnswersEveryRequestedProduct(t *testing.T) {
 }
 
 // suggestedIDs keeps only ownIDs, since seeded products can share the slot.
-func suggestedIDs(entry models.ProductSuggestionsEntry, ownIDs []uuid.UUID) []uuid.UUID {
+func suggestedIDs(products []models.ProductResponse, ownIDs []uuid.UUID) []uuid.UUID {
 	var ids []uuid.UUID
-	for _, product := range entry.Products {
+	for _, product := range products {
 		if slices.Contains(ownIDs, product.ID) {
 			ids = append(ids, product.ID)
 		}
@@ -231,9 +221,9 @@ func TestSuggestWithoutEmbeddingReturnsEmptyList(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Suggest: %v", err)
 	}
-	entry := got.Suggestions[noEmbedding]
-	if entry.Products == nil || len(entry.Products) != 0 || entry.Error != "" {
-		t.Fatalf("entry = %+v, want a non-nil empty list and no error", entry)
+	products := got.Suggestions[noEmbedding]
+	if products == nil || len(products) != 0 {
+		t.Fatalf("products = %+v, want a non-nil empty list", products)
 	}
 	if !strings.Contains(logs.String(), `"level":"WARN"`) {
 		t.Fatalf("logs = %s, want a warning", logs)
@@ -274,7 +264,7 @@ func TestSuggestRespectsLimit(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Suggest: %v", err)
 	}
-	if len(got.Suggestions[anchor].Products) != 1 {
-		t.Fatalf("got %d products, want 1", len(got.Suggestions[anchor].Products))
+	if len(got.Suggestions[anchor]) != 1 {
+		t.Fatalf("got %d products, want 1", len(got.Suggestions[anchor]))
 	}
 }

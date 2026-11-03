@@ -191,7 +191,11 @@ components:
       properties:
         suggestions:
           additionalProperties:
-            $ref: "#/components/schemas/ProductSuggestionsEntry"
+            items:
+              $ref: "#/components/schemas/ProductResponse"
+            type:
+              - array
+              - "null"
           type: object
       required:
         - suggestions
@@ -303,20 +307,6 @@ components:
         - tags
         - created_at
         - updated_at
-      type: object
-    ProductSuggestionsEntry:
-      additionalProperties: false
-      properties:
-        error:
-          description: Why this product got no suggestions, or empty when it did or has none yet
-          type: string
-        products:
-          items:
-            $ref: "#/components/schemas/ProductResponse"
-          type: array
-      required:
-        - products
-        - error
       type: object
     ProfilePictureUploadResponse:
       additionalProperties: false
@@ -800,7 +790,7 @@ paths:
         - outfits
   /api/v1/outfits/{id}/suggestions:
     get:
-      description: Repeat product_id for each catalog product, up to 10; the products need not be in the saved outfit, so unsaved swaps work. Results are keyed by product ID, closest first, in the same slot, leaving out the outfit's products and the requested ones. A product without an embedding gets an empty list; a product not in the catalog gets an empty list and an error message while the request still returns 200. Most calls ask about one product; batching saves round trips when the editor opens. The database work is one embedding lookup and one similarity query per product either way.
+      description: Repeat product_id for each catalog product, up to 10; the products need not be in the saved outfit, so unsaved swaps work. Results are keyed by product ID, closest first, in the same slot, leaving out the outfit's products and the requested ones. A product without an embedding gets an empty list; a product not in the catalog fails the whole request with 404. Most calls ask about one product; batching saves round trips when the editor opens. The database work is one embedding lookup and one similarity query per product either way.
       operationId: suggest-outfit-items
       parameters:
         - description: Outfit ID
