@@ -1,6 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode, type SyntheticEvent } from "react";
 
+import { apiFetch } from "@/api";
 import logo from "@/assets/logo.png";
 import { Box, Button, CodeInput, Divider, Text, TextField, useToast } from "@/design-system";
 import { supabase } from "@/supabase/client";
@@ -24,6 +25,7 @@ const VERIFIED_REDIRECT_MS = 2000;
 
 function Login() {
   const toast = useToast();
+  const navigate = useNavigate();
   const [step, setStep] = useState<Step>("choice");
   const [mode, setMode] = useState<Mode>("login");
   const [name, setName] = useState("");
@@ -138,7 +140,54 @@ function Login() {
       return;
     }
 
+    if (mode === "signup") {
+      await createAccount();
+
+      return;
+    }
+
     setStep("verified");
+  }
+
+  // Runs after the code is verified, so the request carries the new session.
+  async function createAccount() {
+    setBusy(true);
+
+    let failure: string;
+
+    try {
+      const res = await apiFetch("/api/v1/users/me", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+
+      if (res.status === 201) {
+        setStep("verified");
+
+        return;
+      }
+
+      if (res.status === 409) {
+        toast.show({ message: "You already have an account, so we signed you in." });
+        setStep("verified");
+
+        return;
+      }
+
+      failure = `POST /api/v1/users/me failed: ${res.status}`;
+    } catch (err) {
+      failure = err instanceof Error ? err.message : String(err);
+    } finally {
+      setBusy(false);
+    }
+
+    toast.show({
+      message: "Couldn't create your account, please enter your name again",
+      subtitle: failure,
+    });
+    // A router navigation, not a page load, so the toast stays on screen.
+    await navigate({ to: "/create-account" });
   }
 
   if (step === "verified") {
