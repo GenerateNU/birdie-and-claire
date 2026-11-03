@@ -1,8 +1,9 @@
 import { Input as BaseInput } from "@base-ui/react/input";
 import { useState } from "react";
 
+// Boxes shrink to share the row, so a long code still fits a phone, and stop growing at 48px.
 const boxBaseClasses =
-  "flex size-xxl items-center justify-center rounded-xs border bg-background text-body text-primary";
+  "flex aspect-square min-w-0 max-w-xxl flex-1 items-center justify-center rounded-xs border bg-background text-body text-primary";
 
 type CodeInputProps = {
   label: string;
@@ -42,7 +43,9 @@ export function CodeInput({
   return (
     <div
       className={
-        disabled ? "relative inline-flex gap-xs opacity-disabled" : "relative inline-flex gap-xs"
+        disabled
+          ? "relative flex w-full justify-center gap-xs opacity-disabled"
+          : "relative flex w-full justify-center gap-xs"
       }
     >
       {Array.from({ length }, (_, index) => (
