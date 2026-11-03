@@ -22,7 +22,7 @@ func RecommendationRoutes(api huma.API, params types.RouteParams) {
 		OperationID: "recommend-products",
 		Method:      http.MethodPost,
 		Path:        "/api/v1/recommend",
-		Summary:     "Recommend products per outfit slot for a shopper query",
+		Summary:     "Recommend up to three outfits for an occasion and the shopper's answers",
 		Tags:        []string{"recommendations"},
 	}, controller.RecommendProducts)
 }
