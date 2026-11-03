@@ -51,8 +51,8 @@ function Login() {
       return;
     }
 
-    // A full page load, as before: the _hasAccount route checks for an account and sends the
-    // user to /create-account if there isn't one.
+    // Lands on / so the _hasAccount route decides where the user goes: home, or /create-account
+    // if they have no account yet.
     const timer = setTimeout(() => window.location.assign("/"), VERIFIED_REDIRECT_MS);
 
     return () => clearTimeout(timer);
@@ -225,7 +225,7 @@ function Login() {
             disabled={busy}
           />
           {codeRejected && (
-            <Text variant="caption" className="text-error">
+            <Text variant="caption" role="alert" className="text-error">
               Incorrect code entered. Please try again.
             </Text>
           )}
@@ -277,6 +277,7 @@ function Login() {
             required
             value={name}
             onValueChange={setName}
+            disabled={busy}
           />
           <TextField
             label="Email"
@@ -287,6 +288,7 @@ function Login() {
             required
             value={email}
             onValueChange={setEmail}
+            disabled={busy}
           />
           <Button
             label="Sign up"
@@ -294,7 +296,13 @@ function Login() {
             variant="secondary"
             disabled={name.trim() === "" || email === "" || busy}
           />
-          <Button label="Back" variant="secondary" size="sm" onClick={() => setStep("choice")} />
+          <Button
+            label="Back"
+            variant="secondary"
+            size="sm"
+            onClick={() => setStep("choice")}
+            disabled={busy}
+          />
         </form>
       </AuthScreen>
     );
@@ -316,6 +324,7 @@ function Login() {
             required
             value={email}
             onValueChange={setEmail}
+            disabled={busy}
           />
           <Button
             label="Send Code"
@@ -323,7 +332,13 @@ function Login() {
             variant="secondary"
             disabled={email === "" || busy}
           />
-          <Button label="Back" variant="secondary" size="sm" onClick={() => setStep("choice")} />
+          <Button
+            label="Back"
+            variant="secondary"
+            size="sm"
+            onClick={() => setStep("choice")}
+            disabled={busy}
+          />
         </form>
       </AuthScreen>
     );
