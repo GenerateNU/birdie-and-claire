@@ -1,6 +1,6 @@
 # Style Preferences in Recommendations: Design Doc (#108)
 
-Shoppers pick style preferences during onboarding (#96) and can change them in settings (#100), but the recommender (#102) doesn't use them yet. This doc looks at four ways to use them, tests each one against the 60 demo products on two LLMs, and recommends one. It also tests a prototype of the product enrichment step from the team's rec-system board, which adds a fifth option. Every test used 3 runs per prompt, so read the numbers as a direction rather than proof.
+Shoppers pick style preferences during onboarding (#96) and can change them in settings (#100), but the recommender (#102) doesn't use them yet. This doc looks at four ways to use them, tests each one against the 60 demo products on two LLMs, and recommends one. It also tests a prototype of the product enrichment step from the team's rec-system board, which adds a fifth option, and repeats the comparison on a catalog of 360 products with type columns and soft filters in SQL. Every test used 3 runs per prompt, so read the numbers as a direction rather than proof.
 
 Throughout, "today" means #102's branch at commit `d225350`, since that's the recommender this work builds on. Main still sends the model a single free-text query.
 
@@ -14,7 +14,9 @@ In practice that's one new key in the `expand_answers` input, `saved preferences
 
 Style, neckline and the Dress pick aren't sent. In testing, sending them made outfits fit the occasion worse and added nothing measurable, so for now only two of the four onboarding questions change recommendations.
 
-This option did best in testing, on both models. On dev's free model its outfits fit the occasion exactly as well as today's in total, and on DeepSeek V4.1 Flash they fit better. It matched the shopper's shoe and bottom picks more often than today in every run on both models and never returned an empty outfit. Sending every preference instead went from the worst option on the free model to the best on DeepSeek, so option 4 is also the one that depends least on which LLM runs it. Enriching the products didn't change any of this. Its weak spot is that "the occasion comes first" is only an instruction to the model. Nothing in the code enforces it.
+This option did best in testing, on both models. On dev's free model its outfits fit the occasion exactly as well as today's in total, and on DeepSeek V4.1 Flash they fit better. It matched the shopper's shoe and bottom picks more often than today in every run on both models and never returned an empty outfit. Sending every preference instead went from the worst option on the free model to the best on DeepSeek, so option 4 is also the one that depends least on which LLM runs it. Enriching the products didn't change any of this. On a catalog six times larger, it roughly doubled preference match on both models, for an occasion-fit cost of about 2.5% that stays inside today's own run-to-run swing. Its weak spot is that "the occasion comes first" is only an instruction to the model. Nothing in the code enforces it.
+
+There's a second step for later. If the ingestion step adds accurate `shoe_type` and `bottom_type` columns, a small SQL boost for products that match a saved pick, on top of option 4, brought preference match to 26 or 27 of 27 on the bigger catalog without lowering occasion fit. With the prototype's own LLM labels, the same boost added almost nothing, so that step waits until the columns are accurate.
 
 ---
 
@@ -59,6 +61,26 @@ For a sense of scale, on a few typical search phrases I wrote, like "linen midi 
 
 **5. Saved picks as an enriched-tag bonus.** This one only exists on the enriched catalog (see "Enriched products"). The prompt stays the same. Instead, each product gets a small bonus for every saved pick its enriched tags carry, including style and neckline, and a weight sets the size of the bonus.
 
+### What the options look like in SQL
+
+These are sketches of the scores, not the code the evaluation ran, which computed the same formulas in Python over the stored vectors. Like `FindSimilar`, lower scores rank higher. Options 1 and 4 change only the prompt, so their query is today's `FindSimilar`.
+
+```sql
+-- options 2 and 3: the nudge. $pick_vec is the vector for a saved pick ("heels"),
+-- $plain_vec the vector for the plain slot word ("shoes"). With several picks, the best one counts.
+SELECT id, title,
+    (embedding <=> $phrase_vec)
+    - 0.02 * (SELECT count(*) FROM unnest(tags) t WHERE lower(t) = ANY($nice_tags))
+    - $w * ((embedding <=> $plain_vec) - (embedding <=> $pick_vec)) AS score
+FROM products
+WHERE slot = $slot AND NOT EXISTS (SELECT 1 FROM unnest(tags) t WHERE lower(t) = ANY($exclude_tags))
+ORDER BY score, id
+LIMIT 3;
+
+-- option 5: a bonus for each saved pick the product's enriched tags carry
+    - $w * (SELECT count(*) FROM unnest(tags) t WHERE t = ANY($saved_picks)) AS score
+```
+
 The issue suggested reranking a larger pool of candidates for the nudge options. That isn't needed. `FindSimilar` has no vector index, so it already scores every product in the slot, and the nudge is just one more term in that score.
 
 I also looked at three other ideas. Mapping picks onto tags or product types to reuse the nice-tag bonus doesn't work, because no tag says heels or skirt. `product_type` does, but it's free text from the source catalog, and two of the products typed `Heels` are flats. Shifting the search phrase's vector toward the preference word turns out to rank products exactly the same way as the nudge, so it's the same option. Finally, neckline would need neckline tags on products, drafted by an LLM and checked by a person like the #91 basics tags. That's catalog work outside this ticket.
@@ -95,6 +117,31 @@ Sending style never made outfits fit the occasion better. On the four style pair
 
 The team's rec-system board has a product enrichment step. A cheap model with structured output and fixed option lists labels each product from its title, description, Shopify tags and first photo, and the labels are flattened into tags that search and ranking can match. I prototyped it on the 60 demo products with dev's free vision model, sending each photo inline because that model's endpoint rejects image links. On top of the board's fields (slot, colors, formality, occasions, season, pattern, fabric, fit and a short style note), I added the four the preferences need, in onboarding's own values: neckline for tops, bottom type, shoe type and up to two styles. Each product's tags gained its labels, and its vector was rebuilt the way the stored ones were built, from the photo plus its title and its now longer tags. Rebuilding the original vectors that way reproduces them at a cosine of 0.995 to 0.999. The demo catalog has no descriptions, so the model saw only titles, tags and 60x80 photos.
 
+Here's one product from the bigger catalog below. The model gets the title and the dataset's tags, plus the photo inline:
+
+```json
+{"title": "ONLY Women Black Top", "tags": ["top", "women", "black", "summer", "casual"]}
+```
+
+After dropping anything outside the lists, its answer is:
+
+```json
+{"colors": ["black"], "formality": "casual", "occasions": ["everyday", "date_night"],
+ "season": ["summer"], "pattern": "solid", "fabric": "knit", "fit": "regular",
+ "neckline": "low", "bottom_type": null, "shoe_type": null,
+ "style": ["comfortable_relaxed", "timeless_sophisticated"],
+ "style_notes": "A black strapless knit top that pairs well with jeans or a skirt."}
+```
+
+That gets flattened into these tags, which join the product's own:
+
+```json
+["black", "casual", "everyday", "date_night", "summer", "solid", "knit",
+ "low_neckline", "comfortable_relaxed", "timeless_sophisticated"]
+```
+
+The product's vector is then `normalize(photo vector + text vector of "ONLY Women Black Top, top, women, black, summer, casual, everyday, date_night, solid, knit, low_neckline, comfortable_relaxed, timeless_sophisticated")`.
+
 The labels were coarse. Of the 15 tops, 13 got a modest neckline, 1 a high one and none a low one. Comfortable & relaxed went on 41 of the 60 products, so the style tags barely tell products apart. A few labels were plainly wrong: a men's formal shoe got heels, a pair of striped flats got sandals, and the yoga skirt with leggings got pants. I haven't hand-checked the rest. The model's slot agreed with the catalog's for 59 of the 60.
 
 I reran every option on the enriched catalog with both models' recorded answers. Enrichment only changes products, so no new LLM calls were needed for options 1 to 4.
@@ -111,6 +158,69 @@ I reran every option on the enriched catalog with both models' recorded answers.
 Option 4 still had the best or close to the best preference match on both models, with occasion fit close to today's on the free model and above it on DeepSeek. Option 1 still swung between the models. Option 5, the first option that can use style and neckline without embedding them, barely moved preference match. At higher weights it cost occasion fit, mostly on the style pairs, so the rule held it at 0.04 on the free model and 0 on DeepSeek. The labels are too coarse for style and neckline to help yet.
 
 Enrichment did fix exclusions. The heels now carry a `heels` tag, so "no heels" removes them, and option 4's one conflict pick, the wedge sandal, disappeared on the free model. In the runs without preferences, 12 of the free model's 18 exclude tags matched an enriched tag, up from 7. Nice tags didn't improve, at 29 of 102, because the model still writes words like "elegant", "professional" and "date night" where the fixed list has `date_night`. Closing that gap needs `expand_answers` to use the same lists.
+
+---
+
+## A bigger catalog
+
+With only 60 products, one label can swing a result, so I repeated the comparison on 360. The extra 300 are women's products from `ashraq/fashion-product-images-small` on Hugging Face, the same public dataset the demo catalog came from, pulled through its filter API without downloading the whole file. I sampled them evenly across product types (90 tops, 70 bottoms, 70 shoes and 70 accessories), used the dataset's gender, color, season and usage fields as their thin store tags, enriched them like the demo products, and built their vectors the same way. The dataset page lists no license, which is fine for a test set that never ships.
+
+Nobody hand-labeled the new products, so DeepSeek labeled their occasion fit, reading each product's title, type and tags in batches of 30 per request and slot. I checked it on the 60 demo products first. It agreed with my hand labels on 86% of decisions (a kappa of 0.64), with a precision of 0.71 and a recall of 0.76. It broke the shopper rule three times, marking men's sunglasses and a men's cap as fitting, so that rule is applied in code instead. The demo products keep their hand labels. The judge cost about 2 cents and the enrichment $0. No new prompt calls were needed, because the recorded answers don't depend on the catalog.
+
+| Option | Occasion fit (of 240) | Preference match (of 27) |
+|---|---|---|
+| Today (no preferences) | 142.7 / 153.7 | 13.7 / 10.7 |
+| 1. All preferences to the LLM | 138.7 / 149.7 | 20.7 / 20.0 |
+| 2. A nudge for every field (weight 0 / 0) | 142.7 / 153.7 | 13.7 / 10.7 |
+| 3. The hybrid (weight 0.3 / 0.25) | 138.3 / 152.3 | 12.3 / 9.7 |
+| 4. Shoes and bottoms to the LLM | 139.0 / 150.0 | 20.0 / 20.7 |
+| 5. Saved picks as an enriched-tag bonus (weight 0.04 / 0.02) | 145.0 / 154.3 | 14.3 / 11.3 |
+
+Options 1 and 4 roughly doubled preference match on both models. Both cost about 4 points of occasion fit out of about 150, roughly 2.5%. Today's own three runs ranged from 133 to 158 on the free model and from 146 to 167 on DeepSeek, so that cost sits well inside the swing. Five of option 4's six runs landed in today's range, and the sixth missed by a point. I count that as the occasion still winning. Option 4 stays ahead of option 1, which again returned an empty outfit for the funeral with sandals saved on the free model and let more clashing picks through (2.3 against 0.7). Option 5 nudged occasion fit up but barely moved preference match.
+
+The enrichment labels were coarse here too. 83 of the 90 new tops got a modest neckline, Comfortable & relaxed went on 222 of the 300 products, and only 4 of the 12 shoes typed `Heels` were labeled heels. The model called most of the others sandals.
+
+---
+
+## Type columns and soft filters in SQL
+
+The ingestion step is meant to add `neckline_type`, `bottom_type` and `shoe_type` columns, and search doesn't have to stay plain vector search. It can mix in soft filters in SQL. I tested what that adds on the bigger catalog, again with no new LLM calls:
+
+- A boost for products whose type column matches a saved shoes or bottoms pick, on top of option 4. I built accurate columns from the titles and product types, which is the same rule preference match uses, so this is the best case.
+- The same boost using the prototype's LLM labels instead, which is what today's enrichment would give.
+- A soft penalty of 0.5 for men's products.
+- Exclusions check the type columns too, so "no heels" removes every product whose shoe type is heels.
+
+| Variant | Occasion fit (of 240) | Preference match (of 27) |
+|---|---|---|
+| Option 4 alone | 139.0 / 150.0 | 20.0 / 20.7 |
+| Option 4 + boost from accurate columns (weight 0.05 / 0.06) | 140.7 / 151.7 | 26.0 / 27 |
+| Option 4 + boost from the prototype's labels (weight 0.01 / 0.01) | 139.0 / 150.3 | 20.3 / 21.0 |
+| Boost from accurate columns with today's prompt (weight 0.06 / 0.06) | 143.3 / 154.3 | 17.3 / 16.7 |
+| Today + men's penalty | 152.3 / 160.3 | 13.7 / 10.7 |
+| Option 4 + accurate boost + men's penalty | 148.7 / 157.3 | 26.0 / 27 |
+
+With accurate type columns, shoes and bottoms personalization is close to complete. The boost on top of option 4 matched almost every pick and occasion fit went slightly up, not down. The prompt and the boost help each other: the boost alone, with today's prompt, only reached about 17. Label quality is the limit. With the prototype's labels, the boost added well under one point, mostly because heels were labeled as sandals. An accurate `neckline_type` column would work the same way for tops, but the demo data has no reliable neckline labels to measure that against.
+
+The men's penalty was the biggest occasion-fit gain of anything I tested, about 7 to 10 points. That mostly fixes the demo catalog, though. B&C only sells women's products, so its real catalog has nothing to penalize.
+
+Put together, the query looks like this. `product_target` stands for whatever column says who a product is for.
+
+```sql
+SELECT id, title,
+    (embedding <=> $phrase_vec)                                                 -- vector match
+    - 0.02 * (SELECT count(*) FROM unnest(tags) t WHERE lower(t) = ANY($nice_tags))
+    - 0.05 * (COALESCE(shoe_type = ANY($shoe_picks), false)
+              OR COALESCE(bottom_type = ANY($bottom_picks), false))::int        -- soft boost
+    + 0.5 * (product_target = 'men')::int                                       -- soft penalty, not a WHERE
+  AS score
+FROM products
+WHERE slot = $slot
+  AND NOT EXISTS (SELECT 1 FROM unnest(tags) t WHERE lower(t) = ANY($exclude_tags))
+  AND NOT COALESCE(shoe_type = ANY($exclude_tags) OR bottom_type = ANY($exclude_tags), false)
+ORDER BY score, id
+LIMIT 3;
+```
 
 ---
 
@@ -144,7 +254,7 @@ The labels ("Skirt", "Flats") exist today only in onboarding's frontend code, an
 
 ### Is a preference a soft ranking signal or a hard filter?
 
-Soft. A preference only shapes the search phrases the model writes, and the prompt line tells the model never to add exclusions because of one. The model's `exclude_tags` still filter products the way they do today. Hard filters would empty slots, because the catalog has no boots and no dresses, and #102 returns only as many outfits as its shortest slot has products. Option 1 showed how that goes wrong: one preference-driven exclusion list removed every shoe and left the shopper with no outfits.
+Soft. A preference only shapes the search phrases the model writes, and the prompt line tells the model never to add exclusions because of one. The model's `exclude_tags` still filter products the way they do today. Hard filters would empty slots, because the catalog has no boots and no dresses, and #102 returns only as many outfits as its shortest slot has products. Option 1 showed how that goes wrong: one preference-driven exclusion list removed every shoe and left the shopper with no outfits. Soft filters in SQL fit the same rule. A type-column boost or a penalty moves products up or down, and only the shopper's own exclusions remove anything.
 
 ### When an occasion and a preference conflict, which wins?
 
@@ -156,7 +266,7 @@ They get the same results they get today. Without shoes or bottoms picks, the pr
 
 ### What does the approach add to latency and cost?
 
-A little. On dev's model, requests with saved picks used about 65 more input tokens (508 instead of 443) and slightly fewer output tokens (69 against 73). There's no extra LLM call and no extra embedder call. The median latency was 880 ms against 752 ms today, with middle halves of 804 to 1,248 ms and 669 to 847 ms. The ranges overlap, but every prompt with preferences ran slower, so about 130 ms is probably real. Dev's model is free, so the cost there is $0. On DeepSeek, option 4 added about 55 input tokens (494 instead of 439), and its latency varied too much between runs to compare. The whole 141-call DeepSeek run cost $0.0107, under a hundredth of a cent per request, so the extra tokens cost almost nothing. The only other addition is one read of `users.style_preferences` by primary key per request.
+A little. On dev's model, requests with saved picks used about 65 more input tokens (508 instead of 443) and slightly fewer output tokens (69 against 73). There's no extra LLM call and no extra embedder call. The median latency was 880 ms against 752 ms today, with middle halves of 804 to 1,248 ms and 669 to 847 ms. The ranges overlap, but every prompt with preferences ran slower, so about 130 ms is probably real. Dev's model is free, so the cost there is $0. On DeepSeek, option 4 added about 55 input tokens (494 instead of 439), and its latency varied too much between runs to compare. The whole 141-call DeepSeek run cost $0.0107, under a hundredth of a cent per request, so the extra tokens cost almost nothing. The only other addition is one read of `users.style_preferences` by primary key per request. The later SQL boost would add one more term to a scan `FindSimilar` already does.
 
 ---
 
@@ -172,7 +282,7 @@ For the two nudge options, I picked the weight with one rule. I tried weights fr
 
 For style, I checked whether the search phrases reflect the style, how many top-3 products change compared with no saved style, whether occasion fit holds, and how many men's products show up.
 
-The search phrases came from dev's `AI_MODEL`, which was `nvidia/nemotron-3.5-super-vl:free` through OpenRouter, using the exact request #102's code sends at `d225350`, with 3 runs per distinct prompt. The 20 pairs need 47 distinct prompts: 9 for today, 20 for option 1, 4 for the hybrid's style pairs (15, 16, 17 and 20) and 14 for option 4. Option 2 reuses today's phrases, pair 18 has a vibe so the hybrid sends today's prompt for it, and the 6 pairs without shoes or bottoms picks send today's prompt under option 4. That came to 141 calls. None failed, and none would have been rejected by #102's limits on tag counts and phrase length. I ran the same 141 calls on DeepSeek V4.1 Flash, which cost $0.0107, and the enrichment took 60 more calls on the free model. An earlier round of 101 calls ran against #102's previous prompt, before it changed. Its results aren't reported here.
+The search phrases came from dev's `AI_MODEL`, which was `nvidia/nemotron-3.5-super-vl:free` through OpenRouter, using the exact request #102's code sends at `d225350`, with 3 runs per distinct prompt. The 20 pairs need 47 distinct prompts: 9 for today, 20 for option 1, 4 for the hybrid's style pairs (15, 16, 17 and 20) and 14 for option 4. Option 2 reuses today's phrases, pair 18 has a vibe so the hybrid sends today's prompt for it, and the 6 pairs without shoes or bottoms picks send today's prompt under option 4. That came to 141 calls. None failed, and none would have been rejected by #102's limits on tag counts and phrase length. I ran the same 141 calls on DeepSeek V4.1 Flash, which cost $0.0107, and the enrichment took 60 more calls on the free model. The bigger catalog added 300 enrichment calls on the free model and about 170 judge calls on DeepSeek, counting the check against the demo labels and retries, and reused every recorded answer. An earlier round of 101 calls ran against #102's previous prompt, before it changed. Its results aren't reported here.
 
 Everything Phase 2 needs is saved in `backend/internal/tests/testdata/style_preferences_eval.json`. Each request has its occasion and details, the products I marked as fitting, and 3 recorded answers without preferences. Each pair has its saved preferences, what it expects (the pick moves up, the pick stays out, or occasion fit holds), the products that match its pick, and 3 recorded answers from option 4's prompt. The recorded answers come from the free model, and the DeepSeek answers and the enriched catalog aren't stored. Phase 2 tests can replay these answers without calling the LLM. The phrases still have to become vectors through FashionCLIP before `FindSimilar` can use them.
 
@@ -216,7 +326,8 @@ That includes #102's own fix for "no heels". The model now puts `heels` in `excl
 - A slot that can hold a dress.
 - Neckline labels good enough to use. The prototype's came back almost all modest from 60x80 photos, so enrichment needs bigger photos or product descriptions.
 - `expand_answers` using the same fixed tag lists as enrichment, so nice tags match.
-- A bigger test catalog, with occasion fit labeled by an LLM and checked against the 60 hand labels first.
+- Accurate `shoe_type` and `bottom_type` columns from ingestion, then the SQL boost on top of option 4.
+- A hand check of a sample of the labeler's type columns before the boost relies on them.
 - Style, once the real catalog is in and it can be tested without the gender pull of the demo products.
 - The demo catalog's 27 men's products, which B&C doesn't sell.
 - The #91 basics, which add jeans, trousers, boots, sandals and pumps.
@@ -229,6 +340,8 @@ That includes #102's own fix for "no heels". The model now puts `heels` in `excl
 - **Enforcing the occasion.** "The occasion comes first" is only a prompt instruction. Phase 2 has no code that stops a preference from beating the occasion, so its tests are the only check.
 - **Replaying the recorded answers.** A replay test still has to turn the recorded phrases into vectors before `FindSimilar` can rank anything. It either calls the embedder or stores the vectors, and the fixture doesn't decide which.
 - **Untagged products.** Without enrichment, nothing tags the wedge sandal as a heel or anything as `heels`, so "no heels" exclusions and heel matching both depend on titles. Enrichment fixes that, but its labels still need a hand check before they're trusted.
+- **Labeler quality.** The SQL boost is only as good as the type columns. The prototype labeled 4 of 12 heels correctly, so whichever model or decision model fills the columns needs an accuracy check first.
+- **Judge labels.** Occasion fit on the 300 new products came from an LLM that agreed with my hand labels 86% of the time on the demo products. The bigger-catalog numbers carry that error.
 - **Only half the questions count.** Style, neckline and Dress do nothing for now. Whoever owns onboarding should know that two of its four questions don't change recommendations yet.
 - **Overlapping PRs.** #102 owns `expand_answers.prompt` and the request shape, so this lands after it merges. #99, the PR for #94, also edits the recommendation files, but this approach doesn't change `FindSimilar`, so #99's new `excludeProductIDs` parameter won't conflict.
 
