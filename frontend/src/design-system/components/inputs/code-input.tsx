@@ -1,0 +1,70 @@
+import { Input as BaseInput } from "@base-ui/react/input";
+import { useState } from "react";
+
+const boxBaseClasses =
+  "flex size-xxl items-center justify-center rounded-xs border bg-background text-body text-primary";
+
+type CodeInputProps = {
+  label: string;
+  length: number;
+  value: string;
+  onValueChange: (value: string) => void;
+  invalid?: boolean;
+  disabled?: boolean;
+};
+
+/** A one-time code drawn as one box per digit. A single real input sits over the boxes,
+ * so paste, autofill, and backspace work as they do in any text field. */
+export function CodeInput({
+  label,
+  length,
+  value,
+  onValueChange,
+  invalid = false,
+  disabled = false,
+}: CodeInputProps) {
+  const [focused, setFocused] = useState(false);
+  // The box the next digit goes in, or the last box once every box is filled.
+  const activeIndex = Math.min(value.length, length - 1);
+
+  function boxClasses(index: number) {
+    if (invalid) {
+      return `${boxBaseClasses} border-error`;
+    }
+
+    if (focused && index === activeIndex) {
+      return `${boxBaseClasses} border-primary`;
+    }
+
+    return boxBaseClasses;
+  }
+
+  return (
+    <div
+      className={
+        disabled ? "relative inline-flex gap-xs opacity-disabled" : "relative inline-flex gap-xs"
+      }
+    >
+      {Array.from({ length }, (_, index) => (
+        <span key={index} aria-hidden="true" className={boxClasses(index)}>
+          {value[index] ?? ""}
+        </span>
+      ))}
+      <BaseInput
+        aria-label={label}
+        aria-invalid={invalid}
+        inputMode="numeric"
+        autoComplete="one-time-code"
+        value={value}
+        // Paste and autofill can bring spaces or dashes, and the boxes show digits only. No maxLength:
+        // the browser would cut a pasted "123 456" before the spaces are dropped.
+        onValueChange={(next: string) => onValueChange(next.replace(/\D/g, "").slice(0, length))}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        disabled={disabled}
+        // Transparent rather than hidden, so the browser still offers autofill and a tap focuses it.
+        className="absolute inset-0 h-full w-full cursor-text bg-transparent text-transparent caret-transparent outline-none"
+      />
+    </div>
+  );
+}
