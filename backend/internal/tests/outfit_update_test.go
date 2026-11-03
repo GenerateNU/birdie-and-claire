@@ -56,8 +56,12 @@ func TestUpdateOutfitInputValidation(t *testing.T) {
 		{name: "empty product_ids after valid product_ids", body: `{"product_ids": ["` + productIDLower + `"], "PRODUCT_IDS": []}`, want: http.StatusUnprocessableEntity, wantBody: "body must set name or product_ids"},
 		// The empty list is treated as not provided, so this renames and leaves the products alone (see TestUpdateOutfitWithEmptyProductIDsKeepsProducts).
 		{name: "empty product_ids after valid product_ids beside name", body: `{"name": "x", "product_ids": ["` + productIDLower + `"], "PRODUCT_IDS": []}`, want: http.StatusNoContent},
-		// Known hole, also on POST /outfits and out of scope: huma checks maxLength on the first copy only.
-		{name: "overlong name after valid name is accepted", body: `{"name": "x", "NAME": "` + strings.Repeat("n", 200) + `"}`, want: http.StatusNoContent},
+		// Huma checks maxLength on the first copy only, so Resolve re-checks the decoded name.
+		{name: "overlong name after valid name", body: `{"name": "x", "NAME": "` + strings.Repeat("n", 200) + `"}`, want: http.StatusUnprocessableEntity, wantBody: "name must be at most 100 characters"},
+		{name: "maximum 100 characters", body: `{"name": "` + strings.Repeat("n", 100) + `"}`, want: http.StatusNoContent},
+		// 200 bytes, but huma counts runes, so this is within the limit.
+		{name: "maximum 100 multibyte characters", body: `{"name": "` + strings.Repeat("é", 100) + `"}`, want: http.StatusNoContent},
+		{name: "above maximum 101 characters", body: `{"name": "` + strings.Repeat("n", 101) + `"}`, want: http.StatusUnprocessableEntity, wantBody: "expected length <= 100"},
 		{name: "empty name", body: `{"name": ""}`, want: http.StatusUnprocessableEntity, wantBody: "body.name"},
 		{name: "empty product_ids", body: `{"product_ids": []}`, want: http.StatusUnprocessableEntity, wantBody: "body.product_ids"},
 		{name: "duplicate product ids", body: `{"product_ids": ["` + productIDUpper + `", "` + productIDLower + `"]}`, want: http.StatusBadRequest, wantBody: "duplicate product id"},

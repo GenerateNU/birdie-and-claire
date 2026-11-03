@@ -106,6 +106,8 @@ func TestOutfitNameBounds(t *testing.T) {
 	}{
 		{name: "empty", outfitName: "", want: http.StatusUnprocessableEntity},
 		{name: "maximum 100 characters", outfitName: strings.Repeat("n", 100), want: http.StatusOK},
+		// 200 bytes, but huma counts runes, so this is within the limit.
+		{name: "maximum 100 multibyte characters", outfitName: strings.Repeat("é", 100), want: http.StatusOK},
 		{name: "above maximum 101 characters", outfitName: strings.Repeat("n", 101), want: http.StatusUnprocessableEntity},
 	}
 
@@ -114,6 +116,30 @@ func TestOutfitNameBounds(t *testing.T) {
 			response := outfitProbe(t).Post("/probe", createOutfitBody(test.outfitName, productIDLower))
 			if response.Code != test.want {
 				t.Fatalf("status = %d, want %d: %s", response.Code, test.want, response.Body)
+			}
+		})
+	}
+}
+
+// Huma validates the first copy of a key repeated in different casing, but Go decodes the last one.
+func TestOutfitNameRepeatedInDifferentCasing(t *testing.T) {
+	tests := []struct {
+		name     string
+		body     string
+		wantBody string
+	}{
+		{name: "overlong name after valid name", body: `{"name": "x", "NAME": "` + strings.Repeat("n", 200) + `", "product_ids": ["` + productIDLower + `"]}`, wantBody: "name must be at most 100 characters"},
+		{name: "empty name after valid name", body: `{"name": "x", "NAME": "", "product_ids": ["` + productIDLower + `"]}`, wantBody: "name must not be empty"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			response := outfitProbe(t).Post("/probe", strings.NewReader(test.body))
+			if response.Code != http.StatusUnprocessableEntity {
+				t.Fatalf("status = %d, want %d: %s", response.Code, http.StatusUnprocessableEntity, response.Body)
+			}
+			if !strings.Contains(response.Body.String(), test.wantBody) {
+				t.Fatalf("body = %s, want it to contain %s", response.Body, test.wantBody)
 			}
 		})
 	}
