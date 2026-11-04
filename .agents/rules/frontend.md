@@ -64,7 +64,7 @@ as a review finding, not a preference.
 - SVGs are files, not inline `<svg>` or SVG data URIs in pages.
 - `src/index.css` holds only the `@tailwind` directives. Page-wide styles,
   `@font-face`, and shared classes like `.focus-ring` go in the plugin in
-  `tailwind.config.js`, built from the tokens.
+  `tailwind.config.ts`, built from the tokens.
 - Style with design tokens. Tailwind's default colors, spacing, type scale,
   radii, and opacity are switched off, so an off-token class compiles to
   nothing. Avoid arbitrary values like `w-[373px]`; when a Figma measurement

@@ -1,3 +1,4 @@
+import type { Config } from "tailwindcss";
 import plugin from "tailwindcss/plugin";
 
 import { AvatarSize } from "./src/design-system/tokens/avatar-size";
@@ -22,7 +23,6 @@ import { Opacity } from "./src/design-system/tokens/opacity";
 import { Spacing } from "./src/design-system/tokens/spacing";
 import { FontFamily, TypeScale } from "./src/design-system/tokens/typography";
 
-/** @type {import('tailwindcss').Config} */
 export default {
   content: ["./index.html", "./src/**/*.{js,jsx,ts,tsx}"],
   theme: {
@@ -92,4 +92,4 @@ export default {
       });
     }),
   ],
-};
+} satisfies Config;
