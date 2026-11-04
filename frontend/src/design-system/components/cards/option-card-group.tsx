@@ -2,7 +2,7 @@ import { Radio } from "@base-ui/react/radio";
 import { RadioGroup as BaseRadioGroup } from "@base-ui/react/radio-group";
 import { useId } from "react";
 
-import { cardFrameClasses } from "./card-classes";
+import { cardFrameClasses } from "@/design-system/components/cards/card-classes";
 
 const defaultGridClasses = "grid grid-cols-2 gap-md md:grid-cols-4";
 

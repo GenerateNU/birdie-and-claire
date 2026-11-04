@@ -70,6 +70,8 @@ as a review finding, not a preference.
   goes in `src/features/<domain>/`. Code with no domain, like the Supabase
   client, goes in `src/lib/`.
 - File names are kebab-case. Use named exports, not default exports.
+- Import through the `@/` alias, which maps to `src/`, even inside the design
+  system. Lint rejects `./` and `../` imports under `src/`.
 - Write components and top-level functions as `function` declarations. Use
   arrow functions for callbacks.
 

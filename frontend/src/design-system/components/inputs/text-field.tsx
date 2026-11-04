@@ -1,6 +1,6 @@
 import { Input as BaseInput } from "@base-ui/react/input";
 import { useId, type ComponentProps } from "react";
-import { joinClasses } from "../../utils/join-classes";
+import { joinClasses } from "@/design-system/utils/join-classes";
 
 const inputClasses =
   "rounded-sm border bg-background px-sm py-xs text-body text-primary focus-ring data-[disabled]:opacity-disabled disabled:opacity-disabled";

@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase";
 
-import { client } from "./generated/client.gen";
-import type { ErrorModel } from "./generated/types.gen";
+import { client } from "@/api/generated/client.gen";
+import type { ErrorModel } from "@/api/generated/types.gen";
 
 type ProblemFields = Pick<ErrorModel, "detail" | "title" | "errors">;
 

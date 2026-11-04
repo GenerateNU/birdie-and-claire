@@ -1,7 +1,7 @@
 import { Toggle as BaseToggle } from "@base-ui/react/toggle";
 import { useState } from "react";
 
-import { cardFrameClasses } from "./card-classes";
+import { cardFrameClasses } from "@/design-system/components/cards/card-classes";
 
 const imageCardClasses = `${cardFrameClasses} flex flex-col gap-xs p-xs text-body focus-ring data-[pressed]:border-primary`;
 

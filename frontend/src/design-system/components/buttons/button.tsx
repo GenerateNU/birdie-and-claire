@@ -6,8 +6,8 @@ import {
   buttonSizeClasses,
   buttonVariantClasses,
   type ButtonVariant,
-} from "./variant";
-import { joinClasses } from "../../utils/join-classes";
+} from "@/design-system/components/buttons/variant";
+import { joinClasses } from "@/design-system/utils/join-classes";
 
 type ButtonProps = {
   label: string;

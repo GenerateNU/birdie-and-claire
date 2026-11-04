@@ -3,7 +3,7 @@ import { createRouter, ErrorComponent, RouterProvider } from "@tanstack/react-ro
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
-import "./index.css";
+import "@/index.css";
 import "@/api/client";
 import { ToastProvider } from "@/design-system";
 import { routeTree } from "@/routeTree.gen";

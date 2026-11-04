@@ -1,7 +1,7 @@
 import { Radio } from "@base-ui/react/radio";
 import { RadioGroup as BaseRadioGroup } from "@base-ui/react/radio-group";
 import { useId } from "react";
-import { joinClasses } from "../../utils/join-classes";
+import { joinClasses } from "@/design-system/utils/join-classes";
 
 const radioClasses =
   "flex size-md items-center justify-center rounded-full border bg-background data-[checked]:border-primary focus-ring";

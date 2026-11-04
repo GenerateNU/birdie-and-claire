@@ -1,5 +1,5 @@
-import { Text } from "../../primitives/text";
-import { Button } from "../buttons/button";
+import { Text } from "@/design-system/primitives/text";
+import { Button } from "@/design-system/components/buttons/button";
 
 type ErrorStateProps = {
   message: string;

@@ -1,6 +1,6 @@
-import { Text } from "../../primitives/text";
-import { Button } from "../buttons/button";
-import { cardFrameClasses } from "./card-classes";
+import { Text } from "@/design-system/primitives/text";
+import { Button } from "@/design-system/components/buttons/button";
+import { cardFrameClasses } from "@/design-system/components/cards/card-classes";
 
 const listCardClasses = `${cardFrameClasses} flex items-center justify-between gap-md px-md py-sm`;
 

@@ -1,9 +1,9 @@
 import { AlertDialog } from "@base-ui/react/alert-dialog";
 import { Dialog as BaseDialog } from "@base-ui/react/dialog";
 
-import { Button } from "../buttons/button";
-import { CloseButton } from "../buttons/close-button";
-import type { ButtonVariant } from "../buttons/variant";
+import { Button } from "@/design-system/components/buttons/button";
+import { CloseButton } from "@/design-system/components/buttons/close-button";
+import type { ButtonVariant } from "@/design-system/components/buttons/variant";
 
 type DialogAction = {
   label: string;

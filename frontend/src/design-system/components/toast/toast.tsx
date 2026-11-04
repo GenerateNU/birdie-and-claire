@@ -1,8 +1,8 @@
 import { Toast as BaseToast, type ToastObject } from "@base-ui/react/toast";
 
-import { Button } from "../buttons/button";
-import { CloseButton } from "../buttons/close-button";
-import { cardFrameClasses } from "../cards/card-classes";
+import { Button } from "@/design-system/components/buttons/button";
+import { CloseButton } from "@/design-system/components/buttons/close-button";
+import { cardFrameClasses } from "@/design-system/components/cards/card-classes";
 
 export type ToastVariant = "neutral" | "success";
 

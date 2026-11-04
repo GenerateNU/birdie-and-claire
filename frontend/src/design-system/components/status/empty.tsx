@@ -1,4 +1,4 @@
-import { Text } from "../../primitives/text";
+import { Text } from "@/design-system/primitives/text";
 
 type EmptyProps = {
   title: string;

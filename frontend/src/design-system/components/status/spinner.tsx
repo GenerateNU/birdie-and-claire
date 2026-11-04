@@ -1,4 +1,4 @@
-import { joinClasses } from "../../utils/join-classes";
+import { joinClasses } from "@/design-system/utils/join-classes";
 
 type SpinnerProps = {
   label?: string;
