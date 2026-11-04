@@ -14,6 +14,7 @@ import {
   ErrorState,
   ImageCard,
   ListCard,
+  OptionCardGroup,
   RadioGroup,
   SearchField,
   StatusColor,
@@ -48,6 +49,7 @@ const sectionTitles = {
   empty: "Empty",
   "error-state": "Error state",
   "radio-group": "Radio group",
+  "option-card-group": "Option card group",
   avatar: "Avatar",
   dialog: "Dialog",
   toast: "Toast",
@@ -71,6 +73,7 @@ const navGroups = [
       "list-card",
       "spinner",
       "radio-group",
+      "option-card-group",
       "avatar",
       "dialog",
       "toast",
@@ -207,6 +210,10 @@ function Playground() {
 
             <Section id="radio-group">
               <RadioExamples />
+            </Section>
+
+            <Section id="option-card-group">
+              <OptionCardExamples />
             </Section>
 
             <Section id="avatar">
@@ -391,6 +398,27 @@ function ImageCardExamples() {
         src="/missing-photo.png"
         pressed={false}
         onPressedChange={() => {}}
+      />
+    </Box>
+  );
+}
+
+function OptionCardExamples() {
+  const [size, setSize] = useState<string | null>(null);
+  const [answer, setAnswer] = useState<string | null>(null);
+
+  return (
+    <Box className="flex max-w-content-lg flex-col gap-xl">
+      <OptionCardGroup label="Size" options={radioOptions} value={size} onValueChange={setSize} />
+      <OptionCardGroup
+        label="One column"
+        options={[
+          { label: "Yes", value: "yes" },
+          { label: "No", value: "no" },
+        ]}
+        value={answer}
+        onValueChange={setAnswer}
+        className="grid grid-cols-1 gap-md"
       />
     </Box>
   );

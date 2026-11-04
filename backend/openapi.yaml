@@ -349,7 +349,25 @@ components:
         - dislike
         - save
       type: object
-    RecommendationExpandedQuery:
+    RecommendationDetail:
+      additionalProperties: false
+      properties:
+        key:
+          enum:
+            - weather
+            - vibe
+            - custom
+          type: string
+        value:
+          description: One of the key's listed values, or free text for custom
+          maxLength: 200
+          minLength: 1
+          type: string
+      required:
+        - key
+        - value
+      type: object
+    RecommendationExpandedAnswers:
       additionalProperties: false
       properties:
         exclude_tags:
@@ -364,7 +382,7 @@ components:
           type: array
         slots:
           $ref: "#/components/schemas/RecommendationExpandedSlots"
-          description: The search phrase used for each slot; an empty phrase means the slot was not searched
+          description: The search phrase used for each slot
       required:
         - slots
         - exclude_tags
@@ -377,46 +395,64 @@ components:
           type: string
         bottom:
           type: string
+        shoe:
+          type: string
         top:
           type: string
       required:
         - top
         - bottom
         - accessory
+        - shoe
       type: object
     RecommendationRequest:
       additionalProperties: false
       properties:
-        query:
-          description: What the shopper is looking for, such as "summer wedding guest"
-          maxLength: 200
+        details:
+          description: The shopper's other answers, each key at most once
+          items:
+            $ref: "#/components/schemas/RecommendationDetail"
+          type:
+            - array
+            - "null"
+        occasion:
+          description: A preset such as "Workday" or the shopper's own words
+          maxLength: 100
           minLength: 1
           type: string
       required:
-        - query
+        - occasion
       type: object
     RecommendationResponse:
       additionalProperties: false
       properties:
-        accessory:
+        expanded_answers:
+          $ref: "#/components/schemas/RecommendationExpandedAnswers"
+        outfits:
+          description: Up to 3 outfits, best first; fewer when a slot has fewer matching products
           items:
-            $ref: "#/components/schemas/RecommendedProduct"
-          type: array
-        bottom:
-          items:
-            $ref: "#/components/schemas/RecommendedProduct"
-          type: array
-        expanded_query:
-          $ref: "#/components/schemas/RecommendationExpandedQuery"
-        top:
-          items:
-            $ref: "#/components/schemas/RecommendedProduct"
+            $ref: "#/components/schemas/RecommendedOutfit"
           type: array
       required:
-        - expanded_query
+        - expanded_answers
+        - outfits
+      type: object
+    RecommendedOutfit:
+      additionalProperties: false
+      properties:
+        accessory:
+          $ref: "#/components/schemas/RecommendedProduct"
+        bottom:
+          $ref: "#/components/schemas/RecommendedProduct"
+        shoe:
+          $ref: "#/components/schemas/RecommendedProduct"
+        top:
+          $ref: "#/components/schemas/RecommendedProduct"
+      required:
         - top
         - bottom
         - accessory
+        - shoe
       type: object
     RecommendedProduct:
       additionalProperties: false
@@ -899,7 +935,7 @@ paths:
           description: Error
       security:
         - bearer: []
-      summary: Recommend products per outfit slot for a shopper query
+      summary: Recommend up to three outfits for an occasion and the shopper's answers
       tags:
         - recommendations
   /api/v1/users/me:
