@@ -14,7 +14,7 @@ import {
   TextField,
 } from "@/design-system";
 
-export const Route = createFileRoute("/_signedIn/_hasAccount/recommend-test")({
+export const Route = createFileRoute("/_signedIn/_onboarded/recommend-test")({
   component: RecommendTest,
 });
 

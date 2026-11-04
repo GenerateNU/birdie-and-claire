@@ -10,7 +10,7 @@ import logo from "@/assets/logo.png";
 import { Button, Empty, ErrorState, Spinner } from "@/design-system";
 import type { Product } from "@/outfitItems";
 
-export const Route = createFileRoute("/_signedIn/_hasAccount/outfits/$outfitId")({
+export const Route = createFileRoute("/_signedIn/_onboarded/outfits/$outfitId")({
   component: OutfitPage,
 });
 

@@ -11,6 +11,7 @@ import { CornerRadius } from "./src/design-system/tokens/corner-radius";
 import { FocusRing } from "./src/design-system/tokens/focus-ring";
 import {
   AspectRatio,
+  CardMinSize,
   ContentWidth,
   PopupWidth,
   ScrollAreaHeight,
@@ -36,6 +37,8 @@ export default {
         Object.entries(ContentWidth).map(([key, value]) => [`content-${key}`, value]),
       ),
       maxHeight: { "scroll-area": ScrollAreaHeight },
+      minWidth: { "card-lg": CardMinSize.lg.width },
+      minHeight: { "card-lg": CardMinSize.lg.height },
       aspectRatio: AspectRatio,
       size: {
         "avatar-sm": AvatarSize.sm,

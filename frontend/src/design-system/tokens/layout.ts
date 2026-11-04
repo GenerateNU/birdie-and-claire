@@ -12,6 +12,12 @@ export const ContentWidth = {
 // Max height of a scrolling list (`max-h-scroll-area`).
 export const ScrollAreaHeight = "384px";
 
+// Smallest sizes of an image card (`min-w-card-*`, `min-h-card-*`). lg is the onboarding cards
+// in Figma. Keeps cards the same size however many share a row.
+export const CardMinSize = {
+  lg: { width: "236px", height: "408px" },
+} as const;
+
 export const AspectRatio = {
   portrait: "3 / 4",
 } as const;

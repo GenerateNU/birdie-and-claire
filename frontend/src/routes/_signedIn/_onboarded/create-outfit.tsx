@@ -16,7 +16,7 @@ import {
 } from "@/design-system";
 import { vibes, weathers } from "@/occasionOptions";
 
-export const Route = createFileRoute("/_signedIn/_hasAccount/create-outfit")({
+export const Route = createFileRoute("/_signedIn/_onboarded/create-outfit")({
   component: CreateOutfit,
 });
 
