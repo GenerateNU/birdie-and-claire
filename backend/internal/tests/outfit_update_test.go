@@ -8,10 +8,12 @@ import (
 	"strings"
 	"testing"
 
+	"birdie-and-claire/internal/auth"
 	"birdie-and-claire/internal/controllers"
 	"birdie-and-claire/internal/errs"
 	"birdie-and-claire/internal/models"
 	"birdie-and-claire/internal/repository"
+	"birdie-and-claire/internal/services"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/humatest"
@@ -166,6 +168,69 @@ func TestUpdateOutfitChangesOnlyTheFieldsSent(t *testing.T) {
 	}
 	if got, want := productIDsOf(products), []uuid.UUID{replacement}; !slices.Equal(got, want) {
 		t.Fatalf("products = %v, want %v", got, want)
+	}
+}
+
+func TestUpdateOutfitChangesNameAndProductsTogether(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	repo := repository.NewOutfitRepository(db)
+	replacement := insertTestProduct(t, db)
+	outfitID, ownerID := insertTestOutfit(t, db)
+
+	newName := "renamed"
+	updated, products, err := repo.Update(ctx, outfitID, models.UpdateOutfitParams{Name: newName, ProductIDs: []uuid.UUID{replacement}}, ownerID)
+	if err != nil {
+		t.Fatalf("update: %v", err)
+	}
+	want := []uuid.UUID{replacement}
+	if updated.Name != newName {
+		t.Fatalf("returned name = %q, want %q", updated.Name, newName)
+	}
+	if got := productIDsOf(products); !slices.Equal(got, want) {
+		t.Fatalf("returned products = %v, want %v", got, want)
+	}
+
+	stored, storedProducts, err := repo.GetByID(ctx, outfitID, ownerID)
+	if err != nil {
+		t.Fatalf("get outfit: %v", err)
+	}
+	if stored.Name != newName {
+		t.Fatalf("stored name = %q, want %q", stored.Name, newName)
+	}
+	if got := productIDsOf(storedProducts); !slices.Equal(got, want) {
+		t.Fatalf("stored products = %v, want %v", got, want)
+	}
+}
+
+// The probe above stops at validation and the repository tests skip the controller, so this sends a PATCH through both.
+func TestUpdateOutfitRouteReplacesProducts(t *testing.T) {
+	db := openTestDB(t)
+	replacement := insertTestProduct(t, db)
+	outfitID, ownerID := insertTestOutfit(t, db)
+	controller := controllers.NewOutfitController(services.NewOutfitService(repository.New(db), ""))
+
+	_, api := humatest.New(t)
+	huma.Register(api, huma.Operation{
+		OperationID: "update-outfit",
+		Method:      http.MethodPatch,
+		Path:        "/api/v1/outfits/{id}",
+	}, func(ctx context.Context, input *controllers.UpdateOutfitInput) (*controllers.OutfitOutput, error) {
+		// Stands in for the auth middleware, which the test API does not run.
+		return controller.Update(auth.WithUserID(ctx, ownerID), input)
+	})
+
+	response := api.Patch("/api/v1/outfits/"+outfitID.String(), map[string]any{"product_ids": []uuid.UUID{replacement}})
+	if response.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d: %s", response.Code, http.StatusOK, response.Body)
+	}
+
+	_, stored, err := repository.NewOutfitRepository(db).GetByID(context.Background(), outfitID, ownerID)
+	if err != nil {
+		t.Fatalf("get outfit: %v", err)
+	}
+	if got, want := productIDsOf(stored), []uuid.UUID{replacement}; !slices.Equal(got, want) {
+		t.Fatalf("stored products = %v, want %v", got, want)
 	}
 }
 
