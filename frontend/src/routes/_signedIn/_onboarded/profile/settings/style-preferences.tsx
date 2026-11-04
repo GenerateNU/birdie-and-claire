@@ -1,3 +1,4 @@
+import { CaretLeft } from "@phosphor-icons/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
@@ -106,7 +107,7 @@ function StylePreferencesEditor({ saved }: StylePreferencesEditorProps) {
             aria-label="Back to settings"
             className="text-heading focus-ring"
           >
-            ‹
+            <CaretLeft aria-hidden="true" />
           </Link>
           <Text variant="heading">Style Preferences</Text>
         </Box>

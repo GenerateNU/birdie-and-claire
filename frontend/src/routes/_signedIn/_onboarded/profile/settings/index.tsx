@@ -1,3 +1,4 @@
+import { CaretRight } from "@phosphor-icons/react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { signOut } from "@/account";
@@ -23,9 +24,7 @@ function SettingsPage() {
         className="mb-xl flex items-center justify-between border border-primary px-md py-sm text-body hover:bg-surface focus-ring"
       >
         Style Preferences
-        <span aria-hidden="true" className="text-heading leading-none">
-          ›
-        </span>
+        <CaretRight aria-hidden="true" className="text-heading" />
       </Link>
       <Button label="Sign out" variant="secondary" onClick={signOut} />
     </>
