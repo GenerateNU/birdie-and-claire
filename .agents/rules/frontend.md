@@ -59,9 +59,8 @@ as a review finding, not a preference.
   it. Don't add one for later.
 - Icons come from `@phosphor-icons/react`, marked `aria-hidden="true"` when a
   label sits next to them. No arrow or symbol characters as icons.
-- `src/design-system/assets` is the only assets folder. Fonts, the logo, and
-  images more than one feature uses go there. An image only one feature uses
-  sits in that feature's folder, like `features/outfits/silhouette.png`.
+- Every font, image, and SVG lives in `src/design-system/assets`, even one only
+  a single feature uses.
 - SVGs are files, not inline `<svg>` or SVG data URIs in pages.
 - `src/index.css` holds only the `@tailwind` directives. Page-wide styles,
   `@font-face`, and shared classes like `.focus-ring` go in the plugin in
