@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"slices"
 
 	"birdie-and-claire/internal/auth"
+	"birdie-and-claire/internal/log"
 	"birdie-and-claire/internal/models"
 	"birdie-and-claire/internal/repository"
 	"birdie-and-claire/internal/utils/pagination"
@@ -18,10 +20,14 @@ import (
 type OutfitService interface {
 	Create(ctx context.Context, params models.CreateOutfitParams) (models.OutfitResponse, error)
 	Get(ctx context.Context, id uuid.UUID) (models.OutfitResponse, error)
+	Update(ctx context.Context, id uuid.UUID, params models.UpdateOutfitParams) (models.OutfitResponse, error)
 	List(ctx context.Context, params pagination.CursorParams) (pagination.Page[models.Outfit], error)
 	Share(ctx context.Context, id uuid.UUID) (models.ShareOutfitResponse, error)
 	Unshare(ctx context.Context, id uuid.UUID) error
 	GetShared(ctx context.Context, id uuid.UUID) (models.SharedOutfitResponse, error)
+	// Suggest returns products like each requested product, leaving out the outfit's products and the requested ones.
+	// A product missing from the catalog fails the call with errs.ErrNotFound.
+	Suggest(ctx context.Context, id uuid.UUID, productIDs []uuid.UUID, limit int) (models.OutfitSuggestionsResponse, error)
 }
 
 type outfitService struct {
@@ -43,6 +49,14 @@ func (s *outfitService) Create(ctx context.Context, params models.CreateOutfitPa
 
 func (s *outfitService) Get(ctx context.Context, id uuid.UUID) (models.OutfitResponse, error) {
 	outfit, products, err := s.repo.Outfit.GetByID(ctx, id, auth.UserID(ctx))
+	if err != nil {
+		return models.OutfitResponse{}, err
+	}
+	return models.OutfitResponse{Outfit: outfit, Products: products}, nil
+}
+
+func (s *outfitService) Update(ctx context.Context, id uuid.UUID, params models.UpdateOutfitParams) (models.OutfitResponse, error) {
+	outfit, products, err := s.repo.Outfit.Update(ctx, id, params, auth.UserID(ctx))
 	if err != nil {
 		return models.OutfitResponse{}, err
 	}
@@ -92,4 +106,37 @@ func (s *outfitService) GetShared(ctx context.Context, id uuid.UUID) (models.Sha
 		return models.SharedOutfitResponse{}, err
 	}
 	return models.SharedOutfitResponse{ID: outfit.ID, Name: outfit.Name, Products: products}, nil
+}
+
+func (s *outfitService) Suggest(ctx context.Context, id uuid.UUID, productIDs []uuid.UUID, limit int) (models.OutfitSuggestionsResponse, error) {
+	_, products, err := s.repo.Outfit.GetByID(ctx, id, auth.UserID(ctx))
+	if err != nil {
+		return models.OutfitSuggestionsResponse{}, err
+	}
+
+	excludeProductIDs := slices.Clone(productIDs)
+	for _, product := range products {
+		excludeProductIDs = append(excludeProductIDs, product.ID)
+	}
+
+	suggestions := make(map[uuid.UUID][]models.ProductResponse, len(productIDs))
+	for _, productID := range productIDs {
+		embedding, slot, err := s.repo.Product.GetEmbedding(ctx, productID)
+		if err != nil {
+			return models.OutfitSuggestionsResponse{}, err
+		}
+		if embedding == nil {
+			log.Warn(ctx, "product has no embedding, so it gets no suggestions", "outfit", id, "product", productID)
+			suggestions[productID] = []models.ProductResponse{}
+			continue
+		}
+
+		// nil tag lists: FindSimilar treats a NULL list as matching no tag
+		similar, err := s.repo.Product.FindSimilar(ctx, embedding, slot, nil, nil, excludeProductIDs, limit)
+		if err != nil {
+			return models.OutfitSuggestionsResponse{}, err
+		}
+		suggestions[productID] = similar
+	}
+	return models.OutfitSuggestionsResponse{Suggestions: suggestions}, nil
 }
