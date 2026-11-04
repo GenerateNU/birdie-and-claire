@@ -2,7 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
-import { ApiError } from "@/api/client";
 import { getOutfitOptions } from "@/api/generated/@tanstack/react-query.gen";
 import type { ErrorModel } from "@/api/generated/types.gen";
 import { Box, Button, Empty, ErrorState, Link, Logo, Spinner, Text } from "@/design-system";
@@ -19,7 +18,7 @@ type EditorFrameProps = {
 
 // huma answers 422 for an ID that isn't a UUID, which can't name an outfit either.
 function isNotFound(error: ErrorModel | null) {
-  return error instanceof ApiError && (error.status === 404 || error.status === 422);
+  return error?.status === 404 || error?.status === 422;
 }
 
 const MAX_RETRIES = 3;

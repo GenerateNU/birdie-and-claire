@@ -2,7 +2,6 @@ import { useForm } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
-import { ApiError } from "@/api/client";
 import { createCurrentUserMutation } from "@/api/generated/@tanstack/react-query.gen";
 import type { ErrorModel } from "@/api/generated/types.gen";
 import { zCreateUserInputBody } from "@/api/generated/zod.gen";
@@ -23,7 +22,7 @@ function goHome() {
 
 // 409: the account already exists, which is where this page was headed anyway.
 function alreadyCreated(error: ErrorModel | null) {
-  return error instanceof ApiError && error.status === 409;
+  return error?.status === 409;
 }
 
 function CreateAccount() {

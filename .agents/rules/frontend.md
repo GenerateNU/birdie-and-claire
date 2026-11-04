@@ -19,9 +19,12 @@ as a review finding, not a preference.
   mirror them in `useState`.
 - Use the generated types and query keys. Don't hand-write a response type or
   a query key for an API call.
-- Everything the client throws is an `Error`. An API error is an `ApiError`
-  from `src/api/client.ts`, with the HTTP `status` and the problem+json
-  fields. Branch on `status`, for example a 404 that means "not found".
+- Everything the client throws is an `Error`. The generated types give each
+  call's error as `ErrorModel`, which carries the HTTP `status`. Branch on
+  `error.status`, for example a 404 that means "not found". A network failure
+  has no `status`.
+- To handle a status instead of throwing, call the SDK function without
+  `throwOnError` and check the returned `error`.
 - Read values the backend owns from the spec, not a hand-copied list: the
   generated enum constants (`RecommendationWeather`) and zod schemas
   (`zCreateUserInputBody`).

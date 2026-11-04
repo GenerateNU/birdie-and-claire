@@ -1,7 +1,6 @@
 import { queryOptions, type QueryClient } from "@tanstack/react-query";
 import { redirect, useRouter, useRouterState } from "@tanstack/react-router";
 
-import { ApiError } from "@/api/client";
 import { getCurrentUser } from "@/api/generated/sdk.gen";
 import type { CurrentUserResponse } from "@/api/generated/types.gen";
 import { Box, Button, Page, Text } from "@/design-system";
@@ -15,17 +14,17 @@ type AccountStatus = "none" | "needs-preferences" | "onboarded";
 
 /** The caller's user, or null when they haven't created an account yet. */
 async function fetchCurrentUser(signal?: AbortSignal): Promise<CurrentUserResponse | null> {
-  try {
-    const { data } = await getCurrentUser({ signal, throwOnError: true });
+  const { data, error } = await getCurrentUser({ signal });
 
+  if (error === undefined) {
     return data;
-  } catch (error) {
-    if (error instanceof ApiError && error.status === 404) {
-      return null;
-    }
-
-    throw error;
   }
+
+  if (error.status === 404) {
+    return null;
+  }
+
+  throw error;
 }
 
 function accountStatusQuery(userId: string) {

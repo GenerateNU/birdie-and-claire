@@ -6,7 +6,7 @@ import type { ErrorModel } from "@/api/generated/types.gen";
 type ProblemFields = Pick<ErrorModel, "detail" | "title" | "errors">;
 
 /** A non-2xx answer from our API, with the problem+json fields huma sent. */
-export class ApiError extends Error {
+class ApiError extends Error {
   readonly status: number;
   readonly detail: ErrorModel["detail"];
   readonly title: ErrorModel["title"];
