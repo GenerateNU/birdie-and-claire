@@ -104,9 +104,6 @@ function Home() {
       <Link className="block text-body underline" to="/playground">
         Design system playground →
       </Link>
-      <Link className="block text-body underline" to="/onboarding">
-        Restart onboarding →
-      </Link>
       <div className="mt-lg flex flex-col items-start gap-xs">
         <Button
           label="Seed random outfits"

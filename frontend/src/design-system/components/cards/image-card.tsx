@@ -17,16 +17,25 @@ type ImageCardProps = {
   pressed: boolean;
   onPressedChange: (pressed: boolean) => void;
   minSize?: keyof typeof minSizeClasses;
+  disabled?: boolean;
 };
 
 /** A pressable card with a portrait image and its label underneath. */
-export function ImageCard({ label, src, pressed, onPressedChange, minSize }: ImageCardProps) {
+export function ImageCard({
+  label,
+  src,
+  pressed,
+  onPressedChange,
+  minSize,
+  disabled = false,
+}: ImageCardProps) {
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
 
   return (
     <BaseToggle
       pressed={pressed}
       onPressedChange={onPressedChange}
+      disabled={disabled}
       className={minSize ? `${imageCardClasses} ${minSizeClasses[minSize]}` : imageCardClasses}
     >
       {src === null || src === failedSrc ? (
