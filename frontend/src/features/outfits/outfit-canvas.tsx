@@ -1,7 +1,7 @@
 import { useQueries } from "@tanstack/react-query";
 import type { CSSProperties } from "react";
 
-import silhouette from "@/assets/silhouette.png";
+import silhouette from "@/features/outfits/silhouette.png";
 import { Box, Button } from "@/design-system";
 import { cutOutGarment, type GarmentBox } from "@/features/outfits/garment-cutout";
 import {

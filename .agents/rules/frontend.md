@@ -57,8 +57,10 @@ as a review finding, not a preference.
   it. Don't add one for later.
 - Icons come from `@phosphor-icons/react`, marked `aria-hidden="true"` when a
   label sits next to them. No arrow or symbol characters as icons.
-- SVGs are files in `src/design-system/assets`, imported where they're used.
-  No inline `<svg>` or SVG data URIs in pages.
+- `src/design-system/assets` is the only assets folder. Fonts, the logo, and
+  images more than one feature uses go there. An image only one feature uses
+  sits in that feature's folder, like `features/outfits/silhouette.png`.
+- SVGs are files, not inline `<svg>` or SVG data URIs in pages.
 - Style with design tokens. Tailwind's default colors, spacing, type scale,
   radii, and opacity are switched off, so an off-token class compiles to
   nothing. Avoid arbitrary values like `w-[373px]`; when a Figma measurement
