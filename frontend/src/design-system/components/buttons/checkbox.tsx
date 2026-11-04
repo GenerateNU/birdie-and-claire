@@ -1,4 +1,5 @@
 import { Checkbox as BaseCheckbox } from "@base-ui/react/checkbox";
+import { Check } from "@phosphor-icons/react";
 import { joinClasses } from "../../utils/join-classes";
 
 const boxClasses =
@@ -31,7 +32,9 @@ export function Checkbox({
         disabled={disabled}
         className={boxClasses}
       >
-        <BaseCheckbox.Indicator aria-hidden="true">✓</BaseCheckbox.Indicator>
+        <BaseCheckbox.Indicator aria-hidden="true">
+          <Check />
+        </BaseCheckbox.Indicator>
       </BaseCheckbox.Root>
       {label}
     </label>

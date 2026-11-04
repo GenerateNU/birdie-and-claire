@@ -44,10 +44,10 @@ type RecommendationResponse struct {
 
 // RecommendedOutfit takes the same rank from each slot's search, so outfit n holds every slot's nth match.
 type RecommendedOutfit struct {
-	Top       RecommendedProduct `json:"top"`
-	Bottom    RecommendedProduct `json:"bottom"`
-	Accessory RecommendedProduct `json:"accessory"`
-	Shoe      RecommendedProduct `json:"shoe"`
+	Top       ProductResponse `json:"top"`
+	Bottom    ProductResponse `json:"bottom"`
+	Accessory ProductResponse `json:"accessory"`
+	Shoe      ProductResponse `json:"shoe"`
 }
 
 type RecommendationExpandedAnswers struct {
@@ -61,11 +61,4 @@ type RecommendationExpandedSlots struct {
 	Bottom    string `json:"bottom"`
 	Accessory string `json:"accessory"`
 	Shoe      string `json:"shoe"`
-}
-
-// RecommendedProduct carries the product's first image so a client can show results without
-// fetching each product's images.
-type RecommendedProduct struct {
-	Product
-	ImageURL *string `json:"image_url" doc:"URL of the product's lowest-position image, or null when it has none"`
 }

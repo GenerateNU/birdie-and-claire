@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"context"
+	"fmt"
+	"unicode/utf8"
 
 	"birdie-and-claire/internal/errs"
 	"birdie-and-claire/internal/models"
@@ -29,14 +31,42 @@ type CreateOutfitInput struct {
 
 var _ huma.Resolver = (*CreateOutfitInput)(nil)
 
-// Resolve compares parsed UUIDs, so differently cased spellings of one ID still count as duplicates.
-func (input *CreateOutfitInput) Resolve(huma.Context) []error {
-	seen := make(map[uuid.UUID]bool, len(input.Body.ProductIDs))
-	for _, id := range input.Body.ProductIDs {
+// checkDuplicateProductIDs compares parsed UUIDs, so differently cased spellings of one ID still count as duplicates.
+func checkDuplicateProductIDs(ids []uuid.UUID) error {
+	seen := make(map[uuid.UUID]bool, len(ids))
+	for _, id := range ids {
 		if seen[id] {
-			return []error{huma.Error400BadRequest("duplicate product id")}
+			return huma.Error400BadRequest("duplicate product id")
 		}
 		seen[id] = true
+	}
+	return nil
+}
+
+const maxOutfitNameLength = 100
+
+// checkOutfitNameLength exists because huma validates one copy of a key repeated in different casing but Go keeps the last; keep maxOutfitNameLength in sync with the maxLength:"100" tags.
+func checkOutfitNameLength(name string) error {
+	// Runes, not bytes, to match how huma counts maxLength.
+	if utf8.RuneCountInString(name) > maxOutfitNameLength {
+		return &huma.ErrorDetail{Location: "body.name", Message: fmt.Sprintf("name must be at most %d characters", maxOutfitNameLength)}
+	}
+	return nil
+}
+
+func (input *CreateOutfitInput) Resolve(huma.Context) []error {
+	if input.Body.Name == "" {
+		return []error{&huma.ErrorDetail{Location: "body.name", Message: "name must not be empty"}}
+	}
+	if err := checkOutfitNameLength(input.Body.Name); err != nil {
+		return []error{err}
+	}
+	// Huma validates one copy of a key repeated in different casing but Go keeps the last, so an empty list can get past minItems.
+	if len(input.Body.ProductIDs) == 0 {
+		return []error{&huma.ErrorDetail{Location: "body.product_ids", Message: "product_ids must not be empty"}}
+	}
+	if err := checkDuplicateProductIDs(input.Body.ProductIDs); err != nil {
+		return []error{err}
 	}
 	return nil
 }
@@ -64,6 +94,41 @@ type OutfitIDInput struct {
 // Get returns one of the authenticated user's outfits with its products.
 func (c *OutfitController) Get(ctx context.Context, input *OutfitIDInput) (*OutfitOutput, error) {
 	outfit, err := c.service.Get(ctx, input.ID)
+	if err != nil {
+		return nil, errs.ToHuma(ctx, err)
+	}
+	return &OutfitOutput{Body: outfit}, nil
+}
+
+type UpdateOutfitInput struct {
+	OutfitIDInput
+	// An empty name or product list is not a meaningful update, so a zero value means not provided.
+	Body struct {
+		Name       string      `json:"name,omitempty" minLength:"1" maxLength:"100" doc:"New display name for the outfit"`
+		ProductIDs []uuid.UUID `json:"product_ids,omitempty" nullable:"true" minItems:"1" doc:"IDs of every product in the outfit; replaces the current set"`
+	}
+}
+
+var _ huma.Resolver = (*UpdateOutfitInput)(nil)
+
+func (input *UpdateOutfitInput) Resolve(huma.Context) []error {
+	if input.Body.Name == "" && len(input.Body.ProductIDs) == 0 {
+		return []error{&huma.ErrorDetail{Location: "body", Message: "body must set name or product_ids"}}
+	}
+	if err := checkOutfitNameLength(input.Body.Name); err != nil {
+		return []error{err}
+	}
+	if err := checkDuplicateProductIDs(input.Body.ProductIDs); err != nil {
+		return []error{err}
+	}
+	return nil
+}
+
+func (c *OutfitController) Update(ctx context.Context, input *UpdateOutfitInput) (*OutfitOutput, error) {
+	outfit, err := c.service.Update(ctx, input.ID, models.UpdateOutfitParams{
+		Name:       input.Body.Name,
+		ProductIDs: input.Body.ProductIDs,
+	})
 	if err != nil {
 		return nil, errs.ToHuma(ctx, err)
 	}
@@ -119,4 +184,32 @@ func (c *OutfitController) List(ctx context.Context, input *ListOutfitsInput) (*
 		return nil, errs.ToHuma(ctx, err)
 	}
 	return &ListOutfitsOutput{Body: page}, nil
+}
+
+type SuggestOutfitItemsInput struct {
+	OutfitIDInput
+	ProductIDs []uuid.UUID `query:"product_id,explode" required:"true" minItems:"1" maxItems:"10" doc:"Catalog products to find similar products for; repeat the parameter, up to 10 times"`
+	Limit      int         `query:"limit" default:"12" minimum:"1" maximum:"30" doc:"Most products to return for each product"`
+}
+
+var _ huma.Resolver = (*SuggestOutfitItemsInput)(nil)
+
+func (input *SuggestOutfitItemsInput) Resolve(huma.Context) []error {
+	if err := checkDuplicateProductIDs(input.ProductIDs); err != nil {
+		return []error{err}
+	}
+	return nil
+}
+
+type SuggestOutfitItemsOutput struct {
+	Body models.OutfitSuggestionsResponse
+}
+
+// SuggestItems returns, for each requested product, similar products closest first.
+func (c *OutfitController) SuggestItems(ctx context.Context, input *SuggestOutfitItemsInput) (*SuggestOutfitItemsOutput, error) {
+	suggestions, err := c.service.Suggest(ctx, input.ID, input.ProductIDs, input.Limit)
+	if err != nil {
+		return nil, errs.ToHuma(ctx, err)
+	}
+	return &SuggestOutfitItemsOutput{Body: suggestions}, nil
 }
