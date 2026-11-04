@@ -27,9 +27,16 @@ export function TextField(props: TextFieldProps) {
   const labelClasses = "flex flex-col gap-xxs text-body";
   const classes = joinClasses(labelClasses, props.className);
 
+  // Added to the caller's aria-describedby, not in place of it.
+  let describedBy = props["aria-describedby"];
+
+  if (props.error) {
+    describedBy = describedBy ? `${describedBy} ${errorId}` : errorId;
+  }
+
   const errorProps = {
     "aria-invalid": props.error ? true : undefined,
-    "aria-describedby": props.error ? errorId : undefined,
+    "aria-describedby": describedBy,
   };
 
   const errorText = props.error && (

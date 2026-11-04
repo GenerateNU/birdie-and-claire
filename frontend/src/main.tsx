@@ -32,13 +32,28 @@ declare module "@tanstack/react-router" {
   }
 }
 
+let signedInUserId: string | undefined;
+
 // Only SIGNED_OUT, not every null session: INITIAL_SESSION is also null for signed-out
 // visitors, and reloading on it would send them from the not-found page to /login.
 // The full reload drops every cached query, so the next user starts clean.
-supabase.auth.onAuthStateChange((event) => {
+supabase.auth.onAuthStateChange((event, session) => {
   if (event === "SIGNED_OUT") {
     window.location.replace("/login");
+
+    return;
   }
+
+  const userId = session?.user.id;
+
+  // Another tab signed in as someone else. Reload so this tab drops the previous user's cache.
+  if (signedInUserId !== undefined && userId !== undefined && userId !== signedInUserId) {
+    window.location.reload();
+
+    return;
+  }
+
+  signedInUserId = userId;
 });
 
 createRoot(document.getElementById("root")!).render(
