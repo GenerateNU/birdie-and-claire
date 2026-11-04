@@ -26,6 +26,8 @@ export { Tabs } from "@/design-system/components/tabs/tabs";
 
 export { Dialog } from "@/design-system/components/dialog/dialog";
 
+export { Form } from "@/design-system/components/form/form";
+
 export { Empty } from "@/design-system/components/status/empty";
 
 export { ErrorState } from "@/design-system/components/status/error";

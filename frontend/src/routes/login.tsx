@@ -4,7 +4,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { z } from "zod";
 
-import { Box, Button, Page, Text, TextField } from "@/design-system";
+import { Box, Button, Form, Page, Text, TextField } from "@/design-system";
 import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/login")({
@@ -92,13 +92,7 @@ function Login() {
       </Text>
 
       {step === "email" ? (
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            void emailForm.handleSubmit();
-          }}
-          className="flex max-w-content-sm flex-col gap-md"
-        >
+        <Form form={emailForm} className="flex max-w-content-sm flex-col gap-md">
           <Text variant="body" className="text-secondary">
             We'll email you a code.
           </Text>
@@ -126,15 +120,9 @@ function Login() {
               Couldn't send the code. Try again.
             </Text>
           )}
-        </form>
+        </Form>
       ) : (
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            void codeForm.handleSubmit();
-          }}
-          className="flex max-w-content-sm flex-col gap-md"
-        >
+        <Form form={codeForm} className="flex max-w-content-sm flex-col gap-md">
           <Text variant="body" className="text-secondary">
             Enter the code we sent to{" "}
             <emailForm.Subscribe selector={(state) => state.values.email}>
@@ -182,7 +170,7 @@ function Login() {
               That code didn't work. Check it, or send a new one.
             </Text>
           )}
-        </form>
+        </Form>
       )}
     </Page>
   );

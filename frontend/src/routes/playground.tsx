@@ -1,6 +1,8 @@
 import { CaretLeft, CaretRight } from "@phosphor-icons/react";
+import { useForm } from "@tanstack/react-form";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
+import { z } from "zod";
 
 import {
   Avatar,
@@ -12,6 +14,7 @@ import {
   Dialog,
   Divider,
   Empty,
+  Form,
   OutlineColor,
   ErrorState,
   ImageCard,
@@ -50,6 +53,7 @@ const sectionTitles = {
   checkbox: "Checkbox",
   toggle: "Toggle",
   "text-field": "Text field",
+  form: "Form",
   "search-field": "Search field",
   "image-card": "Image card",
   "list-card": "List card",
@@ -81,6 +85,7 @@ const navGroups = [
       "checkbox",
       "toggle",
       "text-field",
+      "form",
       "search-field",
       "image-card",
       "list-card",
@@ -205,6 +210,10 @@ function Playground() {
 
             <Section id="text-field">
               <TextFieldExamples />
+            </Section>
+
+            <Section id="form">
+              <FormExamples />
             </Section>
 
             <Section id="search-field">
@@ -394,6 +403,36 @@ function TabsExamples() {
     <Tabs tabs={sampleTabs} value={tab} onValueChange={setTab} disabled={false}>
       <Text variant="body">Showing the {tab} panel.</Text>
     </Tabs>
+  );
+}
+
+const sampleFormSchema = z.object({ email: z.email("Enter a valid email") });
+
+function FormExamples() {
+  const [submitted, setSubmitted] = useState<string | null>(null);
+
+  const form = useForm({
+    defaultValues: { email: "" },
+    validators: { onSubmit: sampleFormSchema },
+    onSubmit: ({ value }) => setSubmitted(value.email),
+  });
+
+  return (
+    <Form form={form} className="flex max-w-content-sm flex-col gap-md">
+      <form.Field name="email">
+        {(field) => (
+          <TextField
+            label="Email"
+            value={field.state.value}
+            onValueChange={field.handleChange}
+            onBlur={field.handleBlur}
+            error={field.state.meta.errors.at(0)?.message}
+          />
+        )}
+      </form.Field>
+      <Button label="Submit" type="submit" className="self-start" />
+      {submitted && <Label>submitted {submitted}</Label>}
+    </Form>
   );
 }
 

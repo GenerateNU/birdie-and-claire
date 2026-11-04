@@ -6,7 +6,7 @@ import { ApiError } from "@/api/client";
 import { createCurrentUserMutation } from "@/api/generated/@tanstack/react-query.gen";
 import type { ErrorModel } from "@/api/generated/types.gen";
 import { zCreateUserInputBody } from "@/api/generated/zod.gen";
-import { Button, Page, Text, TextField } from "@/design-system";
+import { Button, Form, Page, Text, TextField } from "@/design-system";
 import { AccountError, requireAccountStatus } from "@/features/account/account";
 
 export const Route = createFileRoute("/_signedIn/create-account")({
@@ -56,13 +56,7 @@ function CreateAccount() {
         Placeholder form: it only sends a name to create your account.
       </Text>
 
-      <form
-        onSubmit={(event) => {
-          event.preventDefault();
-          void form.handleSubmit();
-        }}
-        className="flex max-w-content-sm flex-col gap-md"
-      >
+      <Form form={form} className="flex max-w-content-sm flex-col gap-md">
         <form.Field name="name">
           {(field) => (
             <TextField
@@ -81,7 +75,7 @@ function CreateAccount() {
             Couldn't create your account. Try again.
           </Text>
         )}
-      </form>
+      </Form>
     </Page>
   );
 }

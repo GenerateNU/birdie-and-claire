@@ -40,9 +40,11 @@ as a review finding, not a preference.
 
 ## Forms
 
-- Forms use TanStack Form, validated with zod. Take the schema from
-  `zod.gen.ts` when the API defines the rules, and write one only for input
-  the API doesn't see, like a login email.
+- Forms use TanStack Form, validated with zod, rendered with the design
+  system's `Form`, which takes the form instance and handles submit. No raw
+  `<form>`.
+- Take the schema from `zod.gen.ts` when the API defines the rules, and write
+  one only for input the API doesn't see, like a login email.
 - Show field errors through `TextField`'s `error` prop.
 
 ## UI
