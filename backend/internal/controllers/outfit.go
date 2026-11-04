@@ -105,7 +105,7 @@ type UpdateOutfitInput struct {
 	// An empty name or product list is not a meaningful update, so a zero value means not provided.
 	Body struct {
 		Name       string      `json:"name,omitempty" minLength:"1" maxLength:"100" doc:"New display name for the outfit"`
-		ProductIDs []uuid.UUID `json:"product_ids,omitempty" nullable:"false" minItems:"1" doc:"IDs of every product in the outfit; replaces the current set"`
+		ProductIDs []uuid.UUID `json:"product_ids,omitempty" nullable:"true" minItems:"1" doc:"IDs of every product in the outfit; replaces the current set"`
 	}
 }
 

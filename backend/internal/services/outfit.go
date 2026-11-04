@@ -26,7 +26,7 @@ type OutfitService interface {
 	Unshare(ctx context.Context, id uuid.UUID) error
 	GetShared(ctx context.Context, id uuid.UUID) (models.SharedOutfitResponse, error)
 	// Suggest returns products like each requested product, leaving out the outfit's products and the requested ones.
-	// A product missing from the catalog gets an entry with an error; any other failure fails the call.
+	// A product missing from the catalog fails the call with errs.ErrNotFound.
 	Suggest(ctx context.Context, id uuid.UUID, productIDs []uuid.UUID, limit int) (models.OutfitSuggestionsResponse, error)
 }
 
