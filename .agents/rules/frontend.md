@@ -72,6 +72,11 @@ as a review finding, not a preference.
 
 ## Structure
 
+- Routes are nested folders, never dot-separated names: `outfits/$outfitId.tsx`,
+  not `outfits.$outfitId.tsx`. A folder's layout or guard is its `route.tsx`,
+  not a sibling file with the folder's name. A `_name/` folder is a pathless
+  layout, a guard that adds nothing to the URL. Dev-only pages go in a
+  `(dev)/` group, which also adds nothing to the URL.
 - `src/routes/` holds route files, kept thin. Domain code shared by routes
   goes in `src/features/<domain>/`. Code with no domain, like the Supabase
   client, goes in `src/lib/`.

@@ -6,7 +6,7 @@ import { listOutfitsInfiniteQueryKey } from "@/api/generated/@tanstack/react-que
 import { createOutfit } from "@/api/generated/sdk.gen";
 import { Box, Button, Link, Page, Text } from "@/design-system";
 
-export const Route = createFileRoute("/_signedIn/_onboarded/dev")({
+export const Route = createFileRoute("/_signedIn/_onboarded/(dev)/dev")({
   component: Dev,
 });
 

@@ -14,7 +14,7 @@ import {
 import { zCreateUserProfilePictureUploadUrlQuery } from "@/api/generated/zod.gen";
 import { Avatar, Box, Button, Link, Page, Text } from "@/design-system";
 
-export const Route = createFileRoute("/_signedIn/_onboarded/profile-picture-test")({
+export const Route = createFileRoute("/_signedIn/_onboarded/(dev)/profile-picture-test")({
   component: ProfilePictureTest,
 });
 

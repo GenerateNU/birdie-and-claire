@@ -37,7 +37,7 @@ import {
 } from "@/design-system";
 import samplePhoto from "@/design-system/assets/sample-photo.svg";
 
-export const Route = createFileRoute("/playground")({
+export const Route = createFileRoute("/(dev)/playground")({
   component: Playground,
 });
 
