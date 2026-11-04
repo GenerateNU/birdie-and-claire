@@ -1,6 +1,6 @@
 package llm
 
-type ExpandedQuery struct {
+type ExpandedAnswers struct {
 	Slots ExpandedSlots `json:"slots"`
 	// products carrying any of these are never shown
 	ExcludeTags []string `json:"exclude_tags"`
@@ -8,9 +8,10 @@ type ExpandedQuery struct {
 	NiceTags []string `json:"nice_tags"`
 }
 
-// one product search phrase per outfit slot; an empty phrase skips the slot
+// one product search phrase per outfit slot; ExpandAnswers rejects a blank one
 type ExpandedSlots struct {
 	Top       string `json:"top"`
 	Bottom    string `json:"bottom"`
 	Accessory string `json:"accessory"`
+	Shoe      string `json:"shoe"`
 }

@@ -11,6 +11,7 @@ type SearchFieldProps = {
   onValueChange: (value: string) => void;
   onSubmit: () => void;
   onClick?: () => void;
+  maxLength?: number;
   inactive?: boolean;
   className?: string;
 };
@@ -22,6 +23,7 @@ export function SearchField({
   onValueChange,
   onSubmit,
   onClick,
+  maxLength,
   inactive = false,
   className,
 }: SearchFieldProps) {
@@ -44,6 +46,7 @@ export function SearchField({
       onValueChange={onValueChange}
       onKeyDown={handleKeyDown}
       onClick={onClick}
+      maxLength={maxLength}
       enterKeyHint="go"
       className={joinClasses(stateClasses, className)}
     />
