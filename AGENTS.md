@@ -2,7 +2,8 @@
 
 Rules for anyone writing code in this repo, human or agent. Read them before you
 change anything. Where `docs/` says something more specific, `docs/` wins.
-Before changing anything in `backend/`, read `.agents/rules/backend.md`. It
+Before changing anything in `backend/`, read `.agents/rules/backend.md`, and
+before changing anything in `frontend/`, read `.agents/rules/frontend.md`. Each
 wins where it is more specific.
 
 ## Before you change anything

@@ -21,7 +21,6 @@ type ImageCardProps = {
   disabled?: boolean;
 };
 
-/** A pressable card with an image and its label underneath. */
 export function ImageCard({
   label,
   src,

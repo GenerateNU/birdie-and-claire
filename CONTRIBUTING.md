@@ -126,7 +126,7 @@ never reports on a dependency. Note the JWKS path is
 API gateway and answers 401.
 
 The frontend reads `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`, which Vite
-substitutes at build time; `src/supabase/client.ts` is the only place that calls
+substitutes at build time; `src/lib/supabase.ts` is the only place that calls
 `createClient`.
 
 `users.id` holds the `sub` claim from a Supabase access token. There is no
@@ -169,5 +169,18 @@ mise run test
 The OpenAPI YAML is generated manually at `backend/openapi.yaml`. It is not
 regenerated during Air reloads, and CI fails if the committed file differs from
 what the code produces.
+
+The frontend's API client is generated from that file into
+`frontend/src/api/generated`, which is not committed. `bun run dev`, `build`,
+and `typecheck` regenerate it, so run `mise run api:generate` after changing a
+route before you expect the frontend to see it.
+
+`@hey-api/openapi-ts` is pinned to a `next` prerelease because the stable
+release crashes on TypeScript 7, which has no compiler API for it to import
+([hey-api#4235](https://github.com/hey-api/hey-api/issues/4235)). Move back to
+a stable version once one supports TypeScript 7. A dependency bot may offer
+`0.97.3` or later as a security fix for GHSA-hhx9-57xq-r5rw, because the
+prerelease's version string sorts below that range. Taking that offer brings
+the crash back.
 
 Fill in `.github/pull_request_template.md` when you open a pull request.

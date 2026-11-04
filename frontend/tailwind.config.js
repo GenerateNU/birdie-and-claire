@@ -24,15 +24,30 @@ import { FontFamily, TypeScale } from "./src/design-system/tokens/typography";
 export default {
   content: ["./index.html", "./src/**/*.{js,jsx,ts,tsx}"],
   theme: {
-    // Extends Tailwind's defaults rather than replacing them.
+    // Replaces Tailwind's default colors, spacing, type, radii, borders, and opacity, so only
+    // design tokens produce those classes. Layout scales like w-full and h-screen keep their
+    // defaults through extend below.
+    colors: { transparent: "transparent", current: "currentColor", ...StatusColor },
+    // Status colors work with any utility, like the defaults they replace.
+    textColor: { ...StatusColor, ...TextColor },
+    backgroundColor: { ...StatusColor, ...BackgroundColor },
+    borderColor: { transparent: "transparent", ...StatusColor, ...BorderColor },
+    outlineColor: OutlineColor,
+    spacing: { 0: "0px", px: "1px", ...Spacing },
+    borderRadius: CornerRadius,
+    borderWidth: { 0: "0px", ...BorderWidth },
+    opacity: { 0: "0", 100: "1", ...Opacity },
+    fontFamily: FontFamily,
+    fontSize: TypeScale,
     extend: {
-      colors: StatusColor,
-      textColor: TextColor,
-      backgroundColor: BackgroundColor,
-      borderColor: BorderColor,
-      outlineColor: OutlineColor,
-      spacing: Spacing,
-      width: { popup: PopupWidth, "card-sm": CardSize.sm.width, "card-lg": CardSize.lg.width },
+      width: {
+        popup: PopupWidth,
+        "card-sm": CardSize.sm.width,
+        "card-lg": CardSize.lg.width,
+        ...Object.fromEntries(
+          Object.entries(ContentWidth).map(([key, value]) => [`content-${key}`, value]),
+        ),
+      },
       maxWidth: Object.fromEntries(
         Object.entries(ContentWidth).map(([key, value]) => [`content-${key}`, value]),
       ),
@@ -44,13 +59,8 @@ export default {
         "avatar-md": AvatarSize.md,
         "avatar-lg": AvatarSize.lg,
       },
-      borderRadius: CornerRadius,
-      borderWidth: BorderWidth,
       outlineWidth: { "focus-ring": FocusRing.width },
       outlineOffset: { "focus-ring": FocusRing.offset },
-      opacity: Opacity,
-      fontFamily: FontFamily,
-      fontSize: TypeScale,
     },
   },
   plugins: [],

@@ -1,48 +1,36 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
-import OutfitCanvas from "@/OutfitCanvas";
-import OutfitDetails from "@/OutfitDetails";
-import type { Outfit } from "@/OutfitList";
-import { apiFetch } from "@/api";
-import logo from "@/assets/logo.png";
-import { Button, Empty, ErrorState, Spinner } from "@/design-system";
-import type { Product } from "@/outfitItems";
+import { ApiError } from "@/api/client";
+import { getOutfitOptions } from "@/api/generated/@tanstack/react-query.gen";
+import type { ErrorModel } from "@/api/generated/types.gen";
+import { Box, Button, Empty, ErrorState, Link, Logo, Spinner, Text } from "@/design-system";
+import { OutfitCanvas } from "@/features/outfits/outfit-canvas";
+import { OutfitDetails } from "@/features/outfits/outfit-details";
 
 export const Route = createFileRoute("/_signedIn/_onboarded/outfits/$outfitId")({
   component: OutfitPage,
 });
 
-type OutfitResponse = Outfit & {
-  products: Product[];
-};
-
 type EditorFrameProps = {
   children: ReactNode;
 };
 
-async function fetchOutfit(outfitId: string, signal: AbortSignal): Promise<OutfitResponse | null> {
-  const response = await apiFetch(`/api/v1/outfits/${encodeURIComponent(outfitId)}`, { signal });
-
-  // huma answers 422 for an ID that isn't a UUID, which can't name an outfit either.
-  if (response.status === 404 || response.status === 422) {
-    return null;
-  }
-
-  if (!response.ok) {
-    throw new Error(`${response.status} ${response.statusText}`);
-  }
-
-  return await response.json();
+// huma answers 422 for an ID that isn't a UUID, which can't name an outfit either.
+function isNotFound(error: ErrorModel | null) {
+  return error instanceof ApiError && (error.status === 404 || error.status === 422);
 }
+
+const MAX_RETRIES = 3;
 
 function OutfitPage() {
   const { outfitId } = Route.useParams();
 
   const outfitQuery = useQuery({
-    queryKey: ["outfit", outfitId],
-    queryFn: ({ signal }) => fetchOutfit(outfitId, signal),
+    ...getOutfitOptions({ path: { id: outfitId } }),
+    // Asking again won't make a missing outfit appear.
+    retry: (failureCount, error) => !isNotFound(error) && failureCount < MAX_RETRIES,
   });
 
   if (outfitQuery.isPending) {
@@ -53,23 +41,23 @@ function OutfitPage() {
     );
   }
 
+  if (isNotFound(outfitQuery.error)) {
+    return (
+      <EditorFrame>
+        <Empty title="Outfit not found" className="p-lg" />
+      </EditorFrame>
+    );
+  }
+
   // Checked rather than isError, so a failed background refetch keeps the outfit on screen.
   if (outfitQuery.data === undefined) {
     return (
       <EditorFrame>
         <ErrorState
-          message={`Failed to load the outfit: ${outfitQuery.error?.message}`}
+          message="Couldn't load this outfit."
           onRetry={() => void outfitQuery.refetch()}
           className="p-lg"
         />
-      </EditorFrame>
-    );
-  }
-
-  if (outfitQuery.data === null) {
-    return (
-      <EditorFrame>
-        <Empty title="Outfit not found" className="p-lg" />
       </EditorFrame>
     );
   }
@@ -81,12 +69,12 @@ function OutfitPage() {
       {/* Side by side from lg up. Narrower than that, the 576px details panel would squeeze the
           canvas to nothing, so the panels stack. */}
       <main className="flex min-h-0 flex-1 flex-col gap-xs p-xs pt-md lg:flex-row">
-        <div className="min-h-0 min-w-0 flex-1">
+        <Box className="min-h-0 min-w-0 flex-1">
           <OutfitCanvas products={products} />
-        </div>
-        <div className="h-2/5 lg:h-auto lg:w-[576px] lg:shrink-0">
+        </Box>
+        <Box className="h-2/5 lg:h-auto lg:w-content-md lg:shrink-0">
           <OutfitDetails outfitName={name} products={products} />
-        </div>
+        </Box>
       </main>
     </EditorFrame>
   );
@@ -95,32 +83,29 @@ function OutfitPage() {
 /** Fills the window, so the panels under the header take the height that's left. */
 function EditorFrame({ children }: EditorFrameProps) {
   return (
-    <div className="flex h-screen flex-col bg-background font-sans text-primary">
+    <Box className="flex h-screen flex-col">
       <EditorHeader />
       {children}
-    </div>
+    </Box>
   );
 }
 
 function EditorHeader() {
   return (
     <header className="grid h-[144px] grid-cols-[1fr_auto_1fr] items-end border-y px-md">
-      {/* Text's heading variant renders an h2, and the page needs an h1. */}
-      <h1 className="pb-md text-heading">Outfit Editor</h1>
+      <Text variant="heading" className="pb-md">
+        Outfit Editor
+      </Text>
       <Link to="/profile/outfits" className="pb-xxxs">
         {/* object-bottom repeats the Figma's crop of the image's empty top edge. */}
-        <img
-          src={logo}
-          alt="Birdie & Claire"
-          className="h-[118px] w-[373px] object-cover object-bottom"
-        />
+        <Logo className="h-[118px] w-[373px] object-cover object-bottom" />
       </Link>
       {/* Disabled until outfit editing is built. */}
-      <div className="flex items-center gap-xxs justify-self-end pb-sm">
+      <Box className="flex items-center gap-xxs justify-self-end pb-sm">
         <Button label="Undo" variant="secondary" disabled />
         <Button label="Redo" variant="secondary" disabled />
         <Button label="Save" disabled className="ml-sm" />
-      </div>
+      </Box>
     </header>
   );
 }

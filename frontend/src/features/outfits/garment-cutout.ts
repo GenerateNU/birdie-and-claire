@@ -6,7 +6,6 @@ export type GarmentBox = {
   bottom: number;
 };
 
-/** A product photo with the background around the garment made transparent. */
 export type GarmentCutout = {
   /** PNG data URL, so there's no object URL to revoke. */
   url: string;
@@ -20,7 +19,6 @@ const NEAR_WHITE = 232;
 // cut out quickly.
 const MAX_SIDE = 600;
 
-// ImageData holds one byte per channel, in RGBA order.
 const BYTES_PER_PIXEL = 4;
 
 const ALPHA_OFFSET = 3;

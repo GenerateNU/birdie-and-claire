@@ -1,31 +1,31 @@
 import { CaretLeft } from "@phosphor-icons/react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
-import { fetchCurrentUser } from "@/account";
-import { Box, Button, ErrorState, ImageCard, Spinner, Text } from "@/design-system";
+import {
+  getCurrentUserOptions,
+  getCurrentUserQueryKey,
+  replaceCurrentUserStylePreferencesMutation,
+} from "@/api/generated/@tanstack/react-query.gen";
+import type { CurrentUserResponse, StylePreferences } from "@/api/generated/types.gen";
+import { Box, Button, ErrorState, ImageCard, Link, Spinner, Text } from "@/design-system";
 import {
   fitFields,
   questions,
-  saveStylePreferences,
   togglePreference,
   type PreferenceField,
-  type StylePreferences,
-} from "@/style-preferences";
+  type PreferenceValue,
+} from "@/features/style-preferences/style-preferences";
 
 export const Route = createFileRoute("/_signedIn/_onboarded/profile/settings/style-preferences")({
   component: StylePreferencesPage,
 });
 
-const stylePreferencesKey = ["style-preferences"];
-
-async function fetchSavedPreferences(signal: AbortSignal): Promise<StylePreferences> {
-  const user = await fetchCurrentUser(signal);
-
+function savedPreferences(user: CurrentUserResponse): StylePreferences {
   // The route guard sends users without preferences to onboarding, so this only happens if the
   // row changed after the account status was cached.
-  if (user?.style_preferences === undefined) {
+  if (user.style_preferences === undefined) {
     throw new Error("no style preferences are saved yet");
   }
 
@@ -33,10 +33,7 @@ async function fetchSavedPreferences(signal: AbortSignal): Promise<StylePreferen
 }
 
 function StylePreferencesPage() {
-  const preferencesQuery = useQuery({
-    queryKey: stylePreferencesKey,
-    queryFn: ({ signal }) => fetchSavedPreferences(signal),
-  });
+  const preferencesQuery = useQuery({ ...getCurrentUserOptions(), select: savedPreferences });
 
   if (preferencesQuery.isPending) {
     return <Spinner />;
@@ -46,7 +43,7 @@ function StylePreferencesPage() {
   if (preferencesQuery.data === undefined) {
     return (
       <ErrorState
-        message={`Failed to load your style preferences: ${preferencesQuery.error?.message}`}
+        message="Couldn't load your style preferences."
         onRetry={() => void preferencesQuery.refetch()}
       />
     );
@@ -64,10 +61,18 @@ function StylePreferencesEditor({ saved }: StylePreferencesEditorProps) {
 
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(saved);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  function toggle(field: PreferenceField, value: string, pressed: boolean) {
+  const saveMutation = useMutation({
+    ...replaceCurrentUserStylePreferencesMutation(),
+    onSuccess: (user) => {
+      queryClient.setQueryData(getCurrentUserQueryKey(), user);
+      setEditing(false);
+    },
+  });
+
+  const saving = saveMutation.isPending;
+
+  function toggle(field: PreferenceField, value: PreferenceValue, pressed: boolean) {
     setDraft((current) => togglePreference(current, field, value, pressed));
   }
 
@@ -78,22 +83,7 @@ function StylePreferencesEditor({ saved }: StylePreferencesEditorProps) {
 
   function cancel() {
     setEditing(false);
-    setError(null);
-  }
-
-  async function save(preferencesToSave: StylePreferences) {
-    setError(null);
-    setSaving(true);
-
-    try {
-      await saveStylePreferences(preferencesToSave);
-      queryClient.setQueryData(stylePreferencesKey, preferencesToSave);
-      setEditing(false);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setSaving(false);
-    }
+    saveMutation.reset();
   }
 
   const displayedPreferences = editing ? draft : saved;
@@ -139,9 +129,9 @@ function StylePreferencesEditor({ saved }: StylePreferencesEditorProps) {
       </Box>
       {editing && (
         <Box className="sticky bottom-0 mt-lg flex items-center justify-end gap-xs border-t bg-background py-md">
-          {error && (
+          {saveMutation.isError && (
             <Text variant="body" className="mr-auto text-error">
-              Error: {error}
+              Couldn't save your preferences. Try again.
             </Text>
           )}
           <Button label="Cancel" variant="secondary" size="sm" disabled={saving} onClick={cancel} />
@@ -150,7 +140,7 @@ function StylePreferencesEditor({ saved }: StylePreferencesEditorProps) {
             size="sm"
             loading={saving}
             loadingLabel="Saving…"
-            onClick={() => void save(draft)}
+            onClick={() => saveMutation.mutate({ body: draft })}
           />
         </Box>
       )}
@@ -163,12 +153,12 @@ type PreferenceRowProps = {
   preferences: StylePreferences;
   editing: boolean;
   saving: boolean;
-  onToggle: (field: PreferenceField, value: string, pressed: boolean) => void;
+  onToggle: (field: PreferenceField, value: PreferenceValue, pressed: boolean) => void;
 };
 
 function PreferenceRow({ field, preferences, editing, saving, onToggle }: PreferenceRowProps) {
   const { name, options } = questions[field];
-  const picked = preferences[field];
+  const picked: readonly PreferenceValue[] = preferences[field];
 
   const shownOptions = editing
     ? options

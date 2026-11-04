@@ -9,7 +9,6 @@ export const ContentWidth = {
   xl: "896px",
 } as const;
 
-// Max height of a scrolling list (`max-h-scroll-area`).
 export const ScrollAreaHeight = "384px";
 
 // Fixed width and smallest height of an image card (`w-card-*`, `min-h-card-*`), from Figma: sm is

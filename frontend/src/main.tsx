@@ -1,14 +1,23 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, ErrorComponent, RouterProvider } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
 import "./index.css";
+import "@/api/client";
 import { ToastProvider } from "@/design-system";
 import { routeTree } from "@/routeTree.gen";
-import { supabase } from "@/supabase/client";
+import { supabase } from "@/lib/supabase";
 
-const queryClient = new QueryClient();
+// Pages show a fixed message for what failed, so the error itself is only logged.
+function logError(error: Error) {
+  console.error(error);
+}
+
+const queryClient = new QueryClient({
+  queryCache: new QueryCache({ onError: logError }),
+  mutationCache: new MutationCache({ onError: logError }),
+});
 
 const router = createRouter({
   routeTree,

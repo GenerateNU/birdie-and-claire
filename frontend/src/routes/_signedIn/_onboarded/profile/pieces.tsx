@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { Empty } from "@/design-system";
+import { Empty, Text } from "@/design-system";
 
 export const Route = createFileRoute("/_signedIn/_onboarded/profile/pieces")({
   component: PiecesPage,
@@ -9,8 +9,9 @@ export const Route = createFileRoute("/_signedIn/_onboarded/profile/pieces")({
 function PiecesPage() {
   return (
     <>
-      {/* Text's heading variant renders an h2, and the page needs an h1. */}
-      <h1 className="mb-lg text-heading">Pieces I Own</h1>
+      <Text variant="heading" className="mb-lg">
+        Pieces I Own
+      </Text>
       <Empty title="Coming soon" />
     </>
   );

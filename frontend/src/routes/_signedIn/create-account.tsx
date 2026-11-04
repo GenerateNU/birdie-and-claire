@@ -1,9 +1,13 @@
+import { useForm } from "@tanstack/react-form";
+import { useMutation } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, type SyntheticEvent } from "react";
 
-import { AccountError, requireAccountStatus } from "@/account";
-import { apiFetch } from "@/api";
-import { Button, Text, TextField } from "@/design-system";
+import { ApiError } from "@/api/client";
+import { createCurrentUserMutation } from "@/api/generated/@tanstack/react-query.gen";
+import type { ErrorModel } from "@/api/generated/types.gen";
+import { zCreateUserInputBody } from "@/api/generated/zod.gen";
+import { Button, Page, Text, TextField } from "@/design-system";
+import { AccountError, requireAccountStatus } from "@/features/account/account";
 
 export const Route = createFileRoute("/_signedIn/create-account")({
   beforeLoad: ({ context }) => requireAccountStatus(context, ["none"]),
@@ -11,53 +15,73 @@ export const Route = createFileRoute("/_signedIn/create-account")({
   component: CreateAccount,
 });
 
+// Has to stay a full page load. The cached "none" status never expires, so a router navigation
+// would send the user straight back here.
+function goHome() {
+  window.location.assign("/");
+}
+
+// 409: the account already exists, which is where this page was headed anyway.
+function alreadyCreated(error: ErrorModel | null) {
+  return error instanceof ApiError && error.status === 409;
+}
+
 function CreateAccount() {
-  const [name, setName] = useState("");
-  const [status, setStatus] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  async function submit(e: SyntheticEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setError(null);
-    setStatus("Creating...");
-
-    try {
-      const res = await apiFetch("/api/v1/users/me", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
-      });
-
-      if (res.status === 201 || res.status === 409) {
-        // Has to stay a full page load. The cached "none" status never expires,
-        // so a router navigation would send the user straight back here.
-        window.location.assign("/");
-
-        return;
+  const createMutation = useMutation({
+    ...createCurrentUserMutation(),
+    onSuccess: goHome,
+    onError: (error) => {
+      if (alreadyCreated(error)) {
+        goHome();
       }
+    },
+  });
 
-      throw new Error(`POST /api/v1/users/me failed: ${res.status}`);
-    } catch (err) {
-      setStatus(null);
-      setError(err instanceof Error ? err.message : String(err));
-    }
-  }
+  const form = useForm({
+    defaultValues: { name: "" },
+    validators: { onSubmit: zCreateUserInputBody },
+    onSubmit: ({ value }) => createMutation.mutate({ body: value }),
+  });
+
+  const headingHome = createMutation.isSuccess || alreadyCreated(createMutation.error);
+  // Stays on while the reload starts.
+  const busy = createMutation.isPending || headingHome;
 
   return (
-    <div className="min-h-screen p-xl">
+    <Page>
       <Text variant="heading" className="mb-xs">
         Create your account
       </Text>
-      <p className="text-secondary text-body mb-xl">
+      <Text variant="body" className="mb-xl text-secondary">
         Placeholder form: it only sends a name to create your account.
-      </p>
+      </Text>
 
-      <form onSubmit={submit} className="flex flex-col gap-md max-w-content-sm">
-        <TextField label="Name" required value={name} onValueChange={setName} />
-        <Button label="Create account" type="submit" disabled={status !== null} />
-        {status && <p className="text-secondary text-body">{status}</p>}
-        {error && <p className="text-error text-body">Error: {error}</p>}
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          void form.handleSubmit();
+        }}
+        className="flex max-w-content-sm flex-col gap-md"
+      >
+        <form.Field name="name">
+          {(field) => (
+            <TextField
+              label="Name"
+              required
+              value={field.state.value}
+              onValueChange={field.handleChange}
+              onBlur={field.handleBlur}
+              error={field.state.meta.errors.at(0)?.message}
+            />
+          )}
+        </form.Field>
+        <Button label="Create account" type="submit" loading={busy} loadingLabel="Creating…" />
+        {createMutation.isError && !headingHome && (
+          <Text variant="body" className="text-error">
+            Couldn't create your account. Try again.
+          </Text>
+        )}
       </form>
-    </div>
+    </Page>
   );
 }

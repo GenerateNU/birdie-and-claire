@@ -18,6 +18,10 @@ export { SearchField } from "./components/inputs/search-field";
 
 export { TextField } from "./components/inputs/text-field";
 
+export { Link } from "./components/links/link";
+
+export { Logo } from "./components/logo/logo";
+
 export { Tabs } from "./components/tabs/tabs";
 
 export { Dialog } from "./components/dialog/dialog";
@@ -35,6 +39,8 @@ export { ToastProvider, useToast } from "./components/toast/toast-manager";
 export { Box } from "./primitives/box";
 
 export { Divider } from "./primitives/divider";
+
+export { Page } from "./primitives/page";
 
 export { Text } from "./primitives/text";
 

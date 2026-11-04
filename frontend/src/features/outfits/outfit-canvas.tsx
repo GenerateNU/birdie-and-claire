@@ -2,9 +2,14 @@ import { useQueries } from "@tanstack/react-query";
 import type { CSSProperties } from "react";
 
 import silhouette from "@/assets/silhouette.png";
-import { Button } from "@/design-system";
-import { cutOutGarment, type GarmentBox } from "@/garmentCutout";
-import { CANVAS_SIZE, placeOnCanvas, type CanvasSpot, type Product } from "@/outfitItems";
+import { Box, Button } from "@/design-system";
+import { cutOutGarment, type GarmentBox } from "@/features/outfits/garment-cutout";
+import {
+  CANVAS_SIZE,
+  placeOnCanvas,
+  type CanvasSpot,
+  type Product,
+} from "@/features/outfits/outfit-items";
 
 type OutfitCanvasProps = {
   products: Product[];
@@ -42,7 +47,7 @@ function garmentPlacement(spot: CanvasSpot, garment: GarmentBox): CSSProperties 
   };
 }
 
-export default function OutfitCanvas({ products }: OutfitCanvasProps) {
+export function OutfitCanvas({ products }: OutfitCanvasProps) {
   const placedItems = placeOnCanvas(products);
 
   const cutouts = useQueries({
@@ -61,10 +66,10 @@ export default function OutfitCanvas({ products }: OutfitCanvasProps) {
   });
 
   return (
-    <div className="relative isolate flex h-full items-center justify-center overflow-hidden border bg-placeholder [container-type:size]">
+    <Box className="relative isolate flex h-full items-center justify-center overflow-hidden border bg-placeholder [container-type:size]">
       {/* The canvas, centered in the panel. It's never larger than the Figma, and shrinks to fit
           whichever of the panel's width or height runs out first. */}
-      <div
+      <Box
         className="relative"
         style={{
           aspectRatio: `${CANVAS_SIZE.width} / ${CANVAS_SIZE.height}`,
@@ -114,9 +119,9 @@ export default function OutfitCanvas({ products }: OutfitCanvasProps) {
             />
           );
         })}
-      </div>
+      </Box>
       {/* Help content comes with outfit editing. */}
       <Button label="Help" variant="secondary" disabled className="absolute left-sm top-md z-10" />
-    </div>
+    </Box>
   );
 }

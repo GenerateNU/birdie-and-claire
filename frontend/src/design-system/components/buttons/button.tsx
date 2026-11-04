@@ -1,4 +1,5 @@
 import { Button as BaseButton } from "@base-ui/react/button";
+import type { Icon } from "@phosphor-icons/react";
 import type { MouseEventHandler } from "react";
 import {
   buttonBaseClasses,
@@ -11,6 +12,8 @@ import { joinClasses } from "../../utils/join-classes";
 type ButtonProps = {
   label: string;
   accessibleLabel?: string;
+  leadingIcon?: Icon;
+  trailingIcon?: Icon;
   variant?: ButtonVariant;
   size?: keyof typeof buttonSizeClasses;
   loading?: boolean;
@@ -24,6 +27,8 @@ type ButtonProps = {
 export function Button({
   label,
   accessibleLabel,
+  leadingIcon: LeadingIcon,
+  trailingIcon: TrailingIcon,
   variant = "primary",
   size = "md",
   loading = false,
@@ -33,7 +38,9 @@ export function Button({
   disabled = false,
   className,
 }: ButtonProps) {
-  const buttonClasses = `${buttonBaseClasses} ${buttonVariantClasses[variant]} ${buttonSizeClasses[size]}`;
+  const hasIcon = LeadingIcon !== undefined || TrailingIcon !== undefined;
+  const iconClasses = hasIcon ? " inline-flex items-center gap-xxs" : "";
+  const buttonClasses = `${buttonBaseClasses} ${buttonVariantClasses[variant]} ${buttonSizeClasses[size]}${iconClasses}`;
   const classes = joinClasses(buttonClasses, className);
 
   return (
@@ -46,7 +53,9 @@ export function Button({
       aria-label={loading ? undefined : accessibleLabel}
       className={classes}
     >
+      {LeadingIcon && !loading && <LeadingIcon aria-hidden="true" />}
       {loading ? loadingLabel : label}
+      {TrailingIcon && !loading && <TrailingIcon aria-hidden="true" />}
     </BaseButton>
   );
 }

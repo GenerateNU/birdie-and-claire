@@ -17,7 +17,6 @@ type ListCardProps = {
   action?: ListCardAction;
 };
 
-/** A row showing a title, its current value, and an optional button. */
 export function ListCard({ title, value, action }: ListCardProps) {
   return (
     <div className={listCardClasses}>

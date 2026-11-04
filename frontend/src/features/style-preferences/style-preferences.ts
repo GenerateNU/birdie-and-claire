@@ -1,18 +1,18 @@
-import { apiFetch } from "@/api";
+import type { StylePreferences } from "@/api/generated/types.gen";
 
-export type PreferenceField = "style" | "neckline" | "bottoms" | "shoes";
+export type PreferenceField = keyof StylePreferences;
+
+/** Any option of any field. A field only offers its own, through `questions`. */
+export type PreferenceValue = StylePreferences[PreferenceField][number];
 
 type FitField = Exclude<PreferenceField, "style">;
-
-// Matches StylePreferences in backend/openapi.yaml. An empty list means no preference.
-export type StylePreferences = Record<PreferenceField, string[]>;
 
 export const noPreferences: StylePreferences = { style: [], neckline: [], bottoms: [], shoes: [] };
 
 type Question = {
   readonly name: string;
   readonly prompt: string;
-  readonly options: readonly { readonly value: string; readonly label: string }[];
+  readonly options: readonly { readonly value: PreferenceValue; readonly label: string }[];
 };
 
 export const questions: Readonly<Record<PreferenceField, Question>> = {
@@ -60,11 +60,10 @@ export const questions: Readonly<Record<PreferenceField, Question>> = {
 
 export const fitFields: readonly FitField[] = ["neckline", "bottoms", "shoes"];
 
-/** Returns `preferences` with `value` added to or removed from `field`. */
 export function togglePreference(
   preferences: StylePreferences,
   field: PreferenceField,
-  value: string,
+  value: PreferenceValue,
   pressed: boolean,
 ): StylePreferences {
   return {
@@ -73,16 +72,4 @@ export function togglePreference(
       ? [...preferences[field], value]
       : preferences[field].filter((picked) => picked !== value),
   };
-}
-
-export async function saveStylePreferences(preferences: StylePreferences) {
-  const res = await apiFetch("/api/v1/users/me/style-preferences", {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(preferences),
-  });
-
-  if (!res.ok) {
-    throw new Error(`PUT /api/v1/users/me/style-preferences failed: ${res.status}`);
-  }
 }

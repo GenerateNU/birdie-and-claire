@@ -23,7 +23,6 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      // Proxy API requests to the Go backend.
       "/api": "http://localhost:8080",
     },
   },

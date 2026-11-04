@@ -1,4 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { CaretLeft, CaretRight } from "@phosphor-icons/react";
+import { createFileRoute } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
 
 import {
@@ -9,16 +10,21 @@ import {
   Button,
   Checkbox,
   Dialog,
+  Divider,
   Empty,
   OutlineColor,
   ErrorState,
   ImageCard,
+  Link,
   ListCard,
+  Logo,
   OptionCardGroup,
+  ProgressBar,
   RadioGroup,
   SearchField,
   StatusColor,
   Spinner,
+  Tabs,
   Text,
   TextColor,
   TextField,
@@ -39,6 +45,7 @@ const textVariants = ["heading", "subheading", "body", "caption"] as const;
 
 const sectionTitles = {
   buttons: "Buttons",
+  link: "Link",
   checkbox: "Checkbox",
   toggle: "Toggle",
   "text-field": "Text field",
@@ -46,8 +53,12 @@ const sectionTitles = {
   "image-card": "Image card",
   "list-card": "List card",
   spinner: "Spinner",
+  "progress-bar": "Progress bar",
   empty: "Empty",
   "error-state": "Error state",
+  tabs: "Tabs",
+  divider: "Divider",
+  logo: "Logo",
   "radio-group": "Radio group",
   "option-card-group": "Option card group",
   avatar: "Avatar",
@@ -65,6 +76,7 @@ const navGroups = [
     href: "#top",
     sections: [
       "buttons",
+      "link",
       "checkbox",
       "toggle",
       "text-field",
@@ -72,6 +84,12 @@ const navGroups = [
       "image-card",
       "list-card",
       "spinner",
+      "progress-bar",
+      "empty",
+      "error-state",
+      "tabs",
+      "divider",
+      "logo",
       "radio-group",
       "option-card-group",
       "avatar",
@@ -110,7 +128,8 @@ function Playground() {
   return (
     <Box className="min-h-screen">
       <Box className="flex gap-xl px-lg py-xl">
-        <nav className="hidden w-40 shrink-0 md:block">
+        {/* Wide enough for the longest section title. Not a design measurement, so no token. */}
+        <nav className="hidden w-[160px] shrink-0 md:block">
           <Box className="sticky top-xl flex flex-col gap-lg">
             {navGroups.map((group) => (
               <Box key={group.title} className="flex flex-col gap-xxs">
@@ -133,8 +152,8 @@ function Playground() {
 
         <main className="flex min-w-0 flex-1 flex-col gap-xl">
           <Box>
-            <Link className="text-secondary text-body underline hover:text-primary" to="/">
-              ← Home
+            <Link variant="text" to="/dev" leadingIcon={CaretLeft}>
+              Dev
             </Link>
             <Text variant="heading" className="mt-md">
               Design system playground
@@ -159,6 +178,26 @@ function Playground() {
                 {buttonVariants.map((variant) => (
                   <ButtonRow key={variant} variant={variant} />
                 ))}
+              </Box>
+              <Box className="flex items-center gap-md">
+                <Button label="Back" variant="secondary" leadingIcon={CaretLeft} />
+                <Button label="Next" trailingIcon={CaretRight} />
+              </Box>
+              <Label>leadingIcon · trailingIcon</Label>
+            </Section>
+
+            <Section id="link">
+              <Box className="flex items-center gap-md">
+                <Link to="/playground">Default (unstyled)</Link>
+                <Link variant="text" to="/playground">
+                  Text
+                </Link>
+                <Link variant="text" to="/playground" leadingIcon={CaretLeft}>
+                  Leading icon
+                </Link>
+                <Link variant="text" to="/playground" trailingIcon={CaretRight}>
+                  Trailing icon
+                </Link>
               </Box>
             </Section>
 
@@ -197,6 +236,10 @@ function Playground() {
               <Spinner />
             </Section>
 
+            <Section id="progress-bar">
+              <ProgressBarExamples />
+            </Section>
+
             <Section id="empty">
               <Empty title="Nothing here yet" description="Items you add will show up here." />
             </Section>
@@ -206,6 +249,22 @@ function Playground() {
                 <ErrorState message="Something went wrong." />
                 <ErrorState message="Could not load your trips." onRetry={() => {}} />
               </Box>
+            </Section>
+
+            <Section id="tabs">
+              <TabsExamples />
+            </Section>
+
+            <Section id="divider">
+              <Box className="flex flex-col gap-xs">
+                <Text variant="body">Above</Text>
+                <Divider />
+                <Text variant="body">Below</Text>
+              </Box>
+            </Section>
+
+            <Section id="logo">
+              <Logo className="w-full max-w-xs" />
             </Section>
 
             <Section id="radio-group">
@@ -294,7 +353,7 @@ function Section({ id, children }: SectionProps) {
       id={id}
       className="flex scroll-mt-xl flex-col gap-md rounded-lg border bg-placeholder p-lg"
     >
-      <Text variant="subheading">{sectionTitles[id]}</Text>
+      <Text variant="subsubheading">{sectionTitles[id]}</Text>
       {children}
     </section>
   );
@@ -314,6 +373,33 @@ function ButtonRow({ variant }: ButtonRowProps) {
       <Button label="Button" variant={variant} disabled />
       <Button label="Button" variant={variant} loading />
     </>
+  );
+}
+
+function ProgressBarExamples() {
+  return (
+    <Box className="flex flex-col gap-xs">
+      {[0, 1, 2].map((step) => (
+        <ProgressBar key={step} label={`Step ${step} of 2`} step={step} stepCount={2} />
+      ))}
+      <Label>step 0 · 1 · 2 of 2</Label>
+    </Box>
+  );
+}
+
+const sampleTabs = [
+  { value: "neckline", label: "Neckline" },
+  { value: "bottoms", label: "Bottoms" },
+  { value: "shoes", label: "Shoes" },
+];
+
+function TabsExamples() {
+  const [tab, setTab] = useState("neckline");
+
+  return (
+    <Tabs tabs={sampleTabs} value={tab} onValueChange={setTab} disabled={false}>
+      <Text variant="body">Showing the {tab} panel.</Text>
+    </Tabs>
   );
 }
 
@@ -513,7 +599,7 @@ type LabelProps = {
 
 function Label({ children }: LabelProps) {
   return (
-    <Text variant="caption" className="text-secondary font-mono">
+    <Text variant="caption" className="text-secondary">
       {children}
     </Text>
   );
@@ -526,8 +612,8 @@ type SwatchProps = {
 
 function Swatch({ name, value }: SwatchProps) {
   return (
-    <Box className="flex flex-col gap-xxs w-24">
-      <Box className="h-12 rounded-sm border" style={{ backgroundColor: value }} />
+    <Box className="flex w-[96px] flex-col gap-xxs">
+      <Box className="h-xxl rounded-sm border" style={{ backgroundColor: value }} />
       <Label>{name}</Label>
       <Label>{value}</Label>
     </Box>

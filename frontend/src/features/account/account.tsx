@@ -1,15 +1,11 @@
 import { queryOptions, type QueryClient } from "@tanstack/react-query";
-import {
-  redirect,
-  useRouter,
-  useRouterState,
-  type ErrorComponentProps,
-} from "@tanstack/react-router";
+import { redirect, useRouter, useRouterState } from "@tanstack/react-router";
 
-import { apiFetch } from "@/api";
-import { Button, Text } from "@/design-system";
-import type { StylePreferences } from "@/style-preferences";
-import { supabase } from "@/supabase/client";
+import { ApiError } from "@/api/client";
+import { getCurrentUser } from "@/api/generated/sdk.gen";
+import type { CurrentUserResponse } from "@/api/generated/types.gen";
+import { Box, Button, Page, Text } from "@/design-system";
+import { supabase } from "@/lib/supabase";
 
 /**
  * Where the signed-in user is in sign-up: no row in our users table yet, an account that
@@ -17,26 +13,19 @@ import { supabase } from "@/supabase/client";
  */
 type AccountStatus = "none" | "needs-preferences" | "onboarded";
 
-// CurrentUserResponse in backend/openapi.yaml, trimmed to the fields the frontend reads.
-type CurrentUserResponse = {
-  style_preferences?: StylePreferences;
-};
-
 /** The caller's user, or null when they haven't created an account yet. */
-export async function fetchCurrentUser(signal?: AbortSignal): Promise<CurrentUserResponse | null> {
-  const res = await apiFetch("/api/v1/users/me", { signal });
+async function fetchCurrentUser(signal?: AbortSignal): Promise<CurrentUserResponse | null> {
+  try {
+    const { data } = await getCurrentUser({ signal, throwOnError: true });
 
-  if (res.status === 404) {
-    return null;
+    return data;
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      return null;
+    }
+
+    throw error;
   }
-
-  if (!res.ok) {
-    throw new Error(`GET /api/v1/users/me failed: ${res.status}`);
-  }
-
-  // SAFETY: a 2xx is CurrentUserResponse in backend/openapi.yaml. style_preferences is left out
-  // until onboarding is finished.
-  return (await res.json()) as CurrentUserResponse;
 }
 
 function accountStatusQuery(userId: string) {
@@ -89,23 +78,22 @@ export async function signOut() {
   }
 }
 
-/** Error screen for routes whose account check failed. */
-export function AccountError({ error }: ErrorComponentProps) {
+export function AccountError() {
   const router = useRouter();
   const retrying = useRouterState({ select: (state) => state.isLoading });
 
   return (
-    <div className="min-h-screen p-xl">
+    <Page>
       <Text variant="heading" className="mb-xs">
         Couldn't load your account
       </Text>
-      <p className="text-error text-body mb-md">
-        Error: {error instanceof Error ? error.message : String(error)}
-      </p>
-      <div className="flex gap-xs">
+      <Text variant="body" className="mb-md text-error">
+        Something went wrong. Try again, or sign out and back in.
+      </Text>
+      <Box className="flex gap-xs">
         <Button label="Retry" onClick={() => router.invalidate()} disabled={retrying} />
         <Button label="Sign out" variant="secondary" onClick={signOut} />
-      </div>
-    </div>
+      </Box>
+    </Page>
   );
 }
