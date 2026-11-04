@@ -61,6 +61,10 @@ func (input *CreateOutfitInput) Resolve(huma.Context) []error {
 	if err := checkOutfitNameLength(input.Body.Name); err != nil {
 		return []error{err}
 	}
+	// Huma validates one copy of a key repeated in different casing but Go keeps the last, so an empty list can get past minItems.
+	if len(input.Body.ProductIDs) == 0 {
+		return []error{&huma.ErrorDetail{Location: "body.product_ids", Message: "product_ids must not be empty"}}
+	}
 	if err := checkDuplicateProductIDs(input.Body.ProductIDs); err != nil {
 		return []error{err}
 	}

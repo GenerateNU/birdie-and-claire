@@ -145,6 +145,31 @@ func TestOutfitNameRepeatedInDifferentCasing(t *testing.T) {
 	}
 }
 
+// Huma checks minItems on the first copy of a repeated key, but Go decodes the last one.
+func TestOutfitProductIDsRepeatedInDifferentCasing(t *testing.T) {
+	tests := []struct {
+		name     string
+		body     string
+		want     int
+		wantBody string
+	}{
+		{name: "empty list after valid list", body: `{"name": "x", "product_ids": ["` + productIDLower + `"], "PRODUCT_IDS": []}`, want: http.StatusUnprocessableEntity, wantBody: "product_ids must not be empty"},
+		{name: "single list with products", body: `{"name": "x", "product_ids": ["` + productIDLower + `"]}`, want: http.StatusOK, wantBody: `"product_count":1`},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			response := outfitProbe(t).Post("/probe", strings.NewReader(test.body))
+			if response.Code != test.want {
+				t.Fatalf("status = %d, want %d: %s", response.Code, test.want, response.Body)
+			}
+			if !strings.Contains(response.Body.String(), test.wantBody) {
+				t.Fatalf("body = %s, want it to contain %s", response.Body, test.wantBody)
+			}
+		})
+	}
+}
+
 // openTestDB connects to DATABASE_URL, skipping the test when it is not set.
 func openTestDB(t *testing.T) *sql.DB {
 	t.Helper()

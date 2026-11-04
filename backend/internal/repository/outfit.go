@@ -1,4 +1,4 @@
-package repository
+﻿package repository
 
 import (
 	"context"
@@ -143,6 +143,7 @@ func (r *outfitRepository) Update(ctx context.Context, id uuid.UUID, params mode
 	if err != nil {
 		return models.Outfit{}, nil, fmt.Errorf("update outfit %s: begin: %w", id, err)
 	}
+	// Rollback after a successful Commit is a no-op, so its error is ignored on purpose.
 	defer func() { _ = tx.Rollback() }()
 
 	// Verifies the outfit exists and is userID's, and locks its row so concurrent updates run one at a time.
