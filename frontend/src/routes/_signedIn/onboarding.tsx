@@ -15,8 +15,7 @@ import {
 } from "@/style-preferences";
 
 export const Route = createFileRoute("/_signedIn/onboarding")({
-  // Finished users may come back to redo it; saving replaces their preferences.
-  beforeLoad: ({ context }) => requireAccountStatus(context, ["needs-preferences", "onboarded"]),
+  beforeLoad: ({ context }) => requireAccountStatus(context, ["needs-preferences"]),
   errorComponent: AccountError,
   component: Onboarding,
 });
@@ -57,12 +56,12 @@ function Onboarding() {
     setPreferences((current) => togglePreference(current, field, value, pressed));
   }
 
-  async function finish() {
+  async function finish(preferencesToSave: StylePreferences) {
     setError(null);
     setSaving(true);
 
     try {
-      await saveStylePreferences(preferences);
+      await saveStylePreferences(preferencesToSave);
 
       // Has to stay a full page load. The cached account status never expires, so a router
       // navigation would send the user straight back here.
@@ -77,7 +76,7 @@ function Onboarding() {
     const next = fieldOrder[currentIndex + 1];
 
     if (next === undefined) {
-      void finish();
+      void finish(preferences);
 
       return;
     }
@@ -122,7 +121,12 @@ function Onboarding() {
         </Box>
         {/* Tabs<PreferenceField> because the index check can't narrow currentField to a fit field. */}
         {onFirstField ? (
-          <Cards field={currentField} preferences={preferences} onToggle={toggle} />
+          <Cards
+            field={currentField}
+            preferences={preferences}
+            onToggle={toggle}
+            disabled={saving}
+          />
         ) : (
           <Tabs<PreferenceField>
             tabs={fitTabs}
@@ -130,7 +134,12 @@ function Onboarding() {
             onValueChange={setCurrentField}
             disabled={saving}
           >
-            <Cards field={currentField} preferences={preferences} onToggle={toggle} />
+            <Cards
+              field={currentField}
+              preferences={preferences}
+              onToggle={toggle}
+              disabled={saving}
+            />
           </Tabs>
         )}
         <Button label={nextButtonLabel()} loading={saving} onClick={nextFieldOrFinish} />
@@ -140,8 +149,8 @@ function Onboarding() {
           </Text>
         )}
       </Box>
-      {/* Per design, Skip starts after the first field. It saves what's picked so far, and
-          fields left empty save as no preference. */}
+      {/* Per design, Skip starts after the first field. It drops any picks and saves no
+          preference for every field. */}
       {!onFirstField && (
         <Button
           label="Skip →"
@@ -149,7 +158,7 @@ function Onboarding() {
           size="sm"
           className="fixed bottom-lg right-lg"
           disabled={saving}
-          onClick={() => void finish()}
+          onClick={() => void finish(noPreferences)}
         />
       )}
     </Box>
@@ -160,9 +169,10 @@ type CardsProps = {
   field: PreferenceField;
   preferences: StylePreferences;
   onToggle: (field: PreferenceField, value: string, pressed: boolean) => void;
+  disabled: boolean;
 };
 
-function Cards({ field, preferences, onToggle }: CardsProps) {
+function Cards({ field, preferences, onToggle, disabled }: CardsProps) {
   const { options } = questions[field];
 
   return (
@@ -175,6 +185,7 @@ function Cards({ field, preferences, onToggle }: CardsProps) {
           pressed={preferences[field].includes(option.value)}
           onPressedChange={(pressed) => onToggle(field, option.value, pressed)}
           size="lg"
+          disabled={disabled}
         />
       ))}
     </Box>
