@@ -1,7 +1,8 @@
 // Width of floating panels: dialogs and the toast stack.
 export const PopupWidth = "384px";
 
-// Max widths for page content, narrowest first. Each becomes `max-w-content-<key>`.
+// Widths for page content, narrowest first. Each becomes `max-w-content-<key>` and
+// `w-content-<key>`.
 export const ContentWidth = {
   sm: "448px",
   md: "576px",

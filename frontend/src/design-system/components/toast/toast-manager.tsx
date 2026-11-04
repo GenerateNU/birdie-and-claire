@@ -39,7 +39,6 @@ type ToastProviderProps = {
   children: ReactNode;
 };
 
-/** Renders the toast stack at the top center. */
 export function ToastProvider({ children }: ToastProviderProps) {
   return (
     <BaseToast.Provider>

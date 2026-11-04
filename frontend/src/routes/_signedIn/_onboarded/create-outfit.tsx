@@ -269,7 +269,7 @@ type StepBarProps = {
   current: BarStep;
 };
 
-/** Shows where the shopper is in the flow. Display only: Back and Next are the way to move. */
+/** Display only: Back and Next are the way to move between steps. */
 function StepBar({ current }: StepBarProps) {
   return (
     <ol aria-label="Steps" className="flex rounded-full border">
