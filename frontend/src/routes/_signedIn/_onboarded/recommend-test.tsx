@@ -18,7 +18,7 @@ export const Route = createFileRoute("/_signedIn/_onboarded/recommend-test")({
   component: RecommendTest,
 });
 
-const SLOTS = ["top", "bottom", "accessory"] as const;
+const SLOTS = ["top", "bottom", "accessory", "shoe"] as const;
 
 type Slot = (typeof SLOTS)[number];
 
@@ -28,24 +28,24 @@ interface Product {
   handle: string;
   title: string;
   product_type: string | null;
-  slot: "top" | "bottom" | "accessory" | "shoe";
+  slot: Slot;
   tags: string[];
   created_at: string;
   updated_at: string;
   image_url: string | null;
 }
 
-interface RecommendationExpandedQuery {
-  slots: { top: string; bottom: string; accessory: string };
+interface RecommendationExpandedAnswers {
+  slots: Record<Slot, string>;
   exclude_tags: string[];
   nice_tags: string[];
 }
 
+type Outfit = Record<Slot, Product>;
+
 interface RecommendationResponse {
-  expanded_query: RecommendationExpandedQuery;
-  top: Product[];
-  bottom: Product[];
-  accessory: Product[];
+  expanded_answers: RecommendationExpandedAnswers;
+  outfits: Outfit[];
 }
 
 interface ErrorModel {
@@ -63,7 +63,7 @@ function errorDetail(body: string): string {
 }
 
 function RecommendTest() {
-  const [query, setQuery] = useState("");
+  const [occasion, setOccasion] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [elapsedMs, setElapsedMs] = useState<number | null>(null);
@@ -85,7 +85,7 @@ function RecommendTest() {
       const res = await apiFetch("/api/v1/recommend", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query }),
+        body: JSON.stringify({ occasion }),
       });
 
       if (!res.ok) {
@@ -97,7 +97,7 @@ function RecommendTest() {
       // SAFETY: a 2xx from POST /api/v1/recommend is the RecommendationResponse schema in openapi.yaml.
       const recommendation = (await res.json()) as RecommendationResponse;
       setResponse(recommendation);
-      setSelected(SLOTS.flatMap((slot) => recommendation[slot])[0] ?? null);
+      setSelected(recommendation.outfits.at(0)?.top ?? null);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -115,16 +115,16 @@ function RecommendTest() {
         Recommend test
       </Text>
       <Text variant="body" className="mb-lg text-secondary">
-        Describe what you are shopping for. A cold embedder can take many seconds.
+        Name the occasion. A cold embedder can take many seconds.
       </Text>
 
       <form onSubmit={submit} className="flex max-w-content-lg items-end gap-sm">
         <TextField
-          label="Query"
-          maxLength={200}
-          value={query}
-          onValueChange={setQuery}
-          placeholder="clothes for an office sunday social"
+          label="Occasion"
+          maxLength={100}
+          value={occasion}
+          onValueChange={setOccasion}
+          placeholder="office sunday social"
           className="flex-1"
         />
         <Button
@@ -132,7 +132,7 @@ function RecommendTest() {
           label="Recommend"
           loading={loading}
           loadingLabel="Styling…"
-          disabled={query.trim() === ""}
+          disabled={occasion.trim() === ""}
         />
       </form>
       {elapsedMs !== null && (
@@ -145,23 +145,26 @@ function RecommendTest() {
 
       {response && (
         <Box className="mt-xl flex flex-col gap-xl">
-          <ExpandedQuery expandedQuery={response.expanded_query} />
+          <ExpandedAnswers expandedAnswers={response.expanded_answers} />
 
           <Box className="flex flex-col gap-xl lg:flex-row lg:items-start">
             <Box className="flex min-w-0 flex-1 flex-col gap-xl">
-              {SLOTS.map((slot) => (
-                <SlotResults
-                  key={slot}
-                  slot={slot}
-                  phrase={response.expanded_query.slots[slot]}
-                  products={response[slot]}
-                  selectedId={selected?.id ?? null}
-                  onSelect={setSelected}
-                />
-              ))}
+              {response.outfits.length === 0 ? (
+                <Empty title="No outfits" className="text-secondary" />
+              ) : (
+                response.outfits.map((outfit, index) => (
+                  <OutfitResult
+                    key={outfit.top.id}
+                    rank={index + 1}
+                    outfit={outfit}
+                    selectedId={selected?.id ?? null}
+                    onSelect={setSelected}
+                  />
+                ))
+              )}
             </Box>
             {selected && (
-              <ProductDetails product={selected} niceTags={response.expanded_query.nice_tags} />
+              <ProductDetails product={selected} niceTags={response.expanded_answers.nice_tags} />
             )}
           </Box>
 
@@ -186,21 +189,21 @@ function RecommendTest() {
   );
 }
 
-type ExpandedQueryProps = {
-  expandedQuery: RecommendationExpandedQuery;
+type ExpandedAnswersProps = {
+  expandedAnswers: RecommendationExpandedAnswers;
 };
 
-function ExpandedQuery({ expandedQuery }: ExpandedQueryProps) {
+function ExpandedAnswers({ expandedAnswers }: ExpandedAnswersProps) {
   return (
     <Box className="flex flex-col gap-md">
       <Text variant="subheading">What the stylist heard</Text>
-      <Box className="grid gap-sm sm:grid-cols-3">
+      <Box className="grid gap-sm sm:grid-cols-4">
         {SLOTS.map((slot) => (
-          <ListCard key={slot} title={slot} value={expandedQuery.slots[slot] || "Skipped"} />
+          <ListCard key={slot} title={slot} value={expandedAnswers.slots[slot]} />
         ))}
       </Box>
-      <TagRow label="Leaning toward" tags={expandedQuery.nice_tags} struck={false} />
-      <TagRow label="Leaving out" tags={expandedQuery.exclude_tags} struck />
+      <TagRow label="Leaning toward" tags={expandedAnswers.nice_tags} struck={false} />
+      <TagRow label="Leaving out" tags={expandedAnswers.exclude_tags} struck />
     </Box>
   );
 }
@@ -238,41 +241,29 @@ function TagRow({ label, tags, struck }: TagRowProps) {
   );
 }
 
-type SlotResultsProps = {
-  slot: Slot;
-  phrase: string;
-  products: Product[];
+type OutfitResultProps = {
+  rank: number;
+  outfit: Outfit;
   selectedId: string | null;
   onSelect: (product: Product) => void;
 };
 
-function SlotResults({ slot, phrase, products, selectedId, onSelect }: SlotResultsProps) {
+function OutfitResult({ rank, outfit, selectedId, onSelect }: OutfitResultProps) {
   return (
     <Box className="flex flex-col gap-sm">
-      <Box className="flex items-baseline gap-sm">
-        <Text variant="subheading">{slot}</Text>
-        {phrase && (
-          <Text variant="caption" className="text-secondary">
-            “{phrase}”
-          </Text>
-        )}
+      <Text variant="subheading">Outfit {rank}</Text>
+      <Box className="flex snap-x gap-sm overflow-x-auto pb-xs">
+        {SLOTS.map((slot) => (
+          <Box key={slot} className="w-[180px] shrink-0 snap-start">
+            <ImageCard
+              label={`${slot}: ${outfit[slot].title}`}
+              src={outfit[slot].image_url}
+              pressed={outfit[slot].id === selectedId}
+              onPressedChange={() => onSelect(outfit[slot])}
+            />
+          </Box>
+        ))}
       </Box>
-      {products.length === 0 ? (
-        <Empty title="No results" className="text-secondary" />
-      ) : (
-        <Box className="flex snap-x gap-sm overflow-x-auto pb-xs">
-          {products.map((product, index) => (
-            <Box key={product.id} className="w-[180px] shrink-0 snap-start">
-              <ImageCard
-                label={`#${index + 1} ${product.title}`}
-                src={product.image_url}
-                pressed={product.id === selectedId}
-                onPressedChange={() => onSelect(product)}
-              />
-            </Box>
-          ))}
-        </Box>
-      )}
     </Box>
   );
 }
