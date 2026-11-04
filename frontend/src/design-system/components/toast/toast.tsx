@@ -3,6 +3,7 @@ import { Toast as BaseToast, type ToastObject } from "@base-ui/react/toast";
 import { Button } from "@/design-system/components/buttons/button";
 import { CloseButton } from "@/design-system/components/buttons/close-button";
 import { cardFrameClasses } from "@/design-system/components/cards/card-classes";
+import { Box } from "@/design-system/primitives/box";
 
 export type ToastVariant = "neutral" | "success";
 
@@ -27,10 +28,10 @@ export function Toast({ toast }: ToastProps) {
 
   return (
     <BaseToast.Root toast={toast} className={rootClasses}>
-      <div className="flex flex-1 flex-col gap-xxs">
+      <Box className="flex flex-1 flex-col gap-xxs">
         <BaseToast.Title className="text-body" />
         <BaseToast.Description className="text-caption text-secondary" />
-      </div>
+      </Box>
       {action && (
         <Button
           label={action.label}

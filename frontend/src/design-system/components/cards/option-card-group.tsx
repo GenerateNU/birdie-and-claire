@@ -3,6 +3,7 @@ import { RadioGroup as BaseRadioGroup } from "@base-ui/react/radio-group";
 import { useId } from "react";
 
 import { cardFrameClasses } from "@/design-system/components/cards/card-classes";
+import { Box } from "@/design-system/primitives/box";
 
 const defaultGridClasses = "grid grid-cols-2 gap-md md:grid-cols-4";
 
@@ -46,13 +47,13 @@ export function OptionCardGroup<T extends string>({
       className="flex flex-col gap-xs"
     >
       {label && <span id={labelId}>{label}</span>}
-      <div className={className ?? defaultGridClasses}>
+      <Box className={className ?? defaultGridClasses}>
         {options.map((option) => (
           <Radio.Root key={option.value} value={option.value} className={optionCardClasses}>
             {option.label}
           </Radio.Root>
         ))}
-      </div>
+      </Box>
     </BaseRadioGroup>
   );
 }

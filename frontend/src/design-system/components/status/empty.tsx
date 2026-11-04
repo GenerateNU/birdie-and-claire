@@ -1,4 +1,5 @@
 import { Text } from "@/design-system/primitives/text";
+import { Box } from "@/design-system/primitives/box";
 
 type EmptyProps = {
   title: string;
@@ -8,9 +9,9 @@ type EmptyProps = {
 
 export function Empty({ title, description, className }: EmptyProps) {
   return (
-    <div role="status" className={className}>
+    <Box role="status" className={className}>
       <Text variant="subheading">{title}</Text>
       {description && <Text variant="body">{description}</Text>}
-    </div>
+    </Box>
   );
 }
