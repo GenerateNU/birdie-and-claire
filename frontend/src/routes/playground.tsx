@@ -2,7 +2,6 @@ import { CaretLeft, CaretRight } from "@phosphor-icons/react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
 
-import samplePhoto from "@/assets/silhouette.png";
 import {
   Avatar,
   BackgroundColor,
@@ -33,6 +32,7 @@ import {
   TypeScale,
   useToast,
 } from "@/design-system";
+import samplePhoto from "@/design-system/assets/sample-photo.svg";
 
 export const Route = createFileRoute("/playground")({
   component: Playground,
