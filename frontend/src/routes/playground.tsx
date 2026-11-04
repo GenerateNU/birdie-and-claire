@@ -32,6 +32,7 @@ import {
   TypeScale,
   useToast,
 } from "@/design-system";
+import samplePhoto from "@/design-system/assets/sample-photo.svg";
 
 export const Route = createFileRoute("/playground")({
   component: Playground,
@@ -100,13 +101,6 @@ const navGroups = [
   },
   { title: "Tokens", href: "#tokens", sections: ["semantic-colors"] },
 ] as const;
-
-// Stand-in photo so the Avatar demo works without network access.
-const samplePhoto =
-  "data:image/svg+xml," +
-  encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><defs><linearGradient id="g"><stop stop-color="#000000"/><stop offset="1" stop-color="#FFFFFF"/></linearGradient></defs><rect width="1" height="1" fill="url(#g)"/></svg>',
-  );
 
 const radioOptions = [
   { label: "Small", value: "sm" },
