@@ -1,3 +1,5 @@
+import plugin from "tailwindcss/plugin";
+
 import { AvatarSize } from "./src/design-system/tokens/avatar-size";
 import { BorderWidth } from "./src/design-system/tokens/border-width";
 import {
@@ -63,5 +65,31 @@ export default {
       outlineOffset: { "focus-ring": FocusRing.offset },
     },
   },
-  plugins: [],
+  plugins: [
+    plugin(({ addBase, addComponents }) => {
+      addBase({
+        "@font-face": {
+          fontFamily: FontFamily.sans[0],
+          // Emitted into src/index.css, so the path is relative to that file.
+          src: 'url("./design-system/assets/fonts/Montserrat-Variable.ttf") format("truetype")',
+          fontWeight: "100 900",
+          fontDisplay: "swap",
+        },
+        body: {
+          backgroundColor: BackgroundColor.background,
+          fontFamily: FontFamily.sans.join(", "),
+          color: TextColor.primary,
+        },
+      });
+
+      addComponents({
+        ".focus-ring:focus-visible": {
+          outlineStyle: "solid",
+          outlineWidth: FocusRing.width,
+          outlineOffset: FocusRing.offset,
+          outlineColor: OutlineColor.focus,
+        },
+      });
+    }),
+  ],
 };
