@@ -1,5 +1,6 @@
 import { Input as BaseInput } from "@base-ui/react/input";
 import { useId, type ComponentProps } from "react";
+import { Text } from "@/design-system/primitives/text";
 import { joinClasses } from "@/design-system/utils/join-classes";
 
 const inputClasses =
@@ -40,9 +41,9 @@ export function TextField(props: TextFieldProps) {
   };
 
   const errorText = props.error && (
-    <span id={errorId} className="text-caption text-error">
+    <Text variant="caption" id={errorId} className="text-error">
       {props.error}
-    </span>
+    </Text>
   );
 
   if (props.multiline) {

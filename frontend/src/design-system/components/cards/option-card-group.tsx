@@ -4,6 +4,7 @@ import { useId } from "react";
 
 import { cardFrameClasses } from "@/design-system/components/cards/card-classes";
 import { Box } from "@/design-system/primitives/box";
+import { Text } from "@/design-system/primitives/text";
 
 const defaultGridClasses = "grid grid-cols-2 gap-md md:grid-cols-4";
 
@@ -46,7 +47,11 @@ export function OptionCardGroup<T extends string>({
       aria-labelledby={label ? labelId : undefined}
       className="flex flex-col gap-xs"
     >
-      {label && <span id={labelId}>{label}</span>}
+      {label && (
+        <Text variant="body" id={labelId}>
+          {label}
+        </Text>
+      )}
       <Box className={className ?? defaultGridClasses}>
         {options.map((option) => (
           <Radio.Root key={option.value} value={option.value} className={optionCardClasses}>

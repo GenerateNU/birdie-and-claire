@@ -78,7 +78,7 @@ type SectionId = keyof typeof sectionTitles;
 const navGroups = [
   {
     title: "Components",
-    href: "#top",
+    hash: "components",
     sections: [
       "buttons",
       "link",
@@ -104,7 +104,7 @@ const navGroups = [
       "text",
     ],
   },
-  { title: "Tokens", href: "#tokens", sections: ["semantic-colors"] },
+  { title: "Tokens", hash: "tokens", sections: ["semantic-colors"] },
 ] as const;
 
 const radioOptions = [
@@ -132,17 +132,18 @@ function Playground() {
           <Box className="sticky top-xl flex flex-col gap-lg">
             {navGroups.map((group) => (
               <Box key={group.title} className="flex flex-col gap-xxs">
-                <a href={group.href} className="text-subheading text-primary">
+                <Link to="/playground" hash={group.hash} className="text-subheading text-primary">
                   {group.title}
-                </a>
+                </Link>
                 {group.sections.map((id) => (
-                  <a
+                  <Link
                     key={id}
-                    href={`#${id}`}
+                    to="/playground"
+                    hash={id}
                     className="text-body text-secondary hover:text-primary"
                   >
                     {sectionTitles[id]}
-                  </a>
+                  </Link>
                 ))}
               </Box>
             ))}
@@ -163,7 +164,9 @@ function Playground() {
           </Box>
 
           <Box className="flex flex-col gap-md">
-            <Text variant="subheading">Components</Text>
+            <Text variant="subheading" id="components" className="scroll-mt-xl">
+              Components
+            </Text>
 
             <Section id="buttons">
               <Box className="grid grid-cols-[repeat(6,max-content)] items-center gap-x-md gap-y-sm">

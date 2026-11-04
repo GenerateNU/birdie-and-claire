@@ -2,6 +2,7 @@ import { Radio } from "@base-ui/react/radio";
 import { RadioGroup as BaseRadioGroup } from "@base-ui/react/radio-group";
 import { useId } from "react";
 import { joinClasses } from "@/design-system/utils/join-classes";
+import { Text } from "@/design-system/primitives/text";
 
 const radioClasses =
   "flex size-md items-center justify-center rounded-full border bg-background data-[checked]:border-primary focus-ring";
@@ -47,7 +48,11 @@ export function RadioGroup<T extends string>({
       aria-labelledby={label ? labelId : undefined}
       className={joinClasses(groupClasses, className)}
     >
-      {label && <span id={labelId}>{label}</span>}
+      {label && (
+        <Text variant="body" id={labelId}>
+          {label}
+        </Text>
+      )}
       {options.map((option) => (
         <label key={option.value} className="inline-flex items-center gap-xs">
           <Radio.Root value={option.value} className={radioClasses}>
