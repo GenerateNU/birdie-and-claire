@@ -1,18 +1,20 @@
+import { CaretLeft, CaretRight } from "@phosphor-icons/react";
+import { useMutation } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
-import { AccountError, requireAccountStatus } from "@/account";
-import logo from "@/assets/logo.png";
-import { Box, Button, ImageCard, ProgressBar, Tabs, Text } from "@/design-system";
+import { replaceCurrentUserStylePreferencesMutation } from "@/api/generated/@tanstack/react-query.gen";
+import type { StylePreferences } from "@/api/generated/types.gen";
+import { Box, Button, ImageCard, Logo, Page, ProgressBar, Tabs, Text } from "@/design-system";
+import { AccountError, requireAccountStatus } from "@/features/account/account";
 import {
   fitFields,
   noPreferences,
   questions,
-  saveStylePreferences,
   togglePreference,
   type PreferenceField,
-  type StylePreferences,
-} from "@/style-preferences";
+  type PreferenceValue,
+} from "@/features/style-preferences/style-preferences";
 
 export const Route = createFileRoute("/_signedIn/onboarding")({
   beforeLoad: ({ context }) => requireAccountStatus(context, ["needs-preferences"]),
@@ -45,38 +47,33 @@ function Onboarding() {
 
   const [preferences, setPreferences] = useState<StylePreferences>(noPreferences);
 
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const saveMutation = useMutation({
+    ...replaceCurrentUserStylePreferencesMutation(),
+    // Has to stay a full page load. The cached account status never expires, so a router
+    // navigation would send the user straight back here.
+    onSuccess: () => window.location.assign("/"),
+  });
+
+  // Still saving while the reload starts, so the buttons don't come back on in between.
+  const saving = saveMutation.isPending || saveMutation.isSuccess;
 
   const currentIndex = fieldOrder.indexOf(currentField);
   const onLastField = currentIndex === fieldOrder.length - 1;
   const onFirstField = currentIndex === 0;
 
-  function toggle(field: PreferenceField, value: string, pressed: boolean) {
+  function toggle(field: PreferenceField, value: PreferenceValue, pressed: boolean) {
     setPreferences((current) => togglePreference(current, field, value, pressed));
   }
 
-  async function finish(preferencesToSave: StylePreferences) {
-    setError(null);
-    setSaving(true);
-
-    try {
-      await saveStylePreferences(preferencesToSave);
-
-      // Has to stay a full page load. The cached account status never expires, so a router
-      // navigation would send the user straight back here.
-      window.location.assign("/");
-    } catch (err) {
-      setSaving(false);
-      setError(err instanceof Error ? err.message : String(err));
-    }
+  function finish(preferencesToSave: StylePreferences) {
+    saveMutation.mutate({ body: preferencesToSave });
   }
 
   function nextFieldOrFinish() {
     const next = fieldOrder[currentIndex + 1];
 
     if (next === undefined) {
-      void finish(preferences);
+      finish(preferences);
 
       return;
     }
@@ -93,12 +90,13 @@ function Onboarding() {
   }
 
   return (
-    <Box className="flex min-h-screen flex-col p-xl pb-xxl">
+    <Page className="flex flex-col pb-xxl">
       <Box className="grid h-xl w-full grid-cols-3 items-center">
         {/* Back always returns to style; the fit fields switch through the tabs. */}
         {!onFirstField && (
           <Button
-            label="← Back"
+            label="Back"
+            leadingIcon={CaretLeft}
             variant="secondary"
             size="sm"
             className="justify-self-start"
@@ -116,7 +114,7 @@ function Onboarding() {
       </Box>
       <Box className="flex flex-1 flex-col items-center gap-lg">
         <Box className="flex flex-col items-center gap-xs">
-          <img src={logo} alt="Birdie & Claire" className="w-full max-w-xs" />
+          <Logo className="w-full max-w-xs" />
           <Text variant="heading">{questions[currentField].prompt}</Text>
         </Box>
         {/* Tabs<PreferenceField> because the index check can't narrow currentField to a fit field. */}
@@ -143,9 +141,9 @@ function Onboarding() {
           </Tabs>
         )}
         <Button label={nextButtonLabel()} loading={saving} onClick={nextFieldOrFinish} />
-        {error && (
+        {saveMutation.isError && (
           <Text variant="body" className="text-error">
-            Error: {error}
+            Couldn't save your preferences. Try again.
           </Text>
         )}
       </Box>
@@ -153,27 +151,29 @@ function Onboarding() {
           preference for every field. */}
       {!onFirstField && (
         <Button
-          label="Skip →"
+          label="Skip"
+          trailingIcon={CaretRight}
           variant="secondary"
           size="sm"
           className="fixed bottom-lg right-lg"
           disabled={saving}
-          onClick={() => void finish(noPreferences)}
+          onClick={() => finish(noPreferences)}
         />
       )}
-    </Box>
+    </Page>
   );
 }
 
 type CardsProps = {
   field: PreferenceField;
   preferences: StylePreferences;
-  onToggle: (field: PreferenceField, value: string, pressed: boolean) => void;
+  onToggle: (field: PreferenceField, value: PreferenceValue, pressed: boolean) => void;
   disabled: boolean;
 };
 
 function Cards({ field, preferences, onToggle, disabled }: CardsProps) {
   const { options } = questions[field];
+  const picked: readonly PreferenceValue[] = preferences[field];
 
   return (
     <Box className="flex flex-wrap justify-center gap-md">
@@ -182,7 +182,7 @@ function Cards({ field, preferences, onToggle, disabled }: CardsProps) {
           key={option.value}
           label={option.label}
           src={null}
-          pressed={preferences[field].includes(option.value)}
+          pressed={picked.includes(option.value)}
           onPressedChange={(pressed) => onToggle(field, option.value, pressed)}
           size="lg"
           disabled={disabled}

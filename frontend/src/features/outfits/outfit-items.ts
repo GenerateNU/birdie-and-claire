@@ -1,10 +1,6 @@
-/** A product from GET /api/v1/outfits/{id}, with the fields the outfit page reads. */
-export type Product = {
-  id: string;
-  title: string;
-  slot: ProductSlot;
-  image_url: string | null;
-};
+import type { ProductResponse } from "@/api/generated/types.gen";
+
+export type Product = Pick<ProductResponse, "id" | "title" | "slot" | "image_url">;
 
 /**
  * The outfit canvas's size in pixels, from the Figma's Builder Space frame:
@@ -26,7 +22,7 @@ export type CanvasSpot = {
   layer: number;
 };
 
-export type ProductSlot = "top" | "bottom" | "accessory" | "shoe";
+type ProductSlot = ProductResponse["slot"];
 
 // Measured from silhouette.png as drawn on the canvas: centered on x 466, head y 46-150 and about
 // 95px wide, shoulders at y 171, hips at y 408-436, feet at y 743. Robiya may tune these.

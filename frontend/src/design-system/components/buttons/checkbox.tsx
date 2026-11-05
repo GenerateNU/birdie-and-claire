@@ -1,6 +1,6 @@
 import { Checkbox as BaseCheckbox } from "@base-ui/react/checkbox";
 import { Check } from "@phosphor-icons/react";
-import { joinClasses } from "../../utils/join-classes";
+import { joinClasses } from "@/design-system/utils/join-classes";
 
 const boxClasses =
   "flex size-md items-center justify-center rounded-xs border bg-background text-caption text-inverse data-[checked]:border-primary data-[checked]:bg-primary focus-ring";

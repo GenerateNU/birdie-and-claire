@@ -1,15 +1,7 @@
-import { Link } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 
-import { Text } from "@/design-system";
-
-export type Outfit = {
-  id: string;
-  user_id: string;
-  name: string;
-  created_at: string;
-  updated_at: string;
-};
+import type { Outfit } from "@/api/generated/types.gen";
+import { Box, Link, Text } from "@/design-system";
 
 type OutfitListProps = {
   outfits: Outfit[];
@@ -17,7 +9,7 @@ type OutfitListProps = {
   onLoadMore: (cursor: string) => void;
 };
 
-export default function OutfitList({ outfits, nextCursor, onLoadMore }: OutfitListProps) {
+export function OutfitList({ outfits, nextCursor, onLoadMore }: OutfitListProps) {
   const sentinelRef = useRef<HTMLLIElement>(null);
 
   useEffect(() => {
@@ -27,7 +19,6 @@ export default function OutfitList({ outfits, nextCursor, onLoadMore }: OutfitLi
       return;
     }
 
-    // Observes the viewport, so scrolling the page loads more.
     const observer = new IntersectionObserver((entries) => {
       if (entries[0].isIntersecting) {
         onLoadMore(nextCursor);
@@ -49,7 +40,7 @@ export default function OutfitList({ outfits, nextCursor, onLoadMore }: OutfitLi
             params={{ outfitId: outfit.id }}
           >
             {/* Outfits have no image yet. */}
-            <div aria-hidden="true" className="aspect-[3/1] bg-placeholder" />
+            <Box aria-hidden="true" className="aspect-[3/1] bg-placeholder" />
             <Text variant="body" className="mt-xs font-semibold">
               {outfit.name}
             </Text>

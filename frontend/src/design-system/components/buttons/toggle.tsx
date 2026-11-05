@@ -1,5 +1,5 @@
 import { Switch } from "@base-ui/react/switch";
-import { joinClasses } from "../../utils/join-classes";
+import { joinClasses } from "@/design-system/utils/join-classes";
 
 const trackClasses =
   "flex h-md w-xl shrink-0 items-center rounded-full bg-control-off p-xxxs data-[checked]:bg-primary focus-ring";
