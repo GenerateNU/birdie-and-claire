@@ -85,26 +85,33 @@ Before the ranking relies on a column, someone should hand-check a sample of its
 
 ## At request time
 
-The recommendation service already builds the answers map that `ExpandAnswers` encodes. It reads the shopper's `style_preferences`, adds a key when there are shoes or bottoms picks, and tells `ExpandAnswers` whether it added one, since the template can't see inside the encoded answers:
+The recommendation service already builds the answers map that `ExpandAnswers` encodes. It also looks up the shopper's `style_preferences`, turns their shoes and bottoms picks into one line of text, and passes that text to `ExpandAnswers`:
 
 ```go
-picks := savedTypePicks(user.StylePreferences) // shoes, plus bottoms other than dress; empty for NULL
-if len(picks) > 0 {
-    answers["saved preferences"] = formatPicks(picks) // "bottoms: Skirt; shoes: Flats"
+var prefs *models.StylePreferences
+user, err := s.repo.User.GetByID(ctx, auth.UserID(ctx))
+switch {
+case errors.Is(err, errs.ErrNotFound): // no users row yet, so no preferences
+case err != nil:
+    return nil, err
+default:
+    prefs = user.StylePreferences // nil until onboarding is finished
 }
-expanded, err := llm.ExpandAnswers(ctx, client, answers, len(picks) > 0)
-// each slot: embed the phrase, then search with expanded.ExcludeTags, expanded.NiceTags and picks
+expanded, err := llm.ExpandAnswers(ctx, s.llm, answers, savedPreferencesText(prefs)) // "bottoms: skirt; shoes: flats", or ""
+// each slot: embed the phrase, then search with expanded.ExcludeTags and expanded.NiceTags
 ```
+
+`savedPreferencesText` uses the stored values as they are, drops Dress, and lists bottoms and shoes in onboarding's order no matter what order they were saved in. It returns an empty string for nil, for empty lists, and for a shopper who only picked Dress. When the text isn't empty, `ExpandAnswers` adds it to the answers under a `saved preferences` key and sets a flag for the template, since the template can't see inside the encoded answers. Both come from the same string, so they can't disagree.
 
 The model gets one more key, and the prompt gets one more line, right after "When weather or vibe is missing, infer it from the occasion.":
 
 ```json
-{"occasion": "Brunch", "saved preferences": "bottoms: Skirt; shoes: Flats"}
+{"occasion": "Brunch", "saved preferences": "bottoms: skirt; shoes: flats"}
 ```
 
 > The object may also have saved preferences, the shoes and bottoms the shopper usually likes. The occasion always comes first: use a saved preference only in its own slot and only when it suits the occasion, and otherwise ignore it. Saved preferences never add exclude_tags.
 
-A shopper with no shoes or bottoms picks, including one whose `style_preferences` is still NULL, gets no key and no line, so their prompt is byte for byte today's. The labels ("Skirt", "Flats") need a Go copy next to `StylePreferences`, with a test that fails when it differs from onboarding's list, the same way `TestOccasionOptionsMatchTheBackend` guards the weather and vibe lists.
+A shopper with no shoes or bottoms picks gets no key and no line, so their prompt is byte for byte today's. That includes a shopper whose `style_preferences` is still NULL and one with no `users` row. The text uses the stored values (`skirt`, `flats`) instead of onboarding's labels ("Skirt", "Flats"), so Go doesn't need its own copy of the labels. For shoes and bottoms the two differ only in capitalization, but the research runs sent the labels, so the lowercase version itself wasn't tested.
 
 
 
@@ -134,7 +141,7 @@ The 0.05 came from the weight rule in the research: the smallest weight that rea
 
 ## Worked examples
 
-Each example uses real products from the test catalog and the answer DeepSeek actually gave, with the products labeled the way ingestion should label them. Distances are cosine distances from each product's vector to the model's phrase for that slot.
+Each example uses real products from the test catalog and the answer DeepSeek actually gave, with the products labeled the way ingestion should label them. Distances are cosine distances from each product's vector to the model's phrase for that slot. The runs sent onboarding's labels ("Heels"), and the examples show the stored values ("heels") that the recommender will send.
 
 ### A saved pick that suits the occasion
 
@@ -151,7 +158,7 @@ Given a wedding guest who saved heels, and these shoes among the closest to the 
 {"title": "Inc.5 Women Gold Casual Heels",     "shoe_type": "heels",  "colors": ["gold"],  "distance": 0.430}
 ```
 
-the recommender runs `expand_answers` on `{"occasion": "Wedding guest", "saved preferences": "shoes: Heels"}`, which answers with the shoe phrase "heeled sandals, comfortable height" and `exclude_tags: ["white"]`, and then the search with `$shoe_picks = ["heels"]`,
+the recommender runs `expand_answers` on `{"occasion": "Wedding guest", "saved preferences": "shoes: heels"}`, which answers with the shoe phrase "heeled sandals, comfortable height" and `exclude_tags: ["white"]`, and then the search with `$shoe_picks = ["heels"]`,
 
 which returns:
 
@@ -178,7 +185,7 @@ Given a shopper who saved heels but typed "no heels" for a workday:
 {"title": "Catwalk Women White Heels",          "shoe_type": "heels", "distance": 0.505}
 ```
 
-the recommender runs `expand_answers` on `{"occasion": "Workday", "custom": "no heels", "saved preferences": "shoes: Heels"}`, which answers with "flat loafers, supportive insole, closed toe, professional" and `exclude_tags: ["heels"]`, and then the search,
+the recommender runs `expand_answers` on `{"occasion": "Workday", "custom": "no heels", "saved preferences": "shoes: heels"}`, which answers with "flat loafers, supportive insole, closed toe, professional" and `exclude_tags: ["heels"]`, and then the search,
 
 which returns:
 
@@ -204,7 +211,7 @@ Given a shopper who saved sandals, dressing for a funeral:
 {"title": "Rocia Women Black Sandals",       "shoe_type": "sandals", "colors": ["black"], "distance": 0.494}
 ```
 
-the recommender runs `expand_answers` on `{"occasion": "Funeral", "saved preferences": "shoes: Sandals"}`, which answers with "black closed-toe low heel pumps, matte", `nice_tags` including `black`, and `exclude_tags: ["bright colors", "sandals", "open toe", "heels"]`, and then the search with `$shoe_picks = ["sandals"]`,
+the recommender runs `expand_answers` on `{"occasion": "Funeral", "saved preferences": "shoes: sandals"}`, which answers with "black closed-toe low heel pumps, matte", `nice_tags` including `black`, and `exclude_tags: ["bright colors", "sandals", "open toe", "heels"]`, and then the search with `$shoe_picks = ["sandals"]`,
 
 which returns:
 
@@ -240,11 +247,15 @@ and those results meet the expectation: the rendered prompt is byte for byte tod
 
 ## Tests for Phase 2
 
-The eval fixture, `backend/internal/tests/testdata/style_preferences_eval.json`, has the requests, hand labels, the 20 pairs with what each expects, and recorded model answers, so the tests don't need to call the LLM.
+Phase 2 ships only the prompt change, and none of its tests call the LLM:
 
-- For a NULL or empty `style_preferences`, the rendered prompt equals today's, byte for byte.
-- For saved picks, the answers map has the `saved preferences` key in the right format, and the prompt has the extra line.
-- The Go copy of the onboarding labels matches the frontend's list.
+- In `package llm`, the stub-client test renders the request. With no saved preferences, the rendered messages match a golden file captured from main's prompt before the template changed. With saved preferences, they have the `saved preferences` key and the extra line.
+- In `package services`, a test checks the text for nil, empty lists, Dress only and real picks (`"bottoms: skirt; shoes: flats"`). Nil covers both a NULL `style_preferences` and a missing `users` row. The test also reads each of the 20 pairs in the eval fixture, `backend/internal/tests/testdata/style_preferences_eval.json`, and checks its text against an expected string written in the test, since the fixture doesn't store one.
+- Another test in `package services` reads the `enum` tags on `StylePreferences.Bottoms` and `StylePreferences.Shoes`, and fails when a value is missing from the order lists the text uses. Dress is the one value left out on purpose.
+- In `internal/tests`, a shopper with no `users` row still gets outfits, and a user lookup that fails for any other reason returns that error.
+
+The ranking tests move to the type boost's PR, since they need the type columns:
+
 - For each fixture pair, replaying its recorded answers through the search meets its `expect` value: the pick moves up, the pick stays out of the top 3, or occasion fit holds. The phrases still need FashionCLIP to become vectors, so these tests either call the embedder or store the vectors.
 - An exclude tag that names a type removes every product with that `shoe_type` or `bottom_type`.
 - With the type columns empty, the query ranks exactly like today's `FindSimilar`.

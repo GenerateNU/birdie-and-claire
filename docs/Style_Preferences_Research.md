@@ -232,10 +232,10 @@ Today the model gets the shopper's answers as one small JSON object. For a brunc
 {"occasion":"Brunch"}
 ```
 
-With saved preferences, the model gets one more key listing the shopper's shoes and bottoms picks the way onboarding labels them. Pair 20's shopper also saved Chic & avant-garde, but style isn't sent, so the model gets:
+With saved preferences, the model gets one more key listing the shopper's shoes and bottoms picks by the values Go stores. Pair 20's shopper also saved Chic & avant-garde, but style isn't sent, so the model gets:
 
 ```json
-{"occasion":"Brunch","saved preferences":"bottoms: Skirt; shoes: Flats"}
+{"occasion":"Brunch","saved preferences":"bottoms: skirt; shoes: flats"}
 ```
 
 The prompt also gets one more line, right after "When weather or vibe is missing, infer it from the occasion.":
@@ -244,9 +244,9 @@ The prompt also gets one more line, right after "When weather or vibe is missing
 
 Nothing after that changes. The model writes its search phrases, and `FindSimilar` finds products for them the same way it does today.
 
-The recommendation service already builds the answers map that `ExpandAnswers` encodes. It would also read the shopper's `style_preferences`, add the key from their shoes picks and their bottoms picks other than Dress, and tell `ExpandAnswers` whether it added one. `ExpandAnswers` passes that flag to the template next to the encoded answers, because the template can't see inside them, and the line renders only when the flag is set. Since one check in the service decides both the key and the flag, they can't disagree. Every pick in the two fields goes in as it is, including when a shopper picked all of them. A shopper with no shoes or bottoms picks, including one whose `style_preferences` is still NULL because onboarding isn't finished, gets no key and no extra line.
+The recommendation service already builds the answers map that `ExpandAnswers` encodes. It would also read the shopper's `style_preferences`, turn their shoes picks and their bottoms picks other than Dress into one line of text, and pass that text to `ExpandAnswers`, where an empty string means no preferences. When the text isn't empty, `ExpandAnswers` adds it as the key and passes a flag to the template next to the encoded answers, because the template can't see inside them, and the line renders only when the flag is set. Since the key and the flag come from the same string, they can't disagree. Every pick in the two fields goes in as it is, including when a shopper picked all of them. A shopper with no shoes or bottoms picks, including one whose `style_preferences` is still NULL because onboarding isn't finished, gets no key and no extra line.
 
-The labels ("Skirt", "Flats") exist today only in onboarding's frontend code, and Go stores the values (`skirt`, `flats`). Phase 2 needs a Go copy of the 8 labels next to `StylePreferences`, with a test that fails when the two lists differ. `TestOccasionOptionsMatchTheBackend`, which came in with #102, does the same for the weather and vibe lists. The key and the line go into `backend/internal/llm/prompts/expand_answers.prompt`, which is on main now that #102 has merged.
+The text uses the values Go stores (`skirt`, `flats`), not onboarding's labels ("Skirt", "Flats"), so Go doesn't need its own copy of the labels. For shoes and bottoms the two differ only in capitalization. The runs in this doc sent the labels, so the lowercase version itself wasn't tested. The key and the line go into `backend/internal/llm/prompts/expand_answers.prompt`, which is on main now that #102 has merged.
 
 ---
 
@@ -284,7 +284,7 @@ For style, I checked whether the search phrases reflect the style, how many top-
 
 The search phrases came from dev's `AI_MODEL`, which was `nvidia/nemotron-3.5-super-vl:free` through OpenRouter, using the exact request the recommender sends at `d225350`, with 3 runs per distinct prompt. The 20 pairs need 47 distinct prompts: 9 for today, 20 for option 1, 4 for the hybrid's style pairs (15, 16, 17 and 20) and 14 for option 4. Option 2 reuses today's phrases, pair 18 has a vibe so the hybrid sends today's prompt for it, and the 6 pairs without shoes or bottoms picks send today's prompt under option 4. That came to 141 calls. None failed, and none would have been rejected by the recommender's limits on tag counts and phrase length. I ran the same 141 calls on DeepSeek V4.1 Flash, which cost $0.0107, and the enrichment took 60 more calls on the free model. The bigger catalog added 300 enrichment calls on the free model and about 170 judge calls on DeepSeek, counting the check against the demo labels and retries, and reused every recorded answer. An earlier round of 101 calls ran against #102's previous prompt, before it changed. Its results aren't reported here.
 
-Everything Phase 2 needs is saved in `backend/internal/tests/testdata/style_preferences_eval.json`. Each request has its occasion and details, the products I marked as fitting, and 3 recorded answers without preferences. Each pair has its saved preferences, what it expects (the pick moves up, the pick stays out, or occasion fit holds), the products that match its pick, and 3 recorded answers from option 4's prompt. The recorded answers come from the free model, and the DeepSeek answers and the enriched catalog aren't stored. Phase 2 tests can replay these answers without calling the LLM. The phrases still have to become vectors through FashionCLIP before `FindSimilar` can use them.
+Everything the tests need is saved in `backend/internal/tests/testdata/style_preferences_eval.json`. Each request has its occasion and details, the products I marked as fitting, and 3 recorded answers without preferences. Each pair has its saved preferences, what it expects (the pick moves up, the pick stays out, or occasion fit holds), the products that match its pick, and 3 recorded answers from option 4's prompt. The recorded answers come from the free model, and the DeepSeek answers and the enriched catalog aren't stored. Phase 2's tests use each pair's saved preferences. The type boost's tests can replay the recorded answers without calling the LLM, though the phrases still have to become vectors through FashionCLIP before `FindSimilar` can use them.
 
 | # | Request | Saved preferences | What it checks |
 |---|---|---|---|
@@ -338,7 +338,7 @@ That includes the prompt's own rule for "no heels". The model now puts `heels` i
 ## Open questions
 
 - **Enforcing the occasion.** "The occasion comes first" is only a prompt instruction. Phase 2 has no code that stops a preference from beating the occasion, so its tests are the only check.
-- **Replaying the recorded answers.** A replay test still has to turn the recorded phrases into vectors before `FindSimilar` can rank anything. It either calls the embedder or stores the vectors, and the fixture doesn't decide which.
+- **Replaying the recorded answers.** The replay test, which comes with the type boost, still has to turn the recorded phrases into vectors before `FindSimilar` can rank anything. It either calls the embedder or stores the vectors, and the fixture doesn't decide which.
 - **Untagged products.** Without enrichment, nothing tags the wedge sandal as a heel or anything as `heels`, so "no heels" exclusions and heel matching both depend on titles. Enrichment fixes that, but its labels still need a hand check before they're trusted.
 - **Labeler quality.** The SQL boost is only as good as the type columns. The prototype labeled 4 of 12 heels correctly, so whichever model or decision model fills the columns needs an accuracy check first.
 - **Judge labels.** Occasion fit on the 300 new products came from an LLM that agreed with my hand labels 86% of the time on the demo products. The bigger-catalog numbers carry that error.
