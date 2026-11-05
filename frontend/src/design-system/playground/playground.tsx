@@ -1,6 +1,5 @@
 import { CaretLeft, CaretRight } from "@phosphor-icons/react";
 import { useForm } from "@tanstack/react-form";
-import { createFileRoute } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
 import { z } from "zod";
 
@@ -35,11 +34,12 @@ import {
   TypeScale,
   useToast,
 } from "@/design-system";
-import samplePhoto from "@/design-system/assets/sample-photo.svg";
 
-export const Route = createFileRoute("/(dev)/playground")({
-  component: Playground,
-});
+// Inlined despite the SVGs-are-files rule: only this dev page uses it, so it isn't an asset.
+// A gradient shows how object-cover crops and scales at every size.
+const samplePhoto = `data:image/svg+xml,${encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><defs><linearGradient id="g"><stop stop-color="#000000"/><stop offset="1" stop-color="#FFFFFF"/></linearGradient></defs><rect width="1" height="1" fill="url(#g)"/></svg>',
+)}`;
 
 const buttonVariants = ["primary", "secondary"] as const;
 
@@ -123,7 +123,7 @@ const semanticGroups = [
   { title: "Status (any utility)", classPrefix: "bg-", colors: StatusColor },
 ] as const;
 
-function Playground() {
+export function Playground() {
   return (
     <Box className="min-h-screen">
       <Box className="flex gap-xl px-lg py-xl">
