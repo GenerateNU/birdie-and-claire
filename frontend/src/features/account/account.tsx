@@ -13,8 +13,8 @@ import { supabase } from "@/lib/supabase";
 type AccountStatus = "none" | "needs-preferences" | "onboarded";
 
 /** The caller's user, or null when they haven't created an account yet. */
-async function fetchCurrentUser(signal?: AbortSignal): Promise<CurrentUserResponse | null> {
-  const { data, error } = await getCurrentUser({ signal });
+async function fetchCurrentUser(): Promise<CurrentUserResponse | null> {
+  const { data, error } = await getCurrentUser();
 
   if (error === undefined) {
     return data;
