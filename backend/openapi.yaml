@@ -373,7 +373,11 @@ components:
             - custom
           type: string
         value:
-          description: One of the key's listed values, or free text for custom
+          anyOf:
+            - $ref: "#/components/schemas/RecommendationWeather"
+            - $ref: "#/components/schemas/RecommendationVibe"
+            - type: string
+          description: For weather, one of RecommendationWeather; for vibe, one of RecommendationVibe; free text for custom. The server checks the value against its key
           maxLength: 200
           minLength: 1
           type: string
@@ -451,6 +455,25 @@ components:
         - expanded_answers
         - outfits
       type: object
+    RecommendationVibe:
+      enum:
+        - professional
+        - chic
+        - casual
+        - sophisticated
+        - colorful
+      type: string
+    RecommendationWeather:
+      enum:
+        - hot
+        - warm
+        - chilly
+        - cold
+        - rainy
+        - windy
+        - snowy
+        - storm
+      type: string
     RecommendedOutfit:
       additionalProperties: false
       properties:

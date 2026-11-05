@@ -1,7 +1,14 @@
+import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
-import { apiFetch } from "@/api";
+import { warmEmbedderMutation } from "@/api/generated/@tanstack/react-query.gen";
+import { createOutfit, recommendProducts } from "@/api/generated/sdk.gen";
+import {
+  RecommendationVibe,
+  RecommendationWeather,
+  type RecommendationDetail,
+} from "@/api/generated/types.gen";
 import {
   Box,
   Button,
@@ -9,12 +16,12 @@ import {
   ImageCard,
   ListCard,
   OptionCardGroup,
+  Page,
   SearchField,
   Text,
   TextField,
   useToast,
 } from "@/design-system";
-import { vibes, weathers } from "@/occasionOptions";
 
 export const Route = createFileRoute("/_signedIn/_onboarded/create-outfit")({
   component: CreateOutfit,
@@ -38,9 +45,9 @@ const occasions = [
   { name: "Travel", src: `${occasionImageBase}/festive.png` },
 ];
 
-type Weather = (typeof weathers)[number];
+const weathers = Object.values(RecommendationWeather);
 
-type Vibe = (typeof vibes)[number];
+const vibes = Object.values(RecommendationVibe);
 
 type SpecificsAnswer = "yes" | "no";
 
@@ -49,23 +56,14 @@ const specificsOptions: { label: string; value: SpecificsAnswer }[] = [
   { label: "No", value: "no" },
 ];
 
-type RecommendationResponse = {
-  outfits: {
-    top: { id: string };
-    bottom: { id: string };
-    accessory: { id: string };
-    shoe: { id: string };
-  }[];
-};
-
 function CreateOutfit() {
   const [step, setStep] = useState<Step>("occasion");
   // Set by Review's Edit buttons, so Next on the edited step goes back to Review.
   const [returnToReview, setReturnToReview] = useState(false);
   const [cardOccasion, setCardOccasion] = useState<string | null>(null);
   const [customOccasion, setCustomOccasion] = useState("");
-  const [weather, setWeather] = useState<Weather | null>(null);
-  const [vibe, setVibe] = useState<Vibe | null>(null);
+  const [weather, setWeather] = useState<RecommendationWeather | null>(null);
+  const [vibe, setVibe] = useState<RecommendationVibe | null>(null);
   // Held only to drive the screen: picking B&C items to style is out of scope, so it is never sent.
   const [specificsAnswer, setSpecificsAnswer] = useState<SpecificsAnswer | null>(null);
   const [custom, setCustom] = useState("");
@@ -214,7 +212,7 @@ function CreateOutfit() {
   }
 
   return (
-    <Box className="flex min-h-screen flex-col items-center gap-lg p-xl">
+    <Page className="flex flex-col items-center gap-lg">
       <Text variant="heading">What's the occasion?</Text>
       <Box className="grid w-full max-w-content-xl grid-cols-2 gap-md md:grid-cols-4">
         {occasions.map(({ name, src }) => (
@@ -241,7 +239,7 @@ function CreateOutfit() {
         className="max-w-content-md"
       />
       <Button label="Continue" disabled={!canContinue} onClick={continueFromOccasion} />
-    </Box>
+    </Page>
   );
 }
 
@@ -255,7 +253,7 @@ type StepScreenProps = {
 
 function StepScreen({ step, canContinue, onBack, onNext, children }: StepScreenProps) {
   return (
-    <Box className="flex min-h-screen flex-col items-center gap-lg p-xl">
+    <Page className="flex flex-col items-center gap-lg">
       <Text variant="heading">Describe the occasion</Text>
       <StepBar current={step} />
       <Box className="w-full max-w-content-lg">{children}</Box>
@@ -263,7 +261,7 @@ function StepScreen({ step, canContinue, onBack, onNext, children }: StepScreenP
         <Button label="Back" variant="secondary" onClick={onBack} />
         <Button label="Next" disabled={!canContinue} onClick={onNext} />
       </Box>
-    </Box>
+    </Page>
   );
 }
 
@@ -271,7 +269,7 @@ type StepBarProps = {
   current: BarStep;
 };
 
-/** Shows where the shopper is in the flow. Display only: Back and Next are the way to move. */
+/** Display only: Back and Next are the way to move between steps. */
 function StepBar({ current }: StepBarProps) {
   return (
     <ol aria-label="Steps" className="flex rounded-full border">
@@ -294,8 +292,8 @@ function StepBar({ current }: StepBarProps) {
 
 type ReviewProps = {
   occasion: string;
-  weather: Weather;
-  vibe: Vibe;
+  weather: RecommendationWeather;
+  vibe: RecommendationVibe;
   // Empty when the shopper skipped Custom.
   custom: string;
   onEdit: (step: Step) => void;
@@ -304,52 +302,49 @@ type ReviewProps = {
 function Review({ occasion, weather, vibe, custom, onEdit }: ReviewProps) {
   const toast = useToast();
   const navigate = useNavigate();
-  const [creating, setCreating] = useState(false);
   const abortController = useRef(new AbortController());
+  const { mutate: warmEmbedder } = useMutation(warmEmbedderMutation());
 
-  useEffect(() => {
-    // StrictMode mounts twice, and the first unmount aborts the controller, so make a fresh one.
-    abortController.current = new AbortController();
-    // Best effort: a cold embedder takes tens of seconds, so start it while the user reviews.
-    apiFetch("/api/v1/embedder/warm", { method: "POST" }).catch(() => {});
-
-    // Leaving the page cancels a pending create, so it can't navigate back to the new outfit.
-    return () => abortController.current.abort();
-  }, []);
-
-  async function createOutfit() {
-    const { signal } = abortController.current;
-    setCreating(true);
-
-    try {
-      const outfitId = await requestOutfit(occasion, weather, vibe, custom, signal);
-
+  const createMutation = useMutation({
+    mutationFn: () =>
+      requestOutfit(occasion, weather, vibe, custom, abortController.current.signal),
+    onSuccess: async (outfitId) => {
       if (outfitId === null) {
         toast.show({
           message:
             "Couldn't build a full outfit for that, try changing the weather, vibe or custom details",
         });
-        setCreating(false);
 
         return;
       }
 
       await navigate({ to: "/outfits/$outfitId", params: { outfitId } });
-    } catch (err) {
-      if (signal.aborted) {
+    },
+    onError: () => {
+      if (abortController.current.signal.aborted) {
         return;
       }
 
-      toast.show({
-        message: "Couldn't create the outfit",
-        subtitle: err instanceof Error ? err.message : String(err),
-      });
-      setCreating(false);
-    }
-  }
+      toast.show({ message: "Couldn't create the outfit", subtitle: "Try again in a moment." });
+    },
+  });
+
+  // Stays on through the navigation to the new outfit.
+  const creating =
+    createMutation.isPending || (createMutation.isSuccess && createMutation.data !== null);
+
+  useEffect(() => {
+    // StrictMode mounts twice, and the first unmount aborts the controller, so make a fresh one.
+    abortController.current = new AbortController();
+    // Best effort: a cold embedder takes tens of seconds, so start it while the user reviews.
+    warmEmbedder({});
+
+    // Leaving the page cancels a pending create, so it can't navigate back to the new outfit.
+    return () => abortController.current.abort();
+  }, [warmEmbedder]);
 
   return (
-    <Box className="flex min-h-screen flex-col items-center gap-lg p-xl">
+    <Page className="flex flex-col items-center gap-lg">
       <Text variant="heading">Let's review</Text>
       <Box className="flex w-full max-w-content-md flex-col gap-xs">
         <ListCard
@@ -403,9 +398,9 @@ function Review({ occasion, weather, vibe, custom, onEdit }: ReviewProps) {
         label="Create my outfit"
         loading={creating}
         loadingLabel="Styling your outfit…"
-        onClick={() => void createOutfit()}
+        onClick={() => createMutation.mutate()}
       />
-    </Box>
+    </Page>
   );
 }
 
@@ -413,12 +408,12 @@ function Review({ occasion, weather, vibe, custom, onEdit }: ReviewProps) {
  * Returns the new outfit's ID, or null when no outfit could be built. */
 async function requestOutfit(
   occasion: string,
-  weather: Weather,
-  vibe: Vibe,
+  weather: RecommendationWeather,
+  vibe: RecommendationVibe,
   custom: string,
   signal: AbortSignal,
 ): Promise<string | null> {
-  const details: { key: string; value: string }[] = [
+  const details: RecommendationDetail[] = [
     { key: "weather", value: weather },
     { key: "vibe", value: vibe },
   ];
@@ -428,19 +423,11 @@ async function requestOutfit(
     details.push({ key: "custom", value: custom });
   }
 
-  const recommendRes = await apiFetch("/api/v1/recommend", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ occasion, details }),
+  const { data: recommendation } = await recommendProducts({
+    body: { occasion, details },
     signal,
+    throwOnError: true,
   });
-
-  if (!recommendRes.ok) {
-    throw new Error(`Recommend failed: ${recommendRes.status} ${recommendRes.statusText}`);
-  }
-
-  // SAFETY: a 2xx from POST /api/v1/recommend is the RecommendationResponse schema in openapi.yaml.
-  const recommendation = (await recommendRes.json()) as RecommendationResponse;
 
   // Empty when some slot had no matching product.
   const firstOutfit = recommendation.outfits.at(0);
@@ -449,11 +436,9 @@ async function requestOutfit(
     return null;
   }
 
-  const outfitRes = await apiFetch("/api/v1/outfits", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    // The endpoint caps name at 100 characters.
-    body: JSON.stringify({
+  const { data: outfit } = await createOutfit({
+    body: {
+      // The endpoint caps name at 100 characters.
       name: `${occasion} outfit`.slice(0, 100),
       product_ids: [
         firstOutfit.top.id,
@@ -461,16 +446,10 @@ async function requestOutfit(
         firstOutfit.accessory.id,
         firstOutfit.shoe.id,
       ],
-    }),
+    },
     signal,
+    throwOnError: true,
   });
-
-  if (!outfitRes.ok) {
-    throw new Error(`Saving the outfit failed: ${outfitRes.status} ${outfitRes.statusText}`);
-  }
-
-  // SAFETY: a 2xx from POST /api/v1/outfits is the Outfit schema in openapi.yaml.
-  const outfit = (await outfitRes.json()) as { id: string };
 
   return outfit.id;
 }

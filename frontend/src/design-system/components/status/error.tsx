@@ -1,5 +1,6 @@
-import { Text } from "../../primitives/text";
-import { Button } from "../buttons/button";
+import { Text } from "@/design-system/primitives/text";
+import { Button } from "@/design-system/components/buttons/button";
+import { Box } from "@/design-system/primitives/box";
 
 type ErrorStateProps = {
   message: string;
@@ -15,9 +16,9 @@ export function ErrorState({
   className,
 }: ErrorStateProps) {
   return (
-    <div role="alert" className={className}>
+    <Box role="alert" className={className}>
       <Text variant="body">{message}</Text>
       {onRetry && <Button label={retryLabel} onClick={onRetry} />}
-    </div>
+    </Box>
   );
 }

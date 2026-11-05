@@ -1,6 +1,7 @@
-import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
+import { Circle } from "@phosphor-icons/react";
+import { createFileRoute, Outlet } from "@tanstack/react-router";
 
-import logo from "@/assets/logo.png";
+import { Box, Link, Logo } from "@/design-system";
 
 export const Route = createFileRoute("/_signedIn/_onboarded/profile")({
   component: ProfileLayout,
@@ -14,10 +15,10 @@ const TABS = [
 
 function ProfileLayout() {
   return (
-    <div className="flex min-h-screen flex-col bg-background font-sans text-primary lg:flex-row">
+    <Box className="flex min-h-screen flex-col lg:flex-row">
       <nav className="flex shrink-0 flex-col border-b px-xxl pb-lg pt-xxl lg:sticky lg:top-0 lg:h-screen lg:w-1/4 lg:border-b-0 lg:border-r lg:pb-0">
         <Link to="/">
-          <img src={logo} alt="Birdie & Claire" className="w-full max-w-xs" />
+          <Logo className="w-full max-w-xs" />
         </Link>
         <ul className="mt-xxl flex flex-col gap-lg">
           {TABS.map((tab) => (
@@ -26,10 +27,7 @@ function ProfileLayout() {
                 {({ isActive }) => (
                   <>
                     {tab.label}
-                    <span
-                      aria-hidden="true"
-                      className={`size-sm rounded-full border border-current ${isActive ? "bg-current" : ""}`}
-                    />
+                    <Circle aria-hidden="true" weight={isActive ? "fill" : "regular"} />
                   </>
                 )}
               </Link>
@@ -40,6 +38,6 @@ function ProfileLayout() {
       <main className="min-w-0 flex-1 p-xxl">
         <Outlet />
       </main>
-    </div>
+    </Box>
   );
 }

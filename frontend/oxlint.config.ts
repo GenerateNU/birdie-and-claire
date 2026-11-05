@@ -1,7 +1,13 @@
 import { defineConfig } from "oxlint";
 
+const routerLinkBan = {
+  name: "@tanstack/react-router",
+  importNames: ["Link"],
+  message: 'Import Link from @/design-system. It works the same, and variant="text" styles it.',
+};
+
 export default defineConfig({
-  ignorePatterns: ["tools/oxlint/anti-slop/**", "src/routeTree.gen.ts"],
+  ignorePatterns: ["tools/oxlint/anti-slop/**", "src/routeTree.gen.ts", "src/api/generated/**"],
   jsPlugins: [{ name: "anti-slop", specifier: "./tools/oxlint/anti-slop/index.ts" }],
   rules: {
     "anti-slop/no-array-filter-map": "error",
@@ -22,5 +28,31 @@ export default defineConfig({
     "anti-slop/no-widen-then-assert": "error",
     "anti-slop/require-readable-spacing": "error",
     "anti-slop/require-safety-comment-for-type-assertion": "error",
+    "no-restricted-imports": [
+      "error",
+      {
+        paths: [routerLinkBan],
+      },
+    ],
   },
+  overrides: [
+    {
+      // Only src/ has the alias. Config files at the root load through Node, so they stay relative.
+      files: ["src/**"],
+      rules: {
+        "no-restricted-imports": [
+          "error",
+          {
+            paths: [routerLinkBan],
+            patterns: [
+              {
+                group: ["./**", "../**"],
+                message: "Import through the @/ alias, which maps to src/.",
+              },
+            ],
+          },
+        ],
+      },
+    },
+  ],
 });

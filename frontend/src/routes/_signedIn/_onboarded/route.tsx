@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { AccountError, requireAccountStatus } from "@/account";
+import { AccountError, requireAccountStatus } from "@/features/account/account";
 
 export const Route = createFileRoute("/_signedIn/_onboarded")({
   beforeLoad: ({ context }) => requireAccountStatus(context, ["onboarded"]),
