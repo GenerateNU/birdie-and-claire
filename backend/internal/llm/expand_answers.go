@@ -14,17 +14,25 @@ const (
 	expandAnswersMaxOutputTokens = 512
 	// the default free model sometimes answers {}, and in replays it never did so twice for the same answers
 	expandAnswersAttempts = 2
+	stylePreferencesLabel = "saved preferences"
 )
 
 type expandAnswersInput struct {
 	Answers string `json:"answers"`
+	// the template can't see inside the encoded answers, so this tells it whether to explain the saved preferences key
+	HasStylePreferences bool `json:"has_style_preferences"`
 }
 
-// ExpandAnswers takes answers keyed by their prompt label. Every slot of a nil-error result has a phrase.
-func ExpandAnswers(ctx context.Context, client Client, answers map[string]string) (ExpandedAnswers, error) {
-	stripped := make(map[string]string, len(answers))
+// ExpandAnswers takes answers keyed by their prompt label, and stylePreferences as one line built from fixed option
+// values, empty when the shopper has none. Every slot of a nil-error result has a phrase.
+func ExpandAnswers(ctx context.Context, client Client, answers map[string]string, stylePreferences string) (ExpandedAnswers, error) {
+	stripped := make(map[string]string, len(answers)+1)
 	for label, answer := range answers {
 		stripped[label] = stripDotpromptMarkers(answer)
+	}
+	// not stripped, since it holds only fixed option values and no shopper text
+	if stylePreferences != "" {
+		stripped[stylePreferencesLabel] = stylePreferences
 	}
 	// json.Marshal escapes quotes and angle brackets, so shopper text cannot close the object or the block around it
 	encoded, err := json.Marshal(stripped)
@@ -34,7 +42,7 @@ func ExpandAnswers(ctx context.Context, client Client, answers map[string]string
 
 	req := Request{
 		promptName:      "expand_answers",
-		promptInput:     expandAnswersInput{Answers: string(encoded)},
+		promptInput:     expandAnswersInput{Answers: string(encoded), HasStylePreferences: stylePreferences != ""},
 		maxOutputTokens: expandAnswersMaxOutputTokens,
 		noReasoning:     true,
 	}
