@@ -97,11 +97,11 @@ case err != nil:
 default:
     prefs = user.StylePreferences // nil until onboarding is finished
 }
-expanded, err := llm.ExpandAnswers(ctx, s.llm, answers, savedPreferencesText(prefs)) // "bottoms: skirt; shoes: flats", or ""
+expanded, err := llm.ExpandAnswers(ctx, s.llm, answers, formatSavedPreferences(prefs)) // "bottoms: skirt; shoes: flats", or ""
 // each slot: embed the phrase, then search with expanded.ExcludeTags and expanded.NiceTags
 ```
 
-`savedPreferencesText` uses the stored values as they are, drops Dress, and lists bottoms and shoes in onboarding's order no matter what order they were saved in. It returns an empty string for nil, for empty lists, and for a shopper who only picked Dress. When the text isn't empty, `ExpandAnswers` adds it to the answers under a `saved preferences` key and sets a flag for the template, since the template can't see inside the encoded answers. Both come from the same string, so they can't disagree.
+`formatSavedPreferences` uses the stored values as they are, drops Dress, and lists bottoms and shoes in onboarding's order no matter what order they were saved in. It returns an empty string for nil, for empty lists, and for a shopper who only picked Dress. When the text isn't empty, `ExpandAnswers` adds it to the answers under a `saved preferences` key and sets a flag for the template, since the template can't see inside the encoded answers. Both come from the same string, so they can't disagree.
 
 The model gets one more key, and the prompt gets one more line, right after "When weather or vibe is missing, infer it from the occasion.":
 
