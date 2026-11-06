@@ -15,7 +15,7 @@ Style, neckline and the Dress pick don't affect recommendations yet. Style words
 The tests behind this ran on two models, dev's free model and DeepSeek V4.1 Flash, and on a catalog of 360 products:
 
 - Sending only shoes and bottoms picks worked on both models. Sending every preference swung from the worst option on one model to the best on the other.
-- On the 360-product catalog, the prompt change roughly doubled how often the shopper's pick showed up (from about 11 to 14 of 27 to about 20), for an occasion-fit cost of about 2.5%, which is inside today's own run-to-run swing.
+- On the 360-product catalog, the prompt change raised how often the shopper's pick showed up from 13.7 to 20.0 of 27 on the free model and from 10.7 to 20.7 on DeepSeek, for an occasion-fit cost of about 2.5%, which is inside today's own run-to-run swing.
 - Adding the ranking boost with accurate type columns raised that to 26 or 27 of 27, and occasion fit went slightly up. With the prototype's LLM labels instead, the boost added almost nothing because those labels were wrong too often, so label quality decides whether step 2 helps.
 
 End to end, the saved picks go into the prompt, and the model answers with a search phrase, nice tags and exclude tags for each slot. Each slot's search then ranks products by how close their vectors are to the phrase, gives a small bonus for matching nice tags and, once the columns exist, for a type that matches a saved pick, and drops anything the exclude tags rule out. The top three products in each slot become the outfits.
