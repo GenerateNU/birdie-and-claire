@@ -22,8 +22,13 @@ docker rm -f "$CONTAINER" >/dev/null 2>&1 \
 
 rm -f "/opt/${PROJECT}/previews/pr-${PR_NUMBER}.env"
 
-# Tagged images are not dangling, so `docker image prune` would keep them.
-IMAGES=$(docker images --format '{{.Repository}}:{{.Tag}}' | grep -E "/${PROJECT}/backend:pr-${PR_NUMBER}-")
+# Tagged images are not dangling, so `docker image prune` would keep them. An
+# image some container still uses, such as a release built from the same
+# commit, is skipped by ID and left for the droplet's nightly prune.
+IMAGES=$(docker images --no-trunc --format '{{.ID}} {{.Repository}}:{{.Tag}}' \
+  | grep -E "/${PROJECT}/backend:pr-${PR_NUMBER}-" \
+  | grep -vFf <(docker ps -aq | xargs -r docker inspect -f '{{.Image}}') \
+  | cut -d' ' -f2)
 if [ -z "$IMAGES" ]; then
   echo "    no images for PR #${PR_NUMBER}"
 else
