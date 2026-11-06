@@ -1,5 +1,6 @@
 import { AlertDialog } from "@base-ui/react/alert-dialog";
 import { Dialog as BaseDialog } from "@base-ui/react/dialog";
+import type { ReactNode } from "react";
 
 import { Button } from "../buttons/button";
 import { CloseButton } from "../buttons/close-button";
@@ -18,6 +19,8 @@ type DialogProps = {
   message?: string;
   actions: DialogAction[];
   dismissible?: boolean;
+  /** Content between the message and the actions, for a dialog that shows more than text. */
+  children?: ReactNode;
 };
 
 export function Dialog({
@@ -27,6 +30,7 @@ export function Dialog({
   message,
   actions,
   dismissible = false,
+  children,
 }: DialogProps) {
   const DialogParts = dismissible ? BaseDialog : AlertDialog;
 
@@ -51,16 +55,19 @@ export function Dialog({
               {message}
             </DialogParts.Description>
           )}
-          <div className="flex justify-end gap-xs">
-            {actions.map((action) => (
-              <Button
-                key={action.label}
-                label={action.label}
-                variant={action.variant}
-                onClick={action.onClick}
-              />
-            ))}
-          </div>
+          {children}
+          {actions.length > 0 && (
+            <div className="flex justify-end gap-xs">
+              {actions.map((action) => (
+                <Button
+                  key={action.label}
+                  label={action.label}
+                  variant={action.variant}
+                  onClick={action.onClick}
+                />
+              ))}
+            </div>
+          )}
         </DialogParts.Popup>
       </DialogParts.Portal>
     </DialogParts.Root>

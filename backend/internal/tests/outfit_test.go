@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"math/rand/v2"
 	"net/http"
+	"slices"
 	"strings"
 	"testing"
 
@@ -297,5 +298,41 @@ func TestOutfitProductsCarryFirstImage(t *testing.T) {
 	}
 	if got := imageURLs[withoutImages]; got != nil {
 		t.Fatalf("image_url = %q, want null", *got)
+	}
+}
+
+// Outfit products come back head to toe, whatever order they were saved in.
+func TestOutfitProductsListHeadToToe(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	accessory := insertSlotProduct(t, db, testProduct{slot: models.SlotAccessory})
+	shoe := insertSlotProduct(t, db, testProduct{slot: models.SlotShoe})
+	bottom := insertSlotProduct(t, db, testProduct{slot: models.SlotBottom})
+	top := insertSlotProduct(t, db, testProduct{slot: models.SlotTop})
+
+	outfits := repository.NewOutfitRepository(db)
+	params := models.CreateOutfitParams{Name: "fit", ProductIDs: []uuid.UUID{accessory, shoe, bottom, top}}
+	created, createdProducts, err := outfits.Create(ctx, params, insertTestUser(t, db))
+	if err != nil {
+		t.Fatalf("create outfit: %v", err)
+	}
+	t.Cleanup(func() {
+		_, _ = db.Exec(`DELETE FROM outfit_products WHERE outfit_id = $1`, created.ID)
+		_, _ = db.Exec(`DELETE FROM outfits WHERE id = $1`, created.ID)
+	})
+	_, fetchedProducts, err := outfits.GetByID(ctx, created.ID, created.UserID)
+	if err != nil {
+		t.Fatalf("get outfit: %v", err)
+	}
+
+	want := []uuid.UUID{top, bottom, shoe, accessory}
+	for name, products := range map[string][]models.ProductResponse{"create": createdProducts, "get": fetchedProducts} {
+		got := make([]uuid.UUID, 0, len(products))
+		for _, product := range products {
+			got = append(got, product.ID)
+		}
+		if !slices.Equal(got, want) {
+			t.Fatalf("%s: product order = %v, want %v", name, got, want)
+		}
 	}
 }

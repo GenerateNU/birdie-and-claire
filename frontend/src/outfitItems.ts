@@ -2,6 +2,8 @@
 export type Product = {
   id: string;
   title: string;
+  /** The product's slug on the Shopify store. */
+  handle: string;
   slot: ProductSlot;
   image_url: string | null;
 };
@@ -75,8 +77,6 @@ const SPOTS_BY_SLOT: Record<ProductSlot, CanvasSpot[]> = {
   shoe: [SHOE],
   accessory: ACCESSORIES,
 };
-
-export const SLOTS_HEAD_TO_TOE: ProductSlot[] = ["top", "bottom", "shoe", "accessory"];
 
 /**
  * Gives each product with a photo the first free spot its slot can take, in title order. Products

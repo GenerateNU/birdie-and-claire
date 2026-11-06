@@ -4,46 +4,22 @@ import type { ReactNode } from "react";
 
 import OutfitCanvas from "@/OutfitCanvas";
 import OutfitDetails from "@/OutfitDetails";
-import type { Outfit } from "@/OutfitList";
-import { apiFetch } from "@/api";
 import logo from "@/assets/logo.png";
 import { Button, Empty, ErrorState, Spinner } from "@/design-system";
-import type { Product } from "@/outfitItems";
+import { outfitQueryOptions } from "@/outfitQuery";
 
-export const Route = createFileRoute("/_signedIn/_onboarded/outfits/$outfitId")({
-  component: OutfitPage,
+export const Route = createFileRoute("/_signedIn/_onboarded/outfits/$outfitId/edit")({
+  component: OutfitEditorPage,
 });
-
-type OutfitResponse = Outfit & {
-  products: Product[];
-};
 
 type EditorFrameProps = {
   children: ReactNode;
 };
 
-async function fetchOutfit(outfitId: string, signal: AbortSignal): Promise<OutfitResponse | null> {
-  const response = await apiFetch(`/api/v1/outfits/${encodeURIComponent(outfitId)}`, { signal });
-
-  // huma answers 422 for an ID that isn't a UUID, which can't name an outfit either.
-  if (response.status === 404 || response.status === 422) {
-    return null;
-  }
-
-  if (!response.ok) {
-    throw new Error(`${response.status} ${response.statusText}`);
-  }
-
-  return await response.json();
-}
-
-function OutfitPage() {
+function OutfitEditorPage() {
   const { outfitId } = Route.useParams();
 
-  const outfitQuery = useQuery({
-    queryKey: ["outfit", outfitId],
-    queryFn: ({ signal }) => fetchOutfit(outfitId, signal),
-  });
+  const outfitQuery = useQuery(outfitQueryOptions(outfitId));
 
   if (outfitQuery.isPending) {
     return (
@@ -82,7 +58,9 @@ function OutfitPage() {
           canvas to nothing, so the panels stack. */}
       <main className="flex min-h-0 flex-1 flex-col gap-xs p-xs pt-md lg:flex-row">
         <div className="min-h-0 min-w-0 flex-1">
-          <OutfitCanvas products={products} />
+          <OutfitCanvas products={products}>
+            <Button label="Help" variant="secondary" disabled className="absolute left-sm top-md" />
+          </OutfitCanvas>
         </div>
         <div className="h-2/5 lg:h-auto lg:w-[576px] lg:shrink-0">
           <OutfitDetails outfitName={name} products={products} />

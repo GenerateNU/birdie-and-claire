@@ -8,7 +8,7 @@ const inputClasses =
 type SharedProps = {
   label: string;
   value: string;
-  onValueChange: (value: string) => void;
+  onValueChange?: (value: string) => void;
   className?: string;
 };
 
@@ -38,7 +38,7 @@ export function TextField(props: TextFieldProps) {
         {label}
         <textarea
           {...textareaProps}
-          onChange={(event) => onValueChange(event.target.value)}
+          onChange={(event) => onValueChange?.(event.target.value)}
           className={inputClasses}
         />
       </label>
