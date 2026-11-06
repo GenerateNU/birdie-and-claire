@@ -158,8 +158,8 @@ func lowercaseTags(tags []string) []string {
 	return lowered
 }
 
-// the text lists picks in these orders, whatever order they were saved in. dress is left out because outfits have no
-// slot for one.
+// picks are listed in this order so the same picks always produce the same prompt text, whatever order they were
+// saved in. dress is left out because outfits have no dress slot (#117).
 var (
 	bottomsInOnboardingOrder = []string{"pants", "skirt", "shorts"}
 	shoesInOnboardingOrder   = []string{"sneakers", "boots", "sandals", "heels", "flats"}
@@ -172,21 +172,22 @@ func formatStylePreferences(preferences *models.StylePreferences) string {
 		return ""
 	}
 	var fields []string
-	if bottoms := keepPicked(bottomsInOnboardingOrder, preferences.Bottoms); len(bottoms) > 0 {
+	if bottoms := orderPicks(preferences.Bottoms, bottomsInOnboardingOrder); len(bottoms) > 0 {
 		fields = append(fields, "bottoms: "+strings.Join(bottoms, ", "))
 	}
-	if shoes := keepPicked(shoesInOnboardingOrder, preferences.Shoes); len(shoes) > 0 {
+	if shoes := orderPicks(preferences.Shoes, shoesInOnboardingOrder); len(shoes) > 0 {
 		fields = append(fields, "shoes: "+strings.Join(shoes, ", "))
 	}
 	return strings.Join(fields, "; ")
 }
 
-func keepPicked(order, picked []string) []string {
-	var kept []string
+// orderPicks drops any pick that order doesn't list, such as dress
+func orderPicks(picks, order []string) []string {
+	var ordered []string
 	for _, value := range order {
-		if slices.Contains(picked, value) {
-			kept = append(kept, value)
+		if slices.Contains(picks, value) {
+			ordered = append(ordered, value)
 		}
 	}
-	return kept
+	return ordered
 }
