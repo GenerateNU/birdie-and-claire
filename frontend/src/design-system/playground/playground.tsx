@@ -564,7 +564,9 @@ function RadioExamples() {
 }
 
 function DialogExamples() {
-  const [openDialog, setOpenDialog] = useState<"confirm" | "dismissible" | null>(null);
+  const [openDialog, setOpenDialog] = useState<"confirm" | "dismissible" | "content" | null>(null);
+
+  const [dialogName, setDialogName] = useState("Weekend look");
   const close = () => setOpenDialog(null);
 
   return (
@@ -574,6 +576,11 @@ function DialogExamples() {
         label="Dismissible dialog"
         variant="secondary"
         onClick={() => setOpenDialog("dismissible")}
+      />
+      <Button
+        label="Dialog with content"
+        variant="secondary"
+        onClick={() => setOpenDialog("content")}
       />
 
       <Dialog
@@ -594,6 +601,17 @@ function DialogExamples() {
         actions={[{ label: "Got it", variant: "primary", onClick: close }]}
         dismissible
       />
+      <Dialog
+        open={openDialog === "content"}
+        onClose={close}
+        title="Name your outfit"
+        actions={[
+          { label: "Cancel", variant: "secondary", onClick: close, disabled: true },
+          { label: "Save", variant: "primary", onClick: close, loading: true },
+        ]}
+      >
+        <TextField label="Outfit name" value={dialogName} onValueChange={setDialogName} />
+      </Dialog>
     </Box>
   );
 }

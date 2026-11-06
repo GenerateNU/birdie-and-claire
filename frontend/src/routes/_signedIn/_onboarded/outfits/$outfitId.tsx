@@ -1,18 +1,28 @@
-import { useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
-import type { ReactNode } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useState, type ReactNode } from "react";
 
-import { getOutfitOptions } from "@/api/generated/@tanstack/react-query.gen";
-import type { ErrorModel } from "@/api/generated/types.gen";
-import { Box, Button, Empty, ErrorState, Link, Logo, Spinner, Text } from "@/design-system";
+import {
+  getOutfitOptions,
+  getOutfitQueryKey,
+  listOutfitsInfiniteQueryKey,
+  updateOutfitMutation,
+} from "@/api/generated/@tanstack/react-query.gen";
+import type { ErrorModel, OutfitResponse, UpdateOutfitInputBody } from "@/api/generated/types.gen";
+import { Box, Dialog, Empty, ErrorState, Spinner, useToast } from "@/design-system";
+import { EditorHeader } from "@/features/outfits/editor-header";
 import { OutfitCanvas } from "@/features/outfits/outfit-canvas";
 import { OutfitDetails } from "@/features/outfits/outfit-details";
+import { useOutfitDraft } from "@/features/outfits/outfit-draft";
+import { SaveOutfitDialog } from "@/features/outfits/save-outfit-dialog";
+import { useLeaveGuard } from "@/features/outfits/use-leave-guard";
 
 export const Route = createFileRoute("/_signedIn/_onboarded/outfits/$outfitId")({
   component: OutfitPage,
 });
 
 type EditorFrameProps = {
+  onSave?: () => void;
   children: ReactNode;
 };
 
@@ -61,10 +71,60 @@ function OutfitPage() {
     );
   }
 
-  const { name, products } = outfitQuery.data;
+  return <OutfitEditor outfitId={outfitId} outfit={outfitQuery.data} />;
+}
+
+type OutfitEditorProps = {
+  outfitId: string;
+  outfit: OutfitResponse;
+};
+
+function OutfitEditor({ outfitId, outfit }: OutfitEditorProps) {
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const toast = useToast();
+
+  const draft = useOutfitDraft(outfit);
+  const [naming, setNaming] = useState(false);
+
+  const saveMutation = useMutation({
+    ...updateOutfitMutation(),
+    onSuccess: (saved) => {
+      // The guard is off while the mutation is pending, and resetting the draft keeps it off after.
+      queryClient.setQueryData(getOutfitQueryKey({ path: { id: outfitId } }), saved);
+      void queryClient.invalidateQueries({ queryKey: listOutfitsInfiniteQueryKey() });
+      void navigate({ to: "/profile/outfits" });
+    },
+    onError: () => toast.show({ message: "Couldn't save your outfit. Try again." }),
+  });
+
+  const leave = useLeaveGuard(draft.isDirty && !saveMutation.isPending);
+
+  // The API rejects a body with neither field, so an unchanged outfit skips the request.
+  function save(name: string) {
+    const body: UpdateOutfitInputBody = {};
+
+    if (name !== outfit.name) {
+      body.name = name;
+    }
+
+    if (draft.isDirty) {
+      body.product_ids = draft.items.map((item) => item.product.id);
+    }
+
+    if (body.name === undefined && body.product_ids === undefined) {
+      void navigate({ to: "/profile/outfits" });
+
+      return;
+    }
+
+    saveMutation.mutate({ path: { id: outfitId }, body });
+  }
+
+  const { name, products } = outfit;
 
   return (
-    <EditorFrame>
+    <EditorFrame onSave={() => setNaming(true)}>
       {/* Side by side from lg up. Narrower than that, the 576px details panel would squeeze the
           canvas to nothing, so the panels stack. */}
       <main className="flex min-h-0 flex-1 flex-col gap-xs p-xs pt-md lg:flex-row">
@@ -75,36 +135,40 @@ function OutfitPage() {
           <OutfitDetails outfitName={name} products={products} />
         </Box>
       </main>
+      <SaveOutfitDialog
+        open={naming}
+        savedName={outfit.name}
+        saving={saveMutation.isPending}
+        onCancel={() => setNaming(false)}
+        onSave={save}
+      />
+      <Dialog
+        open={leave.blocked}
+        onClose={leave.stay}
+        title="You have unsaved outfit edits"
+        message="Save your edits before leaving."
+        actions={[
+          { label: "Exit", variant: "secondary", onClick: leave.exit },
+          {
+            label: "Save",
+            variant: "primary",
+            onClick: () => {
+              leave.stay();
+              setNaming(true);
+            },
+          },
+        ]}
+      />
     </EditorFrame>
   );
 }
 
 /** Fills the window, so the panels under the header take the height that's left. */
-function EditorFrame({ children }: EditorFrameProps) {
+function EditorFrame({ onSave, children }: EditorFrameProps) {
   return (
     <Box className="flex h-screen flex-col">
-      <EditorHeader />
+      <EditorHeader onSave={onSave} />
       {children}
     </Box>
-  );
-}
-
-function EditorHeader() {
-  return (
-    <header className="grid h-[144px] grid-cols-[1fr_auto_1fr] items-end border-y px-md">
-      <Text variant="heading" className="pb-md">
-        Outfit Editor
-      </Text>
-      <Link to="/profile/outfits" className="pb-xxxs">
-        {/* object-bottom repeats the Figma's crop of the image's empty top edge. */}
-        <Logo className="h-[118px] w-[373px] object-cover object-bottom" />
-      </Link>
-      {/* Disabled until outfit editing is built. */}
-      <Box className="flex items-center gap-xxs justify-self-end pb-sm">
-        <Button label="Undo" variant="secondary" disabled />
-        <Button label="Redo" variant="secondary" disabled />
-        <Button label="Save" disabled className="ml-sm" />
-      </Box>
-    </header>
   );
 }

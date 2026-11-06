@@ -1,5 +1,6 @@
 import { AlertDialog } from "@base-ui/react/alert-dialog";
 import { Dialog as BaseDialog } from "@base-ui/react/dialog";
+import type { ReactNode } from "react";
 
 import { Button } from "@/design-system/components/buttons/button";
 import { CloseButton } from "@/design-system/components/buttons/close-button";
@@ -10,6 +11,8 @@ type DialogAction = {
   label: string;
   onClick: () => void;
   variant: ButtonVariant;
+  disabled?: boolean;
+  loading?: boolean;
 };
 
 type DialogProps = {
@@ -17,6 +20,8 @@ type DialogProps = {
   onClose: () => void;
   title: string;
   message?: string;
+  /** Goes between the message and the actions, such as a form field. */
+  children?: ReactNode;
   actions: DialogAction[];
   dismissible?: boolean;
 };
@@ -26,6 +31,7 @@ export function Dialog({
   onClose,
   title,
   message,
+  children,
   actions,
   dismissible = false,
 }: DialogProps) {
@@ -52,6 +58,7 @@ export function Dialog({
               {message}
             </DialogParts.Description>
           )}
+          {children}
           <Box className="flex justify-end gap-xs">
             {actions.map((action) => (
               <Button
@@ -59,6 +66,8 @@ export function Dialog({
                 label={action.label}
                 variant={action.variant}
                 onClick={action.onClick}
+                disabled={action.disabled}
+                loading={action.loading}
               />
             ))}
           </Box>
