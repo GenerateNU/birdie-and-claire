@@ -6,7 +6,6 @@ type ProgressBarProps = {
   stepCount: number;
 };
 
-/** A thin bar showing how far through a multi-step flow the user is. */
 export function ProgressBar({ label, step, stepCount }: ProgressBarProps) {
   return (
     <Progress.Root

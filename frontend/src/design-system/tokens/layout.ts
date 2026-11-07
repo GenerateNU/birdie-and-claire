@@ -1,7 +1,8 @@
 // Width of floating panels: dialogs and the toast stack.
 export const PopupWidth = "384px";
 
-// Max widths for page content, narrowest first. Each becomes `max-w-content-<key>`.
+// Widths for page content, narrowest first. Each becomes `max-w-content-<key>` and
+// `w-content-<key>`.
 export const ContentWidth = {
   sm: "448px",
   md: "576px",
@@ -9,7 +10,6 @@ export const ContentWidth = {
   xl: "896px",
 } as const;
 
-// Max height of a scrolling list (`max-h-scroll-area`).
 export const ScrollAreaHeight = "384px";
 
 // Fixed width and smallest height of an image card (`w-card-*`, `min-h-card-*`), from Figma: sm is

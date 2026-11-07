@@ -1,9 +1,10 @@
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback } from "react";
 
-import OutfitList, { type Outfit } from "@/OutfitList";
+import { listOutfitsInfiniteOptions } from "@/api/generated/@tanstack/react-query.gen";
 import { Empty, ErrorState, Spinner, Text } from "@/design-system";
-import { usePagination } from "@/utils/usePagination";
+import { OutfitList } from "@/features/outfits/outfit-list";
 
 export const Route = createFileRoute("/_signedIn/_onboarded/profile/outfits")({
   component: OutfitsPage,
@@ -12,16 +13,24 @@ export const Route = createFileRoute("/_signedIn/_onboarded/profile/outfits")({
 function OutfitsPage() {
   const {
     data,
-    error,
     isPending,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
     isFetchNextPageError,
     refetch,
-  } = usePagination<Outfit>("/api/v1/outfits");
+  } = useInfiniteQuery({
+    ...listOutfitsInfiniteOptions({ query: { limit: 20 } }),
+    // An empty page param adds no cursor, so the first request gets the first page.
+    initialPageParam: {},
+    // Avoid refetching a page just from paging forward and back.
+    staleTime: 60_000,
+    // has_more is the explicit signal, a null cursor alone shouldn't decide it.
+    getNextPageParam: (lastPage) =>
+      lastPage.has_more && lastPage.next_cursor !== null ? lastPage.next_cursor : undefined,
+  });
 
-  // The cursor is unused because usePagination already tracks the next page param.
+  // The cursor is unused because the infinite query already tracks the next page param.
   const onLoadMore = useCallback(() => {
     // The observer re-fires on rebuild, so fetching while errored would retry in a loop.
     if (!isFetchingNextPage && !isFetchNextPageError) {
@@ -34,12 +43,7 @@ function OutfitsPage() {
   }
 
   if (!data) {
-    return (
-      <ErrorState
-        message={`Failed to load outfits: ${error?.message}`}
-        onRetry={() => void refetch()}
-      />
-    );
+    return <ErrorState message="Couldn't load your outfits." onRetry={() => void refetch()} />;
   }
 
   const outfits = data.pages.flatMap((page) => page.items);
@@ -62,7 +66,7 @@ function OutfitsPage() {
       )}
       {isFetchNextPageError && (
         <ErrorState
-          message={`Failed to load more: ${error?.message}`}
+          message="Couldn't load more outfits."
           onRetry={() => void fetchNextPage()}
           retryLabel="Retry"
         />

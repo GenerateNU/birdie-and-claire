@@ -1,6 +1,6 @@
 import { Input as BaseInput } from "@base-ui/react/input";
 import type { KeyboardEvent } from "react";
-import { joinClasses } from "../../utils/join-classes";
+import { joinClasses } from "@/design-system/utils/join-classes";
 
 const inputClasses = "w-full rounded-sm border bg-background px-sm py-xs text-body focus-ring";
 
