@@ -10,7 +10,16 @@ import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { shareOutfitMutation } from "@/api/generated/@tanstack/react-query.gen";
-import { Box, Button, Dialog, ErrorState, Spinner, TextField, useToast } from "@/design-system";
+import {
+  Box,
+  Button,
+  Dialog,
+  ErrorState,
+  IconButton,
+  Spinner,
+  TextField,
+  useToast,
+} from "@/design-system";
 
 type ShareOutfitProps = {
   outfitId: string;
@@ -55,14 +64,7 @@ export function ShareOutfit({ outfitId }: ShareOutfitProps) {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={openDialog}
-        className="flex items-center gap-xs rounded-full bg-primary px-md py-xs text-body text-inverse focus-ring"
-      >
-        <ShareNetwork aria-hidden="true" />
-        Share
-      </button>
+      <Button label="Share" leadingIcon={ShareNetwork} onClick={openDialog} />
       <Dialog open={open} onClose={() => setOpen(false)} title="Share" actions={[]} dismissible>
         {share.isPending && <Spinner />}
         {share.isError && (
@@ -87,15 +89,13 @@ export function ShareOutfit({ outfitId }: ShareOutfitProps) {
         <ul className="flex justify-center gap-md">
           {SHARE_TARGETS.map(({ name, Icon }) => (
             <li key={name}>
-              <button
-                type="button"
+              <IconButton
+                icon={Icon}
+                label={`Share to ${name}, coming soon`}
+                variant="plain"
                 disabled
-                aria-label={`Share to ${name}, coming soon`}
                 title="Coming soon"
-                className="text-heading text-secondary disabled:opacity-disabled"
-              >
-                <Icon aria-hidden="true" />
-              </button>
+              />
             </li>
           ))}
         </ul>

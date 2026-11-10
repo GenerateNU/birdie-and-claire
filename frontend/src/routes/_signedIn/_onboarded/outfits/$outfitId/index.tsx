@@ -4,7 +4,17 @@ import { createFileRoute } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
 import stamp from "@/design-system/assets/stamp.png";
-import { Box, Button, Empty, ErrorState, Link, Logo, Spinner, Text } from "@/design-system";
+import {
+  Box,
+  Button,
+  Empty,
+  ErrorState,
+  IconButton,
+  Link,
+  Logo,
+  Spinner,
+  Text,
+} from "@/design-system";
 import { OutfitCanvas } from "@/features/outfits/outfit-canvas";
 import type { Product } from "@/features/outfits/outfit-items";
 import { isOutfitNotFound, outfitQueryOptions } from "@/features/outfits/outfit-query";
@@ -35,11 +45,6 @@ type PiecesSectionProps = {
 
 type PieceCardProps = {
   product: Product;
-};
-
-type ComingSoonIconButtonProps = {
-  label: string;
-  children: ReactNode;
 };
 
 function OutfitDetailsPage() {
@@ -103,9 +108,13 @@ function OutfitDetailsPage() {
               >
                 Customize
               </Link>
-              <ComingSoonIconButton label="Expand the outfit">
-                <ArrowsOut aria-hidden="true" />
-              </ComingSoonIconButton>
+              <IconButton
+                icon={ArrowsOut}
+                label="Expand the outfit, coming soon"
+                variant="outlined"
+                disabled
+                title="Coming soon"
+              />
             </Box>
           </OutfitCanvas>
         </Box>
@@ -117,9 +126,13 @@ function OutfitDetailsPage() {
                 {name}
               </Text>
               <Box className="flex shrink-0 items-center gap-sm">
-                <ComingSoonIconButton label="Save the outfit to a collection">
-                  <Plus aria-hidden="true" />
-                </ComingSoonIconButton>
+                <IconButton
+                  icon={Plus}
+                  label="Save the outfit to a collection, coming soon"
+                  variant="outlined"
+                  disabled
+                  title="Coming soon"
+                />
                 <ShareOutfit outfitId={outfitId} />
               </Box>
             </Box>
@@ -212,6 +225,7 @@ function PieceCard({ product }: PieceCardProps) {
               disabled
             />
           </Box>
+          {/* A raw anchor: the design system's Link only types routes in this app, not outside URLs. */}
           <a
             href={`${STORE_PRODUCT_URL}/${encodeURIComponent(product.handle)}`}
             target="_blank"
@@ -243,33 +257,19 @@ function ExternalPiecesSection() {
             <Box className="flex size-[64px] items-center justify-center bg-placeholder text-caption text-secondary">
               Piece {number}
             </Box>
-            <button
-              type="button"
-              disabled
-              title="Coming soon"
-              className="flex items-center gap-xxs text-caption text-secondary disabled:opacity-disabled"
-            >
-              <ArrowSquareOut aria-hidden="true" />
-              View item
-            </button>
+            <Box title="Coming soon" className="flex flex-col">
+              <Button
+                label="View item"
+                accessibleLabel="View item, coming soon"
+                variant="secondary"
+                size="sm"
+                disabled
+              />
+            </Box>
           </li>
         ))}
       </ul>
     </section>
-  );
-}
-
-function ComingSoonIconButton({ label, children }: ComingSoonIconButtonProps) {
-  return (
-    <button
-      type="button"
-      disabled
-      aria-label={`${label}, coming soon`}
-      title="Coming soon"
-      className="flex size-avatar-md items-center justify-center rounded-full border bg-background text-subheading disabled:opacity-disabled"
-    >
-      {children}
-    </button>
   );
 }
 
