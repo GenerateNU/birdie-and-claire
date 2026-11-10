@@ -18,7 +18,7 @@ export function selectionReducer(state: SelectionState, action: SelectionAction)
   switch (action.type) {
     case "select":
       if (action.originId === null) {
-        return { ...state, selectedOriginId: null };
+        return noSelection;
       }
 
       return { selectedOriginId: action.originId, panelOriginId: action.originId };
@@ -48,7 +48,7 @@ export function selectionReducer(state: SelectionState, action: SelectionAction)
 
 /**
  * Which canvas item is selected, and which spot the swap panel edits. The panel outlives the
- * selection, so it stays on a spot after a swap or a click on the empty canvas.
+ * selection only after a swap, so the user can keep picking from that spot's suggestions.
  */
 export function useEditorSelection(items: DraftItem[]) {
   const [state, dispatch] = useReducer(selectionReducer, noSelection);

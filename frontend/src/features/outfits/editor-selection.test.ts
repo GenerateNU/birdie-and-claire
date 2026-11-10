@@ -17,10 +17,17 @@ describe("select", () => {
     expect(state).toEqual({ selectedOriginId: "jeans", panelOriginId: "jeans" });
   });
 
-  test("null clears the selection and keeps the panel", () => {
+  test("null clears the selection and the panel", () => {
     const state = selectionReducer(onShirt, { type: "select", originId: null });
 
-    expect(state).toEqual({ selectedOriginId: null, panelOriginId: "shirt" });
+    expect(state).toEqual(nothing);
+  });
+
+  test("null clears the panel left open by a swap", () => {
+    const panelOnly = { selectedOriginId: null, panelOriginId: "shirt" };
+    const state = selectionReducer(panelOnly, { type: "select", originId: null });
+
+    expect(state).toEqual(nothing);
   });
 });
 
