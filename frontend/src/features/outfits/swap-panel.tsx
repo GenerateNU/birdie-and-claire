@@ -19,15 +19,16 @@ import type { Product } from "@/features/outfits/outfit-items";
 
 type SwapPanelProps = {
   outfitId: string;
-  outfitName: string;
   /** The saved outfit's products, where each spot's original item is still found after a swap. */
   savedProducts: Product[];
   items: DraftItem[];
   originId: string | null;
   onSwap: (originId: string, product: Product) => void;
+  /** Opens a spot from the details list, as selecting its item on the canvas does. */
+  onPickSpot: (originId: string) => void;
 };
 
-type SpotEditorProps = Omit<SwapPanelProps, "outfitName" | "originId"> & { originId: string };
+type SpotEditorProps = Omit<SwapPanelProps, "originId" | "onPickSpot"> & { originId: string };
 
 type SuggestedTilesProps = {
   outfitId: string;
@@ -68,14 +69,9 @@ function tabLabel(tab: SwapTab, slot: Product["slot"]): string {
 function ignoreSearch() {}
 
 /** Edits one spot of the outfit, or shows the outfit's details while no spot is picked. */
-export function SwapPanel({ outfitName, originId, ...spotProps }: SwapPanelProps) {
+export function SwapPanel({ originId, onPickSpot, ...spotProps }: SwapPanelProps) {
   if (originId === null) {
-    return (
-      <OutfitDetails
-        outfitName={outfitName}
-        products={spotProps.items.map((item) => item.product)}
-      />
-    );
+    return <OutfitDetails items={spotProps.items} onSwapItem={onPickSpot} />;
   }
 
   // Keyed by spot, so a new spot starts on the Suggested tab.

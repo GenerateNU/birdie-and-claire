@@ -44,22 +44,22 @@ export function SaveOutfitDialog({
     <Dialog
       open={open}
       onClose={cancel}
-      title="Name your outfit"
+      title="Save Outfit"
       actions={[
-        { label: "Cancel", variant: "secondary", onClick: cancel, disabled: saving },
         {
-          label: "Save",
+          label: "Create",
           variant: "primary",
           onClick: () => void form.handleSubmit(),
           loading: saving,
         },
       ]}
+      dismissible
     >
       <Form form={form}>
         <form.Field name="name">
           {(field) => (
             <TextField
-              label="Outfit name"
+              label="Name outfit"
               required
               // Also stops Enter from submitting a second save.
               disabled={saving}

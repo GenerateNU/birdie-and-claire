@@ -160,11 +160,11 @@ function OutfitEditor({ outfitId, outfit }: OutfitEditorProps) {
         <Box className="h-2/5 lg:h-auto lg:w-content-md lg:shrink-0">
           <SwapPanel
             outfitId={outfitId}
-            outfitName={outfit.name}
             savedProducts={outfit.products}
             items={draft.items}
             originId={selection.panelOriginId}
             onSwap={swap}
+            onPickSpot={selection.select}
           />
         </Box>
       </main>

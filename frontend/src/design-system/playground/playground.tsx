@@ -29,6 +29,7 @@ import {
   Tabs,
   Text,
   TextColor,
+  TextButton,
   TextField,
   Toggle,
   TypeScale,
@@ -186,6 +187,8 @@ export function Playground() {
                 <Button label="Next" trailingIcon={CaretRight} />
               </Box>
               <Label>leadingIcon · trailingIcon</Label>
+              <TextButton label="swap item" onClick={() => {}} />
+              <Label>TextButton</Label>
             </Section>
 
             <Section id="link">

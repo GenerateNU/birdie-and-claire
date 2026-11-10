@@ -1,40 +1,47 @@
-import { Box, Divider, Empty, Text } from "@/design-system";
-import { SLOTS_HEAD_TO_TOE, type Product } from "@/features/outfits/outfit-items";
+import { Box, Divider, Empty, Logo, Text, TextButton } from "@/design-system";
+import type { DraftItem } from "@/features/outfits/outfit-draft";
+import { SLOTS_HEAD_TO_TOE } from "@/features/outfits/outfit-items";
 
 type OutfitDetailsProps = {
-  outfitName: string;
-  products: Product[];
+  items: DraftItem[];
+  onSwapItem: (originId: string) => void;
 };
 
 type ItemTileProps = {
   imageUrl: string | null;
 };
 
-function listPosition(product: Product): number {
-  return SLOTS_HEAD_TO_TOE.indexOf(product.slot);
+function listPosition(item: DraftItem): number {
+  return SLOTS_HEAD_TO_TOE.indexOf(item.product.slot);
 }
 
-export function OutfitDetails({ outfitName, products }: OutfitDetailsProps) {
-  // sort is stable, so products that share a slot keep the API's order.
-  const sortedProducts = [...products].sort((a, b) => listPosition(a) - listPosition(b));
+export function OutfitDetails({ items, onSwapItem }: OutfitDetailsProps) {
+  // sort is stable, so items that share a slot keep the draft's order.
+  const sortedItems = [...items].sort((a, b) => listPosition(a) - listPosition(b));
 
   return (
     <section className="flex h-full flex-col border">
       <header className="px-xxl py-xs">
         <Text variant="heading">Outfit Details</Text>
-        <Text variant="body" className="text-secondary">
-          {outfitName}
-        </Text>
       </header>
       <Divider />
-      {sortedProducts.length === 0 ? (
+      {sortedItems.length === 0 ? (
         <Empty title="This outfit has no items yet" className="px-xxl py-lg" />
       ) : (
         <ul className="flex min-h-0 flex-1 flex-col gap-md overflow-y-auto px-xxl py-lg">
-          {sortedProducts.map((product) => (
-            <li key={product.id} className="flex items-center gap-md border p-md">
-              <ItemTile imageUrl={product.image_url} />
+          {sortedItems.map(({ product, originId }) => (
+            <li key={originId} className="relative flex items-center gap-md border p-md">
+              <Box className="flex shrink-0 flex-col items-center gap-xxs">
+                <ItemTile imageUrl={product.image_url} />
+                <TextButton
+                  label="swap item"
+                  accessibleLabel={`Swap item: ${product.title}`}
+                  onClick={() => onSwapItem(originId)}
+                />
+              </Box>
               <Text variant="subheading">{product.title}</Text>
+              {/* Every item is a shop catalog product today; #115 hides this on pieces the shopper owns. */}
+              <Logo className="absolute bottom-0 right-0 h-[50px] w-[158px] object-cover object-bottom" />
             </li>
           ))}
         </ul>
