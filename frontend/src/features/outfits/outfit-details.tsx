@@ -1,4 +1,4 @@
-import { Box, Divider, Empty, Logo, Text, TextButton } from "@/design-system";
+import { Box, Divider, Empty, Text, TextButton } from "@/design-system";
 import type { DraftItem } from "@/features/outfits/outfit-draft";
 import { SLOTS_HEAD_TO_TOE } from "@/features/outfits/outfit-items";
 
@@ -30,7 +30,7 @@ export function OutfitDetails({ items, onSwapItem }: OutfitDetailsProps) {
       ) : (
         <ul className="flex min-h-0 flex-1 flex-col gap-md overflow-y-auto px-xxl py-lg">
           {sortedItems.map(({ product, originId }) => (
-            <li key={originId} className="relative flex items-center gap-md border p-md">
+            <li key={originId} className="flex items-center gap-md border p-md">
               <Box className="flex shrink-0 flex-col items-center gap-xxs">
                 <ItemTile imageUrl={product.image_url} />
                 <TextButton
@@ -40,8 +40,6 @@ export function OutfitDetails({ items, onSwapItem }: OutfitDetailsProps) {
                 />
               </Box>
               <Text variant="subheading">{product.title}</Text>
-              {/* Every item is a shop catalog product today; #115 hides this on pieces the shopper owns. */}
-              <Logo className="absolute bottom-0 right-0 h-[50px] w-[158px] object-cover object-bottom" />
             </li>
           ))}
         </ul>
