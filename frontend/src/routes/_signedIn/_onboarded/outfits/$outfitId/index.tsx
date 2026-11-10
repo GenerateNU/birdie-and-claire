@@ -14,17 +14,16 @@ export const Route = createFileRoute("/_signedIn/_onboarded/outfits/$outfitId/")
   component: OutfitDetailsPage,
 });
 
-// Outfits have no tags yet, so the chips are the Figma's placeholders. Real ones will come from the
-// answers given when the outfit was created.
+// Placeholders until outfits have descriptions and tags, and basics and partner brands are decided.
+const PLACEHOLDER_DESCRIPTION = "This is a short description about the outfit...";
+
 const PLACEHOLDER_TAGS = ["Tag 1", "Tag 2", "Tag 3"];
 
-// Every product is treated as a Birdie & Claire piece for now. Basics and partner brands, which
-// would need their own brand and link, aren't decided yet.
 const STORE_BRAND = "Birdie & Claire";
 
-const STORE_PRODUCT_URL = "https://birdieandclaire.com/products";
-
 const EXTERNAL_PLACEHOLDER_COUNT = 4;
+
+const STORE_PRODUCT_URL = "https://birdieandclaire.com/products";
 
 type DetailsFrameProps = {
   children: ReactNode;
@@ -81,8 +80,10 @@ function OutfitDetailsPage() {
 
   return (
     <DetailsFrame>
-      {/* The canvas fits the height under the header and only the details panel scrolls. Side by
-          side from lg up. Narrower than that, the panels stack and split the height. */}
+      {/* The canvas fits the height under the header. Side by side from lg up. Narrower than that,
+          the panels stack and split the height. The 80px right padding and 554px panel are the
+          mid-fi Figma's (node 5936:4785). The 88px gap and 120px left padding are wider than it,
+          to leave room for the back button and space between the panels. */}
       <main className="relative flex min-h-0 flex-1 flex-col gap-xl p-md lg:flex-row lg:gap-[88px] lg:py-md lg:pl-[120px] lg:pr-[80px]">
         {/* From lg up it sits in the left gutter, outside the canvas, as in the Figma. */}
         <Link
@@ -122,9 +123,8 @@ function OutfitDetailsPage() {
                 <ShareOutfit outfitId={outfitId} />
               </Box>
             </Box>
-            {/* Outfits have no description yet, so this is the Figma's placeholder. */}
             <Text variant="body" className="text-secondary">
-              This is a short description about the outfit...
+              {PLACEHOLDER_DESCRIPTION}
             </Text>
             <ul className="flex flex-wrap gap-xs">
               {PLACEHOLDER_TAGS.map((tag) => (
@@ -177,6 +177,8 @@ function PiecesSection({ products }: PiecesSectionProps) {
 function PieceCard({ product }: PieceCardProps) {
   return (
     <li className="flex gap-sm border bg-surface p-xs">
+      {/* The image tile is smaller than the Figma's 211px-tall cards, so more pieces fit
+          before the list scrolls. */}
       <Box className="flex h-[112px] w-[92px] shrink-0 items-center justify-center bg-placeholder">
         {/* Decorative: the title next to it already names the item. multiply blends the photo's
             white background into the tile, as on the canvas. */}
@@ -202,7 +204,6 @@ function PieceCard({ product }: PieceCardProps) {
           <img src={stamp} alt="" className="size-[40px] shrink-0" />
         </Box>
         <Box className="mt-xs flex flex-col gap-xs">
-          {/* The cart isn't built yet. */}
           <Box title="Coming soon" className="flex flex-col">
             <Button
               label="Add to cart"
@@ -235,7 +236,7 @@ function ExternalPiecesSection() {
   return (
     <section className="flex shrink-0 flex-col gap-md">
       <Text variant="subheading">External pieces</Text>
-      {/* Mock tiles until basics and partner brands are designed. */}
+      {/* Mock tiles, sized to fit beside each other rather than taken from the Figma. */}
       <ul className="flex gap-md">
         {placeholderNumbers.map((number) => (
           <li key={number} className="flex flex-col gap-xxs">
@@ -275,6 +276,7 @@ function ComingSoonIconButton({ label, children }: ComingSoonIconButtonProps) {
 function DetailsFrame({ children }: DetailsFrameProps) {
   return (
     <Box className="flex h-screen flex-col">
+      {/* The Figma's navigation bar height and logo size. */}
       <header className="flex h-[120px] shrink-0 items-end justify-center border-y">
         <Link to="/profile/outfits">
           {/* object-bottom repeats the Figma's crop of the image's empty top edge. */}
