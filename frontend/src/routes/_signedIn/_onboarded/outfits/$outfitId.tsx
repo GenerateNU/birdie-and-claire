@@ -11,10 +11,13 @@ import {
 import type { ErrorModel, OutfitResponse, UpdateOutfitInputBody } from "@/api/generated/types.gen";
 import { Box, Dialog, Empty, ErrorState, Spinner, useToast } from "@/design-system";
 import { EditorHeader } from "@/features/outfits/editor-header";
+import { useEditorSelection } from "@/features/outfits/editor-selection";
 import { OutfitCanvas } from "@/features/outfits/outfit-canvas";
-import { OutfitDetails } from "@/features/outfits/outfit-details";
 import { useOutfitDraft } from "@/features/outfits/outfit-draft";
+import type { Product } from "@/features/outfits/outfit-items";
 import { SaveOutfitDialog } from "@/features/outfits/save-outfit-dialog";
+import { SwapPanel } from "@/features/outfits/swap-panel";
+import { UndoRedoControls } from "@/features/outfits/undo-redo-controls";
 import { useLeaveGuard } from "@/features/outfits/use-leave-guard";
 
 export const Route = createFileRoute("/_signedIn/_onboarded/outfits/$outfitId")({
@@ -85,6 +88,7 @@ function OutfitEditor({ outfitId, outfit }: OutfitEditorProps) {
   const toast = useToast();
 
   const draft = useOutfitDraft(outfit);
+  const selection = useEditorSelection(draft.items);
   const [naming, setNaming] = useState(false);
 
   const saveMutation = useMutation({
@@ -121,7 +125,16 @@ function OutfitEditor({ outfitId, outfit }: OutfitEditorProps) {
     saveMutation.mutate({ path: { id: outfitId }, body });
   }
 
-  const { name, products } = outfit;
+  function remove(originId: string) {
+    if (!draft.remove(originId)) {
+      toast.show({ message: "An outfit needs at least one item." });
+    }
+  }
+
+  function swap(originId: string, product: Product) {
+    draft.swap(originId, product);
+    selection.afterSwap();
+  }
 
   return (
     <EditorFrame onSave={() => setNaming(true)}>
@@ -129,10 +142,30 @@ function OutfitEditor({ outfitId, outfit }: OutfitEditorProps) {
           canvas to nothing, so the panels stack. */}
       <main className="flex min-h-0 flex-1 flex-col gap-xs p-xs pt-md lg:flex-row">
         <Box className="min-h-0 min-w-0 flex-1">
-          <OutfitCanvas products={products} />
+          <OutfitCanvas
+            items={draft.items}
+            selectedOriginId={selection.selectedOriginId}
+            onSelect={selection.select}
+            onRemove={remove}
+            controls={
+              <UndoRedoControls
+                canUndo={draft.canUndo}
+                canRedo={draft.canRedo}
+                onUndo={draft.undo}
+                onRedo={draft.redo}
+              />
+            }
+          />
         </Box>
         <Box className="h-2/5 lg:h-auto lg:w-content-md lg:shrink-0">
-          <OutfitDetails outfitName={name} products={products} />
+          <SwapPanel
+            outfitId={outfitId}
+            outfitName={outfit.name}
+            savedProducts={outfit.products}
+            items={draft.items}
+            originId={selection.panelOriginId}
+            onSwap={swap}
+          />
         </Box>
       </main>
       <SaveOutfitDialog

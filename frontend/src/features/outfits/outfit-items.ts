@@ -75,17 +75,17 @@ const SPOTS_BY_SLOT: Record<ProductSlot, CanvasSpot[]> = {
 export const SLOTS_HEAD_TO_TOE: ProductSlot[] = ["top", "bottom", "shoe", "accessory"];
 
 /**
- * Gives each product with a photo the first free spot its slot can take, in title order. Products
- * left without a spot show only in the details list.
+ * Gives each product with a photo the first free spot its slot can take, in the order given, so a
+ * product swapped into a draft's place keeps that place's spot. Products left without a spot show
+ * only in the details list.
  */
 export function placeOnCanvas(
   products: Product[],
 ): { product: Product; photoUrl: string; spot: CanvasSpot }[] {
   const takenSpots = new Set<CanvasSpot>();
   const placements = [];
-  const byTitle = [...products].sort((a, b) => a.title.localeCompare(b.title));
 
-  for (const product of byTitle) {
+  for (const product of products) {
     if (product.image_url === null) {
       continue;
     }

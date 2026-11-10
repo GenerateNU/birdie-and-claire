@@ -1,4 +1,4 @@
-import { CaretLeft, CaretRight } from "@phosphor-icons/react";
+import { CaretLeft, CaretRight, DiamondsFour } from "@phosphor-icons/react";
 import { useForm } from "@tanstack/react-form";
 import { useState, type ReactNode } from "react";
 import { z } from "zod";
@@ -403,9 +403,20 @@ function TabsExamples() {
   const [tab, setTab] = useState("neckline");
 
   return (
-    <Tabs tabs={sampleTabs} value={tab} onValueChange={setTab} disabled={false}>
-      <Text variant="body">Showing the {tab} panel.</Text>
-    </Tabs>
+    <Box className="flex flex-col gap-lg">
+      <Tabs tabs={sampleTabs} value={tab} onValueChange={setTab} disabled={false}>
+        <Text variant="body">Showing the {tab} panel.</Text>
+      </Tabs>
+      <Tabs
+        tabs={sampleTabs.map((sample) => ({ ...sample, icon: DiamondsFour }))}
+        value={tab}
+        onValueChange={setTab}
+        disabled={false}
+        appearance="underline"
+      >
+        <Text variant="body">Showing the {tab} panel, underline appearance.</Text>
+      </Tabs>
+    </Box>
   );
 }
 
