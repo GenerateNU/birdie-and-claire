@@ -28,7 +28,7 @@ type ProductRepository interface {
 	// ClearEmbedding removes the product's embedding, so FindSimilar no longer returns it.
 	ClearEmbedding(ctx context.Context, productID uuid.UUID) error
 	// DeactivateShopifyProductsExcept marks inactive every active product whose shopify_id is not in keepShopifyIDs,
-	// and returns how many it marked.
+	// apart from the seeded demo shoes and bottoms, and returns how many it marked.
 	DeactivateShopifyProductsExcept(ctx context.Context, keepShopifyIDs []int64) (int64, error)
 }
 
@@ -196,6 +196,10 @@ func (r *productRepository) DeactivateShopifyProductsExcept(ctx context.Context,
 		UPDATE products
 		SET active = false, updated_at = now()
 		WHERE active AND shopify_id <> ALL($1::bigint[])
+			-- The store sells no shoes and one bottom, so the seeded demo shoes and bottoms fill those slots until
+			-- basics replace them (docs/Basics_Research.md). Real Shopify IDs have 13 digits, and seeded ones are
+			-- under 100,000.
+			AND NOT (shopify_id < 1000000000 AND slot IN ('shoe', 'bottom'))
 	`, keepShopifyIDs)
 	if err != nil {
 		return 0, fmt.Errorf("deactivate shopify products: %w", err)
