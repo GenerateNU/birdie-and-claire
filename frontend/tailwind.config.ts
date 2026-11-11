@@ -18,6 +18,7 @@ import {
   ContentWidth,
   PopupWidth,
   ScrollAreaHeight,
+  ThumbnailSize,
 } from "./src/design-system/tokens/layout";
 import { Opacity } from "./src/design-system/tokens/opacity";
 import { Spacing } from "./src/design-system/tokens/spacing";
@@ -46,6 +47,7 @@ export default {
         popup: PopupWidth,
         "card-sm": CardSize.sm.width,
         "card-lg": CardSize.lg.width,
+        thumbnail: ThumbnailSize.width,
         ...Object.fromEntries(
           Object.entries(ContentWidth).map(([key, value]) => [`content-${key}`, value]),
         ),
@@ -53,6 +55,7 @@ export default {
       maxWidth: Object.fromEntries(
         Object.entries(ContentWidth).map(([key, value]) => [`content-${key}`, value]),
       ),
+      height: { thumbnail: ThumbnailSize.height },
       maxHeight: { "scroll-area": ScrollAreaHeight },
       minHeight: { "card-sm": CardSize.sm.height, "card-lg": CardSize.lg.height },
       aspectRatio: AspectRatio,

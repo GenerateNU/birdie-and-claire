@@ -20,6 +20,8 @@ export const CardSize = {
   lg: { width: "236px", height: "408px" },
 } as const;
 
+export const ThumbnailSize = { width: "92px", height: "112px" } as const;
+
 export const AspectRatio = {
   portrait: "3 / 4",
   landscape: "3 / 2",

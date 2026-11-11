@@ -17,11 +17,7 @@ type PieceCardProps = {
 export function PieceCard({ product }: PieceCardProps) {
   return (
     <li className="flex gap-sm border bg-surface p-xs">
-      {/* The image tile is smaller than the Figma's 211px-tall cards, so more pieces fit
-          before the list scrolls. */}
-      <Box className="flex h-[112px] w-[92px] shrink-0 items-center justify-center bg-placeholder">
-        {/* Decorative: the title next to it already names the item. multiply blends the photo's
-            white background into the tile, as on the canvas. */}
+      <Box className="flex h-thumbnail w-thumbnail shrink-0 items-center justify-center bg-placeholder">
         {product.image_url !== null && (
           <img
             src={product.image_url}
@@ -40,7 +36,6 @@ export function PieceCard({ product }: PieceCardProps) {
               {STORE_BRAND}
             </Text>
           </Box>
-          {/* Decorative: the brand line beside it already names it. */}
           <img src={stamp} alt="" className="size-[40px] shrink-0" />
         </Box>
         <Box className="mt-xs flex flex-col gap-xs">
