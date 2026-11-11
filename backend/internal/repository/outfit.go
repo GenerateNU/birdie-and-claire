@@ -304,7 +304,8 @@ func (r *outfitRepository) List(ctx context.Context, userID uuid.UUID, params pa
 	return outfits, nil
 }
 
-// productScanTargets matches the p.id through first_image.url column order Create selects.
+// productScanTargets matches the product columns, id through the first image's url, in the order
+// outfit Create, product List, and owned product List select them.
 func productScanTargets(product *models.ProductResponse) []any {
 	return []any{
 		&product.ID,
