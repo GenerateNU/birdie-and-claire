@@ -8,6 +8,7 @@ import (
 
 	"birdie-and-claire/internal/errs"
 	"birdie-and-claire/internal/models"
+	"birdie-and-claire/internal/utils/pagination"
 
 	"github.com/google/uuid"
 	"github.com/pgvector/pgvector-go"
@@ -20,6 +21,8 @@ type ProductRepository interface {
 	FindSimilar(ctx context.Context, embedding []float32, slot models.ProductSlot, excludeTags, niceTags []string, excludeProductIDs []uuid.UUID, limit int) ([]models.ProductResponse, error)
 	// GetEmbedding returns a nil embedding for a product that has none yet, and ErrNotFound for a missing product.
 	GetEmbedding(ctx context.Context, productID uuid.UUID) ([]float32, models.ProductSlot, error)
+	// List returns up to params.Limit+1 catalog products, newest first, leaving out the ones userID owns.
+	List(ctx context.Context, userID uuid.UUID, params pagination.CursorParams) ([]models.ProductResponse, error)
 }
 
 // untuned: a guess at how much one matching nice tag is worth in cosine distance
@@ -120,6 +123,58 @@ func (r *productRepository) FindSimilar(ctx context.Context, embedding []float32
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("iterate similar products in slot %s: %w", slot, err)
+	}
+	return products, nil
+}
+
+func (r *productRepository) List(ctx context.Context, userID uuid.UUID, params pagination.CursorParams) ([]models.ProductResponse, error) {
+	afterCreatedAt, err := params.After().Time("created_at")
+	if err != nil {
+		return nil, fmt.Errorf("list products for user %s: after cursor created_at: %w", userID, err)
+	}
+	afterID, err := params.After().UUID("id")
+	if err != nil {
+		return nil, fmt.Errorf("list products for user %s: after cursor id: %w", userID, err)
+	}
+
+	rows, err := r.db.QueryContext(ctx, `
+		-- Paged before the image join, so only the returned products look up an image.
+		WITH page AS (
+			SELECT p.id, p.shopify_id, p.handle, p.title, p.product_type, p.slot, p.tags, p.created_at, p.updated_at
+			FROM products p
+			WHERE NOT EXISTS (SELECT 1 FROM owned_products op WHERE op.user_id = $1 AND op.product_id = p.id)
+				AND ($2::timestamptz IS NULL OR (p.created_at, p.id) < ($2::timestamptz, $3::uuid))
+			ORDER BY p.created_at DESC, p.id DESC
+			LIMIT $4
+		)
+		SELECT page.id, page.shopify_id, page.handle, page.title, page.product_type, page.slot, page.tags,
+			page.created_at, page.updated_at, first_image.url
+		FROM page
+		LEFT JOIN LATERAL (
+			SELECT pi.url
+			FROM product_images pi
+			WHERE pi.product_id = page.id
+			ORDER BY pi.position, pi.id
+			LIMIT 1
+		) first_image ON true
+		ORDER BY page.created_at DESC, page.id DESC
+	`, userID, afterCreatedAt, afterID, params.Limit+1)
+	if err != nil {
+		return nil, fmt.Errorf("list products for user %s: %w", userID, err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	// Non-nil so an empty page encodes as [] rather than null.
+	products := make([]models.ProductResponse, 0, params.Limit+1)
+	for rows.Next() {
+		var product models.ProductResponse
+		if err := rows.Scan(productScanTargets(&product)...); err != nil {
+			return nil, fmt.Errorf("list products for user %s: scan: %w", userID, err)
+		}
+		products = append(products, product)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("list products for user %s: iterate: %w", userID, err)
 	}
 	return products, nil
 }
