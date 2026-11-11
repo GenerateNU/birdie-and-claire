@@ -11,32 +11,21 @@ const nameSchema = z.object({
 
 type SaveOutfitDialogProps = {
   open: boolean;
-  savedName: string;
-  saving: boolean;
+  name: string;
   onCancel: () => void;
   /** Called with the trimmed name once it passes validation. */
   onSave: (name: string) => void;
 };
 
-export function SaveOutfitDialog({
-  open,
-  savedName,
-  saving,
-  onCancel,
-  onSave,
-}: SaveOutfitDialogProps) {
+export function SaveOutfitDialog({ open, name, onCancel, onSave }: SaveOutfitDialogProps) {
   const form = useForm({
-    defaultValues: { name: savedName },
+    defaultValues: { name },
     validators: { onSubmit: nameSchema },
     onSubmit: ({ value }) => onSave(value.name.trim()),
   });
 
   function cancel() {
-    if (saving) {
-      return;
-    }
-
-    form.reset();
+    form.reset({ name });
     onCancel();
   }
 
@@ -44,13 +33,12 @@ export function SaveOutfitDialog({
     <Dialog
       open={open}
       onClose={cancel}
-      title="Save Outfit"
+      title="Rename outfit"
       actions={[
         {
-          label: "Create",
+          label: "Rename",
           variant: "primary",
           onClick: () => void form.handleSubmit(),
-          loading: saving,
         },
       ]}
       dismissible
@@ -61,8 +49,6 @@ export function SaveOutfitDialog({
             <TextField
               label="Name outfit"
               required
-              // Also stops Enter from submitting a second save.
-              disabled={saving}
               value={field.state.value}
               onValueChange={field.handleChange}
               onBlur={field.handleBlur}

@@ -26,6 +26,8 @@ export const Route = createFileRoute("/_signedIn/_onboarded/outfits/$outfitId/ed
 
 type EditorFrameProps = {
   onSave?: () => void;
+  name?: string;
+  onRename?: () => void;
   children: ReactNode;
 };
 
@@ -79,6 +81,10 @@ function OutfitEditor({ outfitId, outfit }: OutfitEditorProps) {
   const draft = useOutfitDraft(outfit);
   const selection = useEditorSelection(draft.items);
   const [naming, setNaming] = useState(false);
+  // Tied to the saved name it was typed against, so it drops away once a save changes that name.
+  const [rename, setRename] = useState<{ base: string; name: string } | null>(null);
+  const name = rename?.base === outfit.name ? rename.name : outfit.name;
+  const isDirty = draft.isDirty || name !== outfit.name;
 
   const saveMutation = useMutation({
     ...updateOutfitMutation(),
@@ -91,10 +97,10 @@ function OutfitEditor({ outfitId, outfit }: OutfitEditorProps) {
     onError: () => toast.show({ message: "Couldn't save your outfit. Try again." }),
   });
 
-  const leave = useLeaveGuard(draft.isDirty && !saveMutation.isPending);
+  const leave = useLeaveGuard(isDirty && !saveMutation.isPending);
 
-  // The API rejects a body with neither field, so an unchanged outfit skips the request.
-  function save(name: string) {
+  // Only reachable while dirty, so the body always holds at least one field.
+  function save() {
     const body: UpdateOutfitInputBody = {};
 
     if (name !== outfit.name) {
@@ -103,12 +109,6 @@ function OutfitEditor({ outfitId, outfit }: OutfitEditorProps) {
 
     if (draft.isDirty) {
       body.product_ids = draft.items.map((item) => item.product.id);
-    }
-
-    if (body.name === undefined && body.product_ids === undefined) {
-      void navigate({ to: "/profile/outfits" });
-
-      return;
     }
 
     saveMutation.mutate({ path: { id: outfitId }, body });
@@ -126,7 +126,7 @@ function OutfitEditor({ outfitId, outfit }: OutfitEditorProps) {
   }
 
   return (
-    <EditorFrame onSave={() => setNaming(true)}>
+    <EditorFrame onSave={isDirty ? save : undefined} name={name} onRename={() => setNaming(true)}>
       {/* Side by side from lg up. Narrower than that, the 576px details panel would squeeze the
           canvas to nothing, so the panels stack. */}
       <main className="flex min-h-0 flex-1 flex-col gap-xs p-xs pt-md lg:flex-row">
@@ -173,10 +173,12 @@ function OutfitEditor({ outfitId, outfit }: OutfitEditorProps) {
       </main>
       <SaveOutfitDialog
         open={naming}
-        savedName={outfit.name}
-        saving={saveMutation.isPending}
+        name={name}
         onCancel={() => setNaming(false)}
-        onSave={save}
+        onSave={(newName) => {
+          setRename({ base: outfit.name, name: newName });
+          setNaming(false);
+        }}
       />
       <Dialog
         open={leave.blocked}
@@ -190,7 +192,7 @@ function OutfitEditor({ outfitId, outfit }: OutfitEditorProps) {
             variant: "primary",
             onClick: () => {
               leave.stay();
-              setNaming(true);
+              save();
             },
           },
         ]}
@@ -200,10 +202,10 @@ function OutfitEditor({ outfitId, outfit }: OutfitEditorProps) {
 }
 
 /** Fills the window, so the panels under the header take the height that's left. */
-function EditorFrame({ onSave, children }: EditorFrameProps) {
+function EditorFrame({ onSave, name, onRename, children }: EditorFrameProps) {
   return (
     <Box className="flex h-screen flex-col">
-      <EditorHeader onSave={onSave} />
+      <EditorHeader onSave={onSave} name={name} onRename={onRename} />
       {children}
     </Box>
   );
