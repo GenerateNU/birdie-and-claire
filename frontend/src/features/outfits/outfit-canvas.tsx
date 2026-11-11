@@ -1,8 +1,8 @@
 import { useQueries } from "@tanstack/react-query";
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 import silhouette from "@/design-system/assets/silhouette.png";
-import { Box, Button } from "@/design-system";
+import { Box } from "@/design-system";
 import { cutOutGarment, type GarmentBox } from "@/features/outfits/garment-cutout";
 import {
   CANVAS_SIZE,
@@ -13,6 +13,8 @@ import {
 
 type OutfitCanvasProps = {
   products: Product[];
+  /** Controls drawn over the panel, placed by the caller with absolute positioning. */
+  children: ReactNode;
 };
 
 // Where the Figma draws silhouette.png, in canvas pixels.
@@ -47,7 +49,7 @@ function garmentPlacement(spot: CanvasSpot, garment: GarmentBox): CSSProperties 
   };
 }
 
-export function OutfitCanvas({ products }: OutfitCanvasProps) {
+export function OutfitCanvas({ products, children }: OutfitCanvasProps) {
   const placedItems = placeOnCanvas(products);
 
   const cutouts = useQueries({
@@ -68,9 +70,10 @@ export function OutfitCanvas({ products }: OutfitCanvasProps) {
   return (
     <Box className="relative isolate flex h-full items-center justify-center overflow-hidden border bg-placeholder [container-type:size]">
       {/* The canvas, centered in the panel. It's never larger than the Figma, and shrinks to fit
-          whichever of the panel's width or height runs out first. */}
+          whichever of the panel's width or height runs out first. isolate keeps the garments'
+          z-indexes inside it, so children drawn after it always land on top. */}
       <Box
-        className="relative"
+        className="relative isolate"
         style={{
           aspectRatio: `${CANVAS_SIZE.width} / ${CANVAS_SIZE.height}`,
           width: `min(${CANVAS_SIZE.width}px, 100cqw, 100cqh * ${CANVAS_SIZE.width} / ${CANVAS_SIZE.height})`,
@@ -120,8 +123,7 @@ export function OutfitCanvas({ products }: OutfitCanvasProps) {
           );
         })}
       </Box>
-      {/* Help content comes with outfit editing. */}
-      <Button label="Help" variant="secondary" disabled className="absolute left-sm top-md z-10" />
+      {children}
     </Box>
   );
 }

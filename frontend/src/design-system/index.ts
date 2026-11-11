@@ -2,6 +2,8 @@ export { Avatar } from "@/design-system/components/avatars/avatar";
 
 export { Button } from "@/design-system/components/buttons/button";
 
+export { IconButton } from "@/design-system/components/buttons/icon-button";
+
 export { Checkbox } from "@/design-system/components/buttons/checkbox";
 
 export { RadioGroup } from "@/design-system/components/buttons/radio";
