@@ -9,7 +9,7 @@ const inputClasses =
 type SharedProps = {
   label: string;
   value: string;
-  onValueChange: (value: string) => void;
+  onValueChange?: (value: string) => void;
   /** Shown under the field, which is then marked invalid. */
   error?: string;
   className?: string;
@@ -62,7 +62,7 @@ export function TextField(props: TextFieldProps) {
         <textarea
           {...textareaProps}
           {...errorProps}
-          onChange={(event) => onValueChange(event.target.value)}
+          onChange={(event) => onValueChange?.(event.target.value)}
           className={inputClasses}
         />
         {errorText}
