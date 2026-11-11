@@ -25,6 +25,9 @@ var backendEnvNames = []string{
 	"AI_URL",
 	"AI_API_KEY",
 	"AI_MODEL",
+	"SHOPIFY_URL",
+	"SHOPIFY_CLIENT_ID",
+	"SHOPIFY_CLIENT_SECRET",
 }
 
 const deployEnvUsage = "usage: deploy env <production|preview> <output-file>"
