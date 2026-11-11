@@ -1,51 +1,23 @@
-import { ArrowSquareOut, ArrowsOut, CaretLeft, Plus } from "@phosphor-icons/react";
+import { ArrowsOut, CaretLeft, Plus } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import type { ReactNode } from "react";
 
-import stamp from "@/design-system/assets/stamp.png";
-import {
-  Box,
-  Button,
-  Empty,
-  ErrorState,
-  IconButton,
-  Link,
-  Logo,
-  Spinner,
-  Text,
-} from "@/design-system";
+import { Box, Empty, ErrorState, IconButton, Link, Spinner, Text } from "@/design-system";
+import { ExternalPiecesSection } from "@/features/outfits/external-pieces-section";
 import { OutfitCanvas } from "@/features/outfits/outfit-canvas";
-import type { Product } from "@/features/outfits/outfit-items";
+import { OutfitDetailsFrame } from "@/features/outfits/outfit-details-frame";
 import { isOutfitNotFound, outfitQueryOptions } from "@/features/outfits/outfit-query";
+import { PiecesSection } from "@/features/outfits/pieces-section";
 import { ShareOutfit } from "@/features/outfits/share-outfit";
 
 export const Route = createFileRoute("/_signedIn/_onboarded/outfits/$outfitId/")({
   component: OutfitDetailsPage,
 });
 
-// Placeholders until outfits have descriptions and tags, and basics and partner brands are decided.
+// Placeholders until outfits have descriptions and tags.
 const PLACEHOLDER_DESCRIPTION = "This is a short description about the outfit...";
 
 const PLACEHOLDER_TAGS = ["Tag 1", "Tag 2", "Tag 3"];
-
-const STORE_BRAND = "Birdie & Claire";
-
-const EXTERNAL_PLACEHOLDER_COUNT = 4;
-
-const STORE_PRODUCT_URL = "https://birdieandclaire.com/products";
-
-type DetailsFrameProps = {
-  children: ReactNode;
-};
-
-type PiecesSectionProps = {
-  products: Product[];
-};
-
-type PieceCardProps = {
-  product: Product;
-};
 
 function OutfitDetailsPage() {
   const { outfitId } = Route.useParams();
@@ -54,47 +26,45 @@ function OutfitDetailsPage() {
 
   if (outfitQuery.isPending) {
     return (
-      <DetailsFrame>
+      <OutfitDetailsFrame>
         <Spinner className="m-lg" />
-      </DetailsFrame>
+      </OutfitDetailsFrame>
     );
   }
 
   if (isOutfitNotFound(outfitQuery.error)) {
     return (
-      <DetailsFrame>
+      <OutfitDetailsFrame>
         <Empty title="Outfit not found" className="p-lg" />
-      </DetailsFrame>
+      </OutfitDetailsFrame>
     );
   }
 
   // Checked rather than isError, so a failed background refetch keeps the outfit on screen.
   if (outfitQuery.data === undefined) {
     return (
-      <DetailsFrame>
+      <OutfitDetailsFrame>
         <ErrorState
           message="Couldn't load this outfit."
           onRetry={() => void outfitQuery.refetch()}
           className="p-lg"
         />
-      </DetailsFrame>
+      </OutfitDetailsFrame>
     );
   }
 
   const { name, products } = outfitQuery.data;
 
   return (
-    <DetailsFrame>
-      {/* The canvas fits the height under the header. Side by side from lg up. Narrower than that,
-          the panels stack and split the height. The 80px right padding and 554px panel are the
-          mid-fi Figma's (node 5936:4785). The 88px gap and 120px left padding are wider than it,
-          to leave room for the back button and space between the panels. */}
-      <main className="relative flex min-h-0 flex-1 flex-col gap-xl p-md lg:flex-row lg:gap-[88px] lg:py-md lg:pl-[120px] lg:pr-[80px]">
-        {/* From lg up it sits in the left gutter, outside the canvas, as in the Figma. */}
+    <OutfitDetailsFrame>
+      {/* The canvas fits the height under the header. Side by side from lg up, with the back button
+          beside the canvas as in the Figma. Narrower than that, the panels stack and split the
+          height. */}
+      <main className="flex min-h-0 flex-1 flex-col gap-xl p-md lg:flex-row lg:gap-xxl lg:px-xxl">
         <Link
           to="/profile/outfits"
           aria-label="Back to saved outfits"
-          className="flex size-avatar-md shrink-0 items-center justify-center self-start rounded-full border text-subheading focus-ring lg:absolute lg:left-xl lg:top-xl"
+          className="flex size-avatar-md shrink-0 items-center justify-center self-start rounded-full border text-subheading focus-ring"
         >
           <CaretLeft aria-hidden="true" />
         </Link>
@@ -119,7 +89,7 @@ function OutfitDetailsPage() {
           </OutfitCanvas>
         </Box>
         {/* Only the pieces list scrolls. The header and the sections below it stay in place. */}
-        <section className="flex min-h-0 flex-1 flex-col gap-md lg:w-[554px] lg:flex-none">
+        <section className="flex min-h-0 flex-1 flex-col gap-md lg:w-content-md lg:flex-none">
           <header className="flex shrink-0 flex-col gap-sm border-b pb-md">
             <Box className="flex items-center justify-between gap-md">
               <Text variant="heading" className="min-w-0 break-words">
@@ -151,139 +121,6 @@ function OutfitDetailsPage() {
           <ExternalPiecesSection />
         </section>
       </main>
-    </DetailsFrame>
-  );
-}
-
-function PiecesSection({ products }: PiecesSectionProps) {
-  return (
-    <section className="flex min-h-0 flex-1 flex-col gap-md">
-      <Box className="flex items-baseline justify-between">
-        <Text variant="subheading">Pieces in this outfit</Text>
-        <Text variant="body">
-          {products.length} {products.length === 1 ? "piece" : "pieces"}
-        </Text>
-      </Box>
-      {products.length === 0 ? (
-        <Empty title="This outfit has no items yet" />
-      ) : (
-        <>
-          <ul className="flex min-h-0 flex-1 flex-col gap-md overflow-y-auto">
-            {products.map((product) => (
-              <PieceCard key={product.id} product={product} />
-            ))}
-          </ul>
-          <Box title="Coming soon">
-            <Button
-              label="Add all"
-              accessibleLabel="Add all to cart, coming soon"
-              disabled
-              className="w-full"
-            />
-          </Box>
-        </>
-      )}
-    </section>
-  );
-}
-
-function PieceCard({ product }: PieceCardProps) {
-  return (
-    <li className="flex gap-sm border bg-surface p-xs">
-      {/* The image tile is smaller than the Figma's 211px-tall cards, so more pieces fit
-          before the list scrolls. */}
-      <Box className="flex h-[112px] w-[92px] shrink-0 items-center justify-center bg-placeholder">
-        {/* Decorative: the title next to it already names the item. multiply blends the photo's
-            white background into the tile, as on the canvas. */}
-        {product.image_url !== null && (
-          <img
-            src={product.image_url}
-            alt=""
-            className="h-full w-full object-contain mix-blend-multiply"
-          />
-        )}
-      </Box>
-      <Box className="flex min-w-0 flex-1 flex-col gap-xxs">
-        <Box className="flex items-start justify-between gap-xs">
-          <Box className="min-w-0">
-            <Text variant="body" className="font-semibold uppercase">
-              {product.title}
-            </Text>
-            <Text variant="body" className="text-secondary">
-              {STORE_BRAND}
-            </Text>
-          </Box>
-          {/* Decorative: the brand line beside it already names it. */}
-          <img src={stamp} alt="" className="size-[40px] shrink-0" />
-        </Box>
-        <Box className="mt-xs flex flex-col gap-xs">
-          <Box title="Coming soon" className="flex flex-col">
-            <Button
-              label="Add to cart"
-              accessibleLabel="Add to cart, coming soon"
-              size="sm"
-              disabled
-            />
-          </Box>
-          {/* A raw anchor: the design system's Link only types routes in this app, not outside URLs. */}
-          <a
-            href={`${STORE_PRODUCT_URL}/${encodeURIComponent(product.handle)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-xxs border-thick border-primary bg-background px-xs py-xxs text-caption font-semibold uppercase focus-ring"
-          >
-            View product
-            <ArrowSquareOut aria-hidden="true" />
-          </a>
-        </Box>
-      </Box>
-    </li>
-  );
-}
-
-function ExternalPiecesSection() {
-  const placeholderNumbers = Array.from(
-    { length: EXTERNAL_PLACEHOLDER_COUNT },
-    (_, index) => index + 1,
-  );
-
-  return (
-    <section className="flex shrink-0 flex-col gap-md">
-      <Text variant="subheading">External pieces</Text>
-      {/* Mock tiles, sized to fit beside each other rather than taken from the Figma. */}
-      <ul className="flex gap-md">
-        {placeholderNumbers.map((number) => (
-          <li key={number} className="flex flex-col gap-xxs">
-            <Box className="flex size-[64px] items-center justify-center bg-placeholder text-caption text-secondary">
-              Piece {number}
-            </Box>
-            <Box title="Coming soon" className="flex flex-col">
-              <Button
-                label="View item"
-                accessibleLabel="View item, coming soon"
-                variant="secondary"
-                size="sm"
-                disabled
-              />
-            </Box>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-function DetailsFrame({ children }: DetailsFrameProps) {
-  return (
-    <Box className="flex h-screen flex-col">
-      {/* The Figma's navigation bar height and logo size. */}
-      <header className="flex h-[120px] shrink-0 items-end justify-center border-y">
-        <Link to="/profile/outfits">
-          {/* object-bottom repeats the Figma's crop of the image's empty top edge. */}
-          <Logo className="h-[118px] w-[373px] object-cover object-bottom" />
-        </Link>
-      </header>
-      {children}
-    </Box>
+    </OutfitDetailsFrame>
   );
 }
