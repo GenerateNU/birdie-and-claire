@@ -1,6 +1,7 @@
-import { Text } from "../../primitives/text";
-import { Button } from "../buttons/button";
-import { cardFrameClasses } from "./card-classes";
+import { Text } from "@/design-system/primitives/text";
+import { Button } from "@/design-system/components/buttons/button";
+import { cardFrameClasses } from "@/design-system/components/cards/card-classes";
+import { Box } from "@/design-system/primitives/box";
 
 const listCardClasses = `${cardFrameClasses} flex items-center justify-between gap-md px-md py-sm`;
 
@@ -17,14 +18,13 @@ type ListCardProps = {
   action?: ListCardAction;
 };
 
-/** A row showing a title, its current value, and an optional button. */
 export function ListCard({ title, value, action }: ListCardProps) {
   return (
-    <div className={listCardClasses}>
-      <div className="flex flex-col">
+    <Box className={listCardClasses}>
+      <Box className="flex flex-col">
         <Text variant="subheading">{title}</Text>
         <Text variant="body">{value}</Text>
-      </div>
+      </Box>
       {action && (
         <Button
           label={action.label}
@@ -35,6 +35,6 @@ export function ListCard({ title, value, action }: ListCardProps) {
           disabled={action.disabled}
         />
       )}
-    </div>
+    </Box>
   );
 }

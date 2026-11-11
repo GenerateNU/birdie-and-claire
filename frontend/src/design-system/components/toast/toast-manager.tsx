@@ -1,7 +1,12 @@
 import { Toast as BaseToast } from "@base-ui/react/toast";
 import type { ReactNode } from "react";
 
-import { Toast, type ToastAction, type ToastData, type ToastVariant } from "./toast";
+import {
+  Toast,
+  type ToastAction,
+  type ToastData,
+  type ToastVariant,
+} from "@/design-system/components/toast/toast";
 
 const DEFAULT_DURATION_MS = 5000;
 
@@ -34,7 +39,6 @@ type ToastProviderProps = {
   children: ReactNode;
 };
 
-/** Renders the toast stack at the top center. */
 export function ToastProvider({ children }: ToastProviderProps) {
   return (
     <BaseToast.Provider>

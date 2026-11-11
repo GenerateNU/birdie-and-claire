@@ -79,7 +79,7 @@ type fakeProducts struct {
 	calls []findSimilarCall
 }
 
-func (p *fakeProducts) FindSimilar(_ context.Context, embedding []float32, slot models.ProductSlot, excludeTags, niceTags []string, limit int) ([]models.RecommendedProduct, error) {
+func (p *fakeProducts) FindSimilar(_ context.Context, embedding []float32, slot models.ProductSlot, excludeTags, niceTags []string, _ []uuid.UUID, limit int) ([]models.ProductResponse, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.calls = append(p.calls, findSimilarCall{embedding: embedding, slot: slot, excludeTags: excludeTags, niceTags: niceTags, limit: limit})
@@ -90,10 +90,10 @@ func (p *fakeProducts) FindSimilar(_ context.Context, embedding []float32, slot 
 	if !ok {
 		count = limit
 	}
-	products := make([]models.RecommendedProduct, 0, count)
+	products := make([]models.ProductResponse, 0, count)
 	for rank := range count {
 		title := fmt.Sprintf("%s %d", slot, rank+1)
-		products = append(products, models.RecommendedProduct{Product: models.Product{ID: uuid.New(), Title: title, Slot: slot, Tags: []string{}}})
+		products = append(products, models.ProductResponse{Product: models.Product{ID: uuid.New(), Title: title, Slot: slot, Tags: []string{}}})
 	}
 	return products, nil
 }

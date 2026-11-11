@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"math/rand/v2"
 	"net/http"
+	"slices"
 	"strings"
 	"testing"
 
@@ -106,6 +107,8 @@ func TestOutfitNameBounds(t *testing.T) {
 	}{
 		{name: "empty", outfitName: "", want: http.StatusUnprocessableEntity},
 		{name: "maximum 100 characters", outfitName: strings.Repeat("n", 100), want: http.StatusOK},
+		// 200 bytes, but huma counts runes, so this is within the limit.
+		{name: "maximum 100 multibyte characters", outfitName: strings.Repeat("é", 100), want: http.StatusOK},
 		{name: "above maximum 101 characters", outfitName: strings.Repeat("n", 101), want: http.StatusUnprocessableEntity},
 	}
 
@@ -114,6 +117,55 @@ func TestOutfitNameBounds(t *testing.T) {
 			response := outfitProbe(t).Post("/probe", createOutfitBody(test.outfitName, productIDLower))
 			if response.Code != test.want {
 				t.Fatalf("status = %d, want %d: %s", response.Code, test.want, response.Body)
+			}
+		})
+	}
+}
+
+// Huma validates the first copy of a key repeated in different casing, but Go decodes the last one.
+func TestOutfitNameRepeatedInDifferentCasing(t *testing.T) {
+	tests := []struct {
+		name     string
+		body     string
+		wantBody string
+	}{
+		{name: "overlong name after valid name", body: `{"name": "x", "NAME": "` + strings.Repeat("n", 200) + `", "product_ids": ["` + productIDLower + `"]}`, wantBody: "name must be at most 100 characters"},
+		{name: "empty name after valid name", body: `{"name": "x", "NAME": "", "product_ids": ["` + productIDLower + `"]}`, wantBody: "name must not be empty"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			response := outfitProbe(t).Post("/probe", strings.NewReader(test.body))
+			if response.Code != http.StatusUnprocessableEntity {
+				t.Fatalf("status = %d, want %d: %s", response.Code, http.StatusUnprocessableEntity, response.Body)
+			}
+			if !strings.Contains(response.Body.String(), test.wantBody) {
+				t.Fatalf("body = %s, want it to contain %s", response.Body, test.wantBody)
+			}
+		})
+	}
+}
+
+// Huma checks minItems on the first copy of a repeated key, but Go decodes the last one.
+func TestOutfitProductIDsRepeatedInDifferentCasing(t *testing.T) {
+	tests := []struct {
+		name     string
+		body     string
+		want     int
+		wantBody string
+	}{
+		{name: "empty list after valid list", body: `{"name": "x", "product_ids": ["` + productIDLower + `"], "PRODUCT_IDS": []}`, want: http.StatusUnprocessableEntity, wantBody: "product_ids must not be empty"},
+		{name: "single list with products", body: `{"name": "x", "product_ids": ["` + productIDLower + `"]}`, want: http.StatusOK, wantBody: `"product_count":1`},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			response := outfitProbe(t).Post("/probe", strings.NewReader(test.body))
+			if response.Code != test.want {
+				t.Fatalf("status = %d, want %d: %s", response.Code, test.want, response.Body)
+			}
+			if !strings.Contains(response.Body.String(), test.wantBody) {
+				t.Fatalf("body = %s, want it to contain %s", response.Body, test.wantBody)
 			}
 		})
 	}
@@ -246,5 +298,41 @@ func TestOutfitProductsCarryFirstImage(t *testing.T) {
 	}
 	if got := imageURLs[withoutImages]; got != nil {
 		t.Fatalf("image_url = %q, want null", *got)
+	}
+}
+
+// Outfit products come back head to toe, whatever order they were saved in.
+func TestOutfitProductsListHeadToToe(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	accessory := insertSlotProduct(t, db, testProduct{slot: models.SlotAccessory})
+	shoe := insertSlotProduct(t, db, testProduct{slot: models.SlotShoe})
+	bottom := insertSlotProduct(t, db, testProduct{slot: models.SlotBottom})
+	top := insertSlotProduct(t, db, testProduct{slot: models.SlotTop})
+
+	outfits := repository.NewOutfitRepository(db)
+	params := models.CreateOutfitParams{Name: "fit", ProductIDs: []uuid.UUID{accessory, shoe, bottom, top}}
+	created, createdProducts, err := outfits.Create(ctx, params, insertTestUser(t, db))
+	if err != nil {
+		t.Fatalf("create outfit: %v", err)
+	}
+	t.Cleanup(func() {
+		_, _ = db.Exec(`DELETE FROM outfit_products WHERE outfit_id = $1`, created.ID)
+		_, _ = db.Exec(`DELETE FROM outfits WHERE id = $1`, created.ID)
+	})
+	_, fetchedProducts, err := outfits.GetByID(ctx, created.ID, created.UserID)
+	if err != nil {
+		t.Fatalf("get outfit: %v", err)
+	}
+
+	want := []uuid.UUID{top, bottom, shoe, accessory}
+	for name, products := range map[string][]models.ProductResponse{"create": createdProducts, "get": fetchedProducts} {
+		got := make([]uuid.UUID, 0, len(products))
+		for _, product := range products {
+			got = append(got, product.ID)
+		}
+		if !slices.Equal(got, want) {
+			t.Fatalf("%s: product order = %v, want %v", name, got, want)
+		}
 	}
 }

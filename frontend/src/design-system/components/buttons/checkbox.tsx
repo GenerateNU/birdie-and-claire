@@ -1,5 +1,6 @@
 import { Checkbox as BaseCheckbox } from "@base-ui/react/checkbox";
-import { joinClasses } from "../../utils/join-classes";
+import { Check } from "@phosphor-icons/react";
+import { joinClasses } from "@/design-system/utils/join-classes";
 
 const boxClasses =
   "flex size-md items-center justify-center rounded-xs border bg-background text-caption text-inverse data-[checked]:border-primary data-[checked]:bg-primary focus-ring";
@@ -31,7 +32,9 @@ export function Checkbox({
         disabled={disabled}
         className={boxClasses}
       >
-        <BaseCheckbox.Indicator aria-hidden="true">✓</BaseCheckbox.Indicator>
+        <BaseCheckbox.Indicator aria-hidden="true">
+          <Check />
+        </BaseCheckbox.Indicator>
       </BaseCheckbox.Root>
       {label}
     </label>

@@ -23,9 +23,10 @@ var allowedProfilePictureTypes = map[string]bool{
 }
 
 type UserService interface {
-	GetUser(ctx context.Context) (models.UserResponse, error)
+	GetUser(ctx context.Context) (models.CurrentUserResponse, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (models.UserResponse, error)
 	CreateUser(ctx context.Context, name string) (models.UserResponse, error)
+	ReplaceStylePreferences(ctx context.Context, preferences models.StylePreferences) (models.CurrentUserResponse, error)
 	CreateProfilePictureUploadURL(ctx context.Context, contentType string) (storage.PresignedUpload, error)
 	ConfirmProfilePicture(ctx context.Context, key string) error
 }
@@ -40,8 +41,12 @@ func NewUserService(repo *repository.Repository, store storage.ObjectStore, maxU
 	return &userService{repo: repo, store: store, maxUploadBytes: maxUploadBytes}
 }
 
-func (s *userService) GetUser(ctx context.Context) (models.UserResponse, error) {
-	return s.GetUserByID(ctx, auth.UserID(ctx))
+func (s *userService) GetUser(ctx context.Context) (models.CurrentUserResponse, error) {
+	user, err := s.repo.User.GetByID(ctx, auth.UserID(ctx))
+	if err != nil {
+		return models.CurrentUserResponse{}, err
+	}
+	return models.CurrentUserResponse{UserResponse: s.buildUserResponse(user), StylePreferences: user.StylePreferences}, nil
 }
 
 func (s *userService) GetUserByID(ctx context.Context, id uuid.UUID) (models.UserResponse, error) {
@@ -49,13 +54,7 @@ func (s *userService) GetUserByID(ctx context.Context, id uuid.UUID) (models.Use
 	if err != nil {
 		return models.UserResponse{}, err
 	}
-
-	response := models.UserResponse{ID: user.ID, Name: user.Name}
-	if user.ProfilePictureKey != nil {
-		url := s.store.PublicURL(*user.ProfilePictureKey)
-		response.ProfilePictureURL = &url
-	}
-	return response, nil
+	return s.buildUserResponse(user), nil
 }
 
 func (s *userService) CreateUser(ctx context.Context, name string) (models.UserResponse, error) {
@@ -66,6 +65,24 @@ func (s *userService) CreateUser(ctx context.Context, name string) (models.UserR
 	}
 	log.Debug(ctx, "created user", "user", id)
 	return models.UserResponse{ID: user.ID, Name: user.Name}, nil
+}
+
+func (s *userService) ReplaceStylePreferences(ctx context.Context, preferences models.StylePreferences) (models.CurrentUserResponse, error) {
+	id := auth.UserID(ctx)
+	user, err := s.repo.User.ReplaceStylePreferences(ctx, id, preferences)
+	if err != nil {
+		return models.CurrentUserResponse{}, err
+	}
+	return models.CurrentUserResponse{UserResponse: s.buildUserResponse(user), StylePreferences: user.StylePreferences}, nil
+}
+
+func (s *userService) buildUserResponse(user models.User) models.UserResponse {
+	response := models.UserResponse{ID: user.ID, Name: user.Name}
+	if user.ProfilePictureKey != nil {
+		url := s.store.PublicURL(*user.ProfilePictureKey)
+		response.ProfilePictureURL = &url
+	}
+	return response
 }
 
 func (s *userService) CreateProfilePictureUploadURL(ctx context.Context, contentType string) (storage.PresignedUpload, error) {

@@ -1,7 +1,8 @@
+import { CaretLeft } from "@phosphor-icons/react";
 import type { QueryClient } from "@tanstack/react-query";
-import { createRootRouteWithContext, Link, Outlet } from "@tanstack/react-router";
+import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
 
-import { Text } from "@/design-system";
+import { Link, Page, Text } from "@/design-system";
 
 type RouterContext = { queryClient: QueryClient };
 
@@ -12,13 +13,13 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 
 function NotFound() {
   return (
-    <div className="min-h-screen p-xl">
+    <Page>
       <Text variant="heading" className="mb-xs">
         Page not found
       </Text>
-      <Link className="text-secondary text-body underline hover:text-primary" to="/">
-        ← Home
+      <Link variant="text" to="/" leadingIcon={CaretLeft}>
+        Home
       </Link>
-    </div>
+    </Page>
   );
 }

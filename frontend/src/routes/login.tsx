@@ -1,10 +1,10 @@
+import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode, type SyntheticEvent } from "react";
 
-import { apiFetch } from "@/api";
-import logo from "@/assets/logo.png";
-import { Box, Button, CodeInput, Divider, Text, TextField, useToast } from "@/design-system";
-import { supabase } from "@/supabase/client";
+import { createCurrentUserMutation } from "@/api/generated/@tanstack/react-query.gen";
+import { Box, Button, CodeInput, Divider, Logo, Text, TextField, useToast } from "@/design-system";
+import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/login")({
   component: Login,
@@ -26,6 +26,7 @@ const VERIFIED_REDIRECT_MS = 2000;
 function Login() {
   const toast = useToast();
   const navigate = useNavigate();
+  const createAccountMutation = useMutation(createCurrentUserMutation());
   const [step, setStep] = useState<Step>("choice");
   const [mode, setMode] = useState<Mode>("login");
   const [name, setName] = useState("");
@@ -51,8 +52,8 @@ function Login() {
       return;
     }
 
-    // Lands on / so the _hasAccount route decides where the user goes: home, or /create-account
-    // if they have no account yet.
+    // Lands on / so the _onboarded route decides where the user goes: home, /create-account if
+    // they have no account yet, or onboarding if they haven't finished it.
     const timer = setTimeout(() => window.location.assign("/"), VERIFIED_REDIRECT_MS);
 
     return () => clearTimeout(timer);
@@ -141,7 +142,7 @@ function Login() {
     }
 
     if (mode === "signup") {
-      await createAccount();
+      createAccount();
 
       return;
     }
@@ -150,44 +151,27 @@ function Login() {
   }
 
   // Runs after the code is verified, so the request carries the new session.
-  async function createAccount() {
+  function createAccount() {
     setBusy(true);
+    createAccountMutation.mutate(
+      { body: { name } },
+      {
+        onSuccess: () => setStep("verified"),
+        onError: async (error) => {
+          if (error.status === 409) {
+            toast.show({ message: "You already have an account, so we signed you in." });
+            setStep("verified");
 
-    let failure: string;
+            return;
+          }
 
-    try {
-      const res = await apiFetch("/api/v1/users/me", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
-      });
-
-      if (res.status === 201) {
-        setStep("verified");
-
-        return;
-      }
-
-      if (res.status === 409) {
-        toast.show({ message: "You already have an account, so we signed you in." });
-        setStep("verified");
-
-        return;
-      }
-
-      failure = `POST /api/v1/users/me failed: ${res.status}`;
-    } catch (err) {
-      failure = err instanceof Error ? err.message : String(err);
-    } finally {
-      setBusy(false);
-    }
-
-    toast.show({
-      message: "Couldn't create your account, please enter your name again",
-      subtitle: failure,
-    });
-    // A router navigation, not a page load, so the toast stays on screen.
-    await navigate({ to: "/create-account" });
+          toast.show({ message: "Couldn't create your account, please enter your name again" });
+          // A router navigation, not a page load, so the toast stays on screen.
+          await navigate({ to: "/create-account" });
+        },
+        onSettled: () => setBusy(false),
+      },
+    );
   }
 
   if (step === "verified") {
@@ -373,7 +357,7 @@ type AuthScreenProps = {
 function AuthScreen({ title, subtitle, children }: AuthScreenProps) {
   return (
     <Box className="flex min-h-screen flex-col items-center justify-center gap-lg p-md">
-      <img src={logo} alt="Birdie & Claire" className="w-full max-w-xs" />
+      <Logo className="w-full max-w-xs" />
       <Box className="flex w-full max-w-content-sm flex-col gap-sm rounded-md bg-surface p-lg">
         {title && (
           <Text variant="subheading" className="text-center normal-case">

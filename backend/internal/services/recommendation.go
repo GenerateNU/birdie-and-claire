@@ -30,7 +30,7 @@ const (
 type slotSearch struct {
 	name     models.ProductSlot
 	phrase   string
-	products *[]models.RecommendedProduct
+	products *[]models.ProductResponse
 }
 
 type RecommendationService interface {
@@ -70,7 +70,7 @@ func (s *recommendationService) RecommendProducts(ctx context.Context, request m
 		ExcludeTags: lowercaseTags(rawExpandedAnswers.ExcludeTags),
 		NiceTags:    lowercaseTags(rawExpandedAnswers.NiceTags),
 	}
-	var tops, bottoms, accessories, shoes []models.RecommendedProduct
+	var tops, bottoms, accessories, shoes []models.ProductResponse
 	slots := []slotSearch{
 		{name: models.SlotTop, phrase: expandedAnswers.Slots.Top, products: &tops},
 		{name: models.SlotBottom, phrase: expandedAnswers.Slots.Bottom, products: &bottoms},
@@ -110,7 +110,7 @@ func (s *recommendationService) RecommendProducts(ctx context.Context, request m
 	return models.RecommendationResponse{ExpandedAnswers: expandedAnswers, Outfits: outfits}, nil
 }
 
-func (s *recommendationService) searchSlot(ctx context.Context, slot models.ProductSlot, phrase string, excludeTags, niceTags []string) ([]models.RecommendedProduct, error) {
+func (s *recommendationService) searchSlot(ctx context.Context, slot models.ProductSlot, phrase string, excludeTags, niceTags []string) ([]models.ProductResponse, error) {
 	embedding, err := s.embedder.EmbedText(ctx, phrase)
 	// a rejected phrase is the model's, not the shopper's, and Modal's detail can quote it
 	if errors.Is(err, errs.ErrInvalidInput) {
@@ -119,7 +119,7 @@ func (s *recommendationService) searchSlot(ctx context.Context, slot models.Prod
 	if err != nil {
 		return nil, fmt.Errorf("embed %s phrase: %w", slot, err)
 	}
-	return s.repo.Product.FindSimilar(ctx, embedding, slot, excludeTags, niceTags, productsPerSlot)
+	return s.repo.Product.FindSimilar(ctx, embedding, slot, excludeTags, niceTags, nil, productsPerSlot)
 }
 
 // the errors give sizes only, since the phrases and tags are the model's reading of shopper text

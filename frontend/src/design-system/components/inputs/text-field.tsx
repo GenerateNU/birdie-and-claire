@@ -1,6 +1,7 @@
 import { Input as BaseInput } from "@base-ui/react/input";
-import type { ComponentProps } from "react";
-import { joinClasses } from "../../utils/join-classes";
+import { useId, type ComponentProps } from "react";
+import { Text } from "@/design-system/primitives/text";
+import { joinClasses } from "@/design-system/utils/join-classes";
 
 const inputClasses =
   "rounded-sm border bg-background px-sm py-xs text-body text-primary focus-ring data-[disabled]:opacity-disabled disabled:opacity-disabled";
@@ -10,7 +11,9 @@ type SharedProps = {
   // Keeps the label for screen readers only, for fields whose placeholder already says what they hold.
   hideLabel?: boolean;
   value: string;
-  onValueChange: (value: string) => void;
+  onValueChange?: (value: string) => void;
+  /** Shown under the field, which is then marked invalid. */
+  error?: string;
   className?: string;
 };
 
@@ -23,9 +26,28 @@ type MultilineProps = SharedProps &
 type TextFieldProps = SingleLineProps | MultilineProps;
 
 export function TextField(props: TextFieldProps) {
+  const errorId = useId();
   const labelClasses = "flex flex-col gap-xxs text-body";
   const classes = joinClasses(labelClasses, props.className);
   const labelText = props.hideLabel ? <span className="sr-only">{props.label}</span> : props.label;
+
+  // Added to the caller's aria-describedby, not in place of it.
+  let describedBy = props["aria-describedby"];
+
+  if (props.error) {
+    describedBy = describedBy ? `${describedBy} ${errorId}` : errorId;
+  }
+
+  const errorProps = {
+    "aria-invalid": props.error ? true : undefined,
+    "aria-describedby": describedBy,
+  };
+
+  const errorText = props.error && (
+    <Text variant="caption" id={errorId} className="text-error">
+      {props.error}
+    </Text>
+  );
 
   if (props.multiline) {
     const {
@@ -34,6 +56,7 @@ export function TextField(props: TextFieldProps) {
       onValueChange,
       multiline: _multiline,
       className: _className,
+      error: _error,
       ...textareaProps
     } = props;
 
@@ -42,9 +65,11 @@ export function TextField(props: TextFieldProps) {
         {labelText}
         <textarea
           {...textareaProps}
-          onChange={(event) => onValueChange(event.target.value)}
+          {...errorProps}
+          onChange={(event) => onValueChange?.(event.target.value)}
           className={inputClasses}
         />
+        {errorText}
       </label>
     );
   }
@@ -54,13 +79,15 @@ export function TextField(props: TextFieldProps) {
     hideLabel: _hideLabel,
     multiline: _multiline,
     className: _className,
+    error: _error,
     ...inputProps
   } = props;
 
   return (
     <label className={classes}>
       {labelText}
-      <BaseInput {...inputProps} className={inputClasses} />
+      <BaseInput {...inputProps} {...errorProps} className={inputClasses} />
+      {errorText}
     </label>
   );
 }

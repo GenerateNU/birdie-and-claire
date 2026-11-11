@@ -1,9 +1,11 @@
 import { AlertDialog } from "@base-ui/react/alert-dialog";
 import { Dialog as BaseDialog } from "@base-ui/react/dialog";
+import type { ReactNode } from "react";
 
-import { Button } from "../buttons/button";
-import { CloseButton } from "../buttons/close-button";
-import type { ButtonVariant } from "../buttons/variant";
+import { Button } from "@/design-system/components/buttons/button";
+import { CloseButton } from "@/design-system/components/buttons/close-button";
+import type { ButtonVariant } from "@/design-system/components/buttons/variant";
+import { Box } from "@/design-system/primitives/box";
 
 type DialogAction = {
   label: string;
@@ -18,6 +20,8 @@ type DialogProps = {
   message?: string;
   actions: DialogAction[];
   dismissible?: boolean;
+  /** Content between the message and the actions, for a dialog that shows more than text. */
+  children?: ReactNode;
 };
 
 export function Dialog({
@@ -27,6 +31,7 @@ export function Dialog({
   message,
   actions,
   dismissible = false,
+  children,
 }: DialogProps) {
   const DialogParts = dismissible ? BaseDialog : AlertDialog;
 
@@ -42,25 +47,28 @@ export function Dialog({
       <DialogParts.Portal>
         <DialogParts.Backdrop className="fixed inset-0 bg-overlay" />
         <DialogParts.Popup className="fixed left-1/2 top-1/2 flex w-popup max-w-[calc(100vw-theme(spacing.md)*2)] -translate-x-1/2 -translate-y-1/2 flex-col gap-md rounded-lg bg-background p-lg text-primary">
-          <div className="flex items-start justify-between gap-md">
+          <Box className="flex items-start justify-between gap-md">
             <DialogParts.Title className="text-subheading">{title}</DialogParts.Title>
             {dismissible && <DialogParts.Close render={<CloseButton />} />}
-          </div>
+          </Box>
           {message && (
             <DialogParts.Description className="text-body text-secondary">
               {message}
             </DialogParts.Description>
           )}
-          <div className="flex justify-end gap-xs">
-            {actions.map((action) => (
-              <Button
-                key={action.label}
-                label={action.label}
-                variant={action.variant}
-                onClick={action.onClick}
-              />
-            ))}
-          </div>
+          {children}
+          {actions.length > 0 && (
+            <Box className="flex justify-end gap-xs">
+              {actions.map((action) => (
+                <Button
+                  key={action.label}
+                  label={action.label}
+                  variant={action.variant}
+                  onClick={action.onClick}
+                />
+              ))}
+            </Box>
+          )}
         </DialogParts.Popup>
       </DialogParts.Portal>
     </DialogParts.Root>
