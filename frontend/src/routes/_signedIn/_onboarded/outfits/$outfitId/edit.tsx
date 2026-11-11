@@ -167,6 +167,7 @@ function OutfitEditor({ outfitId, outfit }: OutfitEditorProps) {
             originId={selection.panelOriginId}
             onSwap={swap}
             onPickSpot={selection.select}
+            onBack={() => selection.select(null)}
           />
         </Box>
       </main>

@@ -1,4 +1,11 @@
-import { CaretLeft, CaretRight, DiamondsFour, Plus, ShareNetwork } from "@phosphor-icons/react";
+import {
+  CaretLeftIcon,
+  CaretRightIcon,
+  DiamondsFourIcon,
+  MagnifyingGlassIcon,
+  PlusIcon,
+  ShareNetworkIcon,
+} from "@phosphor-icons/react";
 import { useForm } from "@tanstack/react-form";
 import { useState, type ReactNode } from "react";
 import { z } from "zod";
@@ -154,7 +161,7 @@ export function Playground() {
 
         <main className="flex min-w-0 flex-1 flex-col gap-xl">
           <Box>
-            <Link variant="text" to="/dev" leadingIcon={CaretLeft}>
+            <Link variant="text" to="/dev" leadingIcon={CaretLeftIcon}>
               Dev
             </Link>
             <Text variant="heading" className="mt-md">
@@ -184,14 +191,14 @@ export function Playground() {
                 ))}
               </Box>
               <Box className="flex items-center gap-md">
-                <Button label="Back" variant="secondary" leadingIcon={CaretLeft} />
-                <Button label="Next" trailingIcon={CaretRight} />
+                <Button label="Back" variant="secondary" leadingIcon={CaretLeftIcon} />
+                <Button label="Next" trailingIcon={CaretRightIcon} />
               </Box>
               <Label>leadingIcon · trailingIcon</Label>
               <Box className="flex items-center gap-md">
-                <IconButton icon={Plus} label="Add" variant="outlined" />
-                <IconButton icon={ShareNetwork} label="Share" variant="plain" />
-                <IconButton icon={Plus} label="Add" variant="outlined" disabled />
+                <IconButton icon={PlusIcon} label="Add" variant="outlined" />
+                <IconButton icon={ShareNetworkIcon} label="Share" variant="plain" />
+                <IconButton icon={PlusIcon} label="Add" variant="outlined" disabled />
               </Box>
               <Label>IconButton · outlined · plain · disabled</Label>
               <TextButton label="swap item" onClick={() => {}} />
@@ -204,10 +211,10 @@ export function Playground() {
                 <Link variant="text" to="/playground">
                   Text
                 </Link>
-                <Link variant="text" to="/playground" leadingIcon={CaretLeft}>
+                <Link variant="text" to="/playground" leadingIcon={CaretLeftIcon}>
                   Leading icon
                 </Link>
-                <Link variant="text" to="/playground" trailingIcon={CaretRight}>
+                <Link variant="text" to="/playground" trailingIcon={CaretRightIcon}>
                   Trailing icon
                 </Link>
               </Box>
@@ -418,7 +425,7 @@ function TabsExamples() {
         <Text variant="body">Showing the {tab} panel.</Text>
       </Tabs>
       <Tabs
-        tabs={sampleTabs.map((sample) => ({ ...sample, icon: DiamondsFour }))}
+        tabs={sampleTabs.map((sample) => ({ ...sample, icon: DiamondsFourIcon }))}
         value={tab}
         onValueChange={setTab}
         disabled={false}
@@ -519,6 +526,14 @@ function SearchFieldExamples() {
         onValueChange={() => {}}
         onSubmit={() => {}}
         inactive
+      />
+      <SearchField
+        label="With a leading icon"
+        placeholder="Search items"
+        value=""
+        onValueChange={() => {}}
+        onSubmit={() => {}}
+        leadingIcon={MagnifyingGlassIcon}
       />
     </Box>
   );

@@ -1,4 +1,4 @@
-import { X } from "@phosphor-icons/react";
+import { XIcon } from "@phosphor-icons/react";
 import { useQueries } from "@tanstack/react-query";
 import {
   useEffect,
@@ -265,7 +265,7 @@ export function OutfitCanvas({ products, editing, children }: OutfitCanvasProps)
                   top: percent(selectedGarment.garment.top),
                 }}
               >
-                <X aria-hidden="true" weight="bold" />
+                <XIcon aria-hidden="true" weight="bold" />
               </button>
             </Box>
           )}

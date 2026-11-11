@@ -1,4 +1,4 @@
-import { DiamondsFour } from "@phosphor-icons/react";
+import { CaretLeftIcon, DiamondsFourIcon, MagnifyingGlassIcon } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
@@ -7,6 +7,7 @@ import {
   Box,
   Empty,
   ErrorState,
+  IconButton,
   ImageCard,
   SearchField,
   Spinner,
@@ -26,6 +27,7 @@ type SwapPanelProps = {
   onSwap: (originId: string, product: Product) => void;
   /** Opens a spot from the details list, as selecting its item on the canvas does. */
   onPickSpot: (originId: string) => void;
+  onBack: () => void;
 };
 
 type SpotEditorProps = Omit<SwapPanelProps, "originId" | "onPickSpot"> & { originId: string };
@@ -78,7 +80,7 @@ export function SwapPanel({ originId, onPickSpot, ...spotProps }: SwapPanelProps
   return <SpotEditor key={originId} originId={originId} {...spotProps} />;
 }
 
-function SpotEditor({ outfitId, savedProducts, items, originId, onSwap }: SpotEditorProps) {
+function SpotEditor({ outfitId, savedProducts, items, originId, onSwap, onBack }: SpotEditorProps) {
   const [tab, setTab] = useState<SwapTab>("suggested");
 
   const current = items.find((item) => item.originId === originId);
@@ -100,9 +102,15 @@ function SpotEditor({ outfitId, savedProducts, items, originId, onSwap }: SpotEd
 
   return (
     <section className="flex h-full flex-col gap-md border px-xl py-lg">
-      <header className="flex items-baseline justify-between gap-md">
+      <header className="flex items-center gap-xs">
+        <IconButton
+          icon={CaretLeftIcon}
+          label="Back to outfit details"
+          variant="plain"
+          onClick={onBack}
+        />
         <Text variant="subheading">EDIT {SLOT_NAMES[slot].heading}</Text>
-        <Text variant="body" className="text-secondary">
+        <Text variant="body" className="ml-auto text-secondary">
           Click on an item to swap
         </Text>
       </header>
@@ -113,12 +121,13 @@ function SpotEditor({ outfitId, savedProducts, items, originId, onSwap }: SpotEd
         onValueChange={ignoreSearch}
         onSubmit={ignoreSearch}
         inactive
+        leadingIcon={MagnifyingGlassIcon}
       />
       <Tabs
         tabs={TAB_ORDER.map((value) => ({
           value,
           label: tabLabel(value, slot),
-          icon: DiamondsFour,
+          icon: DiamondsFourIcon,
         }))}
         value={tab}
         onValueChange={setTab}

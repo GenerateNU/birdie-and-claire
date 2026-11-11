@@ -1,6 +1,6 @@
-import { ArrowUUpLeft, ArrowUUpRight } from "@phosphor-icons/react";
+import { ArrowUUpLeftIcon, ArrowUUpRightIcon } from "@phosphor-icons/react";
 
-import { Box, Button } from "@/design-system";
+import { Box, IconButton } from "@/design-system";
 
 type UndoRedoControlsProps = {
   canUndo: boolean;
@@ -9,26 +9,26 @@ type UndoRedoControlsProps = {
   onRedo: () => void;
 };
 
-// The design-system Button always shows its label, so these show "Undo" and "Redo" next to the
-// arrow until it has an icon-only form.
+const ICON_SIZE = "[&_svg]:size-[40px]";
+
 export function UndoRedoControls({ canUndo, canRedo, onUndo, onRedo }: UndoRedoControlsProps) {
   return (
     <Box className="flex items-center gap-xxs">
-      <Button
+      <IconButton
+        icon={ArrowUUpLeftIcon}
         label="Undo"
-        leadingIcon={ArrowUUpLeft}
-        variant="secondary"
-        size="sm"
+        variant="plain"
         disabled={!canUndo}
         onClick={onUndo}
+        className={ICON_SIZE}
       />
-      <Button
+      <IconButton
+        icon={ArrowUUpRightIcon}
         label="Redo"
-        leadingIcon={ArrowUUpRight}
-        variant="secondary"
-        size="sm"
+        variant="plain"
         disabled={!canRedo}
         onClick={onRedo}
+        className={ICON_SIZE}
       />
     </Box>
   );
