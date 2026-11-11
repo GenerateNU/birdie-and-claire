@@ -1,11 +1,14 @@
 import { Input as BaseInput } from "@base-ui/react/input";
-import { useState } from "react";
+import { useState, type Ref } from "react";
+
+import { Box } from "@/design-system/primitives/box";
 
 // Boxes shrink to share the row, so a long code still fits a phone, and stop growing at 48px.
 const boxBaseClasses =
   "flex aspect-square min-w-0 max-w-xxl flex-1 items-center justify-center rounded-xs border bg-background text-body text-primary";
 
 type CodeInputProps = {
+  ref?: Ref<HTMLInputElement>;
   label: string;
   length: number;
   value: string;
@@ -17,6 +20,7 @@ type CodeInputProps = {
 /** A one-time code drawn as one box per digit. A single real input sits over the boxes,
  * so paste, autofill, and backspace work as they do in any text field. */
 export function CodeInput({
+  ref,
   label,
   length,
   value,
@@ -41,7 +45,7 @@ export function CodeInput({
   }
 
   return (
-    <div
+    <Box
       className={
         disabled
           ? "relative flex w-full justify-center gap-xs opacity-disabled"
@@ -49,11 +53,12 @@ export function CodeInput({
       }
     >
       {Array.from({ length }, (_, index) => (
-        <span key={index} aria-hidden="true" className={boxClasses(index)}>
+        <Box key={index} aria-hidden="true" className={boxClasses(index)}>
           {value[index] ?? ""}
-        </span>
+        </Box>
       ))}
       <BaseInput
+        ref={ref}
         aria-label={label}
         aria-invalid={invalid}
         inputMode="numeric"
@@ -68,6 +73,6 @@ export function CodeInput({
         // Transparent rather than hidden, so the browser still offers autofill and a tap focuses it.
         className="absolute inset-0 h-full w-full cursor-text bg-transparent text-transparent caret-transparent outline-none"
       />
-    </div>
+    </Box>
   );
 }

@@ -29,7 +29,14 @@ export function TextField(props: TextFieldProps) {
   const errorId = useId();
   const labelClasses = "flex flex-col gap-xxs text-body";
   const classes = joinClasses(labelClasses, props.className);
-  const labelText = props.hideLabel ? <span className="sr-only">{props.label}</span> : props.label;
+
+  const labelText = props.hideLabel ? (
+    <Text variant="caption" className="sr-only">
+      {props.label}
+    </Text>
+  ) : (
+    props.label
+  );
 
   // Added to the caller's aria-describedby, not in place of it.
   let describedBy = props["aria-describedby"];
@@ -53,6 +60,7 @@ export function TextField(props: TextFieldProps) {
     const {
       label: _label,
       hideLabel: _hideLabel,
+      value,
       onValueChange,
       multiline: _multiline,
       className: _className,
@@ -63,10 +71,13 @@ export function TextField(props: TextFieldProps) {
     return (
       <label className={classes}>
         {labelText}
-        <textarea
-          {...textareaProps}
-          {...errorProps}
-          onChange={(event) => onValueChange?.(event.target.value)}
+        {/* Base UI's Input types its props for an <input>, so the textarea's own attributes, like
+            rows, go on the rendered element. Its props win over Input's when both set one, which
+            is why errorProps, with the combined aria-describedby, comes last there. */}
+        <BaseInput
+          render={<textarea {...textareaProps} {...errorProps} />}
+          value={value}
+          onValueChange={onValueChange}
           className={inputClasses}
         />
         {errorText}

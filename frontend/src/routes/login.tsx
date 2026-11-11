@@ -1,9 +1,14 @@
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState, type ReactNode, type SyntheticEvent } from "react";
+import { useEffect, useState, type SyntheticEvent } from "react";
 
 import { createCurrentUserMutation } from "@/api/generated/@tanstack/react-query.gen";
-import { Box, Button, CodeInput, Divider, Logo, Text, TextField, useToast } from "@/design-system";
+import { useToast } from "@/design-system";
+import { ChoiceScreen } from "@/features/auth/choice-screen";
+import { LoginEmailScreen } from "@/features/auth/login-email-screen";
+import { SignupScreen } from "@/features/auth/signup-screen";
+import { VerifiedScreen } from "@/features/auth/verified-screen";
+import { VerifyScreen } from "@/features/auth/verify-screen";
 import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/login")({
@@ -15,13 +20,13 @@ type Step = "choice" | "login-email" | "signup" | "verify" | "verified";
 // Which path reached the verify step, so "Change the email address" returns to the right screen.
 type Mode = "login" | "signup";
 
-// The length set in the Supabase project's email OTP settings; the lofi draws 6 boxes.
-const CODE_LENGTH = 8;
-
-// Supabase also enforces its own minimum time between resends; a resend it refuses shows its error.
-const RESEND_COUNTDOWN_SECONDS = 30;
+// Supabase's default minimum time between codes sent to one address; an earlier resend is refused.
+const RESEND_COUNTDOWN_SECONDS = 60;
 
 const VERIFIED_REDIRECT_MS = 2000;
+
+// The error codes Supabase answers with when a code was requested too soon after the last one.
+const RATE_LIMIT_CODES = ["over_email_send_rate_limit", "over_request_rate_limit"];
 
 function Login() {
   const toast = useToast();
@@ -79,7 +84,7 @@ function Login() {
     setBusy(false);
 
     if (error) {
-      toast.show({ message: "Couldn't send the code", subtitle: error.message });
+      toast.show({ message: "Couldn't send the code. Try again." });
 
       return;
     }
@@ -98,7 +103,11 @@ function Login() {
     setBusy(false);
 
     if (error) {
-      setResendError(error.message);
+      setResendError(
+        RATE_LIMIT_CODES.includes(error.code ?? "")
+          ? "Please wait a moment before asking for a new code."
+          : "Couldn't send a new code. Try again.",
+      );
 
       return;
     }
@@ -136,7 +145,7 @@ function Login() {
     }
 
     if (error) {
-      toast.show({ message: "Couldn't verify the code", subtitle: error.message });
+      toast.show({ message: "Couldn't verify the code. Try again." });
 
       return;
     }
@@ -175,202 +184,51 @@ function Login() {
   }
 
   if (step === "verified") {
-    return (
-      <AuthScreen>
-        <Box role="status" className="flex flex-col items-center gap-sm">
-          <span
-            aria-hidden="true"
-            className="flex size-xl items-center justify-center rounded-full border-thick border-success text-success"
-          >
-            ✓
-          </span>
-          <Text variant="body" className="text-success">
-            Verified
-          </Text>
-          <Text variant="body">Welcome to the Styler!</Text>
-        </Box>
-      </AuthScreen>
-    );
+    return <VerifiedScreen />;
   }
 
   if (step === "verify") {
     return (
-      <AuthScreen title="Enter your verification code">
-        <Text variant="caption" className="text-center">
-          A code was sent to {email}
-        </Text>
-        <form onSubmit={verifyCode} className="flex flex-col items-center gap-sm">
-          <CodeInput
-            label="Verification code"
-            length={CODE_LENGTH}
-            value={code}
-            onValueChange={typeCode}
-            invalid={codeRejected}
-            disabled={busy}
-          />
-          {codeRejected && (
-            <Text variant="caption" role="alert" className="text-error">
-              Incorrect code entered. Please try again.
-            </Text>
-          )}
-          {resendSecondsLeft > 0 ? (
-            <Text variant="caption">Resend code in {resendSecondsLeft}s</Text>
-          ) : (
-            <Button
-              label="Resend verification code"
-              variant="secondary"
-              size="sm"
-              onClick={() => void resendCode()}
-              disabled={busy}
-            />
-          )}
-          {resendError && (
-            <Text variant="caption" className="text-error">
-              {resendError}
-            </Text>
-          )}
-          <Button
-            label="Verify Code"
-            type="submit"
-            variant="secondary"
-            disabled={code.length < CODE_LENGTH || busy}
-          />
-          <Button
-            label="Change the email address"
-            variant="secondary"
-            size="sm"
-            onClick={changeEmail}
-            disabled={busy}
-          />
-        </form>
-      </AuthScreen>
+      <VerifyScreen
+        email={email}
+        code={code}
+        onCodeChange={typeCode}
+        codeRejected={codeRejected}
+        resendSecondsLeft={resendSecondsLeft}
+        resendError={resendError}
+        busy={busy}
+        onResend={() => void resendCode()}
+        onSubmit={verifyCode}
+        onChangeEmail={changeEmail}
+      />
     );
   }
 
   if (step === "signup") {
     return (
-      <AuthScreen title="Create an Account">
-        <form onSubmit={sendCode} className="flex flex-col gap-sm">
-          <TextField
-            label="Name"
-            hideLabel
-            placeholder="Enter Your Name"
-            autoComplete="name"
-            // The endpoint caps name at 100 characters.
-            maxLength={100}
-            required
-            value={name}
-            onValueChange={setName}
-            disabled={busy}
-          />
-          <TextField
-            label="Email"
-            hideLabel
-            type="email"
-            placeholder="Enter your email address"
-            autoComplete="email"
-            required
-            value={email}
-            onValueChange={setEmail}
-            disabled={busy}
-          />
-          <Button
-            label="Sign up"
-            type="submit"
-            variant="secondary"
-            disabled={name.trim() === "" || email === "" || busy}
-          />
-          <Button
-            label="Back"
-            variant="secondary"
-            size="sm"
-            onClick={() => setStep("choice")}
-            disabled={busy}
-          />
-        </form>
-      </AuthScreen>
+      <SignupScreen
+        name={name}
+        onNameChange={setName}
+        email={email}
+        onEmailChange={setEmail}
+        busy={busy}
+        onSubmit={sendCode}
+        onBack={() => setStep("choice")}
+      />
     );
   }
 
   if (step === "login-email") {
     return (
-      <AuthScreen
-        title="Sign in with email"
-        subtitle="We will send you a verification code via this email address"
-      >
-        <form onSubmit={sendCode} className="flex flex-col gap-sm">
-          <TextField
-            label="Email"
-            hideLabel
-            type="email"
-            placeholder="Enter your email address"
-            autoComplete="email"
-            required
-            value={email}
-            onValueChange={setEmail}
-            disabled={busy}
-          />
-          <Button
-            label="Send Code"
-            type="submit"
-            variant="secondary"
-            disabled={email === "" || busy}
-          />
-          <Button
-            label="Back"
-            variant="secondary"
-            size="sm"
-            onClick={() => setStep("choice")}
-            disabled={busy}
-          />
-        </form>
-      </AuthScreen>
+      <LoginEmailScreen
+        email={email}
+        onEmailChange={setEmail}
+        busy={busy}
+        onSubmit={sendCode}
+        onBack={() => setStep("choice")}
+      />
     );
   }
 
-  return (
-    <AuthScreen title="Log in or Sign up">
-      <Button label="Log in" variant="secondary" onClick={() => choosePath("login")} />
-      <Button label="Sign up" variant="secondary" onClick={() => choosePath("signup")} />
-      <Box className="flex items-center gap-xs">
-        <Divider className="flex-1 border-t" />
-        <Text variant="caption">OR</Text>
-        <Divider className="flex-1 border-t" />
-      </Box>
-      {/* Guest mode needs auth changes, so this is shown but does nothing yet. */}
-      <Box className="flex flex-col items-center gap-xxs">
-        <Button label="Continue as a guest" variant="secondary" size="sm" disabled />
-        <Text variant="caption" className="text-secondary">
-          Coming soon
-        </Text>
-      </Box>
-    </AuthScreen>
-  );
-}
-
-type AuthScreenProps = {
-  title?: string;
-  subtitle?: string;
-  children: ReactNode;
-};
-
-function AuthScreen({ title, subtitle, children }: AuthScreenProps) {
-  return (
-    <Box className="flex min-h-screen flex-col items-center justify-center gap-lg p-md">
-      <Logo className="w-full max-w-xs" />
-      <Box className="flex w-full max-w-content-sm flex-col gap-sm rounded-md bg-surface p-lg">
-        {title && (
-          <Text variant="subheading" className="text-center normal-case">
-            {title}
-          </Text>
-        )}
-        {subtitle && (
-          <Text variant="caption" className="text-center">
-            {subtitle}
-          </Text>
-        )}
-        {children}
-      </Box>
-    </Box>
-  );
+  return <ChoiceScreen onLogIn={() => choosePath("login")} onSignUp={() => choosePath("signup")} />;
 }
