@@ -48,6 +48,11 @@ func buildProductJSON(id int64) string {
 		`"category":null,"tags":[],"media":{"pageInfo":{"hasNextPage":false},"nodes":[]}}`, id, id, id)
 }
 
+func buildProductWithImageJSON(imageURL string) string {
+	return fmt.Sprintf(`{"id":"gid://shopify/Product/1","media":{"pageInfo":{"hasNextPage":false},"nodes":[`+
+		`{"id":"gid://shopify/MediaImage/2","image":{"url":%q,"altText":null,"width":1200,"height":1600}}]}}`, imageURL)
+}
+
 func buildPageJSON(hasNextPage bool, endCursor string, products ...string) string {
 	return fmt.Sprintf(`{"data":{"products":{"pageInfo":{"hasNextPage":%t,"endCursor":%q},"nodes":[%s]}}}`,
 		hasNextPage, endCursor, strings.Join(products, ","))
@@ -195,6 +200,18 @@ func TestListActiveProductsErrors(t *testing.T) {
 			token:   respondWith(http.StatusOK, grantedTokenJSON),
 			graphQL: respondWith(http.StatusOK, `{"errors":[{"message":"Throttled","extensions":{"code":"THROTTLED"}}]}`),
 			wantErr: "Throttled",
+		},
+		{
+			name:    "http image url",
+			token:   respondWith(http.StatusOK, grantedTokenJSON),
+			graphQL: respondWith(http.StatusOK, buildPageJSON(false, "", buildProductWithImageJSON("http://cdn.shopify.com/front.jpg"))),
+			wantErr: "not an https URL",
+		},
+		{
+			name:    "empty image url",
+			token:   respondWith(http.StatusOK, grantedTokenJSON),
+			graphQL: respondWith(http.StatusOK, buildPageJSON(false, "", buildProductWithImageJSON(""))),
+			wantErr: "not an https URL",
 		},
 		{
 			name:    "no data",

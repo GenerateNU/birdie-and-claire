@@ -254,6 +254,10 @@ func parseProduct(node productNode) (ShopifyProduct, error) {
 		if err != nil {
 			return ShopifyProduct{}, err
 		}
+		imageURL, err := url.Parse(media.Image.URL)
+		if err != nil || imageURL.Scheme != "https" || imageURL.Host == "" {
+			return ShopifyProduct{}, fmt.Errorf("shopify: image %d of product %d has %q, not an https URL", imageID, id, media.Image.URL)
+		}
 		images = append(images, ShopifyImage{
 			ID:      imageID,
 			URL:     media.Image.URL,
