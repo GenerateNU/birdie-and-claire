@@ -1,4 +1,4 @@
-import { useForm } from "@tanstack/react-form";
+import { useForm, useStore } from "@tanstack/react-form";
 import { z } from "zod";
 
 import { zUpdateOutfitInputBody } from "@/api/generated/zod.gen";
@@ -11,21 +11,38 @@ const nameSchema = z.object({
 
 type SaveOutfitDialogProps = {
   open: boolean;
-  name: string;
+  savedName: string;
+  /** Whether the draft's products differ from the saved outfit. */
+  productsChanged: boolean;
+  saving: boolean;
   onCancel: () => void;
   /** Called with the trimmed name once it passes validation. */
   onSave: (name: string) => void;
 };
 
-export function SaveOutfitDialog({ open, name, onCancel, onSave }: SaveOutfitDialogProps) {
+export function SaveOutfitDialog({
+  open,
+  savedName,
+  productsChanged,
+  saving,
+  onCancel,
+  onSave,
+}: SaveOutfitDialogProps) {
   const form = useForm({
-    defaultValues: { name },
+    defaultValues: { name: savedName },
     validators: { onSubmit: nameSchema },
     onSubmit: ({ value }) => onSave(value.name.trim()),
   });
 
+  const typedName = useStore(form.store, (state) => state.values.name);
+  const nothingChanged = !productsChanged && typedName.trim() === savedName;
+
   function cancel() {
-    form.reset({ name });
+    if (saving) {
+      return;
+    }
+
+    form.reset();
     onCancel();
   }
 
@@ -33,12 +50,14 @@ export function SaveOutfitDialog({ open, name, onCancel, onSave }: SaveOutfitDia
     <Dialog
       open={open}
       onClose={cancel}
-      title="Rename outfit"
+      title="Save outfit"
       actions={[
         {
-          label: "Rename",
+          label: "Save",
           variant: "primary",
           onClick: () => void form.handleSubmit(),
+          disabled: nothingChanged,
+          loading: saving,
         },
       ]}
       dismissible
@@ -49,6 +68,8 @@ export function SaveOutfitDialog({ open, name, onCancel, onSave }: SaveOutfitDia
             <TextField
               label="Name outfit"
               required
+              // Also stops Enter from submitting a second save.
+              disabled={saving}
               value={field.state.value}
               onValueChange={field.handleChange}
               onBlur={field.handleBlur}
