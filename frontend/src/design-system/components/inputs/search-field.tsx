@@ -54,7 +54,7 @@ export function SearchField({
       onClick={onClick}
       maxLength={maxLength}
       enterKeyHint="go"
-      className={LeadingIcon ? `${stateClasses} pl-[40px]` : joinClasses(stateClasses, className)}
+      className={LeadingIcon ? `${stateClasses} pl-xxl` : joinClasses(stateClasses, className)}
     />
   );
 
@@ -66,8 +66,7 @@ export function SearchField({
     <Box className={joinClasses("relative", className)}>
       <LeadingIcon
         aria-hidden="true"
-        size="25px"
-        className="pointer-events-none absolute left-[11px] top-1/2 -translate-y-1/2 text-secondary"
+        className="pointer-events-none absolute left-sm top-1/2 size-lg -translate-y-1/2 text-secondary"
       />
       {input}
     </Box>

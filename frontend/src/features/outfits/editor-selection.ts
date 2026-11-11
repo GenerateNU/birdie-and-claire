@@ -53,17 +53,17 @@ export function selectionReducer(state: SelectionState, action: SelectionAction)
 export function useEditorSelection(items: DraftItem[]) {
   const [state, dispatch] = useReducer(selectionReducer, noSelection);
   const originIds = items.map((item) => item.originId);
-  const kept = selectionReducer(state, { type: "keepSpots", originIds });
+  const pruned = selectionReducer(state, { type: "keepSpots", originIds });
 
   // A removed spot leaves nothing to select or edit. Dispatching during render applies it before
   // anything stale paints.
-  if (kept !== state) {
+  if (pruned !== state) {
     dispatch({ type: "keepSpots", originIds });
   }
 
   return {
-    selectedOriginId: kept.selectedOriginId,
-    panelOriginId: kept.panelOriginId,
+    selectedOriginId: pruned.selectedOriginId,
+    panelOriginId: pruned.panelOriginId,
     select: (originId: string | null) => dispatch({ type: "select", originId }),
     afterSwap: () => dispatch({ type: "afterSwap" }),
   };
