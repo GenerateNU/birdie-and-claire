@@ -2,35 +2,23 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
-import { getOutfitOptions } from "@/api/generated/@tanstack/react-query.gen";
-import type { ErrorModel } from "@/api/generated/types.gen";
 import { Box, Button, Empty, ErrorState, Link, Logo, Spinner, Text } from "@/design-system";
 import { OutfitCanvas } from "@/features/outfits/outfit-canvas";
 import { OutfitDetails } from "@/features/outfits/outfit-details";
+import { isOutfitNotFound, outfitQueryOptions } from "@/features/outfits/outfit-query";
 
-export const Route = createFileRoute("/_signedIn/_onboarded/outfits/$outfitId")({
-  component: OutfitPage,
+export const Route = createFileRoute("/_signedIn/_onboarded/outfits/$outfitId/edit")({
+  component: OutfitEditorPage,
 });
 
 type EditorFrameProps = {
   children: ReactNode;
 };
 
-// huma answers 422 for an ID that isn't a UUID, which can't name an outfit either.
-function isNotFound(error: ErrorModel | null) {
-  return error?.status === 404 || error?.status === 422;
-}
-
-const MAX_RETRIES = 3;
-
-function OutfitPage() {
+function OutfitEditorPage() {
   const { outfitId } = Route.useParams();
 
-  const outfitQuery = useQuery({
-    ...getOutfitOptions({ path: { id: outfitId } }),
-    // Asking again won't make a missing outfit appear.
-    retry: (failureCount, error) => !isNotFound(error) && failureCount < MAX_RETRIES,
-  });
+  const outfitQuery = useQuery(outfitQueryOptions(outfitId));
 
   if (outfitQuery.isPending) {
     return (
@@ -40,7 +28,7 @@ function OutfitPage() {
     );
   }
 
-  if (isNotFound(outfitQuery.error)) {
+  if (isOutfitNotFound(outfitQuery.error)) {
     return (
       <EditorFrame>
         <Empty title="Outfit not found" className="p-lg" />
@@ -69,7 +57,9 @@ function OutfitPage() {
           canvas to nothing, so the panels stack. */}
       <main className="flex min-h-0 flex-1 flex-col gap-xs p-xs pt-md lg:flex-row">
         <Box className="min-h-0 min-w-0 flex-1">
-          <OutfitCanvas products={products} />
+          <OutfitCanvas products={products}>
+            <Button label="Help" variant="secondary" disabled className="absolute left-sm top-md" />
+          </OutfitCanvas>
         </Box>
         <Box className="h-2/5 lg:h-auto lg:w-content-md lg:shrink-0">
           <OutfitDetails outfitName={name} products={products} />

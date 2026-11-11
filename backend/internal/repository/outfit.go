@@ -66,7 +66,8 @@ func (r *outfitRepository) Create(ctx context.Context, params models.CreateOutfi
 			ORDER BY pi.position, pi.id
 			LIMIT 1
 		) first_image ON true
-		ORDER BY p.id
+		-- Head to toe, the order the outfit pages list pieces in.
+		ORDER BY array_position(ARRAY['top', 'bottom', 'shoe', 'accessory']::product_slot[], p.slot), p.id
 	`, userID, params.Name, params.ProductIDs)
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) && pgErr.Code == foreignKeyViolation && pgErr.ConstraintName == outfitProductFKey {
@@ -123,7 +124,9 @@ func getOutfitByID(ctx context.Context, dbOrTx querier, id uuid.UUID, userID uui
 			LIMIT 1
 		) first_image ON true
 		WHERE o.id = $1 AND o.user_id = $2
-		ORDER BY p.id
+		-- Head to toe, the order the outfit pages list pieces in. array_position is NULL for the
+		-- LEFT JOIN's empty-outfit row, which then sorts last.
+		ORDER BY array_position(ARRAY['top', 'bottom', 'shoe', 'accessory']::product_slot[], p.slot), p.id
 	`, id, userID)
 	if err != nil {
 		return models.Outfit{}, nil, fmt.Errorf("get outfit %s: %w", id, err)
@@ -209,7 +212,9 @@ func (r *outfitRepository) GetShared(ctx context.Context, id uuid.UUID) (models.
 			LIMIT 1
 		) first_image ON true
 		WHERE o.id = $1 AND o.shared_at IS NOT NULL
-		ORDER BY p.id
+		-- Head to toe, the order the outfit pages list pieces in. array_position is NULL for the
+		-- LEFT JOIN's empty-outfit row, which then sorts last.
+		ORDER BY array_position(ARRAY['top', 'bottom', 'shoe', 'accessory']::product_slot[], p.slot), p.id
 	`, id)
 	if err != nil {
 		return models.Outfit{}, nil, fmt.Errorf("get shared outfit %s: %w", id, err)
