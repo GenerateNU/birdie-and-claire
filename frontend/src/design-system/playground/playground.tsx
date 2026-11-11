@@ -1,4 +1,4 @@
-import { CaretLeft, CaretRight, DiamondsFour } from "@phosphor-icons/react";
+import { CaretLeft, CaretRight, DiamondsFour, Plus, ShareNetwork } from "@phosphor-icons/react";
 import { useForm } from "@tanstack/react-form";
 import { useState, type ReactNode } from "react";
 import { z } from "zod";
@@ -14,6 +14,7 @@ import {
   Divider,
   Empty,
   Form,
+  IconButton,
   OutlineColor,
   ErrorState,
   ImageCard,
@@ -187,6 +188,12 @@ export function Playground() {
                 <Button label="Next" trailingIcon={CaretRight} />
               </Box>
               <Label>leadingIcon · trailingIcon</Label>
+              <Box className="flex items-center gap-md">
+                <IconButton icon={Plus} label="Add" variant="outlined" />
+                <IconButton icon={ShareNetwork} label="Share" variant="plain" />
+                <IconButton icon={Plus} label="Add" variant="outlined" disabled />
+              </Box>
+              <Label>IconButton · outlined · plain · disabled</Label>
               <TextButton label="swap item" onClick={() => {}} />
               <Label>TextButton</Label>
             </Section>

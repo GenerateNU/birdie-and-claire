@@ -20,10 +20,10 @@ type DialogProps = {
   onClose: () => void;
   title: string;
   message?: string;
-  /** Goes between the message and the actions, such as a form field. */
-  children?: ReactNode;
   actions: DialogAction[];
   dismissible?: boolean;
+  /** Content between the message and the actions, for a dialog that shows more than text. */
+  children?: ReactNode;
 };
 
 export function Dialog({
@@ -31,9 +31,9 @@ export function Dialog({
   onClose,
   title,
   message,
-  children,
   actions,
   dismissible = false,
+  children,
 }: DialogProps) {
   const DialogParts = dismissible ? BaseDialog : AlertDialog;
 
@@ -59,18 +59,20 @@ export function Dialog({
             </DialogParts.Description>
           )}
           {children}
-          <Box className="flex justify-end gap-xs">
-            {actions.map((action) => (
-              <Button
-                key={action.label}
-                label={action.label}
-                variant={action.variant}
-                onClick={action.onClick}
-                disabled={action.disabled}
-                loading={action.loading}
-              />
-            ))}
-          </Box>
+          {actions.length > 0 && (
+            <Box className="flex justify-end gap-xs">
+              {actions.map((action) => (
+                <Button
+                  key={action.label}
+                  label={action.label}
+                  variant={action.variant}
+                  onClick={action.onClick}
+                  disabled={action.disabled}
+                  loading={action.loading}
+                />
+              ))}
+            </Box>
+          )}
         </DialogParts.Popup>
       </DialogParts.Portal>
     </DialogParts.Root>

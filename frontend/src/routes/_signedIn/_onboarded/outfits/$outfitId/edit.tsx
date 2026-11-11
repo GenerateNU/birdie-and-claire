@@ -3,25 +3,25 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
 
 import {
-  getOutfitOptions,
   getOutfitQueryKey,
   listOutfitsInfiniteQueryKey,
   updateOutfitMutation,
 } from "@/api/generated/@tanstack/react-query.gen";
-import type { ErrorModel, OutfitResponse, UpdateOutfitInputBody } from "@/api/generated/types.gen";
-import { Box, Dialog, Empty, ErrorState, Spinner, useToast } from "@/design-system";
+import type { OutfitResponse, UpdateOutfitInputBody } from "@/api/generated/types.gen";
+import { Box, Button, Dialog, Empty, ErrorState, Spinner, useToast } from "@/design-system";
 import { EditorHeader } from "@/features/outfits/editor-header";
 import { useEditorSelection } from "@/features/outfits/editor-selection";
 import { OutfitCanvas } from "@/features/outfits/outfit-canvas";
 import { useOutfitDraft } from "@/features/outfits/outfit-draft";
 import type { Product } from "@/features/outfits/outfit-items";
+import { isOutfitNotFound, outfitQueryOptions } from "@/features/outfits/outfit-query";
 import { SaveOutfitDialog } from "@/features/outfits/save-outfit-dialog";
 import { SwapPanel } from "@/features/outfits/swap-panel";
 import { UndoRedoControls } from "@/features/outfits/undo-redo-controls";
 import { useLeaveGuard } from "@/features/outfits/use-leave-guard";
 
-export const Route = createFileRoute("/_signedIn/_onboarded/outfits/$outfitId")({
-  component: OutfitPage,
+export const Route = createFileRoute("/_signedIn/_onboarded/outfits/$outfitId/edit")({
+  component: OutfitEditorPage,
 });
 
 type EditorFrameProps = {
@@ -29,21 +29,10 @@ type EditorFrameProps = {
   children: ReactNode;
 };
 
-// huma answers 422 for an ID that isn't a UUID, which can't name an outfit either.
-function isNotFound(error: ErrorModel | null) {
-  return error?.status === 404 || error?.status === 422;
-}
-
-const MAX_RETRIES = 3;
-
-function OutfitPage() {
+function OutfitEditorPage() {
   const { outfitId } = Route.useParams();
 
-  const outfitQuery = useQuery({
-    ...getOutfitOptions({ path: { id: outfitId } }),
-    // Asking again won't make a missing outfit appear.
-    retry: (failureCount, error) => !isNotFound(error) && failureCount < MAX_RETRIES,
-  });
+  const outfitQuery = useQuery(outfitQueryOptions(outfitId));
 
   if (outfitQuery.isPending) {
     return (
@@ -53,7 +42,7 @@ function OutfitPage() {
     );
   }
 
-  if (isNotFound(outfitQuery.error)) {
+  if (isOutfitNotFound(outfitQuery.error)) {
     return (
       <EditorFrame>
         <Empty title="Outfit not found" className="p-lg" />
@@ -143,19 +132,32 @@ function OutfitEditor({ outfitId, outfit }: OutfitEditorProps) {
       <main className="flex min-h-0 flex-1 flex-col gap-xs p-xs pt-md lg:flex-row">
         <Box className="min-h-0 min-w-0 flex-1">
           <OutfitCanvas
-            items={draft.items}
-            selectedOriginId={selection.selectedOriginId}
-            onSelect={selection.select}
-            onRemove={remove}
-            controls={
+            products={draft.items.map((item) => item.product)}
+            editing={{
+              originIdByProductId: new Map(
+                draft.items.map((item) => [item.product.id, item.originId]),
+              ),
+              selectedOriginId: selection.selectedOriginId,
+              onSelect: selection.select,
+              onRemove: remove,
+            }}
+          >
+            {/* Help content comes with outfit editing. */}
+            <Button
+              label="Help"
+              variant="secondary"
+              disabled
+              className="absolute left-sm top-md z-10"
+            />
+            <Box className="absolute right-sm top-md z-10">
               <UndoRedoControls
                 canUndo={draft.canUndo}
                 canRedo={draft.canRedo}
                 onUndo={draft.undo}
                 onRedo={draft.redo}
               />
-            }
-          />
+            </Box>
+          </OutfitCanvas>
         </Box>
         <Box className="h-2/5 lg:h-auto lg:w-content-md lg:shrink-0">
           <SwapPanel

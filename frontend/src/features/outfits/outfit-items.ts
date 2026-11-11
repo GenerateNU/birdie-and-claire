@@ -1,6 +1,6 @@
 import type { ProductResponse } from "@/api/generated/types.gen";
 
-export type Product = Pick<ProductResponse, "id" | "title" | "slot" | "image_url">;
+export type Product = Pick<ProductResponse, "id" | "title" | "handle" | "slot" | "image_url">;
 
 /**
  * The outfit canvas's size in pixels, from the Figma's Builder Space frame:
@@ -71,8 +71,6 @@ const SPOTS_BY_SLOT: Record<ProductSlot, CanvasSpot[]> = {
   shoe: [SHOE],
   accessory: ACCESSORIES,
 };
-
-export const SLOTS_HEAD_TO_TOE: ProductSlot[] = ["top", "bottom", "shoe", "accessory"];
 
 /**
  * Gives each product with a photo the first free spot its slot can take, in the order given, so a

@@ -1,6 +1,6 @@
+import type { ProductResponse } from "@/api/generated/types.gen";
 import { Box, Divider, Empty, Text, TextButton } from "@/design-system";
 import type { DraftItem } from "@/features/outfits/outfit-draft";
-import { SLOTS_HEAD_TO_TOE } from "@/features/outfits/outfit-items";
 
 type OutfitDetailsProps = {
   items: DraftItem[];
@@ -10,6 +10,9 @@ type OutfitDetailsProps = {
 type ItemTileProps = {
   imageUrl: string | null;
 };
+
+// The draft starts in title order, so the list sorts its own items head to toe.
+const SLOTS_HEAD_TO_TOE: ProductResponse["slot"][] = ["top", "bottom", "shoe", "accessory"];
 
 function listPosition(item: DraftItem): number {
   return SLOTS_HEAD_TO_TOE.indexOf(item.product.slot);
