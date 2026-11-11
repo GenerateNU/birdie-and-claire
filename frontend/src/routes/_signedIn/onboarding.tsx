@@ -7,6 +7,7 @@ import { replaceCurrentUserStylePreferencesMutation } from "@/api/generated/@tan
 import type { StylePreferences } from "@/api/generated/types.gen";
 import { Box, Button, ImageCard, Logo, Page, ProgressBar, Tabs, Text } from "@/design-system";
 import { AccountError, requireAccountStatus } from "@/features/account/account";
+import { PiecePicker } from "@/features/pieces/piece-picker";
 import {
   fitFields,
   noPreferences,
@@ -21,6 +22,9 @@ export const Route = createFileRoute("/_signedIn/onboarding")({
   errorComponent: AccountError,
   component: Onboarding,
 });
+
+// The owned-pieces question comes before style; "answered" hands over to the style questions.
+type OwnedPiecesStep = "question" | "picker" | "answered";
 
 const fitTabs = fitFields.map((field) => ({ value: field, label: questions[field].name }));
 
@@ -43,6 +47,8 @@ function progressStep(index: number) {
 }
 
 function Onboarding() {
+  const [ownedPiecesStep, setOwnedPiecesStep] = useState<OwnedPiecesStep>("question");
+
   const [currentField, setCurrentField] = useState<PreferenceField>("style");
 
   const [preferences, setPreferences] = useState<StylePreferences>(noPreferences);
@@ -87,6 +93,34 @@ function Onboarding() {
     }
 
     return onLastField ? "Finish" : "Next";
+  }
+
+  if (ownedPiecesStep === "question") {
+    return (
+      <Page className="flex flex-col gap-lg pb-xxl">
+        <StartProgress />
+        <Box className="flex flex-1 flex-col items-center gap-lg">
+          <Logo className="w-full max-w-xs" />
+          <Text variant="heading">Do you own any B&C clothes?</Text>
+          <Box className="flex flex-col gap-xs">
+            <Button label="Yes" variant="secondary" onClick={() => setOwnedPiecesStep("picker")} />
+            <Button label="No" variant="secondary" onClick={() => setOwnedPiecesStep("answered")} />
+          </Box>
+        </Box>
+      </Page>
+    );
+  }
+
+  if (ownedPiecesStep === "picker") {
+    return (
+      <Page className="flex flex-col gap-lg pb-xxl">
+        <StartProgress />
+        <PiecePicker
+          onBack={() => setOwnedPiecesStep("question")}
+          onAdded={() => setOwnedPiecesStep("answered")}
+        />
+      </Page>
+    );
   }
 
   return (
@@ -161,6 +195,15 @@ function Onboarding() {
         />
       )}
     </Page>
+  );
+}
+
+/** The progress bar at its start, as the style question shows it. */
+function StartProgress() {
+  return (
+    <Box className="flex justify-center">
+      <ProgressBar label="Sign-up progress" step={0} stepCount={progressStepCount} />
+    </Box>
   );
 }
 
