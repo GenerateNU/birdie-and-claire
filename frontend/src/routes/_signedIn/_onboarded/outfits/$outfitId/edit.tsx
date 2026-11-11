@@ -92,7 +92,7 @@ function OutfitEditor({ outfitId, outfit }: OutfitEditorProps) {
       // The guard is off while the mutation is pending, and resetting the draft keeps it off after.
       queryClient.setQueryData(getOutfitQueryKey({ path: { id: outfitId } }), saved);
       void queryClient.invalidateQueries({ queryKey: listOutfitsInfiniteQueryKey() });
-      void navigate({ to: "/profile/outfits" });
+      void navigate({ to: "/outfits/$outfitId", params: { outfitId }, replace: true });
     },
     onError: () => toast.show({ message: "Couldn't save your outfit. Try again." }),
   });
