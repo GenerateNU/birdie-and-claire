@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 	"unicode/utf8"
 
+	"birdie-and-claire/internal/auth"
 	"birdie-and-claire/internal/embedder"
 	"birdie-and-claire/internal/errs"
 	"birdie-and-claire/internal/llm"
@@ -53,8 +55,19 @@ func (s *recommendationService) RecommendProducts(ctx context.Context, request m
 		answers[models.DetailPromptLabels[detail.Key]] = detail.Value
 	}
 
+	var stylePreferences *models.StylePreferences
+	user, err := s.repo.User.GetByID(ctx, auth.UserID(ctx))
+	switch {
+	case errors.Is(err, errs.ErrNotFound):
+		// a signed-in shopper has no users row until POST /users/me creates it, and so no style preferences
+	case err != nil:
+		return models.RecommendationResponse{}, err
+	default:
+		stylePreferences = user.StylePreferences
+	}
+
 	expandCtx, cancel := context.WithTimeout(ctx, expandAnswersTimeout)
-	rawExpandedAnswers, err := llm.ExpandAnswers(expandCtx, s.llm, answers)
+	rawExpandedAnswers, err := llm.ExpandAnswers(expandCtx, s.llm, answers, formatStylePreferences(stylePreferences))
 	cancel()
 	if err != nil {
 		return models.RecommendationResponse{}, fmt.Errorf("expand shopper answers: %w", err)
@@ -143,4 +156,38 @@ func lowercaseTags(tags []string) []string {
 		lowered = append(lowered, strings.ToLower(tag))
 	}
 	return lowered
+}
+
+// picks are listed in this order so the same picks always produce the same prompt text, whatever order they were
+// saved in. dress is left out because outfits have no dress slot (#117).
+var (
+	bottomsInOnboardingOrder = []string{"pants", "skirt", "shorts"}
+	shoesInOnboardingOrder   = []string{"sneakers", "boots", "sandals", "heels", "flats"}
+)
+
+// formatStylePreferences returns the bottoms and shoes picks as one line, such as "bottoms: skirt; shoes: flats", or ""
+// when there are none
+func formatStylePreferences(preferences *models.StylePreferences) string {
+	if preferences == nil {
+		return ""
+	}
+	var fields []string
+	if bottoms := orderPicks(preferences.Bottoms, bottomsInOnboardingOrder); len(bottoms) > 0 {
+		fields = append(fields, "bottoms: "+strings.Join(bottoms, ", "))
+	}
+	if shoes := orderPicks(preferences.Shoes, shoesInOnboardingOrder); len(shoes) > 0 {
+		fields = append(fields, "shoes: "+strings.Join(shoes, ", "))
+	}
+	return strings.Join(fields, "; ")
+}
+
+// orderPicks drops any pick that order doesn't list, such as dress
+func orderPicks(picks, order []string) []string {
+	var ordered []string
+	for _, value := range order {
+		if slices.Contains(picks, value) {
+			ordered = append(ordered, value)
+		}
+	}
+	return ordered
 }

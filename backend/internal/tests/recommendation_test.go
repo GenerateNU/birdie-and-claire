@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"birdie-and-claire/internal/auth"
 	"birdie-and-claire/internal/config"
 	"birdie-and-claire/internal/errs"
 	"birdie-and-claire/internal/llm"
@@ -108,8 +109,25 @@ func (p *fakeProducts) callsBySlot() map[models.ProductSlot]findSimilarCall {
 	return bySlot
 }
 
+// fakeUsers answers GetByID with user, or with err when it is set, and records the ID it was asked for.
+type fakeUsers struct {
+	repository.UserRepository
+	user models.User
+	err  error
+
+	requestedID uuid.UUID
+}
+
+func (u *fakeUsers) GetByID(_ context.Context, id uuid.UUID) (models.User, error) {
+	u.requestedID = id
+	if u.err != nil {
+		return models.User{}, u.err
+	}
+	return u.user, nil
+}
+
 func newRecommendationService(answer string, emb *fakeEmbedder, products *fakeProducts) services.RecommendationService {
-	return services.NewRecommendationService(&repository.Repository{Product: products}, &llmtest.Fake{Text: answer}, emb)
+	return services.NewRecommendationService(&repository.Repository{Product: products, User: &fakeUsers{}}, &llmtest.Fake{Text: answer}, emb)
 }
 
 func outfitTitles(outfit models.RecommendedOutfit) []string {
@@ -189,7 +207,7 @@ func TestRecommendRejectsABlankSlotPhrase(t *testing.T) {
 		t.Run(blank, func(t *testing.T) {
 			model := &llmtest.Fake{Text: strings.Replace(expandedAllSlots, `"tan sandals"`, blank, 1)}
 			emb := &fakeEmbedder{}
-			service := services.NewRecommendationService(&repository.Repository{Product: &fakeProducts{}}, model, emb)
+			service := services.NewRecommendationService(&repository.Repository{Product: &fakeProducts{}, User: &fakeUsers{}}, model, emb)
 
 			_, err := service.RecommendProducts(context.Background(), summerWedding)
 			if !errors.Is(err, llm.ErrInvalidOutput) {
@@ -301,26 +319,81 @@ func TestRecommendRejectsAnExpansionOverTheLimits(t *testing.T) {
 func TestRecommendSurfacesErrors(t *testing.T) {
 	errEmbed := errors.New("embedder down")
 	errSearch := errors.New("database down")
+	errUserLookup := errors.New("users query failed")
 
 	tests := []struct {
 		name     string
 		answer   string
 		emb      *fakeEmbedder
 		products *fakeProducts
+		users    *fakeUsers
 		want     error
 	}{
-		{name: "invalid model answer", answer: `Sure! A blouse.`, emb: &fakeEmbedder{}, products: &fakeProducts{}, want: llm.ErrInvalidOutput},
-		{name: "embedder", answer: expandedAllSlots, emb: &fakeEmbedder{err: errEmbed}, products: &fakeProducts{}, want: errEmbed},
-		{name: "search", answer: expandedAllSlots, emb: &fakeEmbedder{}, products: &fakeProducts{err: errSearch}, want: errSearch},
+		{name: "invalid model answer", answer: `Sure! A blouse.`, emb: &fakeEmbedder{}, products: &fakeProducts{}, users: &fakeUsers{}, want: llm.ErrInvalidOutput},
+		{name: "embedder", answer: expandedAllSlots, emb: &fakeEmbedder{err: errEmbed}, products: &fakeProducts{}, users: &fakeUsers{}, want: errEmbed},
+		{name: "search", answer: expandedAllSlots, emb: &fakeEmbedder{}, products: &fakeProducts{err: errSearch}, users: &fakeUsers{}, want: errSearch},
+		{name: "user lookup", answer: expandedAllSlots, emb: &fakeEmbedder{}, products: &fakeProducts{}, users: &fakeUsers{err: errUserLookup}, want: errUserLookup},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := newRecommendationService(tt.answer, tt.emb, tt.products).RecommendProducts(context.Background(), summerWedding)
+			repo := &repository.Repository{Product: tt.products, User: tt.users}
+			_, err := services.NewRecommendationService(repo, &llmtest.Fake{Text: tt.answer}, tt.emb).RecommendProducts(context.Background(), summerWedding)
 			if !errors.Is(err, tt.want) {
 				t.Fatalf("err = %v, want %v", err, tt.want)
 			}
 		})
+	}
+}
+
+func TestRecommendWithoutAUsersRowStillReturnsOutfits(t *testing.T) {
+	repo := &repository.Repository{Product: &fakeProducts{}, User: &fakeUsers{err: errs.ErrNotFound}}
+	service := services.NewRecommendationService(repo, &llmtest.Fake{Text: expandedAllSlots}, &fakeEmbedder{})
+
+	got, err := service.RecommendProducts(context.Background(), summerWedding)
+	if err != nil {
+		t.Fatalf("Recommend: %v", err)
+	}
+	if len(got.Outfits) != productsPerSlot {
+		t.Errorf("got %d outfits, want %d", len(got.Outfits), productsPerSlot)
+	}
+}
+
+func TestRecommendSendsTheShoppersStylePreferences(t *testing.T) {
+	var mu sync.Mutex
+	var sentBody []byte
+	gateway := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		mu.Lock()
+		sentBody = body
+		mu.Unlock()
+		content, _ := json.Marshal(expandedAllSlots)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = fmt.Fprintf(w, `{"id":"c1","object":"chat.completion","created":0,"model":"vendor/test-model",`+
+			`"choices":[{"index":0,"message":{"role":"assistant","content":%s},"finish_reason":"stop"}],`+
+			`"usage":{"prompt_tokens":1,"completion_tokens":1,"total_tokens":2}}`, content)
+	}))
+	t.Cleanup(gateway.Close)
+	model := llm.New(context.Background(), config.LLMConfig{APIKey: "test-key", BaseURL: gateway.URL, Model: "vendor/test-model"})
+
+	shopperID := uuid.New()
+	users := &fakeUsers{user: models.User{StylePreferences: &models.StylePreferences{Bottoms: []string{"skirt"}, Shoes: []string{"flats"}}}}
+	repo := &repository.Repository{Product: &fakeProducts{}, User: users}
+	ctx := auth.WithUserID(context.Background(), shopperID)
+	if _, err := services.NewRecommendationService(repo, model, &fakeEmbedder{}).RecommendProducts(ctx, summerWedding); err != nil {
+		t.Fatalf("Recommend: %v", err)
+	}
+
+	if users.requestedID != shopperID {
+		t.Errorf("looked up user %s, want the signed-in shopper %s", users.requestedID, shopperID)
+	}
+	answers, _ := json.Marshal(map[string]string{"occasion": "summer wedding", "saved preferences": "bottoms: skirt; shoes: flats"})
+	// the gateway body carries the prompt as a JSON string, so the answers appear there string-escaped
+	escaped, _ := json.Marshal(string(answers))
+	mu.Lock()
+	defer mu.Unlock()
+	if !bytes.Contains(sentBody, escaped[1:len(escaped)-1]) {
+		t.Errorf("gateway body = %s, want the shopper's picks under the saved preferences key: %s", sentBody, answers)
 	}
 }
 
@@ -329,7 +402,7 @@ func recommendationAPI(t *testing.T, model llm.Client, products *fakeProducts, e
 
 	_, api := humatest.New(t)
 	routers.RecommendationRoutes(api, types.RouteParams{ServiceParams: &types.ServiceParams{
-		Repository: &repository.Repository{Product: products},
+		Repository: &repository.Repository{Product: products, User: &fakeUsers{}},
 		LLM:        model,
 		Embedder:   emb,
 	}})
@@ -503,7 +576,7 @@ func TestRecommendBoundsTheModelCall(t *testing.T) {
 	// mirrors expandAnswersTimeout, which is unexported in services
 	const expandAnswersTimeout = 30 * time.Second
 	model := &deadlineLLM{}
-	service := services.NewRecommendationService(&repository.Repository{Product: &fakeProducts{}}, model, &fakeEmbedder{})
+	service := services.NewRecommendationService(&repository.Repository{Product: &fakeProducts{}, User: &fakeUsers{}}, model, &fakeEmbedder{})
 
 	start := time.Now()
 	if _, err := service.RecommendProducts(context.Background(), summerWedding); err != nil {
