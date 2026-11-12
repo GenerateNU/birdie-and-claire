@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 
 	"birdie-and-claire/internal/errs"
 	"birdie-and-claire/internal/models"
@@ -37,6 +38,9 @@ func (c *OwnedProductController) List(ctx context.Context, input *ListOwnedProdu
 	return &ListOwnedProductsOutput{Body: page}, nil
 }
 
+// Matches the maxItems tag below, which can't name a constant.
+const maxProductIDsPerAdd = 50
+
 type AddOwnedProductsInput struct {
 	Body struct {
 		ProductIDs []uuid.UUID `json:"product_ids" required:"true" nullable:"false" minItems:"1" maxItems:"50" doc:"Catalog products the user owns; ones already owned are skipped"`
@@ -46,6 +50,13 @@ type AddOwnedProductsInput struct {
 var _ huma.Resolver = (*AddOwnedProductsInput)(nil)
 
 func (input *AddOwnedProductsInput) Resolve(huma.Context) []error {
+	// Huma validates one copy of a key repeated in different casing but Go keeps the last, so a list can get past minItems and maxItems.
+	if len(input.Body.ProductIDs) == 0 {
+		return []error{&huma.ErrorDetail{Location: "body.product_ids", Message: "product_ids must not be empty"}}
+	}
+	if len(input.Body.ProductIDs) > maxProductIDsPerAdd {
+		return []error{&huma.ErrorDetail{Location: "body.product_ids", Message: fmt.Sprintf("product_ids must have at most %d items", maxProductIDsPerAdd)}}
+	}
 	if err := checkDuplicateProductIDs(input.Body.ProductIDs); err != nil {
 		return []error{err}
 	}

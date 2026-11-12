@@ -83,7 +83,37 @@ func TestAddPiecesValidatesProductIDs(t *testing.T) {
 	}
 }
 
-// insertTestProductAt pins created_at far in the future, so the product sorts ahead of the catalog.
+// Go keeps the last of a key repeated in different casing, after Huma validated the first.
+func TestAddPiecesProductIDsRepeatedInDifferentCasing(t *testing.T) {
+	quoted := make([]string, 51)
+	for i, id := range newProductIDs(51) {
+		quoted[i] = `"` + id + `"`
+	}
+	tooMany := "[" + strings.Join(quoted, ",") + "]"
+
+	tests := []struct {
+		name     string
+		body     string
+		wantBody string
+	}{
+		{name: "empty list after valid list", body: `{"product_ids": ["` + productIDLower + `"], "PRODUCT_IDS": []}`, wantBody: "product_ids must not be empty"},
+		{name: "51 ids after valid list", body: `{"product_ids": ["` + productIDLower + `"], "PRODUCT_IDS": ` + tooMany + `}`, wantBody: "product_ids must have at most 50 items"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			response := addPiecesProbe(t).Post("/probe", strings.NewReader(test.body))
+			if response.Code != http.StatusUnprocessableEntity {
+				t.Fatalf("status = %d, want %d: %s", response.Code, http.StatusUnprocessableEntity, response.Body)
+			}
+			if !strings.Contains(response.Body.String(), test.wantBody) {
+				t.Fatalf("body = %s, want it to contain %s", response.Body, test.wantBody)
+			}
+		})
+	}
+}
+
+// insertTestProductAt inserts a product with the given created_at, to control where it sorts in the catalog.
 func insertTestProductAt(t *testing.T, db *sql.DB, createdAt time.Time) uuid.UUID {
 	t.Helper()
 
