@@ -10,6 +10,7 @@ import {
   Box,
   Button,
   Checkbox,
+  CodeInput,
   Dialog,
   Divider,
   Empty,
@@ -56,6 +57,7 @@ const sectionTitles = {
   "text-field": "Text field",
   form: "Form",
   "search-field": "Search field",
+  "code-input": "Code input",
   "image-card": "Image card",
   "list-card": "List card",
   spinner: "Spinner",
@@ -88,6 +90,7 @@ const navGroups = [
       "text-field",
       "form",
       "search-field",
+      "code-input",
       "image-card",
       "list-card",
       "spinner",
@@ -228,6 +231,10 @@ export function Playground() {
 
             <Section id="search-field">
               <SearchFieldExamples />
+            </Section>
+
+            <Section id="code-input">
+              <CodeInputExamples />
             </Section>
 
             <Section id="image-card">
@@ -480,6 +487,32 @@ function TextFieldExamples() {
         onValueChange={setValue}
       />
       <TextField label="Disabled" value="Can't edit" onValueChange={() => {}} disabled />
+      <TextField
+        label="Hidden label"
+        hideLabel
+        placeholder="Label is read by screen readers only"
+        value={value}
+        onValueChange={setValue}
+      />
+    </Box>
+  );
+}
+
+function CodeInputExamples() {
+  const [code, setCode] = useState("");
+
+  return (
+    <Box className="flex flex-col gap-md">
+      <CodeInput label="Verification code" length={6} value={code} onValueChange={setCode} />
+      <CodeInput label="Filled" length={6} value="123456" onValueChange={() => {}} />
+      <CodeInput
+        label="Invalid"
+        length={6}
+        value="123456"
+        onValueChange={() => {}}
+        error="Incorrect code entered. Please try again."
+      />
+      <CodeInput label="Disabled" length={6} value="12" onValueChange={() => {}} disabled />
     </Box>
   );
 }

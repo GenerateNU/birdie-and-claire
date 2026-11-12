@@ -16,6 +16,8 @@ export { ListCard } from "@/design-system/components/cards/list-card";
 
 export { OptionCardGroup } from "@/design-system/components/cards/option-card-group";
 
+export { CodeInput } from "@/design-system/components/inputs/code-input";
+
 export { SearchField } from "@/design-system/components/inputs/search-field";
 
 export { TextField } from "@/design-system/components/inputs/text-field";
