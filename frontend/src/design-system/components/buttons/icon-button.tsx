@@ -1,6 +1,6 @@
 import { Button as BaseButton } from "@base-ui/react/button";
 import type { Icon } from "@phosphor-icons/react";
-import type { MouseEventHandler } from "react";
+import type { MouseEventHandler, Ref } from "react";
 import { joinClasses } from "@/design-system/utils/join-classes";
 
 const iconButtonBaseClasses =
@@ -12,6 +12,7 @@ const iconButtonVariantClasses = {
 } as const;
 
 type IconButtonProps = {
+  ref?: Ref<HTMLButtonElement>;
   icon: Icon;
   /** The button's accessible name, since it shows no text. */
   label: string;
@@ -23,6 +24,7 @@ type IconButtonProps = {
 };
 
 export function IconButton({
+  ref,
   icon: ButtonIcon,
   label,
   variant,
@@ -35,6 +37,7 @@ export function IconButton({
 
   return (
     <BaseButton
+      ref={ref}
       type="button"
       onClick={onClick}
       disabled={disabled}

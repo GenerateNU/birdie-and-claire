@@ -1,4 +1,12 @@
-import { CaretLeft, CaretRight, Plus, ShareNetwork } from "@phosphor-icons/react";
+import {
+  ArrowRightIcon,
+  CaretLeftIcon,
+  CaretRightIcon,
+  MagnifyingGlassIcon,
+  PlusIcon,
+  ShareNetworkIcon,
+  UserIcon,
+} from "@phosphor-icons/react";
 import { useForm } from "@tanstack/react-form";
 import { useState, type ReactNode } from "react";
 import { z } from "zod";
@@ -15,6 +23,7 @@ import {
   Divider,
   Empty,
   Form,
+  Header,
   IconButton,
   OutlineColor,
   ErrorState,
@@ -47,11 +56,20 @@ const buttonVariants = ["primary", "secondary"] as const;
 
 const buttonSizes = ["sm", "md", "lg"] as const;
 
-const textVariants = ["heading", "subheading", "body", "caption"] as const;
+// The serif variants are named for their role, so their type-scale keys differ.
+const textSamples = [
+  { variant: "display", scales: ["display-sm", "display-lg"] },
+  { variant: "headline", scales: ["display-sm", "display-md"] },
+  { variant: "heading", scales: ["heading"] },
+  { variant: "subheading", scales: ["subheading"] },
+  { variant: "body", scales: ["body"] },
+  { variant: "caption", scales: ["caption"] },
+] as const;
 
 const sectionTitles = {
   buttons: "Buttons",
   link: "Link",
+  header: "Header",
   checkbox: "Checkbox",
   toggle: "Toggle",
   "text-field": "Text field",
@@ -74,6 +92,7 @@ const sectionTitles = {
   toast: "Toast",
   text: "Text",
   "semantic-colors": "Semantic colors",
+  "focus-ring": "Focus ring",
 } as const;
 
 type SectionId = keyof typeof sectionTitles;
@@ -85,6 +104,7 @@ const navGroups = [
     sections: [
       "buttons",
       "link",
+      "header",
       "checkbox",
       "toggle",
       "text-field",
@@ -108,7 +128,7 @@ const navGroups = [
       "text",
     ],
   },
-  { title: "Tokens", hash: "tokens", sections: ["semantic-colors"] },
+  { title: "Tokens", hash: "tokens", sections: ["semantic-colors", "focus-ring"] },
 ] as const;
 
 const radioOptions = [
@@ -156,7 +176,7 @@ export function Playground() {
 
         <main className="flex min-w-0 flex-1 flex-col gap-xl">
           <Box>
-            <Link variant="text" to="/dev" leadingIcon={CaretLeft}>
+            <Link variant="text" to="/dev" leadingIcon={CaretLeftIcon}>
               Dev
             </Link>
             <Text variant="heading" className="mt-md">
@@ -186,14 +206,14 @@ export function Playground() {
                 ))}
               </Box>
               <Box className="flex items-center gap-md">
-                <Button label="Back" variant="secondary" leadingIcon={CaretLeft} />
-                <Button label="Next" trailingIcon={CaretRight} />
+                <Button label="Back" variant="secondary" leadingIcon={CaretLeftIcon} />
+                <Button label="Next" trailingIcon={CaretRightIcon} />
               </Box>
               <Label>leadingIcon · trailingIcon</Label>
               <Box className="flex items-center gap-md">
-                <IconButton icon={Plus} label="Add" variant="outlined" />
-                <IconButton icon={ShareNetwork} label="Share" variant="plain" />
-                <IconButton icon={Plus} label="Add" variant="outlined" disabled />
+                <IconButton icon={PlusIcon} label="Add" variant="outlined" />
+                <IconButton icon={ShareNetworkIcon} label="Share" variant="plain" />
+                <IconButton icon={PlusIcon} label="Add" variant="outlined" disabled />
               </Box>
               <Label>IconButton · outlined · plain · disabled</Label>
             </Section>
@@ -204,13 +224,30 @@ export function Playground() {
                 <Link variant="text" to="/playground">
                   Text
                 </Link>
-                <Link variant="text" to="/playground" leadingIcon={CaretLeft}>
+                <Link variant="text" to="/playground" leadingIcon={CaretLeftIcon}>
                   Leading icon
                 </Link>
-                <Link variant="text" to="/playground" trailingIcon={CaretRight}>
+                <Link variant="text" to="/playground" trailingIcon={CaretRightIcon}>
                   Trailing icon
                 </Link>
               </Box>
+              <Box className="flex flex-wrap items-center gap-md">
+                {buttonVariants.map((variant) =>
+                  buttonSizes.map((size) => (
+                    <Link key={`${variant}-${size}`} variant={variant} size={size} to="/playground">
+                      Link
+                    </Link>
+                  )),
+                )}
+                <Link variant="secondary" to="/playground" trailingIcon={ArrowRightIcon}>
+                  Trailing icon
+                </Link>
+              </Box>
+              <Label>primary sm · md · lg · secondary sm · md · lg · trailing icon</Label>
+            </Section>
+
+            <Section id="header">
+              <HeaderExamples />
             </Section>
 
             <Section id="checkbox">
@@ -318,18 +355,14 @@ export function Playground() {
             </Section>
 
             <Section id="text">
-              {textVariants.map((variant) => {
-                const [fontSize, { lineHeight, fontWeight }] = TypeScale[variant];
-
-                return (
-                  <Box key={variant} className="flex flex-col gap-xxs">
-                    <Text variant={variant}>The quick brown fox</Text>
-                    <Label>
-                      text-{variant} · {fontSize}/{lineHeight} · {fontWeight}
-                    </Label>
-                  </Box>
-                );
-              })}
+              {textSamples.map(({ variant, scales }) => (
+                <Box key={variant} className="flex flex-col gap-xxs">
+                  <Text variant={variant}>The quick brown fox</Text>
+                  <Label>
+                    {variant} · {scales.map(scaleLabel).join(" · lg:")}
+                  </Label>
+                </Box>
+              ))}
             </Section>
           </Box>
 
@@ -354,11 +387,33 @@ export function Playground() {
                 </Box>
               ))}
             </Section>
+
+            <Section id="focus-ring">
+              <Box className="flex flex-col gap-xs">
+                <Box className="flex gap-md bg-primary p-lg">
+                  <Button
+                    label="focus-inverse"
+                    variant="secondary"
+                    className="focus-visible:outline-focus-inverse"
+                  />
+                  <Button label="Default ring" variant="secondary" />
+                </Box>
+                <Label>
+                  Tab into the buttons. On a dark surface, add focus-visible:outline-focus-inverse.
+                </Label>
+              </Box>
+            </Section>
           </Box>
         </main>
       </Box>
     </Box>
   );
+}
+
+function scaleLabel(scale: keyof typeof TypeScale) {
+  const [fontSize, { lineHeight, fontWeight }] = TypeScale[scale];
+
+  return `text-${scale} · ${fontSize}/${lineHeight} · ${fontWeight}`;
 }
 
 type SectionProps = {
@@ -393,6 +448,29 @@ function ButtonRow({ variant }: ButtonRowProps) {
       <Button label="Button" variant={variant} disabled />
       <Button label="Button" variant={variant} loading />
     </>
+  );
+}
+
+function HeaderExamples() {
+  const [featuresActive, setFeaturesActive] = useState(false);
+
+  return (
+    <Box className="flex flex-col gap-xs bg-background">
+      <Header
+        onLogoClick={() => setFeaturesActive(false)}
+        items={[
+          { label: "My profile", icon: UserIcon, to: "/playground" },
+          {
+            label: "Features",
+            icon: MagnifyingGlassIcon,
+            onClick: () => setFeaturesActive(true),
+            active: featuresActive,
+          },
+          { label: "Get started", icon: ArrowRightIcon, to: "/playground" },
+        ]}
+      />
+      <Label>Features is a view button and underlines when active. The logo resets it.</Label>
+    </Box>
   );
 }
 

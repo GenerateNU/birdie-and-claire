@@ -32,6 +32,8 @@ export { Dialog } from "@/design-system/components/dialog/dialog";
 
 export { Form } from "@/design-system/components/form/form";
 
+export { Header } from "@/design-system/components/header/header";
+
 export { Empty } from "@/design-system/components/status/empty";
 
 export { ErrorState } from "@/design-system/components/status/error";
