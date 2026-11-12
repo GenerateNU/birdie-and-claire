@@ -20,17 +20,14 @@ import type { Product } from "@/features/outfits/outfit-items";
 
 type SwapPanelProps = {
   outfitId: string;
-  /** The saved outfit's products, where each spot's original item is still found after a swap. */
-  savedProducts: Product[];
   items: DraftItem[];
   originId: string | null;
   onSwap: (originId: string, product: Product) => void;
-  /** Opens a spot from the details list, as selecting its item on the canvas does. */
   onPickSpot: (originId: string) => void;
   onBack: () => void;
 };
 
-type SpotEditorProps = Omit<SwapPanelProps, "originId" | "onPickSpot"> & { originId: string };
+type SpotSwapPanelProps = Omit<SwapPanelProps, "originId" | "onPickSpot"> & { originId: string };
 
 type SuggestedTilesProps = {
   outfitId: string;
@@ -77,25 +74,26 @@ export function SwapPanel({ originId, onPickSpot, ...spotProps }: SwapPanelProps
   }
 
   // Keyed by spot, so a new spot starts on the Suggested tab.
-  return <SpotEditor key={originId} originId={originId} {...spotProps} />;
+  return <SpotSwapPanel key={originId} originId={originId} {...spotProps} />;
 }
 
-function SpotEditor({ outfitId, savedProducts, items, originId, onSwap, onBack }: SpotEditorProps) {
+function SpotSwapPanel({ outfitId, items, originId, onSwap, onBack }: SpotSwapPanelProps) {
   const [tab, setTab] = useState<SwapTab>("suggested");
 
-  const current = items.find((item) => item.originId === originId);
-  const original = savedProducts.find((product) => product.id === originId);
+  const current = items.find((item) => item.original.id === originId);
 
-  // The selection hook drops a spot once it leaves the draft, and every origin is a saved product.
-  if (current === undefined || original === undefined) {
-    throw new Error(`swap panel: no spot ${originId} in the draft or the saved outfit`);
+  // The selection hook drops a spot once it leaves the draft.
+  if (current === undefined) {
+    throw new Error(`swap panel: no spot ${originId} in the draft`);
   }
+
+  const { original } = current;
 
   const { slot } = current.product;
   const otherSpotProductIds = new Set<string>();
 
   for (const item of items) {
-    if (item.originId !== originId) {
+    if (item.original.id !== originId) {
       otherSpotProductIds.add(item.product.id);
     }
   }

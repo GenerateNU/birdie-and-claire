@@ -1,11 +1,9 @@
 import { Button as BaseButton } from "@base-ui/react/button";
 
-// Matches Link's text variant, for an action that isn't a navigation.
-const textButtonClasses = "text-body text-secondary underline hover:text-primary focus-ring";
+import { textLinkClasses } from "@/design-system/components/links/text-link-classes";
 
 type TextButtonProps = {
   label: string;
-  /** Replaces the visible label as the accessible name, when the label alone is ambiguous. */
   accessibleLabel?: string;
   onClick: () => void;
 };
@@ -16,7 +14,7 @@ export function TextButton({ label, accessibleLabel, onClick }: TextButtonProps)
       type="button"
       onClick={onClick}
       aria-label={accessibleLabel}
-      className={textButtonClasses}
+      className={textLinkClasses}
     >
       {label}
     </BaseButton>

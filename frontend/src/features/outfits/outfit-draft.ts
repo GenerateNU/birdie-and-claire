@@ -2,8 +2,11 @@ import { useReducer } from "react";
 
 import type { Product } from "@/features/outfits/outfit-items";
 
-/** A product in the draft, and the product that held its spot when the editor loaded. */
-export type DraftItem = { product: Product; originId: string };
+/**
+ * A product in the draft. `original` is the product that held its spot when the editor loaded; its
+ * id identifies the spot through swaps.
+ */
+export type DraftItem = { product: Product; original: Product };
 
 type DraftState = {
   baseline: Product[];
@@ -20,8 +23,7 @@ type DraftAction =
   | { type: "reset"; baseline: Product[] };
 
 export function initialDraft(baseline: Product[]): DraftState {
-  const byTitle = [...baseline].sort((a, b) => a.title.localeCompare(b.title));
-  const items = byTitle.map((product) => ({ product, originId: product.id }));
+  const items = baseline.map((product) => ({ product, original: product }));
 
   return { baseline, items, past: [], future: [] };
 }
@@ -33,7 +35,7 @@ function edit(state: DraftState, items: DraftItem[]): DraftState {
 export function draftReducer(state: DraftState, action: DraftAction): DraftState {
   switch (action.type) {
     case "swap": {
-      const index = state.items.findIndex((item) => item.originId === action.originId);
+      const index = state.items.findIndex((item) => item.original.id === action.originId);
       const alreadyInDraft = state.items.some((item) => item.product.id === action.product.id);
 
       if (index === -1 || alreadyInDraft) {
@@ -41,14 +43,14 @@ export function draftReducer(state: DraftState, action: DraftAction): DraftState
       }
 
       const items = state.items.map((item, itemIndex) =>
-        itemIndex === index ? { product: action.product, originId: action.originId } : item,
+        itemIndex === index ? { product: action.product, original: item.original } : item,
       );
 
       return edit(state, items);
     }
 
     case "remove": {
-      const items = state.items.filter((item) => item.originId !== action.originId);
+      const items = state.items.filter((item) => item.original.id !== action.originId);
 
       if (items.length === state.items.length || items.length === 0) {
         return state;

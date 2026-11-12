@@ -16,7 +16,6 @@ type SearchFieldProps = {
   onClick?: () => void;
   maxLength?: number;
   inactive?: boolean;
-  /** Drawn inside the field, before the text. With one, className goes on the field's wrapper. */
   leadingIcon?: Icon;
   className?: string;
 };

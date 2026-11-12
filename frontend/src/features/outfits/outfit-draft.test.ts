@@ -20,27 +20,27 @@ function productIds(state: ReturnType<typeof initialDraft>) {
 }
 
 describe("initialDraft", () => {
-  test("sorts by title and gives each item its own id as origin", () => {
+  test("keeps the API order and makes each item its own original", () => {
     const state = initialDraft([shirt, jeans, boots]);
 
-    expect(productIds(state)).toEqual(["boots", "jeans", "shirt"]);
-    expect(state.items.map((item) => item.originId)).toEqual(["boots", "jeans", "shirt"]);
+    expect(productIds(state)).toEqual(["shirt", "jeans", "boots"]);
+    expect(state.items.map((item) => item.original)).toEqual([shirt, jeans, boots]);
   });
 });
 
 describe("swap", () => {
-  test("replaces the item in its spot and keeps its origin", () => {
+  test("replaces the item in its spot and keeps its original", () => {
     const state = draftReducer(initialDraft([shirt, jeans]), {
       type: "swap",
       originId: "shirt",
       product: sweater,
     });
 
-    expect(state.items[1]).toEqual({ product: sweater, originId: "shirt" });
-    expect(productIds(state)).toEqual(["jeans", "sweater"]);
+    expect(state.items[0]).toEqual({ product: sweater, original: shirt });
+    expect(productIds(state)).toEqual(["sweater", "jeans"]);
   });
 
-  test("keeps the origin across a second swap of the same spot", () => {
+  test("keeps the original across a second swap of the same spot", () => {
     const once = draftReducer(initialDraft([shirt, jeans]), {
       type: "swap",
       originId: "shirt",
@@ -49,7 +49,7 @@ describe("swap", () => {
 
     const twice = draftReducer(once, { type: "swap", originId: "shirt", product: boots });
 
-    expect(twice.items[1]).toEqual({ product: boots, originId: "shirt" });
+    expect(twice.items[0]).toEqual({ product: boots, original: shirt });
   });
 
   test("ignores a product that is already in the draft", () => {
@@ -121,7 +121,7 @@ describe("reset", () => {
 
     const reset = draftReducer(swapped, { type: "reset", baseline: [sweater, jeans] });
 
-    expect(productIds(reset)).toEqual(["jeans", "sweater"]);
+    expect(productIds(reset)).toEqual(["sweater", "jeans"]);
     expect(reset.past).toEqual([]);
     expect(reset.future).toEqual([]);
   });

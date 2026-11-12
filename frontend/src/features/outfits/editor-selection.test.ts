@@ -39,22 +39,32 @@ describe("afterSwap", () => {
   });
 });
 
-describe("keepSpots", () => {
+describe("dropRemovedSpots", () => {
   test("clears both when the panel's spot is gone", () => {
-    const state = selectionReducer(onShirt, { type: "keepSpots", originIds: ["jeans"] });
+    const state = selectionReducer(onShirt, {
+      type: "dropRemovedSpots",
+      remainingOriginIds: ["jeans"],
+    });
 
     expect(state).toEqual(nothing);
   });
 
   test("clears both when the panel's spot is gone and nothing is selected", () => {
     const panelOnly = { selectedOriginId: null, panelOriginId: "shirt" };
-    const state = selectionReducer(panelOnly, { type: "keepSpots", originIds: ["jeans"] });
+
+    const state = selectionReducer(panelOnly, {
+      type: "dropRemovedSpots",
+      remainingOriginIds: ["jeans"],
+    });
 
     expect(state).toEqual(nothing);
   });
 
   test("returns the same state while every spot remains", () => {
-    const state = selectionReducer(onShirt, { type: "keepSpots", originIds: ["shirt", "jeans"] });
+    const state = selectionReducer(onShirt, {
+      type: "dropRemovedSpots",
+      remainingOriginIds: ["shirt", "jeans"],
+    });
 
     expect(state).toBe(onShirt);
   });

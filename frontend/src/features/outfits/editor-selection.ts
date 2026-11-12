@@ -10,7 +10,7 @@ type SelectionState = {
 type SelectionAction =
   | { type: "select"; originId: string | null }
   | { type: "afterSwap" }
-  | { type: "keepSpots"; originIds: string[] };
+  | { type: "dropRemovedSpots"; remainingOriginIds: string[] };
 
 const noSelection: SelectionState = { selectedOriginId: null, panelOriginId: null };
 
@@ -26,19 +26,12 @@ export function selectionReducer(state: SelectionState, action: SelectionAction)
     case "afterSwap":
       return { ...state, selectedOriginId: null };
 
-    case "keepSpots": {
+    case "dropRemovedSpots": {
       const panelGone =
-        state.panelOriginId !== null && !action.originIds.includes(state.panelOriginId);
-
-      const selectionGone =
-        state.selectedOriginId !== null && !action.originIds.includes(state.selectedOriginId);
+        state.panelOriginId !== null && !action.remainingOriginIds.includes(state.panelOriginId);
 
       if (panelGone) {
         return noSelection;
-      }
-
-      if (selectionGone) {
-        return { ...state, selectedOriginId: null };
       }
 
       return state;
@@ -52,13 +45,13 @@ export function selectionReducer(state: SelectionState, action: SelectionAction)
  */
 export function useEditorSelection(items: DraftItem[]) {
   const [state, dispatch] = useReducer(selectionReducer, noSelection);
-  const originIds = items.map((item) => item.originId);
-  const pruned = selectionReducer(state, { type: "keepSpots", originIds });
+  const remainingOriginIds = items.map((item) => item.original.id);
+  const pruned = selectionReducer(state, { type: "dropRemovedSpots", remainingOriginIds });
 
   // A removed spot leaves nothing to select or edit. Dispatching during render applies it before
   // anything stale paints.
   if (pruned !== state) {
-    dispatch({ type: "keepSpots", originIds });
+    dispatch({ type: "dropRemovedSpots", remainingOriginIds });
   }
 
   return {

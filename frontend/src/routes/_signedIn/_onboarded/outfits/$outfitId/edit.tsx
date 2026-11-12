@@ -135,7 +135,7 @@ function OutfitEditor({ outfitId, outfit }: OutfitEditorProps) {
             products={draft.items.map((item) => item.product)}
             editing={{
               originIdByProductId: new Map(
-                draft.items.map((item) => [item.product.id, item.originId]),
+                draft.items.map((item) => [item.product.id, item.original.id]),
               ),
               selectedOriginId: selection.selectedOriginId,
               onSelect: selection.select,
@@ -162,7 +162,6 @@ function OutfitEditor({ outfitId, outfit }: OutfitEditorProps) {
         <Box className="h-2/5 lg:h-auto lg:w-content-md lg:shrink-0">
           <SwapPanel
             outfitId={outfitId}
-            savedProducts={outfit.products}
             items={draft.items}
             originId={selection.panelOriginId}
             onSwap={swap}

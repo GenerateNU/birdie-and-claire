@@ -1,4 +1,3 @@
-import type { ProductResponse } from "@/api/generated/types.gen";
 import { Box, Divider, Empty, Text, TextButton } from "@/design-system";
 import type { DraftItem } from "@/features/outfits/outfit-draft";
 
@@ -11,35 +10,25 @@ type ItemTileProps = {
   imageUrl: string | null;
 };
 
-// The draft starts in title order, so the list sorts its own items head to toe.
-const SLOTS_HEAD_TO_TOE: ProductResponse["slot"][] = ["top", "bottom", "shoe", "accessory"];
-
-function listPosition(item: DraftItem): number {
-  return SLOTS_HEAD_TO_TOE.indexOf(item.product.slot);
-}
-
 export function OutfitDetails({ items, onSwapItem }: OutfitDetailsProps) {
-  // sort is stable, so items that share a slot keep the draft's order.
-  const sortedItems = [...items].sort((a, b) => listPosition(a) - listPosition(b));
-
   return (
     <section className="flex h-full flex-col border">
       <header className="px-xxl py-xs">
         <Text variant="heading">Outfit Details</Text>
       </header>
       <Divider />
-      {sortedItems.length === 0 ? (
+      {items.length === 0 ? (
         <Empty title="This outfit has no items yet" className="px-xxl py-lg" />
       ) : (
         <ul className="flex min-h-0 flex-1 flex-col gap-md overflow-y-auto px-xxl py-lg">
-          {sortedItems.map(({ product, originId }) => (
-            <li key={originId} className="flex items-center gap-md border p-md">
+          {items.map(({ product, original }) => (
+            <li key={original.id} className="flex items-center gap-md border p-md">
               <Box className="flex shrink-0 flex-col items-center gap-xxs">
                 <ItemTile imageUrl={product.image_url} />
                 <TextButton
                   label="swap item"
                   accessibleLabel={`Swap item: ${product.title}`}
-                  onClick={() => onSwapItem(originId)}
+                  onClick={() => onSwapItem(original.id)}
                 />
               </Box>
               <Text variant="subheading">{product.title}</Text>

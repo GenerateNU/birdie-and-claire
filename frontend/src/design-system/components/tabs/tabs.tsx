@@ -21,7 +21,6 @@ const appearanceClasses = {
 type TabOption<T extends string> = {
   label: string;
   value: T;
-  /** Drawn above the label. Only the underline appearance shows it. */
   icon?: Icon;
 };
 
