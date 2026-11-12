@@ -12,11 +12,10 @@ const nameSchema = z.object({
 type SaveOutfitDialogProps = {
   open: boolean;
   savedName: string;
-  /** Whether the draft's products differ from the saved outfit. */
   productsChanged: boolean;
   saving: boolean;
   onCancel: () => void;
-  /** Called with the trimmed name once it passes validation. */
+  /** MUST be called with the trimmed name, once it has passed validation. */
   onSave: (name: string) => void;
 };
 
@@ -31,7 +30,16 @@ export function SaveOutfitDialog({
   const form = useForm({
     defaultValues: { name: savedName },
     validators: { onSubmit: nameSchema },
-    onSubmit: ({ value }) => onSave(value.name.trim()),
+    onSubmit: ({ value }) => {
+      const name = value.name.trim();
+
+      // Enter in the field submits the form even while the Save button is disabled.
+      if (!productsChanged && name === savedName) {
+        return;
+      }
+
+      onSave(name);
+    },
   });
 
   const typedName = useStore(form.store, (state) => state.values.name);

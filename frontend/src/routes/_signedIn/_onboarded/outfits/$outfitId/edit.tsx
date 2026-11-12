@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState, type ReactNode } from "react";
+import { useState, type ComponentProps, type ReactNode } from "react";
 
 import {
   getOutfitQueryKey,
@@ -25,9 +25,13 @@ export const Route = createFileRoute("/_signedIn/_onboarded/outfits/$outfitId/ed
 });
 
 type EditorFrameProps = {
-  onSave?: () => void;
+  onSave: () => void;
+  saveDisabled: boolean;
   children: ReactNode;
 };
+
+// Save stays disabled until the outfit has loaded, so the frames around the other states pass this.
+function ignoreSave() {}
 
 function OutfitEditorPage() {
   const { outfitId } = Route.useParams();
@@ -36,7 +40,7 @@ function OutfitEditorPage() {
 
   if (outfitQuery.isPending) {
     return (
-      <EditorFrame>
+      <EditorFrame onSave={ignoreSave} saveDisabled>
         <Spinner className="m-lg" />
       </EditorFrame>
     );
@@ -44,7 +48,7 @@ function OutfitEditorPage() {
 
   if (isOutfitNotFound(outfitQuery.error)) {
     return (
-      <EditorFrame>
+      <EditorFrame onSave={ignoreSave} saveDisabled>
         <Empty title="Outfit not found" className="p-lg" />
       </EditorFrame>
     );
@@ -53,7 +57,7 @@ function OutfitEditorPage() {
   // Checked rather than isError, so a failed background refetch keeps the outfit on screen.
   if (outfitQuery.data === undefined) {
     return (
-      <EditorFrame>
+      <EditorFrame onSave={ignoreSave} saveDisabled>
         <ErrorState
           message="Couldn't load this outfit."
           onRetry={() => void outfitQuery.refetch()}
@@ -78,22 +82,27 @@ function OutfitEditor({ outfitId, outfit }: OutfitEditorProps) {
 
   const draft = useOutfitDraft(outfit);
   const selection = useEditorSelection(draft.items);
-  const [naming, setNaming] = useState(false);
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const leave = useLeaveGuard(draft.isDirty);
 
   const saveMutation = useMutation({
     ...updateOutfitMutation(),
+    // Offline, the default mode pauses the save forever while the editor is inert; this fails fast.
+    networkMode: "always",
     onSuccess: (saved) => {
-      // The guard is off while the mutation is pending, and resetting the draft keeps it off after.
       queryClient.setQueryData(getOutfitQueryKey({ path: { id: outfitId } }), saved);
       void queryClient.invalidateQueries({ queryKey: listOutfitsInfiniteQueryKey() });
+      // The draft resets only on the next render, so the guard still sees unsaved edits here, and a
+      // navigation held during the save is answered with stay before the move below.
+      leave.allowLeaving();
+      leave.stay();
       void navigate({ to: "/outfits/$outfitId", params: { outfitId }, replace: true });
     },
     onError: () => toast.show({ message: "Couldn't save your outfit. Try again." }),
   });
 
-  const leave = useLeaveGuard(draft.isDirty && !saveMutation.isPending);
+  const saving = saveMutation.isPending;
 
-  // The API rejects a body with neither field, so an unchanged outfit skips the request.
   function save(name: string) {
     const body: UpdateOutfitInputBody = {};
 
@@ -103,12 +112,6 @@ function OutfitEditor({ outfitId, outfit }: OutfitEditorProps) {
 
     if (draft.isDirty) {
       body.product_ids = draft.items.map((item) => item.product.id);
-    }
-
-    if (body.name === undefined && body.product_ids === undefined) {
-      void navigate({ to: "/outfits/$outfitId", params: { outfitId }, replace: true });
-
-      return;
     }
 
     saveMutation.mutate({ path: { id: outfitId }, body });
@@ -125,11 +128,26 @@ function OutfitEditor({ outfitId, outfit }: OutfitEditorProps) {
     selection.afterSwap();
   }
 
+  // Disabled while saving, so a navigation held mid-save can't leave or open a second save.
+  const leaveDialogActions: ComponentProps<typeof Dialog>["actions"] = [
+    { label: "Exit", variant: "secondary", onClick: leave.exit, disabled: saving },
+    {
+      label: "Save",
+      variant: "primary",
+      onClick: () => {
+        leave.stay();
+        setSaveDialogOpen(true);
+      },
+      disabled: saving,
+    },
+  ];
+
   return (
-    <EditorFrame onSave={() => setNaming(true)}>
+    <EditorFrame onSave={() => setSaveDialogOpen(true)} saveDisabled={false}>
       {/* Side by side from lg up. Narrower than that, the 576px details panel would squeeze the
           canvas to nothing, so the panels stack. */}
-      <main className="flex min-h-0 flex-1 flex-col gap-xs p-xs pt-md lg:flex-row">
+      {/* Inert while saving: edits made after the body is sent would be lost when it resets. */}
+      <main inert={saving} className="flex min-h-0 flex-1 flex-col gap-xs p-xs pt-md lg:flex-row">
         <Box className="min-h-0 min-w-0 flex-1">
           <OutfitCanvas
             products={draft.items.map((item) => item.product)}
@@ -142,7 +160,6 @@ function OutfitEditor({ outfitId, outfit }: OutfitEditorProps) {
               onRemove: remove,
             }}
           >
-            {/* Help content comes with outfit editing. */}
             <Button
               label="Help"
               variant="secondary"
@@ -171,11 +188,11 @@ function OutfitEditor({ outfitId, outfit }: OutfitEditorProps) {
         </Box>
       </main>
       <SaveOutfitDialog
-        open={naming}
+        open={saveDialogOpen}
         savedName={outfit.name}
         productsChanged={draft.isDirty}
-        saving={saveMutation.isPending}
-        onCancel={() => setNaming(false)}
+        saving={saving}
+        onCancel={() => setSaveDialogOpen(false)}
         onSave={save}
       />
       <Dialog
@@ -183,27 +200,17 @@ function OutfitEditor({ outfitId, outfit }: OutfitEditorProps) {
         onClose={leave.stay}
         title="You have unsaved outfit edits"
         message="Save your edits before leaving."
-        actions={[
-          { label: "Exit", variant: "secondary", onClick: leave.exit },
-          {
-            label: "Save",
-            variant: "primary",
-            onClick: () => {
-              leave.stay();
-              setNaming(true);
-            },
-          },
-        ]}
+        actions={leaveDialogActions}
       />
     </EditorFrame>
   );
 }
 
 /** Fills the window, so the panels under the header take the height that's left. */
-function EditorFrame({ onSave, children }: EditorFrameProps) {
+function EditorFrame({ onSave, saveDisabled, children }: EditorFrameProps) {
   return (
     <Box className="flex h-screen flex-col">
-      <EditorHeader onSave={onSave} />
+      <EditorHeader onSave={onSave} saveDisabled={saveDisabled} />
       {children}
     </Box>
   );
