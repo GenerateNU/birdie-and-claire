@@ -61,6 +61,25 @@ components:
       required:
         - name
       type: object
+    CurrentUserResponse:
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        profile_picture_url:
+          type:
+            - string
+            - "null"
+        style_preferences:
+          $ref: "#/components/schemas/StylePreferences"
+          description: Missing until the user finishes the onboarding preference steps
+      required:
+        - id
+        - name
+        - profile_picture_url
+      type: object
     ErrorDetail:
       additionalProperties: false
       properties:
@@ -152,56 +171,6 @@ components:
         - created_at
         - updated_at
       type: object
-    OutfitProduct:
-      additionalProperties: false
-      properties:
-        created_at:
-          format: date-time
-          type: string
-        handle:
-          type: string
-        id:
-          type: string
-        image_url:
-          description: URL of the product's lowest-position image, or null when it has none
-          type:
-            - string
-            - "null"
-        product_type:
-          type:
-            - string
-            - "null"
-        shopify_id:
-          format: int64
-          type: integer
-        slot:
-          enum:
-            - top
-            - bottom
-            - accessory
-            - shoe
-          type: string
-        tags:
-          items:
-            type: string
-          type: array
-        title:
-          type: string
-        updated_at:
-          format: date-time
-          type: string
-      required:
-        - image_url
-        - id
-        - shopify_id
-        - handle
-        - title
-        - product_type
-        - slot
-        - tags
-        - created_at
-        - updated_at
-      type: object
     OutfitResponse:
       additionalProperties: false
       properties:
@@ -214,7 +183,7 @@ components:
           type: string
         products:
           items:
-            $ref: "#/components/schemas/OutfitProduct"
+            $ref: "#/components/schemas/ProductResponse"
           type: array
         shared_at:
           description: When the outfit was shared by link, or null while it is private
@@ -235,6 +204,20 @@ components:
         - shared_at
         - created_at
         - updated_at
+      type: object
+    OutfitSuggestionsResponse:
+      additionalProperties: false
+      properties:
+        suggestions:
+          additionalProperties:
+            items:
+              $ref: "#/components/schemas/ProductResponse"
+            type:
+              - array
+              - "null"
+          type: object
+      required:
+        - suggestions
       type: object
     PageOutfit:
       additionalProperties: false
@@ -294,112 +277,7 @@ components:
         - created_at
         - updated_at
       type: object
-    ProfilePictureUploadResponse:
-      additionalProperties: false
-      properties:
-        headers:
-          additionalProperties:
-            type: string
-          type: object
-        key:
-          type: string
-        method:
-          type: string
-        url:
-          type: string
-      required:
-        - url
-        - method
-        - headers
-        - key
-      type: object
-    ReactionCounts:
-      additionalProperties: false
-      properties:
-        dislike:
-          format: int64
-          type: integer
-        like:
-          format: int64
-          type: integer
-        save:
-          format: int64
-          type: integer
-      required:
-        - like
-        - dislike
-        - save
-      type: object
-    RecommendationExpandedQuery:
-      additionalProperties: false
-      properties:
-        exclude_tags:
-          description: Products carrying any of these tags were left out
-          items:
-            type: string
-          type: array
-        nice_tags:
-          description: Each matching tag moved a product up the ranking
-          items:
-            type: string
-          type: array
-        slots:
-          $ref: "#/components/schemas/RecommendationExpandedSlots"
-          description: The search phrase used for each slot; an empty phrase means the slot was not searched
-      required:
-        - slots
-        - exclude_tags
-        - nice_tags
-      type: object
-    RecommendationExpandedSlots:
-      additionalProperties: false
-      properties:
-        accessory:
-          type: string
-        bottom:
-          type: string
-        top:
-          type: string
-      required:
-        - top
-        - bottom
-        - accessory
-      type: object
-    RecommendationRequest:
-      additionalProperties: false
-      properties:
-        query:
-          description: What the shopper is looking for, such as "summer wedding guest"
-          maxLength: 200
-          minLength: 1
-          type: string
-      required:
-        - query
-      type: object
-    RecommendationResponse:
-      additionalProperties: false
-      properties:
-        accessory:
-          items:
-            $ref: "#/components/schemas/RecommendedProduct"
-          type: array
-        bottom:
-          items:
-            $ref: "#/components/schemas/RecommendedProduct"
-          type: array
-        expanded_query:
-          $ref: "#/components/schemas/RecommendationExpandedQuery"
-        top:
-          items:
-            $ref: "#/components/schemas/RecommendedProduct"
-          type: array
-      required:
-        - expanded_query
-        - top
-        - bottom
-        - accessory
-      type: object
-    RecommendedProduct:
+    ProductResponse:
       additionalProperties: false
       properties:
         created_at:
@@ -449,6 +327,170 @@ components:
         - created_at
         - updated_at
       type: object
+    ProfilePictureUploadResponse:
+      additionalProperties: false
+      properties:
+        headers:
+          additionalProperties:
+            type: string
+          type: object
+        key:
+          type: string
+        method:
+          type: string
+        url:
+          type: string
+      required:
+        - url
+        - method
+        - headers
+        - key
+      type: object
+    ReactionCounts:
+      additionalProperties: false
+      properties:
+        dislike:
+          format: int64
+          type: integer
+        like:
+          format: int64
+          type: integer
+        save:
+          format: int64
+          type: integer
+      required:
+        - like
+        - dislike
+        - save
+      type: object
+    RecommendationDetail:
+      additionalProperties: false
+      properties:
+        key:
+          enum:
+            - weather
+            - vibe
+            - custom
+          type: string
+        value:
+          anyOf:
+            - $ref: "#/components/schemas/RecommendationWeather"
+            - $ref: "#/components/schemas/RecommendationVibe"
+            - type: string
+          description: For weather, one of RecommendationWeather; for vibe, one of RecommendationVibe; free text for custom. The server checks the value against its key
+          maxLength: 200
+          minLength: 1
+          type: string
+      required:
+        - key
+        - value
+      type: object
+    RecommendationExpandedAnswers:
+      additionalProperties: false
+      properties:
+        exclude_tags:
+          description: Products carrying any of these tags were left out
+          items:
+            type: string
+          type: array
+        nice_tags:
+          description: Each matching tag moved a product up the ranking
+          items:
+            type: string
+          type: array
+        slots:
+          $ref: "#/components/schemas/RecommendationExpandedSlots"
+          description: The search phrase used for each slot
+      required:
+        - slots
+        - exclude_tags
+        - nice_tags
+      type: object
+    RecommendationExpandedSlots:
+      additionalProperties: false
+      properties:
+        accessory:
+          type: string
+        bottom:
+          type: string
+        shoe:
+          type: string
+        top:
+          type: string
+      required:
+        - top
+        - bottom
+        - accessory
+        - shoe
+      type: object
+    RecommendationRequest:
+      additionalProperties: false
+      properties:
+        details:
+          description: The shopper's other answers, each key at most once
+          items:
+            $ref: "#/components/schemas/RecommendationDetail"
+          type:
+            - array
+            - "null"
+        occasion:
+          description: A preset such as "Workday" or the shopper's own words
+          maxLength: 100
+          minLength: 1
+          type: string
+      required:
+        - occasion
+      type: object
+    RecommendationResponse:
+      additionalProperties: false
+      properties:
+        expanded_answers:
+          $ref: "#/components/schemas/RecommendationExpandedAnswers"
+        outfits:
+          description: Up to 3 outfits, best first; fewer when a slot has fewer matching products
+          items:
+            $ref: "#/components/schemas/RecommendedOutfit"
+          type: array
+      required:
+        - expanded_answers
+        - outfits
+      type: object
+    RecommendationVibe:
+      enum:
+        - professional
+        - chic
+        - casual
+        - sophisticated
+        - colorful
+      type: string
+    RecommendationWeather:
+      enum:
+        - hot
+        - warm
+        - chilly
+        - cold
+        - rainy
+        - windy
+        - snowy
+        - storm
+      type: string
+    RecommendedOutfit:
+      additionalProperties: false
+      properties:
+        accessory:
+          $ref: "#/components/schemas/ProductResponse"
+        bottom:
+          $ref: "#/components/schemas/ProductResponse"
+        shoe:
+          $ref: "#/components/schemas/ProductResponse"
+        top:
+          $ref: "#/components/schemas/ProductResponse"
+      required:
+        - top
+        - bottom
+        - accessory
+        - shoe
+      type: object
     ShareOutfitResponse:
       additionalProperties: false
       properties:
@@ -467,12 +509,78 @@ components:
           type: string
         products:
           items:
-            $ref: "#/components/schemas/OutfitProduct"
+            $ref: "#/components/schemas/ProductResponse"
           type: array
       required:
         - id
         - name
         - products
+      type: object
+    StylePreferences:
+      additionalProperties: false
+      properties:
+        bottoms:
+          items:
+            enum:
+              - pants
+              - dress
+              - skirt
+              - shorts
+            type: string
+          type: array
+          uniqueItems: true
+        neckline:
+          items:
+            enum:
+              - modest
+              - high
+              - low
+            type: string
+          type: array
+          uniqueItems: true
+        shoes:
+          items:
+            enum:
+              - sneakers
+              - boots
+              - sandals
+              - heels
+              - flats
+            type: string
+          type: array
+          uniqueItems: true
+        style:
+          items:
+            enum:
+              - chic_avant_garde
+              - timeless_sophisticated
+              - colorful_eclectic
+              - comfortable_relaxed
+            type: string
+          type: array
+          uniqueItems: true
+      required:
+        - style
+        - neckline
+        - bottoms
+        - shoes
+      type: object
+    UpdateOutfitInputBody:
+      additionalProperties: false
+      properties:
+        name:
+          description: New display name for the outfit
+          maxLength: 100
+          minLength: 1
+          type: string
+        product_ids:
+          description: IDs of every product in the outfit; replaces the current set
+          items:
+            type: string
+          minItems: 1
+          type:
+            - array
+            - "null"
       type: object
     UserResponse:
       additionalProperties: false
@@ -661,6 +769,41 @@ paths:
       summary: Get one of the authenticated user's outfits with its products
       tags:
         - outfits
+    patch:
+      description: product_ids replaces the whole product set. A shared outfit's public link shows the change.
+      operationId: update-outfit
+      parameters:
+        - description: Outfit ID
+          in: path
+          name: id
+          required: true
+          schema:
+            description: Outfit ID
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateOutfitInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OutfitResponse"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Rename an outfit or replace its products
+      tags:
+        - outfits
   /api/v1/outfits/{id}/reactions:
     get:
       operationId: get-outfit-reaction-counts
@@ -774,6 +917,61 @@ paths:
       summary: Share an outfit by public link
       tags:
         - outfits
+  /api/v1/outfits/{id}/suggestions:
+    get:
+      description: Repeat product_id for each catalog product, up to 10; the products need not be in the saved outfit, so unsaved swaps work. Results are keyed by product ID, closest first, in the same slot, leaving out the outfit's products and the requested ones. A product without an embedding gets an empty list; a product not in the catalog fails the whole request with 404. Most calls ask about one product; batching saves round trips when the editor opens. The database work is one embedding lookup and one similarity query per product either way.
+      operationId: suggest-outfit-items
+      parameters:
+        - description: Outfit ID
+          in: path
+          name: id
+          required: true
+          schema:
+            description: Outfit ID
+            type: string
+        - description: Catalog products to find similar products for; repeat the parameter, up to 10 times
+          explode: true
+          in: query
+          name: product_id
+          required: true
+          schema:
+            description: Catalog products to find similar products for; repeat the parameter, up to 10 times
+            items:
+              type: string
+            maxItems: 10
+            minItems: 1
+            type:
+              - array
+              - "null"
+        - description: Most products to return for each product
+          explode: false
+          in: query
+          name: limit
+          schema:
+            default: 12
+            description: Most products to return for each product
+            format: int64
+            maximum: 30
+            minimum: 1
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OutfitSuggestionsResponse"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Suggest products similar to products of an outfit
+      tags:
+        - outfits
   /api/v1/products/{product_id}/images:
     get:
       operationId: list-product-images
@@ -831,7 +1029,7 @@ paths:
           description: Error
       security:
         - bearer: []
-      summary: Recommend products per outfit slot for a shopper query
+      summary: Recommend up to three outfits for an occasion and the shopper's answers
       tags:
         - recommendations
   /api/v1/users/me:
@@ -842,7 +1040,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UserResponse"
+                $ref: "#/components/schemas/CurrentUserResponse"
           description: OK
         default:
           content:
@@ -936,6 +1134,33 @@ paths:
       security:
         - bearer: []
       summary: Get a presigned URL to upload the caller's profile picture
+      tags:
+        - users
+  /api/v1/users/me/style-preferences:
+    put:
+      operationId: replace-current-user-style-preferences
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StylePreferences"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrentUserResponse"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Replace the caller's style preferences
       tags:
         - users
   /api/v1/users/{id}:

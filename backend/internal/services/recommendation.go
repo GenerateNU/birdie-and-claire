@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 	"unicode/utf8"
 
+	"birdie-and-claire/internal/auth"
 	"birdie-and-claire/internal/embedder"
 	"birdie-and-claire/internal/errs"
 	"birdie-and-claire/internal/llm"
@@ -18,22 +20,23 @@ import (
 )
 
 const (
-	recommendationsPerSlot = 10
+	// outfit n takes every slot's nth product, so this is also the most outfits a request returns
+	productsPerSlot = 3
 	// the prompt states both limits, so a longer answer means the model ignored them
 	maxTagsPerList  = 10
 	maxPhraseLength = 100
 	// the llm client sets no timeout of its own, so a hung gateway would hold the request open
-	expandQueryTimeout = 30 * time.Second
+	expandAnswersTimeout = 30 * time.Second
 )
 
 type slotSearch struct {
 	name     models.ProductSlot
 	phrase   string
-	products *[]models.RecommendedProduct
+	products *[]models.ProductResponse
 }
 
 type RecommendationService interface {
-	RecommendProducts(ctx context.Context, query string) (models.RecommendationResponse, error)
+	RecommendProducts(ctx context.Context, request models.RecommendationRequest) (models.RecommendationResponse, error)
 }
 
 type recommendationService struct {
@@ -46,46 +49,55 @@ func NewRecommendationService(repo *repository.Repository, llmClient llm.Client,
 	return &recommendationService{repo: repo, llm: llmClient, embedder: emb}
 }
 
-func (s *recommendationService) RecommendProducts(ctx context.Context, query string) (models.RecommendationResponse, error) {
-	expandCtx, cancel := context.WithTimeout(ctx, expandQueryTimeout)
-	expanded, err := llm.ExpandQuery(expandCtx, s.llm, query)
-	cancel()
-	if err != nil {
-		return models.RecommendationResponse{}, fmt.Errorf("expand recommendation query: %w", err)
+func (s *recommendationService) RecommendProducts(ctx context.Context, request models.RecommendationRequest) (models.RecommendationResponse, error) {
+	answers := map[string]string{models.OccasionPromptLabel: request.Occasion}
+	for _, detail := range request.Details {
+		answers[models.DetailPromptLabels[detail.Key]] = detail.Value
 	}
 
-	response := models.RecommendationResponse{
-		ExpandedQuery: models.RecommendationExpandedQuery{
-			Slots: models.RecommendationExpandedSlots{
-				Top:       strings.TrimSpace(expanded.Slots.Top),
-				Bottom:    strings.TrimSpace(expanded.Slots.Bottom),
-				Accessory: strings.TrimSpace(expanded.Slots.Accessory),
-			},
-			ExcludeTags: lowercaseTags(expanded.ExcludeTags),
-			NiceTags:    lowercaseTags(expanded.NiceTags),
+	var stylePreferences *models.StylePreferences
+	user, err := s.repo.User.GetByID(ctx, auth.UserID(ctx))
+	switch {
+	case errors.Is(err, errs.ErrNotFound):
+		// a signed-in shopper has no users row until POST /users/me creates it, and so no style preferences
+	case err != nil:
+		return models.RecommendationResponse{}, err
+	default:
+		stylePreferences = user.StylePreferences
+	}
+
+	expandCtx, cancel := context.WithTimeout(ctx, expandAnswersTimeout)
+	rawExpandedAnswers, err := llm.ExpandAnswers(expandCtx, s.llm, answers, formatStylePreferences(stylePreferences))
+	cancel()
+	if err != nil {
+		return models.RecommendationResponse{}, fmt.Errorf("expand shopper answers: %w", err)
+	}
+
+	expandedAnswers := models.RecommendationExpandedAnswers{
+		Slots: models.RecommendationExpandedSlots{
+			Top:       strings.TrimSpace(rawExpandedAnswers.Slots.Top),
+			Bottom:    strings.TrimSpace(rawExpandedAnswers.Slots.Bottom),
+			Accessory: strings.TrimSpace(rawExpandedAnswers.Slots.Accessory),
+			Shoe:      strings.TrimSpace(rawExpandedAnswers.Slots.Shoe),
 		},
-		Top:       []models.RecommendedProduct{},
-		Bottom:    []models.RecommendedProduct{},
-		Accessory: []models.RecommendedProduct{},
+		ExcludeTags: lowercaseTags(rawExpandedAnswers.ExcludeTags),
+		NiceTags:    lowercaseTags(rawExpandedAnswers.NiceTags),
 	}
+	var tops, bottoms, accessories, shoes []models.ProductResponse
 	slots := []slotSearch{
-		{name: models.SlotTop, phrase: response.ExpandedQuery.Slots.Top, products: &response.Top},
-		{name: models.SlotBottom, phrase: response.ExpandedQuery.Slots.Bottom, products: &response.Bottom},
-		{name: models.SlotAccessory, phrase: response.ExpandedQuery.Slots.Accessory, products: &response.Accessory},
+		{name: models.SlotTop, phrase: expandedAnswers.Slots.Top, products: &tops},
+		{name: models.SlotBottom, phrase: expandedAnswers.Slots.Bottom, products: &bottoms},
+		{name: models.SlotAccessory, phrase: expandedAnswers.Slots.Accessory, products: &accessories},
+		{name: models.SlotShoe, phrase: expandedAnswers.Slots.Shoe, products: &shoes},
 	}
-	if err := checkExpansionLimits(slots, response.ExpandedQuery); err != nil {
+	if err := checkExpansionLimits(slots, expandedAnswers); err != nil {
 		return models.RecommendationResponse{}, err
 	}
-	excludeTags, niceTags := response.ExpandedQuery.ExcludeTags, response.ExpandedQuery.NiceTags
 
 	group, groupCtx := errgroup.WithContext(ctx)
 	for _, slot := range slots {
-		// the embedder rejects blank text as invalid input, which would reach the shopper as a 400
-		if slot.phrase == "" {
-			continue
-		}
 		group.Go(func() error {
-			products, err := s.searchSlot(groupCtx, slot.name, slot.phrase, excludeTags, niceTags)
+			products, err := s.searchSlot(groupCtx, slot.name, slot.phrase, expandedAnswers.ExcludeTags, expandedAnswers.NiceTags)
 			if err != nil {
 				return err
 			}
@@ -96,10 +108,22 @@ func (s *recommendationService) RecommendProducts(ctx context.Context, query str
 	if err := group.Wait(); err != nil {
 		return models.RecommendationResponse{}, err
 	}
-	return response, nil
+
+	outfitCount := min(len(tops), len(bottoms), len(accessories), len(shoes))
+	// non-nil, since a null list would break the response schema
+	outfits := make([]models.RecommendedOutfit, 0, outfitCount)
+	for rank := range outfitCount {
+		outfits = append(outfits, models.RecommendedOutfit{
+			Top:       tops[rank],
+			Bottom:    bottoms[rank],
+			Accessory: accessories[rank],
+			Shoe:      shoes[rank],
+		})
+	}
+	return models.RecommendationResponse{ExpandedAnswers: expandedAnswers, Outfits: outfits}, nil
 }
 
-func (s *recommendationService) searchSlot(ctx context.Context, slot models.ProductSlot, phrase string, excludeTags, niceTags []string) ([]models.RecommendedProduct, error) {
+func (s *recommendationService) searchSlot(ctx context.Context, slot models.ProductSlot, phrase string, excludeTags, niceTags []string) ([]models.ProductResponse, error) {
 	embedding, err := s.embedder.EmbedText(ctx, phrase)
 	// a rejected phrase is the model's, not the shopper's, and Modal's detail can quote it
 	if errors.Is(err, errs.ErrInvalidInput) {
@@ -108,14 +132,14 @@ func (s *recommendationService) searchSlot(ctx context.Context, slot models.Prod
 	if err != nil {
 		return nil, fmt.Errorf("embed %s phrase: %w", slot, err)
 	}
-	return s.repo.Product.FindSimilar(ctx, embedding, slot, excludeTags, niceTags, recommendationsPerSlot)
+	return s.repo.Product.FindSimilar(ctx, embedding, slot, excludeTags, niceTags, nil, productsPerSlot)
 }
 
 // the errors give sizes only, since the phrases and tags are the model's reading of shopper text
-func checkExpansionLimits(slots []slotSearch, expanded models.RecommendationExpandedQuery) error {
-	if len(expanded.ExcludeTags) > maxTagsPerList || len(expanded.NiceTags) > maxTagsPerList {
-		return fmt.Errorf("expanded query has %d exclude and %d nice tags, more than %d per list",
-			len(expanded.ExcludeTags), len(expanded.NiceTags), maxTagsPerList)
+func checkExpansionLimits(slots []slotSearch, expandedAnswers models.RecommendationExpandedAnswers) error {
+	if len(expandedAnswers.ExcludeTags) > maxTagsPerList || len(expandedAnswers.NiceTags) > maxTagsPerList {
+		return fmt.Errorf("expanded answers have %d exclude and %d nice tags, more than %d per list",
+			len(expandedAnswers.ExcludeTags), len(expandedAnswers.NiceTags), maxTagsPerList)
 	}
 	for _, slot := range slots {
 		if length := utf8.RuneCountInString(slot.phrase); length > maxPhraseLength {
@@ -132,4 +156,38 @@ func lowercaseTags(tags []string) []string {
 		lowered = append(lowered, strings.ToLower(tag))
 	}
 	return lowered
+}
+
+// picks are listed in this order so the same picks always produce the same prompt text, whatever order they were
+// saved in. dress is left out because outfits have no dress slot (#117).
+var (
+	bottomsInOnboardingOrder = []string{"pants", "skirt", "shorts"}
+	shoesInOnboardingOrder   = []string{"sneakers", "boots", "sandals", "heels", "flats"}
+)
+
+// formatStylePreferences returns the bottoms and shoes picks as one line, such as "bottoms: skirt; shoes: flats", or ""
+// when there are none
+func formatStylePreferences(preferences *models.StylePreferences) string {
+	if preferences == nil {
+		return ""
+	}
+	var fields []string
+	if bottoms := orderPicks(preferences.Bottoms, bottomsInOnboardingOrder); len(bottoms) > 0 {
+		fields = append(fields, "bottoms: "+strings.Join(bottoms, ", "))
+	}
+	if shoes := orderPicks(preferences.Shoes, shoesInOnboardingOrder); len(shoes) > 0 {
+		fields = append(fields, "shoes: "+strings.Join(shoes, ", "))
+	}
+	return strings.Join(fields, "; ")
+}
+
+// orderPicks drops any pick that order doesn't list, such as dress
+func orderPicks(picks, order []string) []string {
+	var ordered []string
+	for _, value := range order {
+		if slices.Contains(picks, value) {
+			ordered = append(ordered, value)
+		}
+	}
+	return ordered
 }

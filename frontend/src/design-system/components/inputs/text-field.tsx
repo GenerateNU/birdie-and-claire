@@ -1,14 +1,20 @@
+import { Field } from "@base-ui/react/field";
 import { Input as BaseInput } from "@base-ui/react/input";
-import type { ComponentProps } from "react";
-import { joinClasses } from "../../utils/join-classes";
+import { useId, type ComponentProps } from "react";
+import { Text } from "@/design-system/primitives/text";
+import { joinClasses } from "@/design-system/utils/join-classes";
 
 const inputClasses =
   "rounded-sm border bg-background px-sm py-xs text-body text-primary focus-ring data-[disabled]:opacity-disabled disabled:opacity-disabled";
 
 type SharedProps = {
   label: string;
+  // Keeps the label for screen readers only, for fields whose placeholder already says what they hold.
+  hideLabel?: boolean;
   value: string;
-  onValueChange: (value: string) => void;
+  onValueChange?: (value: string) => void;
+  /** Shown under the field, which is then marked invalid. */
+  error?: string;
   className?: string;
 };
 
@@ -21,36 +27,75 @@ type MultilineProps = SharedProps &
 type TextFieldProps = SingleLineProps | MultilineProps;
 
 export function TextField(props: TextFieldProps) {
+  const errorId = useId();
   const labelClasses = "flex flex-col gap-xxs text-body";
   const classes = joinClasses(labelClasses, props.className);
 
+  const label = (
+    <Field.Label className={props.hideLabel ? "sr-only" : undefined}>{props.label}</Field.Label>
+  );
+
+  // Added to the caller's aria-describedby, not in place of it.
+  let describedBy = props["aria-describedby"];
+
+  if (props.error) {
+    describedBy = describedBy ? `${describedBy} ${errorId}` : errorId;
+  }
+
+  const errorProps = {
+    "aria-invalid": props.error ? true : undefined,
+    "aria-describedby": describedBy,
+  };
+
+  const errorText = props.error && (
+    <Text variant="caption" id={errorId} className="text-error">
+      {props.error}
+    </Text>
+  );
+
   if (props.multiline) {
     const {
-      label,
+      label: _label,
+      hideLabel: _hideLabel,
+      value,
       onValueChange,
       multiline: _multiline,
       className: _className,
+      error: _error,
       ...textareaProps
     } = props;
 
     return (
-      <label className={classes}>
+      <Field.Root className={classes}>
         {label}
-        <textarea
-          {...textareaProps}
-          onChange={(event) => onValueChange(event.target.value)}
+        {/* Base UI's Input types its props for an <input>, so the textarea's own attributes, like
+            rows, go on the rendered element. Its props win over Input's when both set one, which
+            is why errorProps, with the combined aria-describedby, comes last there. */}
+        <BaseInput
+          render={<textarea {...textareaProps} {...errorProps} />}
+          value={value}
+          onValueChange={onValueChange}
           className={inputClasses}
         />
-      </label>
+        {errorText}
+      </Field.Root>
     );
   }
 
-  const { label, multiline: _multiline, className: _className, ...inputProps } = props;
+  const {
+    label: _label,
+    hideLabel: _hideLabel,
+    multiline: _multiline,
+    className: _className,
+    error: _error,
+    ...inputProps
+  } = props;
 
   return (
-    <label className={classes}>
+    <Field.Root className={classes}>
       {label}
-      <BaseInput {...inputProps} className={inputClasses} />
-    </label>
+      <BaseInput {...inputProps} {...errorProps} className={inputClasses} />
+      {errorText}
+    </Field.Root>
   );
 }

@@ -9,6 +9,7 @@ import (
 	"birdie-and-claire/internal/config"
 	"birdie-and-claire/internal/embedder"
 	"birdie-and-claire/internal/llm"
+	"birdie-and-claire/internal/models"
 	"birdie-and-claire/internal/repository"
 	"birdie-and-claire/internal/server/middlewares"
 	"birdie-and-claire/internal/server/routers"
@@ -93,6 +94,8 @@ func apiConfig(cfg *config.Configuration) huma.Config {
 			op.Security = []map[string][]string{{bearerScheme: {}}}
 		}
 	})
+
+	models.RegisterRecommendationEnums(humaConfig.Components.Schemas)
 
 	return humaConfig
 }

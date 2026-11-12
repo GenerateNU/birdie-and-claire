@@ -88,7 +88,9 @@ jobs:
       - id: filter
         run: |
           changed=$(git diff --name-only HEAD^1 HEAD)
-          if grep -qE '^(frontend/|\.github/actions/setup-frontend/|\.github/workflows/ci\.yml$)' <<<"$changed"; then
+          # The frontend's API client is generated from backend/openapi.yaml, so a spec change can
+          # break the frontend build.
+          if grep -qE '^(frontend/|backend/openapi\.yaml$|\.github/actions/setup-frontend/|\.github/workflows/ci\.yml$)' <<<"$changed"; then
             echo "frontend=true" >> "$GITHUB_OUTPUT"
           else
             echo "frontend=false" >> "$GITHUB_OUTPUT"

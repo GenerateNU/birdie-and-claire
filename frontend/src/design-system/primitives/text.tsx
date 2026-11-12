@@ -1,9 +1,10 @@
 import type { HTMLAttributes } from "react";
-import { joinClasses } from "../utils/join-classes";
+import { joinClasses } from "@/design-system/utils/join-classes";
 
 const variants = {
   heading: { tag: "h1", className: "text-heading uppercase" },
-  subheading: { tag: "h3", className: "text-subheading uppercase" },
+  subheading: { tag: "h2", className: "text-subheading uppercase" },
+  subsubheading: { tag: "h3", className: "text-subheading uppercase" },
   body: { tag: "p", className: "text-body" },
   caption: { tag: "span", className: "text-caption" },
 } as const;
