@@ -1,7 +1,8 @@
 import { Input as BaseInput } from "@base-ui/react/input";
-import { useState, type Ref } from "react";
+import { useId, useState, type Ref } from "react";
 
 import { Box } from "@/design-system/primitives/box";
+import { Text } from "@/design-system/primitives/text";
 
 // Boxes shrink to share the row, so a long code still fits a phone, and stop growing at 48px.
 const boxBaseClasses =
@@ -13,7 +14,8 @@ type CodeInputProps = {
   length: number;
   value: string;
   onValueChange: (value: string) => void;
-  invalid?: boolean;
+  /** Shown under the boxes, which then turn red and mark the input invalid. */
+  error?: string;
   disabled?: boolean;
 };
 
@@ -25,10 +27,12 @@ export function CodeInput({
   length,
   value,
   onValueChange,
-  invalid = false,
+  error,
   disabled = false,
 }: CodeInputProps) {
+  const errorId = useId();
   const [focused, setFocused] = useState(false);
+  const invalid = error !== undefined;
   // The box the next digit goes in, or the last box once every box is filled.
   const activeIndex = Math.min(value.length, length - 1);
 
@@ -45,34 +49,42 @@ export function CodeInput({
   }
 
   return (
-    <Box
-      className={
-        disabled
-          ? "relative flex w-full justify-center gap-xs opacity-disabled"
-          : "relative flex w-full justify-center gap-xs"
-      }
-    >
-      {Array.from({ length }, (_, index) => (
-        <Box key={index} aria-hidden="true" className={boxClasses(index)}>
-          {value[index] ?? ""}
-        </Box>
-      ))}
-      <BaseInput
-        ref={ref}
-        aria-label={label}
-        aria-invalid={invalid}
-        inputMode="numeric"
-        autoComplete="one-time-code"
-        value={value}
-        // Paste and autofill can bring spaces or dashes, and the boxes show digits only. No maxLength:
-        // the browser would cut a pasted "123 456" before the spaces are dropped.
-        onValueChange={(next: string) => onValueChange(next.replace(/\D/g, "").slice(0, length))}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        disabled={disabled}
-        // Transparent rather than hidden, so the browser still offers autofill and a tap focuses it.
-        className="absolute inset-0 h-full w-full cursor-text bg-transparent text-transparent caret-transparent outline-none"
-      />
+    <Box className="flex w-full flex-col items-center gap-sm">
+      <Box
+        className={
+          disabled
+            ? "relative flex w-full justify-center gap-xs opacity-disabled"
+            : "relative flex w-full justify-center gap-xs"
+        }
+      >
+        {Array.from({ length }, (_, index) => (
+          <Box key={index} aria-hidden="true" className={boxClasses(index)}>
+            {value[index] ?? ""}
+          </Box>
+        ))}
+        <BaseInput
+          ref={ref}
+          aria-label={label}
+          aria-invalid={invalid}
+          aria-describedby={invalid ? errorId : undefined}
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          value={value}
+          // Paste and autofill can bring spaces or dashes, and the boxes show digits only. No maxLength:
+          // the browser would cut a pasted "123 456" before the spaces are dropped.
+          onValueChange={(next: string) => onValueChange(next.replace(/\D/g, "").slice(0, length))}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          disabled={disabled}
+          // Transparent rather than hidden, so the browser still offers autofill and a tap focuses it.
+          className="absolute inset-0 h-full w-full cursor-text bg-transparent text-transparent caret-transparent outline-none"
+        />
+      </Box>
+      {error && (
+        <Text variant="caption" id={errorId} role="alert" className="text-error">
+          {error}
+        </Text>
+      )}
     </Box>
   );
 }

@@ -505,7 +505,13 @@ function CodeInputExamples() {
     <Box className="flex flex-col gap-md">
       <CodeInput label="Verification code" length={6} value={code} onValueChange={setCode} />
       <CodeInput label="Filled" length={6} value="123456" onValueChange={() => {}} />
-      <CodeInput label="Invalid" length={6} value="123456" onValueChange={() => {}} invalid />
+      <CodeInput
+        label="Invalid"
+        length={6}
+        value="123456"
+        onValueChange={() => {}}
+        error="Incorrect code entered. Please try again."
+      />
       <CodeInput label="Disabled" length={6} value="12" onValueChange={() => {}} disabled />
     </Box>
   );

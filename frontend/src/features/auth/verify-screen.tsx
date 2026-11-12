@@ -48,14 +48,9 @@ export function VerifyScreen({
           length={AUTH_OTP_LENGTH}
           value={code}
           onValueChange={onCodeChange}
-          invalid={codeError !== null}
+          error={codeError ?? undefined}
           disabled={busy}
         />
-        {codeError && (
-          <Text variant="caption" role="alert" className="text-error">
-            {codeError}
-          </Text>
-        )}
         {resendSecondsLeft > 0 ? (
           <Text variant="caption">Resend code in {resendSecondsLeft}s</Text>
         ) : (
