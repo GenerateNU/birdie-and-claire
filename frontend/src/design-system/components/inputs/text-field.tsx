@@ -1,3 +1,4 @@
+import { Field } from "@base-ui/react/field";
 import { Input as BaseInput } from "@base-ui/react/input";
 import { useId, type ComponentProps } from "react";
 import { Text } from "@/design-system/primitives/text";
@@ -30,12 +31,8 @@ export function TextField(props: TextFieldProps) {
   const labelClasses = "flex flex-col gap-xxs text-body";
   const classes = joinClasses(labelClasses, props.className);
 
-  const labelText = props.hideLabel ? (
-    <Text variant="caption" className="sr-only">
-      {props.label}
-    </Text>
-  ) : (
-    props.label
+  const label = (
+    <Field.Label className={props.hideLabel ? "sr-only" : undefined}>{props.label}</Field.Label>
   );
 
   // Added to the caller's aria-describedby, not in place of it.
@@ -69,8 +66,8 @@ export function TextField(props: TextFieldProps) {
     } = props;
 
     return (
-      <label className={classes}>
-        {labelText}
+      <Field.Root className={classes}>
+        {label}
         {/* Base UI's Input types its props for an <input>, so the textarea's own attributes, like
             rows, go on the rendered element. Its props win over Input's when both set one, which
             is why errorProps, with the combined aria-describedby, comes last there. */}
@@ -81,7 +78,7 @@ export function TextField(props: TextFieldProps) {
           className={inputClasses}
         />
         {errorText}
-      </label>
+      </Field.Root>
     );
   }
 
@@ -95,10 +92,10 @@ export function TextField(props: TextFieldProps) {
   } = props;
 
   return (
-    <label className={classes}>
-      {labelText}
+    <Field.Root className={classes}>
+      {label}
       <BaseInput {...inputProps} {...errorProps} className={inputClasses} />
       {errorText}
-    </label>
+    </Field.Root>
   );
 }
