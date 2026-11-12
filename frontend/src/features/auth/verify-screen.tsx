@@ -9,7 +9,7 @@ type VerifyScreenProps = {
   email: string;
   code: string;
   onCodeChange: (code: string) => void;
-  codeRejected: boolean;
+  codeError: string | null;
   resendSecondsLeft: number;
   resendError: string | null;
   busy: boolean;
@@ -22,7 +22,7 @@ export function VerifyScreen({
   email,
   code,
   onCodeChange,
-  codeRejected,
+  codeError,
   resendSecondsLeft,
   resendError,
   busy,
@@ -34,16 +34,13 @@ export function VerifyScreen({
 
   // The field is disabled while the code is checked, which drops focus; give it back for a retry.
   useEffect(() => {
-    if (codeRejected) {
+    if (codeError !== null) {
       codeInputRef.current?.focus();
     }
-  }, [codeRejected]);
+  }, [codeError]);
 
   return (
-    <AuthScreen title="Enter your verification code">
-      <Text variant="caption" className="text-center">
-        A code was sent to {email}
-      </Text>
+    <AuthScreen title="Enter your verification code" subtitle={`A code was sent to ${email}`}>
       <form onSubmit={onSubmit} className="flex flex-col items-center gap-sm">
         <CodeInput
           ref={codeInputRef}
@@ -51,12 +48,12 @@ export function VerifyScreen({
           length={AUTH_OTP_LENGTH}
           value={code}
           onValueChange={onCodeChange}
-          invalid={codeRejected}
+          invalid={codeError !== null}
           disabled={busy}
         />
-        {codeRejected && (
+        {codeError && (
           <Text variant="caption" role="alert" className="text-error">
-            Incorrect code entered. Please try again.
+            {codeError}
           </Text>
         )}
         {resendSecondsLeft > 0 ? (
