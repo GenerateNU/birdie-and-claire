@@ -40,8 +40,9 @@ function PiecesPage() {
 
   const removeMutation = useMutation({
     ...removeCurrentUserPieceMutation(),
-    // The catalog leaves owned pieces out, so a removed piece goes back into the picker.
-    onSuccess: () =>
+    // The catalog leaves owned pieces out, so a removed piece goes back into the picker. Refreshed
+    // on failure too: a 404 means the piece is already gone, and the list should stop showing it.
+    onSettled: () =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: listCurrentUserPiecesInfiniteQueryKey() }),
         queryClient.invalidateQueries({ queryKey: listProductsInfiniteQueryKey() }),
