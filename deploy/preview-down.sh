@@ -24,18 +24,30 @@ rm -f "/opt/${PROJECT}/previews/pr-${PR_NUMBER}.env"
 
 # Tagged images are not dangling, so `docker image prune` would keep them. An
 # image some container still uses, such as a release built from the same
-# commit, is skipped by ID and left for the droplet's nightly prune.
-IMAGES=$(docker images --no-trunc --format '{{.ID}} {{.Repository}}:{{.Tag}}' \
-  | grep -E "/${PROJECT}/backend:pr-${PR_NUMBER}-" \
-  | grep -vFf <(docker ps -aq | xargs -r docker inspect -f '{{.Image}}') \
-  | cut -d' ' -f2)
-if [ -z "$IMAGES" ]; then
-  echo "    no images for PR #${PR_NUMBER}"
-else
-  echo "$IMAGES" | xargs docker rmi >/dev/null 2>&1 \
+# commit, is skipped by ID and left for the droplet's nightly prune. If the
+# container query fails, nothing is removed: an empty in-use list would let
+# this untag an image a container still runs.
+remove_pr_images() {
+  local used_images images
+  if ! used_images=$(docker ps -aq | xargs -r docker inspect -f '{{.Image}}'); then
+    echo "    could not list containers, leaving images for PR #${PR_NUMBER}"
+    return
+  fi
+  # awk, not `grep -vFf`: on an empty list grep's blank pattern matches every line.
+  images=$(docker images --no-trunc --format '{{.ID}} {{.Repository}}:{{.Tag}}' \
+    | grep -E "/${PROJECT}/backend:pr-${PR_NUMBER}-" \
+    | USED_IMAGES="$used_images" awk '
+        BEGIN { n = split(ENVIRON["USED_IMAGES"], ids, "\n"); for (i = 1; i <= n; i++) in_use[ids[i]] = 1 }
+        !($1 in in_use) { print $2 }')
+  if [ -z "$images" ]; then
+    echo "    no images for PR #${PR_NUMBER}"
+    return
+  fi
+  echo "$images" | xargs docker rmi >/dev/null 2>&1 \
     && echo "    removed images for PR #${PR_NUMBER}" \
     || echo "    could not remove some images for PR #${PR_NUMBER}"
-fi
+}
+remove_pr_images
 
 if [ -r "$SHARED_ENV" ]; then
   PGPASSWORD=$(grep -E '^PREVIEW_DB_PASSWORD=' "$SHARED_ENV" | head -1 | cut -d= -f2-)

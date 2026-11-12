@@ -36,12 +36,22 @@ echo "==> preview for PR #${PR_NUMBER} at https://${HOST}"
 # and a release built from the same commit), `docker rmi` of one tag only untags
 # it, even while a container runs it. Run before the pull too, so a nearly full
 # disk does not fail it before cleanup is ever reached.
+#
+# If the container query fails, cleanup is skipped: an empty in-use list would
+# let it untag an image a container still runs. awk does the exclusion because
+# `grep -vFf` on an empty list matches every line through its blank pattern.
 remove_unused_pr_images() {
+  local used_images
+  if ! used_images=$(docker ps -aq | xargs -r docker inspect -f '{{.Image}}'); then
+    echo "    could not list containers, skipping image cleanup"
+    return
+  fi
   echo "    removing unused images for PR #${PR_NUMBER}"
   docker images --no-trunc --format '{{.ID}} {{.Repository}}:{{.Tag}}' \
     | grep -F " ${IMAGE%:*}:pr-${PR_NUMBER}-" \
-    | grep -vFf <(docker ps -aq | xargs -r docker inspect -f '{{.Image}}') \
-    | cut -d' ' -f2 \
+    | USED_IMAGES="$used_images" awk '
+        BEGIN { n = split(ENVIRON["USED_IMAGES"], ids, "\n"); for (i = 1; i <= n; i++) in_use[ids[i]] = 1 }
+        !($1 in in_use) { print $2 }' \
     | xargs -r docker rmi >/dev/null 2>&1 || true
 }
 remove_unused_pr_images
