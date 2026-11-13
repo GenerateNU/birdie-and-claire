@@ -1,3 +1,4 @@
+import { Field } from "@base-ui/react/field";
 import { Input as BaseInput } from "@base-ui/react/input";
 import { useId, type ComponentProps } from "react";
 import { Text } from "@/design-system/primitives/text";
@@ -8,6 +9,8 @@ const inputClasses =
 
 type SharedProps = {
   label: string;
+  // Keeps the label for screen readers only, for fields whose placeholder already says what they hold.
+  hideLabel?: boolean;
   value: string;
   onValueChange?: (value: string) => void;
   /** Shown under the field, which is then marked invalid. */
@@ -27,6 +30,10 @@ export function TextField(props: TextFieldProps) {
   const errorId = useId();
   const labelClasses = "flex flex-col gap-xxs text-body";
   const classes = joinClasses(labelClasses, props.className);
+
+  const label = (
+    <Field.Label className={props.hideLabel ? "sr-only" : undefined}>{props.label}</Field.Label>
+  );
 
   // Added to the caller's aria-describedby, not in place of it.
   let describedBy = props["aria-describedby"];
@@ -48,7 +55,9 @@ export function TextField(props: TextFieldProps) {
 
   if (props.multiline) {
     const {
-      label,
+      label: _label,
+      hideLabel: _hideLabel,
+      value,
       onValueChange,
       multiline: _multiline,
       className: _className,
@@ -57,21 +66,25 @@ export function TextField(props: TextFieldProps) {
     } = props;
 
     return (
-      <label className={classes}>
+      <Field.Root className={classes}>
         {label}
-        <textarea
-          {...textareaProps}
-          {...errorProps}
-          onChange={(event) => onValueChange?.(event.target.value)}
+        {/* Base UI's Input types its props for an <input>, so the textarea's own attributes, like
+            rows, go on the rendered element. Its props win over Input's when both set one, which
+            is why errorProps, with the combined aria-describedby, comes last there. */}
+        <BaseInput
+          render={<textarea {...textareaProps} {...errorProps} />}
+          value={value}
+          onValueChange={onValueChange}
           className={inputClasses}
         />
         {errorText}
-      </label>
+      </Field.Root>
     );
   }
 
   const {
-    label,
+    label: _label,
+    hideLabel: _hideLabel,
     multiline: _multiline,
     className: _className,
     error: _error,
@@ -79,10 +92,10 @@ export function TextField(props: TextFieldProps) {
   } = props;
 
   return (
-    <label className={classes}>
+    <Field.Root className={classes}>
       {label}
       <BaseInput {...inputProps} {...errorProps} className={inputClasses} />
       {errorText}
-    </label>
+    </Field.Root>
   );
 }

@@ -29,6 +29,33 @@ PGPASSWORD=$(grep -E '^PREVIEW_DB_PASSWORD=' "$SHARED_ENV" | head -1 | cut -d= -
 
 echo "==> preview for PR #${PR_NUMBER} at https://${HOST}"
 
+# Every push pulls a new pr-<n>-<sha> tag. Old tags are not dangling, so `docker
+# image prune` would keep them; remove this PR's by name instead of `prune -a`,
+# which would also take other projects' images off the droplet. Images any
+# container uses are skipped by ID: when several tags share one image (a preview
+# and a release built from the same commit), `docker rmi` of one tag only untags
+# it, even while a container runs it. Run before the pull too, so a nearly full
+# disk does not fail it before cleanup is ever reached.
+#
+# If the container query fails, cleanup is skipped: an empty in-use list would
+# let it untag an image a container still runs. awk does the exclusion because
+# `grep -vFf` on an empty list matches every line through its blank pattern.
+remove_unused_pr_images() {
+  local used_images
+  if ! used_images=$(docker ps -aq | xargs -r docker inspect -f '{{.Image}}'); then
+    echo "    could not list containers, skipping image cleanup"
+    return
+  fi
+  echo "    removing unused images for PR #${PR_NUMBER}"
+  docker images --no-trunc --format '{{.ID}} {{.Repository}}:{{.Tag}}' \
+    | grep -F " ${IMAGE%:*}:pr-${PR_NUMBER}-" \
+    | USED_IMAGES="$used_images" awk '
+        BEGIN { n = split(ENVIRON["USED_IMAGES"], ids, "\n"); for (i = 1; i <= n; i++) in_use[ids[i]] = 1 }
+        !($1 in in_use) { print $2 }' \
+    | xargs -r docker rmi >/dev/null 2>&1 || true
+}
+remove_unused_pr_images
+
 # A re-push reuses the database, so data entered during review survives.
 if docker exec -e PGPASSWORD="$PGPASSWORD" preview-db \
      psql -U postgres -tAc "SELECT 1 FROM pg_database WHERE datname='${DB_NAME}'" | grep -q 1; then
@@ -103,13 +130,7 @@ for _ in $(seq 1 15); do
   exit 1
 done
 
-# Every push pulls a new pr-<n>-<sha> tag. Old tags are not dangling, so
-# `docker image prune` would keep them; remove this PR's by name instead of
-# `prune -a`, which would also take other projects' images off the droplet.
-echo "    removing older images for PR #${PR_NUMBER}"
-docker images --format '{{.Repository}}:{{.Tag}}' \
-  | grep -F "${IMAGE%:*}:pr-${PR_NUMBER}-" \
-  | grep -vxF "$IMAGE" \
-  | xargs -r docker rmi >/dev/null || true
+# The old container is gone now, so its image can go too.
+remove_unused_pr_images
 
 echo "==> https://${HOST}"
