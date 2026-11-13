@@ -9,10 +9,12 @@ import (
 	"testing"
 
 	"birdie-and-claire/internal/auth"
+	"birdie-and-claire/internal/config"
 	"birdie-and-claire/internal/controllers"
 	"birdie-and-claire/internal/errs"
 	"birdie-and-claire/internal/models"
 	"birdie-and-claire/internal/repository"
+	"birdie-and-claire/internal/server"
 	"birdie-and-claire/internal/services"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -24,7 +26,7 @@ import (
 func updateOutfitProbe(t *testing.T) humatest.TestAPI {
 	t.Helper()
 
-	_, api := humatest.New(t)
+	_, api := humatest.New(t, server.APIConfig(&config.Configuration{}))
 	huma.Register(api, huma.Operation{
 		OperationID: "update-outfit-probe",
 		Method:      http.MethodPatch,
@@ -51,15 +53,13 @@ func TestUpdateOutfitInputValidation(t *testing.T) {
 		{name: "null name beside product_ids", body: `{"name": null, "product_ids": ["` + productIDLower + `"]}`, want: http.StatusNoContent},
 		{name: "null product_ids beside name", body: `{"name": "fit", "product_ids": null}`, want: http.StatusNoContent},
 		{name: "mixed-case null product_ids beside name", body: `{"name": "x", "Product_IDs": null}`, want: http.StatusNoContent},
-		{name: "mis-cased name alone", body: `{"Name": "x"}`, want: http.StatusNoContent},
-		// Huma validates one copy of a field repeated in different casing, but Go keeps the last one.
-		{name: "null name after valid name", body: `{"NAME": null, "name": "x"}`, want: http.StatusNoContent},
-		{name: "empty name after valid name", body: `{"name": "x", "NAME": ""}`, want: http.StatusUnprocessableEntity, wantBody: "body must set name or product_ids"},
-		{name: "empty product_ids after valid product_ids", body: `{"product_ids": ["` + productIDLower + `"], "PRODUCT_IDS": []}`, want: http.StatusUnprocessableEntity, wantBody: "body must set name or product_ids"},
-		// The empty list is treated as not provided, so this renames and leaves the products alone (see TestUpdateOutfitWithEmptyProductIDsKeepsProducts).
-		{name: "empty product_ids after valid product_ids beside name", body: `{"name": "x", "product_ids": ["` + productIDLower + `"], "PRODUCT_IDS": []}`, want: http.StatusNoContent},
-		// Huma checks maxLength on the first copy only, so Resolve re-checks the decoded name.
-		{name: "overlong name after valid name", body: `{"name": "x", "NAME": "` + strings.Repeat("n", 200) + `"}`, want: http.StatusUnprocessableEntity, wantBody: "name must be at most 100 characters"},
+		// A key in another casing is not the field, so only the exact key counts.
+		{name: "mis-cased name alone", body: `{"Name": "x"}`, want: http.StatusUnprocessableEntity, wantBody: "body must set name or product_ids"},
+		{name: "null NAME beside name", body: `{"NAME": null, "name": "x"}`, want: http.StatusNoContent},
+		{name: "empty NAME beside name", body: `{"name": "x", "NAME": ""}`, want: http.StatusNoContent},
+		{name: "empty PRODUCT_IDS beside product_ids", body: `{"product_ids": ["` + productIDLower + `"], "PRODUCT_IDS": []}`, want: http.StatusNoContent},
+		{name: "repeated name", body: `{"name": "x", "name": ""}`, want: http.StatusBadRequest, wantBody: "duplicate object member name"},
+		{name: "repeated product_ids", body: `{"product_ids": ["` + productIDLower + `"], "product_ids": []}`, want: http.StatusBadRequest, wantBody: "duplicate object member name"},
 		{name: "maximum 100 characters", body: `{"name": "` + strings.Repeat("n", 100) + `"}`, want: http.StatusNoContent},
 		// 200 bytes, but huma counts runes, so this is within the limit.
 		{name: "maximum 100 multibyte characters", body: `{"name": "` + strings.Repeat("é", 100) + `"}`, want: http.StatusNoContent},
@@ -310,7 +310,7 @@ func TestUpdateOutfitBumpsUpdatedAtAndKeepsSharedAt(t *testing.T) {
 	}
 }
 
-// A repeated product_ids key whose last copy is [] reaches the repository as an empty, non-nil slice.
+// An empty, non-nil product list leaves the outfit's products alone.
 func TestUpdateOutfitWithEmptyProductIDsKeepsProducts(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()
