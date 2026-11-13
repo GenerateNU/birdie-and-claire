@@ -24,14 +24,12 @@ export function PiecePicker({ onAdded }: PiecePickerProps) {
 
   const addMutation = useMutation({
     ...addCurrentUserPiecesMutation(),
-    onSuccess: async () => {
-      // The catalog leaves owned pieces out, so both lists change.
-      await Promise.all([
+    // The catalog leaves owned pieces out, so both lists change.
+    onSuccess: () =>
+      Promise.all([
         queryClient.invalidateQueries({ queryKey: listCurrentUserPiecesInfiniteQueryKey() }),
         queryClient.invalidateQueries({ queryKey: listProductsInfiniteQueryKey() }),
-      ]);
-      onAdded();
-    },
+      ]),
   });
 
   function toggle(product: ProductResponse, pressed: boolean) {
@@ -41,7 +39,12 @@ export function PiecePicker({ onAdded }: PiecePickerProps) {
   }
 
   function addSelected() {
-    addMutation.mutate({ body: { product_ids: selected.map((product) => product.id) } });
+    // On mutate, not useMutation: TanStack skips it once the picker unmounts, so leaving mid-save
+    // doesn't move the user on.
+    addMutation.mutate(
+      { body: { product_ids: selected.map((product) => product.id) } },
+      { onSuccess: onAdded },
+    );
   }
 
   // Still saving while the caller moves on, so the button doesn't come back on in between.

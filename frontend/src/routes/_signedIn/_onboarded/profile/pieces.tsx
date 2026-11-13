@@ -1,14 +1,8 @@
 import { Plus } from "@phosphor-icons/react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useRef, useState } from "react";
 
-import {
-  listCurrentUserPiecesInfiniteOptions,
-  listCurrentUserPiecesInfiniteQueryKey,
-  listProductsInfiniteQueryKey,
-  removeCurrentUserPieceMutation,
-} from "@/api/generated/@tanstack/react-query.gen";
+import { listCurrentUserPiecesInfiniteOptions } from "@/api/generated/@tanstack/react-query.gen";
 import { Box, Button, Empty, ErrorState, Link, Spinner, Text } from "@/design-system";
 import { LoadMoreSentinel } from "@/features/pieces/load-more-sentinel";
 import { OwnedPieceCard } from "@/features/pieces/owned-piece-card";
@@ -19,7 +13,6 @@ export const Route = createFileRoute("/_signedIn/_onboarded/profile/pieces")({
 });
 
 function PiecesPage() {
-  const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
   const listRef = useRef<HTMLUListElement>(null);
 
@@ -40,18 +33,10 @@ function PiecesPage() {
     }
   }, [fetchNextPage, isFetchingNextPage, isFetchNextPageError]);
 
-  const removeMutation = useMutation({
-    ...removeCurrentUserPieceMutation(),
-    // The pressed Remove button leaves with its card, so focus would fall back to the page.
-    onSuccess: () => listRef.current?.focus(),
-    // The catalog leaves owned pieces out, so a removed piece goes back into the picker. Refreshed
-    // on failure too: a 404 means the piece is already gone, and the list should stop showing it.
-    onSettled: () =>
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: listCurrentUserPiecesInfiniteQueryKey() }),
-        queryClient.invalidateQueries({ queryKey: listProductsInfiniteQueryKey() }),
-      ]),
-  });
+  // The pressed Remove button leaves with its card, so focus would fall back to the page.
+  function focusList() {
+    listRef.current?.focus();
+  }
 
   if (isPending) {
     return <Spinner />;
@@ -90,11 +75,6 @@ function PiecesPage() {
           onClick={() => setEditing(!editing)}
         />
       </Box>
-      {removeMutation.isError && (
-        <Text variant="body" className="mb-md text-error">
-          Couldn't remove that piece. Try again.
-        </Text>
-      )}
       <ul
         ref={listRef}
         tabIndex={-1}
@@ -102,15 +82,7 @@ function PiecesPage() {
         className="grid grid-cols-2 gap-md focus-ring md:grid-cols-3 lg:grid-cols-4"
       >
         {pieces.map((piece) => (
-          <OwnedPieceCard
-            key={piece.id}
-            piece={piece}
-            showRemove={editing}
-            onRemove={() => removeMutation.mutate({ path: { product_id: piece.id } })}
-            removing={
-              removeMutation.isPending && removeMutation.variables.path.product_id === piece.id
-            }
-          />
+          <OwnedPieceCard key={piece.id} piece={piece} showRemove={editing} onRemoved={focusList} />
         ))}
         <li>
           <Link
