@@ -7,6 +7,7 @@ import { replaceCurrentUserStylePreferencesMutation } from "@/api/generated/@tan
 import type { StylePreferences } from "@/api/generated/types.gen";
 import { Box, Button, ImageCard, Logo, Page, ProgressBar, Tabs, Text } from "@/design-system";
 import { AccountError, requireAccountStatus } from "@/features/account/account";
+import { PiecePicker } from "@/features/pieces/piece-picker";
 import {
   fitFields,
   noPreferences,
@@ -22,20 +23,41 @@ export const Route = createFileRoute("/_signedIn/onboarding")({
   component: Onboarding,
 });
 
+// The owned-pieces question and its picker come first, then the style questions.
+type OnboardingStep = "owns-pieces" | "pick-pieces" | PreferenceField;
+
 const fitTabs = fitFields.map((field) => ({ value: field, label: questions[field].name }));
 
 const fieldOrder: PreferenceField[] = ["style", ...fitFields];
 
-// Out of 2: empty on style, half full on the fit fields, and full only on the last field, where
+function isPreferenceField(step: OnboardingStep): step is PreferenceField {
+  return step !== "owns-pieces" && step !== "pick-pieces";
+}
+
+// Back from a fit field returns to style, because the fit fields switch through the tabs. "No" on
+// the question skips the picker, so style goes back to the question.
+function previousStep(step: OnboardingStep): OnboardingStep | null {
+  if (step === "owns-pieces") {
+    return null;
+  }
+
+  if (step === "pick-pieces" || step === "style") {
+    return "owns-pieces";
+  }
+
+  return "style";
+}
+
+// Out of 2: empty through style, half full on the fit fields, and full only on the last field, where
 // Finish shows.
 const progressStepCount = 2;
 
-function progressStep(index: number) {
-  if (index === 0) {
+function progressStep(step: OnboardingStep) {
+  if (!isPreferenceField(step) || step === "style") {
     return 0;
   }
 
-  if (index === fieldOrder.length - 1) {
+  if (step === fieldOrder[fieldOrder.length - 1]) {
     return progressStepCount;
   }
 
@@ -43,7 +65,7 @@ function progressStep(index: number) {
 }
 
 function Onboarding() {
-  const [currentField, setCurrentField] = useState<PreferenceField>("style");
+  const [step, setStep] = useState<OnboardingStep>("owns-pieces");
 
   const [preferences, setPreferences] = useState<StylePreferences>(noPreferences);
 
@@ -57,9 +79,7 @@ function Onboarding() {
   // Still saving while the reload starts, so the buttons don't come back on in between.
   const saving = saveMutation.isPending || saveMutation.isSuccess;
 
-  const currentIndex = fieldOrder.indexOf(currentField);
-  const onLastField = currentIndex === fieldOrder.length - 1;
-  const onFirstField = currentIndex === 0;
+  const back = previousStep(step);
 
   function toggle(field: PreferenceField, value: PreferenceValue, pressed: boolean) {
     setPreferences((current) => togglePreference(current, field, value, pressed));
@@ -69,8 +89,8 @@ function Onboarding() {
     saveMutation.mutate({ body: preferencesToSave });
   }
 
-  function nextFieldOrFinish() {
-    const next = fieldOrder[currentIndex + 1];
+  function nextFieldOrFinish(field: PreferenceField) {
+    const next = fieldOrder[fieldOrder.indexOf(field) + 1];
 
     if (next === undefined) {
       finish(preferences);
@@ -78,22 +98,21 @@ function Onboarding() {
       return;
     }
 
-    setCurrentField(next);
+    setStep(next);
   }
 
-  function nextButtonLabel() {
-    if (preferences[currentField].length === 0) {
+  function nextButtonLabel(field: PreferenceField) {
+    if (preferences[field].length === 0) {
       return "No Preference";
     }
 
-    return onLastField ? "Finish" : "Next";
+    return field === fieldOrder[fieldOrder.length - 1] ? "Finish" : "Next";
   }
 
   return (
     <Page className="flex flex-col pb-xxl">
       <Box className="grid h-xl w-full grid-cols-3 items-center">
-        {/* Back always returns to style; the fit fields switch through the tabs. */}
-        {!onFirstField && (
+        {back !== null && (
           <Button
             label="Back"
             leadingIcon={CaretLeft}
@@ -101,55 +120,66 @@ function Onboarding() {
             size="sm"
             className="justify-self-start"
             disabled={saving}
-            onClick={() => setCurrentField("style")}
+            onClick={() => setStep(back)}
           />
         )}
         <Box className="col-start-2 flex justify-center">
           <ProgressBar
             label="Sign-up progress"
-            step={progressStep(currentIndex)}
+            step={progressStep(step)}
             stepCount={progressStepCount}
           />
         </Box>
       </Box>
-      <Box className="flex flex-1 flex-col items-center gap-lg">
-        <Box className="flex flex-col items-center gap-xs">
+
+      {step === "owns-pieces" && (
+        <Box className="flex flex-1 flex-col items-center gap-lg">
           <Logo className="w-full max-w-xs" />
-          <Text variant="heading">{questions[currentField].prompt}</Text>
+          <Text variant="heading">Do you own any B&C clothes?</Text>
+          <Box className="flex flex-col gap-xs">
+            <Button label="Yes" variant="secondary" onClick={() => setStep("pick-pieces")} />
+            <Button label="No" variant="secondary" onClick={() => setStep("style")} />
+          </Box>
         </Box>
-        {/* Tabs<PreferenceField> because the index check can't narrow currentField to a fit field. */}
-        {onFirstField ? (
-          <Cards
-            field={currentField}
-            preferences={preferences}
-            onToggle={toggle}
-            disabled={saving}
-          />
-        ) : (
-          <Tabs<PreferenceField>
-            tabs={fitTabs}
-            value={currentField}
-            onValueChange={setCurrentField}
-            disabled={saving}
-          >
-            <Cards
-              field={currentField}
-              preferences={preferences}
-              onToggle={toggle}
+      )}
+
+      {step === "pick-pieces" && <PiecePicker onAdded={() => setStep("style")} />}
+
+      {isPreferenceField(step) && (
+        <Box className="flex flex-1 flex-col items-center gap-lg">
+          <Box className="flex flex-col items-center gap-xs">
+            <Logo className="w-full max-w-xs" />
+            <Text variant="heading">{questions[step].prompt}</Text>
+          </Box>
+          {/* Tabs<PreferenceField> because the style check can't narrow step to a fit field. */}
+          {step === "style" ? (
+            <Cards field={step} preferences={preferences} onToggle={toggle} disabled={saving} />
+          ) : (
+            <Tabs<PreferenceField>
+              tabs={fitTabs}
+              value={step}
+              onValueChange={setStep}
               disabled={saving}
-            />
-          </Tabs>
-        )}
-        <Button label={nextButtonLabel()} loading={saving} onClick={nextFieldOrFinish} />
-        {saveMutation.isError && (
-          <Text variant="body" className="text-error">
-            Couldn't save your preferences. Try again.
-          </Text>
-        )}
-      </Box>
-      {/* Per design, Skip starts after the first field. It drops any picks and saves no
+            >
+              <Cards field={step} preferences={preferences} onToggle={toggle} disabled={saving} />
+            </Tabs>
+          )}
+          <Button
+            label={nextButtonLabel(step)}
+            loading={saving}
+            onClick={() => nextFieldOrFinish(step)}
+          />
+          {saveMutation.isError && (
+            <Text variant="body" className="text-error">
+              Couldn't save your preferences. Try again.
+            </Text>
+          )}
+        </Box>
+      )}
+
+      {/* Per design, Skip starts after the first style field. It drops any picks and saves no
           preference for every field. */}
-      {!onFirstField && (
+      {isPreferenceField(step) && step !== "style" && (
         <Button
           label="Skip"
           trailingIcon={CaretRight}

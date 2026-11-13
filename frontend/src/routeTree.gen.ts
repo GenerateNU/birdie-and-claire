@@ -20,6 +20,7 @@ import { Route as SignedInOnboardedCreateOutfitRouteImport } from './routes/_sig
 import { Route as SignedInOnboardedProfileRouteRouteImport } from './routes/_signedIn/_onboarded/profile/route'
 import { Route as SignedInOnboardeddevDevRouteImport } from './routes/_signedIn/_onboarded/(dev)/dev'
 import { Route as SignedInOnboardeddevProfilePictureTestRouteImport } from './routes/_signedIn/_onboarded/(dev)/profile-picture-test'
+import { Route as SignedInOnboardedPiecesAddRouteImport } from './routes/_signedIn/_onboarded/pieces/add'
 import { Route as SignedInOnboardedProfileIndexRouteImport } from './routes/_signedIn/_onboarded/profile/index'
 import { Route as SignedInOnboardedProfileOutfitsRouteImport } from './routes/_signedIn/_onboarded/profile/outfits'
 import { Route as SignedInOnboardedProfilePiecesRouteImport } from './routes/_signedIn/_onboarded/profile/pieces'
@@ -84,6 +85,12 @@ const SignedInOnboardeddevProfilePictureTestRoute =
     path: '/profile-picture-test',
     getParentRoute: () => SignedInOnboardedRouteRoute,
   } as any)
+const SignedInOnboardedPiecesAddRoute =
+  SignedInOnboardedPiecesAddRouteImport.update({
+    id: '/pieces/add',
+    path: '/pieces/add',
+    getParentRoute: () => SignedInOnboardedRouteRoute,
+  } as any)
 const SignedInOnboardedProfileIndexRoute =
   SignedInOnboardedProfileIndexRouteImport.update({
     id: '/',
@@ -137,6 +144,7 @@ export interface FileRoutesByFullPath {
   '/create-outfit': typeof SignedInOnboardedCreateOutfitRoute
   '/dev': typeof SignedInOnboardeddevDevRoute
   '/profile-picture-test': typeof SignedInOnboardeddevProfilePictureTestRoute
+  '/pieces/add': typeof SignedInOnboardedPiecesAddRoute
   '/profile/outfits': typeof SignedInOnboardedProfileOutfitsRoute
   '/profile/pieces': typeof SignedInOnboardedProfilePiecesRoute
   '/profile/': typeof SignedInOnboardedProfileIndexRoute
@@ -154,6 +162,7 @@ export interface FileRoutesByTo {
   '/create-outfit': typeof SignedInOnboardedCreateOutfitRoute
   '/dev': typeof SignedInOnboardeddevDevRoute
   '/profile-picture-test': typeof SignedInOnboardeddevProfilePictureTestRoute
+  '/pieces/add': typeof SignedInOnboardedPiecesAddRoute
   '/profile/outfits': typeof SignedInOnboardedProfileOutfitsRoute
   '/profile/pieces': typeof SignedInOnboardedProfilePiecesRoute
   '/profile': typeof SignedInOnboardedProfileIndexRoute
@@ -175,6 +184,7 @@ export interface FileRoutesById {
   '/_signedIn/_onboarded/create-outfit': typeof SignedInOnboardedCreateOutfitRoute
   '/_signedIn/_onboarded/(dev)/dev': typeof SignedInOnboardeddevDevRoute
   '/_signedIn/_onboarded/(dev)/profile-picture-test': typeof SignedInOnboardeddevProfilePictureTestRoute
+  '/_signedIn/_onboarded/pieces/add': typeof SignedInOnboardedPiecesAddRoute
   '/_signedIn/_onboarded/profile/outfits': typeof SignedInOnboardedProfileOutfitsRoute
   '/_signedIn/_onboarded/profile/pieces': typeof SignedInOnboardedProfilePiecesRoute
   '/_signedIn/_onboarded/profile/': typeof SignedInOnboardedProfileIndexRoute
@@ -195,6 +205,7 @@ export interface FileRouteTypes {
     | '/create-outfit'
     | '/dev'
     | '/profile-picture-test'
+    | '/pieces/add'
     | '/profile/outfits'
     | '/profile/pieces'
     | '/profile/'
@@ -212,6 +223,7 @@ export interface FileRouteTypes {
     | '/create-outfit'
     | '/dev'
     | '/profile-picture-test'
+    | '/pieces/add'
     | '/profile/outfits'
     | '/profile/pieces'
     | '/profile'
@@ -232,6 +244,7 @@ export interface FileRouteTypes {
     | '/_signedIn/_onboarded/create-outfit'
     | '/_signedIn/_onboarded/(dev)/dev'
     | '/_signedIn/_onboarded/(dev)/profile-picture-test'
+    | '/_signedIn/_onboarded/pieces/add'
     | '/_signedIn/_onboarded/profile/outfits'
     | '/_signedIn/_onboarded/profile/pieces'
     | '/_signedIn/_onboarded/profile/'
@@ -327,6 +340,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignedInOnboardeddevProfilePictureTestRouteImport
       parentRoute: typeof SignedInOnboardedRouteRoute
     }
+    '/_signedIn/_onboarded/pieces/add': {
+      id: '/_signedIn/_onboarded/pieces/add'
+      path: '/pieces/add'
+      fullPath: '/pieces/add'
+      preLoaderRoute: typeof SignedInOnboardedPiecesAddRouteImport
+      parentRoute: typeof SignedInOnboardedRouteRoute
+    }
     '/_signedIn/_onboarded/profile/': {
       id: '/_signedIn/_onboarded/profile/'
       path: '/'
@@ -408,6 +428,7 @@ interface SignedInOnboardedRouteRouteChildren {
   SignedInOnboardedCreateOutfitRoute: typeof SignedInOnboardedCreateOutfitRoute
   SignedInOnboardeddevDevRoute: typeof SignedInOnboardeddevDevRoute
   SignedInOnboardeddevProfilePictureTestRoute: typeof SignedInOnboardeddevProfilePictureTestRoute
+  SignedInOnboardedPiecesAddRoute: typeof SignedInOnboardedPiecesAddRoute
   SignedInOnboardedOutfitsOutfitIdEditRoute: typeof SignedInOnboardedOutfitsOutfitIdEditRoute
   SignedInOnboardedOutfitsOutfitIdIndexRoute: typeof SignedInOnboardedOutfitsOutfitIdIndexRoute
 }
@@ -420,6 +441,7 @@ const SignedInOnboardedRouteRouteChildren: SignedInOnboardedRouteRouteChildren =
     SignedInOnboardeddevDevRoute: SignedInOnboardeddevDevRoute,
     SignedInOnboardeddevProfilePictureTestRoute:
       SignedInOnboardeddevProfilePictureTestRoute,
+    SignedInOnboardedPiecesAddRoute: SignedInOnboardedPiecesAddRoute,
     SignedInOnboardedOutfitsOutfitIdEditRoute:
       SignedInOnboardedOutfitsOutfitIdEditRoute,
     SignedInOnboardedOutfitsOutfitIdIndexRoute:

@@ -12,6 +12,8 @@ export { TextButton } from "@/design-system/components/buttons/text-button";
 
 export { Toggle } from "@/design-system/components/buttons/toggle";
 
+export { CardImage } from "@/design-system/components/cards/card-image";
+
 export { ImageCard } from "@/design-system/components/cards/image-card";
 
 export { ListCard } from "@/design-system/components/cards/list-card";
