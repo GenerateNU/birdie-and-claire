@@ -2,6 +2,7 @@ import {
   ArrowRightIcon,
   CaretLeftIcon,
   CaretRightIcon,
+  DiamondsFourIcon,
   MagnifyingGlassIcon,
   PlusIcon,
   ShareNetworkIcon,
@@ -40,6 +41,7 @@ import {
   Tabs,
   Text,
   TextColor,
+  TextButton,
   TextField,
   Toggle,
   TypeScale,
@@ -216,6 +218,8 @@ export function Playground() {
                 <IconButton icon={PlusIcon} label="Add" variant="outlined" disabled />
               </Box>
               <Label>IconButton · outlined · plain · disabled</Label>
+              <TextButton label="swap item" onClick={() => {}} />
+              <Label>TextButton</Label>
             </Section>
 
             <Section id="link">
@@ -495,9 +499,20 @@ function TabsExamples() {
   const [tab, setTab] = useState("neckline");
 
   return (
-    <Tabs tabs={sampleTabs} value={tab} onValueChange={setTab} disabled={false}>
-      <Text variant="body">Showing the {tab} panel.</Text>
-    </Tabs>
+    <Box className="flex flex-col gap-lg">
+      <Tabs tabs={sampleTabs} value={tab} onValueChange={setTab} disabled={false}>
+        <Text variant="body">Showing the {tab} panel.</Text>
+      </Tabs>
+      <Tabs
+        tabs={sampleTabs.map((sample) => ({ ...sample, icon: DiamondsFourIcon }))}
+        value={tab}
+        onValueChange={setTab}
+        disabled={false}
+        appearance="underline"
+      >
+        <Text variant="body">Showing the {tab} panel, underline appearance.</Text>
+      </Tabs>
+    </Box>
   );
 }
 
@@ -617,6 +632,14 @@ function SearchFieldExamples() {
         onSubmit={() => {}}
         inactive
       />
+      <SearchField
+        label="With a leading icon"
+        placeholder="Search items"
+        value=""
+        onValueChange={() => {}}
+        onSubmit={() => {}}
+        leadingIcon={MagnifyingGlassIcon}
+      />
     </Box>
   );
 }
@@ -682,7 +705,9 @@ function RadioExamples() {
 }
 
 function DialogExamples() {
-  const [openDialog, setOpenDialog] = useState<"confirm" | "dismissible" | null>(null);
+  const [openDialog, setOpenDialog] = useState<"confirm" | "dismissible" | "content" | null>(null);
+
+  const [dialogName, setDialogName] = useState("Weekend look");
   const close = () => setOpenDialog(null);
 
   return (
@@ -692,6 +717,11 @@ function DialogExamples() {
         label="Dismissible dialog"
         variant="secondary"
         onClick={() => setOpenDialog("dismissible")}
+      />
+      <Button
+        label="Dialog with content"
+        variant="secondary"
+        onClick={() => setOpenDialog("content")}
       />
 
       <Dialog
@@ -712,6 +742,17 @@ function DialogExamples() {
         actions={[{ label: "Got it", variant: "primary", onClick: close }]}
         dismissible
       />
+      <Dialog
+        open={openDialog === "content"}
+        onClose={close}
+        title="Name your outfit"
+        actions={[
+          { label: "Cancel", variant: "secondary", onClick: close, disabled: true },
+          { label: "Save", variant: "primary", onClick: close, loading: true },
+        ]}
+      >
+        <TextField label="Outfit name" value={dialogName} onValueChange={setDialogName} />
+      </Dialog>
     </Box>
   );
 }

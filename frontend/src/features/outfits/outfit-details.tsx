@@ -1,32 +1,36 @@
-import { Box, Divider, Empty, Text } from "@/design-system";
-import type { Product } from "@/features/outfits/outfit-items";
+import { Box, Divider, Empty, Text, TextButton } from "@/design-system";
+import type { DraftItem } from "@/features/outfits/outfit-draft";
 
 type OutfitDetailsProps = {
-  outfitName: string;
-  products: Product[];
+  items: DraftItem[];
+  onSwapItem: (originId: string) => void;
 };
 
 type ItemTileProps = {
   imageUrl: string | null;
 };
 
-export function OutfitDetails({ outfitName, products }: OutfitDetailsProps) {
+export function OutfitDetails({ items, onSwapItem }: OutfitDetailsProps) {
   return (
     <section className="flex h-full flex-col border">
       <header className="px-xxl py-xs">
         <Text variant="heading">Outfit Details</Text>
-        <Text variant="body" className="text-secondary">
-          {outfitName}
-        </Text>
       </header>
       <Divider />
-      {products.length === 0 ? (
+      {items.length === 0 ? (
         <Empty title="This outfit has no items yet" className="px-xxl py-lg" />
       ) : (
         <ul className="flex min-h-0 flex-1 flex-col gap-md overflow-y-auto px-xxl py-lg">
-          {products.map((product) => (
-            <li key={product.id} className="flex items-center gap-md border p-md">
-              <ItemTile imageUrl={product.image_url} />
+          {items.map(({ product, original }) => (
+            <li key={original.id} className="flex items-center gap-md border p-md">
+              <Box className="flex shrink-0 flex-col items-center gap-xxs">
+                <ItemTile imageUrl={product.image_url} />
+                <TextButton
+                  label="swap item"
+                  accessibleLabel={`Swap item: ${product.title}`}
+                  onClick={() => onSwapItem(original.id)}
+                />
+              </Box>
               <Text variant="subheading">{product.title}</Text>
             </li>
           ))}

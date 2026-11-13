@@ -11,6 +11,8 @@ type DialogAction = {
   label: string;
   onClick: () => void;
   variant: ButtonVariant;
+  disabled?: boolean;
+  loading?: boolean;
 };
 
 type DialogProps = {
@@ -65,6 +67,8 @@ export function Dialog({
                   label={action.label}
                   variant={action.variant}
                   onClick={action.onClick}
+                  disabled={action.disabled}
+                  loading={action.loading}
                 />
               ))}
             </Box>

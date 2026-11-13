@@ -7,10 +7,10 @@ import {
   type ButtonSize,
   type ButtonVariant,
 } from "@/design-system/components/buttons/variant";
+import { textLinkClasses } from "@/design-system/components/links/text-link-classes";
 import { joinClasses } from "@/design-system/utils/join-classes";
 
-const textClasses =
-  "inline-flex items-center gap-xxs text-body text-secondary underline hover:text-primary focus-ring";
+const textClasses = `inline-flex items-center gap-xxs ${textLinkClasses}`;
 
 type AnchorProps = AnchorHTMLAttributes<HTMLAnchorElement> & {
   ref?: Ref<HTMLAnchorElement>;
