@@ -14,16 +14,16 @@ type LandingProps = {
 export function Landing({ signedIn }: LandingProps) {
   const [view, setView] = useState<View>("hero");
   const showFeatures = () => setView("features");
-  const profile = { label: "My profile", icon: UserIcon, to: "/profile" } as const;
+  const profileItem = { label: "My profile", icon: UserIcon, to: "/profile" } as const;
 
-  const features = {
+  const featuresItem = {
     label: "Features",
     icon: MagnifyingGlassIcon,
     onClick: showFeatures,
     active: view === "features",
   };
 
-  const getStarted = {
+  const getStartedItem = {
     label: "Get started",
     icon: ArrowRightIcon,
     to: signedIn ? "/create-outfit" : "/login",
@@ -33,7 +33,9 @@ export function Landing({ signedIn }: LandingProps) {
     <Box className="flex min-h-screen flex-col">
       <Header
         onLogoClick={() => setView("hero")}
-        items={signedIn ? [profile, features, getStarted] : [features, getStarted]}
+        items={
+          signedIn ? [profileItem, featuresItem, getStartedItem] : [featuresItem, getStartedItem]
+        }
       />
       <main className="flex flex-1 flex-col">
         {view === "hero" ? (

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { requireAccountStatus } from "@/features/account/account";
+import { AccountError, requireAccountStatus } from "@/features/account/account";
 import { Landing } from "@/features/landing/landing";
 import { supabase } from "@/lib/supabase";
 
@@ -21,10 +21,11 @@ export const Route = createFileRoute("/")({
 
     return { signedIn: true };
   },
-  component: Home,
+  errorComponent: AccountError,
+  component: LandingPage,
 });
 
-function Home() {
+function LandingPage() {
   const { signedIn } = Route.useRouteContext();
 
   return <Landing signedIn={signedIn} />;

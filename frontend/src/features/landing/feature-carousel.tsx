@@ -20,7 +20,7 @@ const SLIDES = [
     description:
       "Browse the Birdie & Claire catalogue or add clothes that you own to put together a piece you can envision",
     image: slideCreate,
-    imageAlt: "The outfit editor, with a top being swapped from the catalog",
+    imageAlt: "The outfit editor, with a top being swapped from the catalogue",
   },
   {
     title: "Look back on outfits you’ve saved",
@@ -50,13 +50,13 @@ export function FeatureCarousel() {
   function goTo(target: number) {
     setIndex(target);
 
-    if (target === 0) {
+    if (target === 0 && document.activeElement === previousRef.current) {
       nextRef.current?.focus();
 
       return;
     }
 
-    if (target === SLIDES.length - 1) {
+    if (target === SLIDES.length - 1 && document.activeElement === nextRef.current) {
       previousRef.current?.focus();
     }
   }
@@ -85,14 +85,14 @@ export function FeatureCarousel() {
 
   return (
     <Box className="flex flex-col items-center gap-xl px-md py-xxl lg:px-xxl">
-      <h1 className="sr-only">Features</h1>
-      {/* Announces the new slide, since the arrows that change it keep focus. */}
+      <Text variant="heading" className="sr-only">
+        Features
+      </Text>
       <Box aria-live="polite" className="flex w-full flex-col gap-xxs">
         <Text variant="headline">{slide.title}</Text>
         <Text variant="body">{slide.description}</Text>
       </Box>
       <Box className="flex w-full items-center justify-center gap-xs lg:gap-xl">
-        {/* Both arrows are hidden, not unmounted, so the image stays centered at either end. */}
         <IconButton
           ref={previousRef}
           icon={CaretLeftIcon}
