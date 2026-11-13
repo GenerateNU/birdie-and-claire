@@ -21,7 +21,7 @@ func OwnedProductRoutes(api huma.API, params types.RouteParams) {
 		Summary:     "List the catalog products the authenticated user owns",
 		Description: "Most recently added first.",
 		Tags:        []string{"pieces"},
-	}, controller.List)
+	}, controller.ListOwnedProducts)
 
 	huma.Register(api, huma.Operation{
 		OperationID:   "add-current-user-pieces",
@@ -29,9 +29,9 @@ func OwnedProductRoutes(api huma.API, params types.RouteParams) {
 		Path:          "/api/v1/users/me/pieces",
 		DefaultStatus: http.StatusNoContent,
 		Summary:       "Add catalog products to the ones the authenticated user owns",
-		Description:   "Products already owned are skipped, so repeating a call changes nothing. A product not in the catalog fails the whole request with 409.",
+		Description:   "Products already owned are skipped. A product not in the catalog fails the whole request with 409.",
 		Tags:          []string{"pieces"},
-	}, controller.Add)
+	}, controller.AddOwnedProducts)
 
 	huma.Register(api, huma.Operation{
 		OperationID:   "remove-current-user-piece",
@@ -41,5 +41,5 @@ func OwnedProductRoutes(api huma.API, params types.RouteParams) {
 		Summary:       "Remove a product from the ones the authenticated user owns",
 		Description:   "Returns 404 if the user doesn't own the product.",
 		Tags:          []string{"pieces"},
-	}, controller.Remove)
+	}, controller.RemoveOwnedProduct)
 }

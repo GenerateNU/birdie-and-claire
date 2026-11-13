@@ -17,19 +17,18 @@ func NewProductController(service services.ProductService) *ProductController {
 	return &ProductController{service: service}
 }
 
-type ListProductsInput struct {
+type ListUnownedProductsInput struct {
 	pagination.CursorParams
 }
 
-type ListProductsOutput struct {
+type ListUnownedProductsOutput struct {
 	Body pagination.Page[models.ProductResponse]
 }
 
-// List returns a page of the catalog, newest first, without the products the authenticated user owns.
-func (c *ProductController) List(ctx context.Context, input *ListProductsInput) (*ListProductsOutput, error) {
-	page, err := c.service.List(ctx, input.CursorParams)
+func (c *ProductController) ListUnownedProducts(ctx context.Context, input *ListUnownedProductsInput) (*ListUnownedProductsOutput, error) {
+	page, err := c.service.ListUnownedProducts(ctx, input.CursorParams)
 	if err != nil {
 		return nil, errs.ToHuma(ctx, err)
 	}
-	return &ListProductsOutput{Body: page}, nil
+	return &ListUnownedProductsOutput{Body: page}, nil
 }

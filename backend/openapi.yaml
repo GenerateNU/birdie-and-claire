@@ -1266,7 +1266,7 @@ paths:
       tags:
         - pieces
     post:
-      description: Products already owned are skipped, so repeating a call changes nothing. A product not in the catalog fails the whole request with 409.
+      description: Products already owned are skipped. A product not in the catalog fails the whole request with 409.
       operationId: add-current-user-pieces
       requestBody:
         content:

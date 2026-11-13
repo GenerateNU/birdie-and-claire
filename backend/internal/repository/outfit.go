@@ -304,24 +304,6 @@ func (r *outfitRepository) List(ctx context.Context, userID uuid.UUID, params pa
 	return outfits, nil
 }
 
-// productScanTargets matches the product columns, id through the first image's url, in the order
-// outfit Create, product List, and owned product List select them.
-func productScanTargets(product *models.ProductResponse) []any {
-	return []any{
-		&product.ID,
-		&product.ShopifyID,
-		&product.Handle,
-		&product.Title,
-		&product.ProductType,
-		&product.Slot,
-		// text[] scans into []string.
-		&product.Tags,
-		&product.CreatedAt,
-		&product.UpdatedAt,
-		&product.ImageURL,
-	}
-}
-
 // scanOutfitWithProducts reads the o.id through o.updated_at, then p.id through
 // first_image.url, columns GetByID and GetShared select, one row per product.
 // It returns ErrNotFound when there are no rows.

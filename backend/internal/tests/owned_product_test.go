@@ -11,10 +11,12 @@ import (
 	"time"
 
 	"birdie-and-claire/internal/auth"
+	"birdie-and-claire/internal/config"
 	"birdie-and-claire/internal/controllers"
 	"birdie-and-claire/internal/errs"
 	"birdie-and-claire/internal/models"
 	"birdie-and-claire/internal/repository"
+	"birdie-and-claire/internal/server"
 	"birdie-and-claire/internal/services"
 	"birdie-and-claire/internal/utils/pagination"
 
@@ -38,7 +40,7 @@ type addPiecesProbeOutput struct {
 func addPiecesProbe(t *testing.T) humatest.TestAPI {
 	t.Helper()
 
-	_, api := humatest.New(t)
+	_, api := humatest.New(t, server.APIConfig(&config.Configuration{}))
 	huma.Register(api, huma.Operation{
 		OperationID: "add-pieces-probe",
 		Method:      http.MethodPost,
@@ -83,33 +85,39 @@ func TestAddPiecesValidatesProductIDs(t *testing.T) {
 	}
 }
 
-// Go keeps the last of a key repeated in different casing, after Huma validated the first.
-func TestAddPiecesProductIDsRepeatedInDifferentCasing(t *testing.T) {
-	quoted := make([]string, 51)
-	for i, id := range newProductIDs(51) {
-		quoted[i] = `"` + id + `"`
-	}
-	tooMany := "[" + strings.Join(quoted, ",") + "]"
-
+// A key in another casing is not the field, so only the exact key is validated and decoded.
+func TestAddPiecesIgnoresKeysInDifferentCasing(t *testing.T) {
 	tests := []struct {
-		name     string
-		body     string
-		wantBody string
+		name string
+		body string
 	}{
-		{name: "empty list after valid list", body: `{"product_ids": ["` + productIDLower + `"], "PRODUCT_IDS": []}`, wantBody: "product_ids must not be empty"},
-		{name: "51 ids after valid list", body: `{"product_ids": ["` + productIDLower + `"], "PRODUCT_IDS": ` + tooMany + `}`, wantBody: "product_ids must have at most 50 items"},
+		{name: "empty PRODUCT_IDS beside product_ids", body: `{"product_ids": ["` + productIDLower + `"], "PRODUCT_IDS": []}`},
+		{name: "longer PRODUCT_IDS beside product_ids", body: `{"product_ids": ["` + productIDLower + `"], "PRODUCT_IDS": ["` + productIDOther + `", "` + productIDUpper + `"]}`},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			response := addPiecesProbe(t).Post("/probe", strings.NewReader(test.body))
-			if response.Code != http.StatusUnprocessableEntity {
-				t.Fatalf("status = %d, want %d: %s", response.Code, http.StatusUnprocessableEntity, response.Body)
+			if response.Code != http.StatusOK {
+				t.Fatalf("status = %d, want %d: %s", response.Code, http.StatusOK, response.Body)
 			}
-			if !strings.Contains(response.Body.String(), test.wantBody) {
-				t.Fatalf("body = %s, want it to contain %s", response.Body, test.wantBody)
+			if !strings.Contains(response.Body.String(), `"product_count":1`) {
+				t.Fatalf("body = %s, want only the exact key's one product", response.Body)
 			}
 		})
+	}
+}
+
+// Huma validates and decodes the body in two passes, so a repeated key has to fail the decode instead of picking a winner.
+func TestAddPiecesRejectsRepeatedKeys(t *testing.T) {
+	body := `{"product_ids": ["` + productIDLower + `"], "product_ids": []}`
+
+	response := addPiecesProbe(t).Post("/probe", strings.NewReader(body))
+	if response.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d: %s", response.Code, http.StatusBadRequest, response.Body)
+	}
+	if !strings.Contains(response.Body.String(), "duplicate object member name") {
+		t.Fatalf("body = %s, want it to name the duplicate key", response.Body)
 	}
 }
 
@@ -166,12 +174,12 @@ func TestPiecesListMostRecentlyAddedFirstAcrossPages(t *testing.T) {
 	first, second, third := insertTestProduct(t, db), insertTestProduct(t, db), insertTestProduct(t, db)
 
 	for _, productID := range []uuid.UUID{first, second, third} {
-		if err := service.Add(ctx, []uuid.UUID{productID}); err != nil {
+		if err := service.AddOwnedProducts(ctx, []uuid.UUID{productID}); err != nil {
 			t.Fatalf("add %s: %v", productID, err)
 		}
 	}
 
-	page, err := service.List(ctx, cursorParams(t, 2, ""))
+	page, err := service.ListOwnedProducts(ctx, cursorParams(t, 2, ""))
 	if err != nil {
 		t.Fatalf("list first page: %v", err)
 	}
@@ -179,7 +187,7 @@ func TestPiecesListMostRecentlyAddedFirstAcrossPages(t *testing.T) {
 		t.Fatalf("first page = %v, has_more %v, cursor %v; want [third second] and more", got, page.HasMore, page.NextCursor)
 	}
 
-	page, err = service.List(ctx, cursorParams(t, 2, *page.NextCursor))
+	page, err = service.ListOwnedProducts(ctx, cursorParams(t, 2, *page.NextCursor))
 	if err != nil {
 		t.Fatalf("list second page: %v", err)
 	}
@@ -198,35 +206,35 @@ func TestPiecesAddIsIdempotentAndScopedToTheUser(t *testing.T) {
 	owned, alsoOwned := insertTestProduct(t, db), insertTestProduct(t, db)
 	ctx := context.Background()
 
-	if err := repo.Add(ctx, owner, []uuid.UUID{owned}); err != nil {
+	if err := repo.AddOwnedProducts(ctx, owner, []uuid.UUID{owned}); err != nil {
 		t.Fatalf("add: %v", err)
 	}
-	before, err := repo.List(ctx, owner, cursorParams(t, 10, ""))
+	before, err := repo.ListOwnedProducts(ctx, owner, cursorParams(t, 10, ""))
 	if err != nil {
 		t.Fatalf("list: %v", err)
 	}
 
 	// One already owned, one new: the owned one keeps its added_at, the new one is added.
-	if err := repo.Add(ctx, owner, []uuid.UUID{owned, alsoOwned}); err != nil {
+	if err := repo.AddOwnedProducts(ctx, owner, []uuid.UUID{owned, alsoOwned}); err != nil {
 		t.Fatalf("add again: %v", err)
 	}
-	after, err := repo.List(ctx, owner, cursorParams(t, 10, ""))
+	after, err := repo.ListOwnedProducts(ctx, owner, cursorParams(t, 10, ""))
 	if err != nil {
 		t.Fatalf("list: %v", err)
 	}
-	if got := ownedIDs(after); !slices.Equal(got, []uuid.UUID{alsoOwned, owned}) {
+	if got := ownedIDs(after.Items); !slices.Equal(got, []uuid.UUID{alsoOwned, owned}) {
 		t.Fatalf("pieces = %v, want [alsoOwned owned]", got)
 	}
-	if !after[1].AddedAt.Equal(before[0].AddedAt) {
-		t.Errorf("re-adding moved added_at from %v to %v", before[0].AddedAt, after[1].AddedAt)
+	if !after.Items[1].AddedAt.Equal(before.Items[0].AddedAt) {
+		t.Errorf("re-adding moved added_at from %v to %v", before.Items[0].AddedAt, after.Items[1].AddedAt)
 	}
 
-	otherPieces, err := repo.List(ctx, other, cursorParams(t, 10, ""))
+	otherPieces, err := repo.ListOwnedProducts(ctx, other, cursorParams(t, 10, ""))
 	if err != nil {
 		t.Fatalf("list other user: %v", err)
 	}
-	if len(otherPieces) != 0 {
-		t.Errorf("other user's pieces = %v, want none", ownedIDs(otherPieces))
+	if len(otherPieces.Items) != 0 {
+		t.Errorf("other user's pieces = %v, want none", ownedIDs(otherPieces.Items))
 	}
 }
 
@@ -249,7 +257,7 @@ func TestPiecesAddForeignKeyViolations(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err := repo.Add(ctx, test.userID, test.productIDs)
+			err := repo.AddOwnedProducts(ctx, test.userID, test.productIDs)
 			if got := statusOf(t, errs.ToHuma(ctx, err)); got != test.want {
 				t.Fatalf("status = %d, want %d: %v", got, test.want, err)
 			}
@@ -257,12 +265,12 @@ func TestPiecesAddForeignKeyViolations(t *testing.T) {
 	}
 
 	// One statement, so the known product in the failed request was not added either.
-	pieces, err := repo.List(ctx, userID, cursorParams(t, 10, ""))
+	pieces, err := repo.ListOwnedProducts(ctx, userID, cursorParams(t, 10, ""))
 	if err != nil {
 		t.Fatalf("list: %v", err)
 	}
-	if len(pieces) != 0 {
-		t.Errorf("pieces = %v, want none after the failed add", ownedIDs(pieces))
+	if len(pieces.Items) != 0 {
+		t.Errorf("pieces = %v, want none after the failed add", ownedIDs(pieces.Items))
 	}
 }
 
@@ -274,23 +282,23 @@ func TestPiecesRemove(t *testing.T) {
 	productID := insertTestProduct(t, db)
 
 	for _, userID := range []uuid.UUID{owner, other} {
-		if err := repo.Add(ctx, userID, []uuid.UUID{productID}); err != nil {
+		if err := repo.AddOwnedProducts(ctx, userID, []uuid.UUID{productID}); err != nil {
 			t.Fatalf("add: %v", err)
 		}
 	}
 
-	if err := repo.Remove(ctx, owner, productID); err != nil {
+	if err := repo.RemoveOwnedProduct(ctx, owner, productID); err != nil {
 		t.Fatalf("remove: %v", err)
 	}
-	if got := statusOf(t, errs.ToHuma(ctx, repo.Remove(ctx, owner, productID))); got != http.StatusNotFound {
+	if got := statusOf(t, errs.ToHuma(ctx, repo.RemoveOwnedProduct(ctx, owner, productID))); got != http.StatusNotFound {
 		t.Errorf("removing again: status = %d, want %d", got, http.StatusNotFound)
 	}
 
-	otherPieces, err := repo.List(ctx, other, cursorParams(t, 10, ""))
+	otherPieces, err := repo.ListOwnedProducts(ctx, other, cursorParams(t, 10, ""))
 	if err != nil {
 		t.Fatalf("list other user: %v", err)
 	}
-	if got := ownedIDs(otherPieces); !slices.Equal(got, []uuid.UUID{productID}) {
+	if got := ownedIDs(otherPieces.Items); !slices.Equal(got, []uuid.UUID{productID}) {
 		t.Errorf("other user's pieces = %v, want the product still there", got)
 	}
 }
@@ -302,18 +310,18 @@ func TestPiecesCascadeWithUserAndProduct(t *testing.T) {
 	userID := insertTestUser(t, db)
 	keptProduct, deletedProduct := insertTestProduct(t, db), insertTestProduct(t, db)
 
-	if err := repo.Add(ctx, userID, []uuid.UUID{keptProduct, deletedProduct}); err != nil {
+	if err := repo.AddOwnedProducts(ctx, userID, []uuid.UUID{keptProduct, deletedProduct}); err != nil {
 		t.Fatalf("add: %v", err)
 	}
 
 	if _, err := db.ExecContext(ctx, `DELETE FROM products WHERE id = $1`, deletedProduct); err != nil {
 		t.Fatalf("delete product: %v", err)
 	}
-	pieces, err := repo.List(ctx, userID, cursorParams(t, 10, ""))
+	pieces, err := repo.ListOwnedProducts(ctx, userID, cursorParams(t, 10, ""))
 	if err != nil {
 		t.Fatalf("list: %v", err)
 	}
-	if got := ownedIDs(pieces); !slices.Equal(got, []uuid.UUID{keptProduct}) {
+	if got := ownedIDs(pieces.Items); !slices.Equal(got, []uuid.UUID{keptProduct}) {
 		t.Fatalf("pieces after deleting a product = %v, want [keptProduct]", got)
 	}
 
@@ -339,12 +347,12 @@ func TestProductsListNewestFirstWithoutOwnedAcrossPages(t *testing.T) {
 	owned := insertTestProductAt(t, db, future.Add(2*time.Hour))
 	older := insertTestProductAt(t, db, future.Add(time.Hour))
 
-	if err := repository.New(db).OwnedProduct.Add(context.Background(), userID, []uuid.UUID{owned}); err != nil {
+	if err := repository.New(db).OwnedProduct.AddOwnedProducts(context.Background(), userID, []uuid.UUID{owned}); err != nil {
 		t.Fatalf("add owned: %v", err)
 	}
 	service := services.NewProductService(repository.New(db))
 
-	page, err := service.List(ctx, cursorParams(t, 1, ""))
+	page, err := service.ListUnownedProducts(ctx, cursorParams(t, 1, ""))
 	if err != nil {
 		t.Fatalf("list first page: %v", err)
 	}
@@ -352,7 +360,7 @@ func TestProductsListNewestFirstWithoutOwnedAcrossPages(t *testing.T) {
 		t.Fatalf("first page = %v, has_more %v; want [newest] and more", got, page.HasMore)
 	}
 
-	page, err = service.List(ctx, cursorParams(t, 1, *page.NextCursor))
+	page, err = service.ListUnownedProducts(ctx, cursorParams(t, 1, *page.NextCursor))
 	if err != nil {
 		t.Fatalf("list second page: %v", err)
 	}

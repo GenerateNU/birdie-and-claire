@@ -21,5 +21,5 @@ func ProductRoutes(api huma.API, params types.RouteParams) {
 		Summary:     "List catalog products the authenticated user can add to the pieces they own",
 		Description: "Newest first. Products the user already owns are left out.",
 		Tags:        []string{"products"},
-	}, controller.List)
+	}, controller.ListUnownedProducts)
 }
