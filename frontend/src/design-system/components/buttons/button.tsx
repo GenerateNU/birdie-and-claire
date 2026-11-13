@@ -2,9 +2,8 @@ import { Button as BaseButton } from "@base-ui/react/button";
 import type { Icon } from "@phosphor-icons/react";
 import type { MouseEventHandler } from "react";
 import {
-  buttonBaseClasses,
-  buttonSizeClasses,
-  buttonVariantClasses,
+  buttonClasses,
+  type ButtonSize,
   type ButtonVariant,
 } from "@/design-system/components/buttons/variant";
 import { joinClasses } from "@/design-system/utils/join-classes";
@@ -15,7 +14,7 @@ type ButtonProps = {
   leadingIcon?: Icon;
   trailingIcon?: Icon;
   variant?: ButtonVariant;
-  size?: keyof typeof buttonSizeClasses;
+  size?: ButtonSize;
   loading?: boolean;
   loadingLabel?: string;
   onClick?: MouseEventHandler<HTMLButtonElement>;
@@ -39,9 +38,7 @@ export function Button({
   className,
 }: ButtonProps) {
   const hasIcon = LeadingIcon !== undefined || TrailingIcon !== undefined;
-  const iconClasses = hasIcon ? " inline-flex items-center gap-xxs" : "";
-  const buttonClasses = `${buttonBaseClasses} ${buttonVariantClasses[variant]} ${buttonSizeClasses[size]}${iconClasses}`;
-  const classes = joinClasses(buttonClasses, className);
+  const classes = joinClasses(buttonClasses(variant, size, hasIcon), className);
 
   return (
     <BaseButton
