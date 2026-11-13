@@ -5,7 +5,6 @@ import {
   type UseInfiniteQueryOptions,
 } from "@tanstack/react-query";
 
-/** The fields every paginated list endpoint returns alongside its items. */
 type CursorPage = {
   has_more: boolean;
   next_cursor: string | null;
@@ -29,7 +28,6 @@ export function usePagination<TPage extends CursorPage, TError, TKey extends Que
     initialPageParam: {},
     // Avoid refetching a page just from paging forward and back.
     staleTime: 60_000,
-    // has_more is the explicit signal, a null cursor alone shouldn't decide it.
     getNextPageParam: (lastPage) =>
       lastPage.has_more && lastPage.next_cursor !== null ? lastPage.next_cursor : undefined,
   });
