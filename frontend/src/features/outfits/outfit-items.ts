@@ -1,6 +1,9 @@
 import type { ProductResponse } from "@/api/generated/types.gen";
 
-export type Product = Pick<ProductResponse, "id" | "title" | "handle" | "slot" | "image_url">;
+export type Product = Pick<
+  ProductResponse,
+  "id" | "title" | "handle" | "slot" | "source" | "image_url"
+>;
 
 /**
  * The outfit canvas's size in pixels, from the Figma's Builder Space frame:

@@ -77,7 +77,6 @@ mise run db:dev:migrate:up
 mise run db:dev:migrate:down
 mise run db:dev:migrate:status
 mise run db:dev:reset
-mise run db:dev:seed:outfits -- <user-id> [count]
 mise run db:dev:stop
 ```
 

@@ -16,11 +16,17 @@ import (
 	"birdie-and-claire/internal/embedder"
 	"birdie-and-claire/internal/llm"
 	"birdie-and-claire/internal/log"
+	"birdie-and-claire/internal/repository"
 	"birdie-and-claire/internal/server"
+	"birdie-and-claire/internal/services"
+	"birdie-and-claire/internal/shopify"
 	"birdie-and-claire/internal/storage"
 )
 
-const shutdownTimeout = 10 * time.Second
+const (
+	shutdownTimeout     = 10 * time.Second
+	catalogSyncInterval = 24 * time.Hour
+)
 
 func main() {
 	if err := run(); err != nil {
@@ -70,6 +76,20 @@ func run() error {
 
 	app, _ := server.New(cfg, db, store, emb, llmClient, verifier)
 
+	catalogSync := services.NewCatalogSyncService(repository.New(db), shopify.New(cfg.Shopify), emb)
+	syncDone := make(chan struct{})
+	go func() {
+		defer close(syncDone)
+		syncCatalog(ctx, catalogSync)
+	}()
+	// Runs before the deferred db.Close, so a sync in progress never queries a
+	// closed database. stop cancels ctx, which ends the sync even when the
+	// server failed on its own and no signal arrived.
+	defer func() {
+		stop()
+		<-syncDone
+	}()
+
 	serverErr := make(chan error, 1)
 	go func() {
 		// In text mode Fiber's banner announces the address instead.
@@ -93,4 +113,26 @@ func run() error {
 
 	logger.Info("server stopped")
 	return nil
+}
+
+// syncCatalog syncs at startup and then every catalogSyncInterval until ctx
+// ends. One goroutine runs every sync, so two never overlap, and the ticker
+// drops ticks that arrive while one is running.
+func syncCatalog(ctx context.Context, catalogSync services.CatalogSyncService) {
+	ticker := time.NewTicker(catalogSyncInterval)
+	defer ticker.Stop()
+
+	for {
+		// A sync cut off by shutdown fails with ctx's error, which is not a
+		// failure worth logging.
+		if err := catalogSync.Sync(ctx); err != nil && ctx.Err() == nil {
+			log.Error(ctx, "catalog sync failed", "error", err)
+		}
+
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+		}
+	}
 }

@@ -265,6 +265,12 @@ components:
             - accessory
             - shoe
           type: string
+        source:
+          description: birdie_and_claire for a product sold in the store, demo for seeded filler that is not for sale
+          enum:
+            - birdie_and_claire
+            - demo
+          type: string
         tags:
           items:
             type: string
@@ -283,6 +289,7 @@ components:
         - title
         - product_type
         - slot
+        - source
         - tags
         - created_at
         - updated_at
@@ -410,6 +417,12 @@ components:
             - accessory
             - shoe
           type: string
+        source:
+          description: birdie_and_claire for a product sold in the store, demo for seeded filler that is not for sale
+          enum:
+            - birdie_and_claire
+            - demo
+          type: string
         tags:
           items:
             type: string
@@ -427,6 +440,7 @@ components:
         - title
         - product_type
         - slot
+        - source
         - tags
         - created_at
         - updated_at

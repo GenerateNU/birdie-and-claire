@@ -9,6 +9,7 @@ type Configuration struct {
 	Storage  StorageConfig
 	Embedder EmbedderConfig
 	LLM      LLMConfig
+	Shopify  ShopifyConfig
 }
 
 // Load fails on the first missing or malformed variable, so a bad environment
@@ -44,5 +45,10 @@ func Load() (*Configuration, error) {
 		return nil, err
 	}
 
-	return &Configuration{App: app, Database: database, Supabase: supabase, Storage: storage, Embedder: embedder, LLM: llm}, nil
+	shopify, err := loadShopify()
+	if err != nil {
+		return nil, err
+	}
+
+	return &Configuration{App: app, Database: database, Supabase: supabase, Storage: storage, Embedder: embedder, LLM: llm, Shopify: shopify}, nil
 }
