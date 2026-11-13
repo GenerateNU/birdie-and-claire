@@ -53,7 +53,7 @@ func (r *outfitRepository) Create(ctx context.Context, params models.CreateOutfi
 			RETURNING outfit_id, product_id
 		)
 		SELECT o.id, o.user_id, o.name, o.shared_at, o.created_at, o.updated_at,
-			p.id, p.shopify_id, p.handle, p.title, p.product_type, p.slot, p.tags, p.created_at, p.updated_at,
+			p.id, p.shopify_id, p.handle, p.title, p.product_type, p.slot, p.source, p.tags, p.created_at, p.updated_at,
 			first_image.url
 		-- A WITH's parts share one snapshot, so the outfit_products table can't see these rows yet.
 		FROM new_outfit_products op
@@ -111,7 +111,7 @@ type querier interface {
 func getOutfitByID(ctx context.Context, dbOrTx querier, id uuid.UUID, userID uuid.UUID) (models.Outfit, []models.ProductResponse, error) {
 	rows, err := dbOrTx.QueryContext(ctx, `
 		SELECT o.id, o.user_id, o.name, o.shared_at, o.created_at, o.updated_at,
-			p.id, p.shopify_id, p.handle, p.title, p.product_type, p.slot, p.tags, p.created_at, p.updated_at,
+			p.id, p.shopify_id, p.handle, p.title, p.product_type, p.slot, p.source, p.tags, p.created_at, p.updated_at,
 			first_image.url
 		FROM outfits o
 		LEFT JOIN outfit_products op ON op.outfit_id = o.id
@@ -199,7 +199,7 @@ func (r *outfitRepository) Update(ctx context.Context, id uuid.UUID, params mode
 func (r *outfitRepository) GetShared(ctx context.Context, id uuid.UUID) (models.Outfit, []models.ProductResponse, error) {
 	rows, err := r.db.QueryContext(ctx, `
 		SELECT o.id, o.user_id, o.name, o.shared_at, o.created_at, o.updated_at,
-			p.id, p.shopify_id, p.handle, p.title, p.product_type, p.slot, p.tags, p.created_at, p.updated_at,
+			p.id, p.shopify_id, p.handle, p.title, p.product_type, p.slot, p.source, p.tags, p.created_at, p.updated_at,
 			first_image.url
 		FROM outfits o
 		LEFT JOIN outfit_products op ON op.outfit_id = o.id
@@ -313,6 +313,7 @@ func productScanTargets(product *models.ProductResponse) []any {
 		&product.Title,
 		&product.ProductType,
 		&product.Slot,
+		&product.Source,
 		// text[] scans into []string.
 		&product.Tags,
 		&product.CreatedAt,
@@ -333,7 +334,8 @@ func scanOutfitWithProducts(rows *sql.Rows) (models.Outfit, []models.ProductResp
 		var (
 			productID             uuid.NullUUID
 			shopifyID             sql.NullInt64
-			handle, title, slot   sql.NullString
+			handle, title         sql.NullString
+			slot, source          sql.NullString
 			productType, imageURL *string
 			tags                  []string
 			createdAt, updatedAt  sql.NullTime
@@ -351,6 +353,7 @@ func scanOutfitWithProducts(rows *sql.Rows) (models.Outfit, []models.ProductResp
 			&title,
 			&productType,
 			&slot,
+			&source,
 			&tags,
 			&createdAt,
 			&updatedAt,
@@ -370,6 +373,7 @@ func scanOutfitWithProducts(rows *sql.Rows) (models.Outfit, []models.ProductResp
 				Title:       title.String,
 				ProductType: productType,
 				Slot:        models.ProductSlot(slot.String),
+				Source:      models.ProductSource(source.String),
 				Tags:        tags,
 				CreatedAt:   createdAt.Time,
 				UpdatedAt:   updatedAt.Time,

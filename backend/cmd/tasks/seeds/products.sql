@@ -161,4 +161,5 @@ INSERT INTO public.product_images (id, shopify_id, product_id, url, alt_text, wi
 -- PostgreSQL database dump complete
 --
 
-
+-- The Shopify sync fills the top and accessory slots, so only the demo shoes and bottoms stay recommendable.
+UPDATE public.products SET active = false WHERE active AND source = 'demo' AND slot IN ('top', 'accessory');

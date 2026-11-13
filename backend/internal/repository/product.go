@@ -21,14 +21,14 @@ type ProductRepository interface {
 	FindSimilar(ctx context.Context, embedding []float32, slot models.ProductSlot, excludeTags, niceTags []string, excludeProductIDs []uuid.UUID, limit int) ([]models.ProductResponse, error)
 	// GetEmbedding returns a nil embedding for a product that has none yet, and ErrNotFound for a missing product.
 	GetEmbedding(ctx context.Context, productID uuid.UUID) ([]float32, models.ProductSlot, error)
-	// UpsertShopifyProduct inserts or updates the product and marks it active. It returns the product's id and the
+	// UpsertShopifyProduct inserts or updates the product as a Birdie & Claire product and marks it active. It returns the product's id and the
 	// hash its stored embedding was built from, which is nil when the sync has not embedded it yet.
 	UpsertShopifyProduct(ctx context.Context, product shopify.ShopifyProduct, slot models.ProductSlot) (uuid.UUID, *string, error)
 	SaveEmbedding(ctx context.Context, productID uuid.UUID, embedding []float32, embeddingHash string) error
 	// ClearEmbedding removes the product's embedding, so FindSimilar no longer returns it.
 	ClearEmbedding(ctx context.Context, productID uuid.UUID) error
-	// DeactivateShopifyProductsExcept marks inactive every active product whose shopify_id is not in keepShopifyIDs,
-	// apart from the seeded demo shoes and bottoms, and returns how many it marked.
+	// DeactivateShopifyProductsExcept marks inactive every active Birdie & Claire product whose shopify_id is not in
+	// keepShopifyIDs, and returns how many it marked. Demo products are left alone.
 	DeactivateShopifyProductsExcept(ctx context.Context, keepShopifyIDs []int64) (int64, error)
 }
 
@@ -78,7 +78,7 @@ func (r *productRepository) FindSimilar(ctx context.Context, embedding []float32
 	rows, err := r.db.QueryContext(ctx, `
 		-- Ranked and limited before the image join, so only the returned products look up an image.
 		WITH ranked AS (
-			SELECT p.id, p.shopify_id, p.handle, p.title, p.product_type, p.slot, p.tags, p.created_at, p.updated_at,
+			SELECT p.id, p.shopify_id, p.handle, p.title, p.product_type, p.slot, p.source, p.tags, p.created_at, p.updated_at,
 				-- <=> is pgvector's cosine distance, so smaller means more similar.
 				(p.embedding <=> $1)
 					- $4::float8 * (SELECT count(*) FROM unnest(p.tags) tag WHERE lower(tag) = ANY($5::text[])) AS score
@@ -93,7 +93,7 @@ func (r *productRepository) FindSimilar(ctx context.Context, embedding []float32
 			ORDER BY score, p.id
 			LIMIT $6
 		)
-		SELECT r.id, r.shopify_id, r.handle, r.title, r.product_type, r.slot, r.tags, r.created_at, r.updated_at,
+		SELECT r.id, r.shopify_id, r.handle, r.title, r.product_type, r.slot, r.source, r.tags, r.created_at, r.updated_at,
 			first_image.url
 		FROM ranked r
 		LEFT JOIN LATERAL (
@@ -120,6 +120,7 @@ func (r *productRepository) FindSimilar(ctx context.Context, embedding []float32
 			&product.Title,
 			&product.ProductType,
 			&product.Slot,
+			&product.Source,
 			&product.Tags,
 			&product.CreatedAt,
 			&product.UpdatedAt,
@@ -140,8 +141,8 @@ func (r *productRepository) UpsertShopifyProduct(ctx context.Context, product sh
 	var embeddingHash *string
 	err := r.db.QueryRowContext(ctx, `
 		WITH upserted AS (
-			INSERT INTO products (shopify_id, handle, title, product_type, tags, slot)
-			VALUES ($1, $2, $3, NULLIF($4, ''), $5, $6)
+			INSERT INTO products (shopify_id, handle, title, product_type, tags, slot, source)
+			VALUES ($1, $2, $3, NULLIF($4, ''), $5, $6, 'birdie_and_claire')
 			ON CONFLICT (shopify_id) DO UPDATE SET
 				handle = EXCLUDED.handle,
 				title = EXCLUDED.title,
@@ -195,11 +196,7 @@ func (r *productRepository) DeactivateShopifyProductsExcept(ctx context.Context,
 	result, err := r.db.ExecContext(ctx, `
 		UPDATE products
 		SET active = false, updated_at = now()
-		WHERE active AND shopify_id <> ALL($1::bigint[])
-			-- The store sells no shoes and one bottom, so the seeded demo shoes and bottoms fill those slots until
-			-- basics replace them (docs/Basics_Research.md). Real Shopify IDs have 13 digits, and seeded ones are
-			-- under 100,000.
-			AND NOT (shopify_id < 1000000000 AND slot IN ('shoe', 'bottom'))
+		WHERE active AND source = 'birdie_and_claire' AND shopify_id <> ALL($1::bigint[])
 	`, keepShopifyIDs)
 	if err != nil {
 		return 0, fmt.Errorf("deactivate shopify products: %w", err)

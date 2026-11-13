@@ -370,29 +370,33 @@ func TestCatalogSyncDeactivatesMissingProductAndKeepsSavedOutfit(t *testing.T) {
 	}
 }
 
-func TestCatalogSyncKeepsDemoShoesAndBottoms(t *testing.T) {
+func TestCatalogSyncLeavesDemoProductsAlone(t *testing.T) {
 	db := openSyncTestDB(t)
-	ctx := context.Background()
-	products := repository.NewProductRepository(db)
-	// seeded shopify_ids are small, so these land in the demo range without hitting a seeded row
-	demoSlots := []models.ProductSlot{models.SlotShoe, models.SlotBottom, models.SlotTop}
-	demoShopifyIDs := make([]int64, len(demoSlots))
-	for i, slot := range demoSlots {
-		demoShopifyIDs[i] = 100_000_000 + rand.Int64N(800_000_000)
-		demo := shopify.ShopifyProduct{ID: demoShopifyIDs[i], Handle: "sync-test-demo", Title: "Sync test demo", Tags: []string{}}
-		if _, _, err := products.UpsertShopifyProduct(ctx, demo, slot); err != nil {
-			t.Fatalf("insert demo %s: %v", slot, err)
-		}
-		t.Cleanup(func() { _, _ = db.Exec(`DELETE FROM products WHERE shopify_id = $1`, demo.ID) })
+	var demoShopifyID int64
+	err := db.QueryRow(`
+		INSERT INTO products (shopify_id, handle, title, tags, slot)
+		VALUES ($1, 'sync-test-demo', 'Sync test demo', '{}', 'shoe')
+		RETURNING shopify_id
+	`, rand.Int64()).Scan(&demoShopifyID)
+	if err != nil {
+		t.Fatalf("insert demo product: %v", err)
 	}
+	t.Cleanup(func() { _, _ = db.Exec(`DELETE FROM products WHERE shopify_id = $1`, demoShopifyID) })
+	product := newSyncProduct(t, db, topsCategory, 0)
 
-	runSync(t, db, &recordingEmbedder{}, newSyncProduct(t, db, topsCategory, 0))
+	runSync(t, db, &recordingEmbedder{}, product)
 
-	for i, slot := range demoSlots {
-		wantActive := slot != models.SlotTop
-		if active := mustFindSyncedRow(t, db, demoShopifyIDs[i]).active; active != wantActive {
-			t.Errorf("demo %s active = %v, want %v", slot, active, wantActive)
-		}
+	if !mustFindSyncedRow(t, db, demoShopifyID).active {
+		t.Fatal("the sync deactivated a demo product")
+	}
+	var sources []string
+	err = db.QueryRow(`SELECT array_agg(source::text ORDER BY source) FROM products WHERE shopify_id IN ($1, $2)`,
+		product.ID, demoShopifyID).Scan(&sources)
+	if err != nil {
+		t.Fatalf("get sources: %v", err)
+	}
+	if want := []string{string(models.SourceBirdieAndClaire), string(models.SourceDemo)}; !slices.Equal(sources, want) {
+		t.Fatalf("sources = %v, want %v", sources, want)
 	}
 }
 

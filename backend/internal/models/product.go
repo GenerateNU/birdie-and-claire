@@ -16,17 +16,27 @@ const (
 	SlotShoe      ProductSlot = "shoe"
 )
 
+// ProductSource is where a product comes from, one of the product_source enum's values.
+type ProductSource string
+
+const (
+	SourceBirdieAndClaire ProductSource = "birdie_and_claire"
+	// SourceDemo is the seeded catalog, kept as filler until basics replace it.
+	SourceDemo ProductSource = "demo"
+)
+
 // Product represents a row from the products table, without its embedding.
 type Product struct {
-	ID          uuid.UUID   `json:"id"`
-	ShopifyID   int64       `json:"shopify_id"`
-	Handle      string      `json:"handle"`
-	Title       string      `json:"title"`
-	ProductType *string     `json:"product_type"`
-	Slot        ProductSlot `json:"slot" enum:"top,bottom,accessory,shoe"`
-	Tags        []string    `json:"tags" nullable:"false"`
-	CreatedAt   time.Time   `json:"created_at"`
-	UpdatedAt   time.Time   `json:"updated_at"`
+	ID          uuid.UUID     `json:"id"`
+	ShopifyID   int64         `json:"shopify_id"`
+	Handle      string        `json:"handle"`
+	Title       string        `json:"title"`
+	ProductType *string       `json:"product_type"`
+	Slot        ProductSlot   `json:"slot" enum:"top,bottom,accessory,shoe"`
+	Source      ProductSource `json:"source" enum:"birdie_and_claire,demo" doc:"birdie_and_claire for a product sold in the store, demo for seeded filler that is not for sale"`
+	Tags        []string      `json:"tags" nullable:"false"`
+	CreatedAt   time.Time     `json:"created_at"`
+	UpdatedAt   time.Time     `json:"updated_at"`
 }
 
 // ProductResponse is a product with its first image, so a client can draw it without fetching its images.
