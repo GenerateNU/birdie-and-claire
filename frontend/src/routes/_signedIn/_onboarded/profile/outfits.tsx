@@ -1,10 +1,10 @@
-import { useInfiniteQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback } from "react";
 
 import { listOutfitsInfiniteOptions } from "@/api/generated/@tanstack/react-query.gen";
 import { Empty, ErrorState, Spinner, Text } from "@/design-system";
 import { OutfitList } from "@/features/outfits/outfit-list";
+import { usePagination } from "@/lib/use-pagination";
 
 export const Route = createFileRoute("/_signedIn/_onboarded/profile/outfits")({
   component: OutfitsPage,
@@ -19,16 +19,7 @@ function OutfitsPage() {
     isFetchingNextPage,
     isFetchNextPageError,
     refetch,
-  } = useInfiniteQuery({
-    ...listOutfitsInfiniteOptions({ query: { limit: 20 } }),
-    // An empty page param adds no cursor, so the first request gets the first page.
-    initialPageParam: {},
-    // Avoid refetching a page just from paging forward and back.
-    staleTime: 60_000,
-    // has_more is the explicit signal, a null cursor alone shouldn't decide it.
-    getNextPageParam: (lastPage) =>
-      lastPage.has_more && lastPage.next_cursor !== null ? lastPage.next_cursor : undefined,
-  });
+  } = usePagination(listOutfitsInfiniteOptions({ query: { limit: 20 } }));
 
   // The cursor is unused because the infinite query already tracks the next page param.
   const onLoadMore = useCallback(() => {
