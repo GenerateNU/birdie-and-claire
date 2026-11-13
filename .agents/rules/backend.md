@@ -64,6 +64,22 @@ When a rule names an example file, copy that file's shape.
   }
   ```
 
+## Request bodies
+
+- huma decodes bodies with `encoding/json/v2`, set in `server.APIConfig`. It
+  matches keys exactly and rejects a repeated key, so what huma validated is
+  what the handler gets. A struct tag is the whole check: do not re-check its
+  limit in `Resolve`.
+- Use `Resolve` only for what a tag cannot say, such as duplicates by parsed
+  value, trimming, or rules across fields.
+- Build test probes with
+  `humatest.New(t, server.APIConfig(&config.Configuration{}))`. Plain
+  `humatest.New(t)` runs the old decoder, so the test says nothing about
+  production.
+- A body type with its own `UnmarshalJSON` is decoded by whatever that method
+  calls, so a v1 `json.Unmarshal` inside it brings the bug back. Decode with
+  `encoding/json/v2` there.
+
 ## Naming
 
 - Name response types for where they sit in the request flow:

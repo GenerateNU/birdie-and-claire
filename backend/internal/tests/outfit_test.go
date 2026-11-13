@@ -15,6 +15,7 @@ import (
 	"birdie-and-claire/internal/errs"
 	"birdie-and-claire/internal/models"
 	"birdie-and-claire/internal/repository"
+	"birdie-and-claire/internal/server"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/humatest"
@@ -43,7 +44,7 @@ type outfitProbeOutput struct {
 func outfitProbe(t *testing.T) humatest.TestAPI {
 	t.Helper()
 
-	_, api := humatest.New(t)
+	_, api := humatest.New(t, server.APIConfig(&config.Configuration{}))
 	huma.Register(api, huma.Operation{
 		OperationID: "outfit-probe",
 		Method:      http.MethodPost,
@@ -122,22 +123,24 @@ func TestOutfitNameBounds(t *testing.T) {
 	}
 }
 
-// Huma validates the first copy of a key repeated in different casing, but Go decodes the last one.
-func TestOutfitNameRepeatedInDifferentCasing(t *testing.T) {
+// A key in another casing is not the field, so only the exact key is validated and decoded.
+func TestOutfitIgnoresKeysInDifferentCasing(t *testing.T) {
 	tests := []struct {
 		name     string
 		body     string
 		wantBody string
 	}{
-		{name: "overlong name after valid name", body: `{"name": "x", "NAME": "` + strings.Repeat("n", 200) + `", "product_ids": ["` + productIDLower + `"]}`, wantBody: "name must be at most 100 characters"},
-		{name: "empty name after valid name", body: `{"name": "x", "NAME": "", "product_ids": ["` + productIDLower + `"]}`, wantBody: "name must not be empty"},
+		{name: "overlong NAME beside name", body: `{"name": "x", "NAME": "` + strings.Repeat("n", 200) + `", "product_ids": ["` + productIDLower + `"]}`, wantBody: `"name_length":1`},
+		{name: "empty NAME beside name", body: `{"name": "x", "NAME": "", "product_ids": ["` + productIDLower + `"]}`, wantBody: `"name_length":1`},
+		{name: "empty PRODUCT_IDS beside product_ids", body: `{"name": "x", "product_ids": ["` + productIDLower + `"], "PRODUCT_IDS": []}`, wantBody: `"product_count":1`},
+		{name: "longer PRODUCT_IDS beside product_ids", body: `{"name": "x", "product_ids": ["` + productIDLower + `"], "PRODUCT_IDS": ["` + productIDOther + `", "` + productIDUpper + `"]}`, wantBody: `"product_count":1`},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			response := outfitProbe(t).Post("/probe", strings.NewReader(test.body))
-			if response.Code != http.StatusUnprocessableEntity {
-				t.Fatalf("status = %d, want %d: %s", response.Code, http.StatusUnprocessableEntity, response.Body)
+			if response.Code != http.StatusOK {
+				t.Fatalf("status = %d, want %d: %s", response.Code, http.StatusOK, response.Body)
 			}
 			if !strings.Contains(response.Body.String(), test.wantBody) {
 				t.Fatalf("body = %s, want it to contain %s", response.Body, test.wantBody)
@@ -146,26 +149,24 @@ func TestOutfitNameRepeatedInDifferentCasing(t *testing.T) {
 	}
 }
 
-// Huma checks minItems on the first copy of a repeated key, but Go decodes the last one.
-func TestOutfitProductIDsRepeatedInDifferentCasing(t *testing.T) {
+// Huma validates and decodes the body in two passes, so a repeated key has to fail the decode instead of picking a winner.
+func TestOutfitRejectsRepeatedKeys(t *testing.T) {
 	tests := []struct {
-		name     string
-		body     string
-		want     int
-		wantBody string
+		name string
+		body string
 	}{
-		{name: "empty list after valid list", body: `{"name": "x", "product_ids": ["` + productIDLower + `"], "PRODUCT_IDS": []}`, want: http.StatusUnprocessableEntity, wantBody: "product_ids must not be empty"},
-		{name: "single list with products", body: `{"name": "x", "product_ids": ["` + productIDLower + `"]}`, want: http.StatusOK, wantBody: `"product_count":1`},
+		{name: "name", body: `{"name": "x", "name": "", "product_ids": ["` + productIDLower + `"]}`},
+		{name: "product_ids", body: `{"name": "x", "product_ids": ["` + productIDLower + `"], "product_ids": []}`},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			response := outfitProbe(t).Post("/probe", strings.NewReader(test.body))
-			if response.Code != test.want {
-				t.Fatalf("status = %d, want %d: %s", response.Code, test.want, response.Body)
+			if response.Code != http.StatusBadRequest {
+				t.Fatalf("status = %d, want %d: %s", response.Code, http.StatusBadRequest, response.Body)
 			}
-			if !strings.Contains(response.Body.String(), test.wantBody) {
-				t.Fatalf("body = %s, want it to contain %s", response.Body, test.wantBody)
+			if !strings.Contains(response.Body.String(), "duplicate object member name") {
+				t.Fatalf("body = %s, want it to name the duplicate key", response.Body)
 			}
 		})
 	}

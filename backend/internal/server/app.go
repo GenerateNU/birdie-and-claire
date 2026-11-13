@@ -3,6 +3,7 @@ package server
 
 import (
 	"database/sql"
+	jsonv2 "encoding/json/v2"
 	"strings"
 
 	"birdie-and-claire/internal/auth"
@@ -31,7 +32,7 @@ func New(cfg *config.Configuration, database *sql.DB, store storage.ObjectStore,
 
 	middlewares.Setup(app, verifier)
 
-	api := humafiber.New(app, apiConfig(cfg))
+	api := humafiber.New(app, APIConfig(cfg))
 	routers.Setup(api, types.RouteParams{
 		ServiceParams: &types.ServiceParams{
 			Repository: repository.New(database),
@@ -58,7 +59,7 @@ func ListenConfig(cfg *config.Configuration) fiber.ListenConfig {
 // Spec builds the API for cmd/openapi. No handler runs, so the nil database,
 // store, embedder, LLM client, and verifier are never read.
 func Spec(cfg *config.Configuration) huma.API {
-	api := humafiber.New(fiber.New(), apiConfig(cfg))
+	api := humafiber.New(fiber.New(), APIConfig(cfg))
 	routers.Setup(api, types.RouteParams{
 		ServiceParams: &types.ServiceParams{
 			Repository: repository.New(nil),
@@ -73,10 +74,17 @@ func Spec(cfg *config.Configuration) huma.API {
 
 const bearerScheme = "bearer"
 
-func apiConfig(cfg *config.Configuration) huma.Config {
+// APIConfig is the huma configuration the server, the spec generator, and the tests share.
+func APIConfig(cfg *config.Configuration) huma.Config {
 	humaConfig := huma.DefaultConfig(cfg.App.Name, "1.0.0")
 	humaConfig.DocsPath = "/docs"
 	humaConfig.DocsRenderer = huma.DocsRendererScalar
+
+	// v1 encoding/json folds key case and keeps the last duplicate, so a handler could receive a value huma never validated.
+	jsonFormat := huma.DefaultJSONFormat
+	jsonFormat.Unmarshal = func(data []byte, v any) error { return jsonv2.Unmarshal(data, v) }
+	// DefaultFormats is a package-level map, so replace it instead of writing into it.
+	humaConfig.Formats = map[string]huma.Format{"application/json": jsonFormat, "json": jsonFormat}
 
 	// DefaultConfig's only create hook installs huma's schema-link transformer,
 	// which adds a $schema field and a Link header to every response. The
