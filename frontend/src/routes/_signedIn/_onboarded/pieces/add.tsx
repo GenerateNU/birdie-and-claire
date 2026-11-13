@@ -1,23 +1,25 @@
+import { CaretLeft } from "@phosphor-icons/react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 
-import { Page } from "@/design-system";
+import { Box, Link, Page } from "@/design-system";
 import { PiecePicker } from "@/features/pieces/piece-picker";
 
 // Outside the profile layout, so the picker gets the full page the design shows.
 export const Route = createFileRoute("/_signedIn/_onboarded/pieces/add")({
-  component: AddPiecesPage,
+  component: AddOwnedPiecesPage,
 });
 
-function AddPiecesPage() {
+function AddOwnedPiecesPage() {
   const navigate = useNavigate();
-
-  function backToPieces() {
-    void navigate({ to: "/profile/pieces" });
-  }
 
   return (
     <Page>
-      <PiecePicker onBack={backToPieces} onAdded={backToPieces} />
+      <Box className="mb-md">
+        <Link to="/profile/pieces" variant="text" leadingIcon={CaretLeft}>
+          Back
+        </Link>
+      </Box>
+      <PiecePicker onAdded={() => void navigate({ to: "/profile/pieces" })} />
     </Page>
   );
 }

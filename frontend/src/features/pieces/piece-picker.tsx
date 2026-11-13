@@ -1,10 +1,4 @@
-import { CaretLeft } from "@phosphor-icons/react";
-import {
-  useInfiniteQuery,
-  useMutation,
-  useQueryClient,
-  type InfiniteData,
-} from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
 
 import {
@@ -13,37 +7,20 @@ import {
   listProductsInfiniteOptions,
   listProductsInfiniteQueryKey,
 } from "@/api/generated/@tanstack/react-query.gen";
-import type { PageProductResponse, ProductResponse } from "@/api/generated/types.gen";
+import type { ProductResponse } from "@/api/generated/types.gen";
 import { zAddOwnedProductsInputBody } from "@/api/generated/zod.gen";
 import { Box, Button, Empty, ErrorState, ImageCard, Spinner, Text } from "@/design-system";
 import { LoadMoreSentinel } from "@/features/pieces/load-more-sentinel";
+import { usePagination } from "@/lib/use-pagination";
 
 type PiecePickerProps = {
-  onBack: () => void;
   onAdded: () => void;
 };
 
 /** Picks catalog pieces the shopper owns and saves them. Onboarding and /pieces/add both use it. */
-export function PiecePicker({ onBack, onAdded }: PiecePickerProps) {
+export function PiecePicker({ onAdded }: PiecePickerProps) {
   const queryClient = useQueryClient();
   const [selected, setSelected] = useState<ProductResponse[]>([]);
-
-  const {
-    data,
-    isPending,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-    isFetchNextPageError,
-    refetch,
-  } = useInfiniteQuery({
-    ...listProductsInfiniteOptions({ query: { limit: 24 } }),
-    // An empty page param adds no cursor, so the first request gets the first page.
-    initialPageParam: {},
-    // has_more is the explicit signal, a null cursor alone shouldn't decide it.
-    getNextPageParam: (lastPage) =>
-      lastPage.has_more && lastPage.next_cursor !== null ? lastPage.next_cursor : undefined,
-  });
 
   const addMutation = useMutation({
     ...addCurrentUserPiecesMutation(),
@@ -56,13 +33,6 @@ export function PiecePicker({ onBack, onAdded }: PiecePickerProps) {
       onAdded();
     },
   });
-
-  const loadMore = useCallback(() => {
-    // The observer re-fires on rebuild, so fetching while errored would retry in a loop.
-    if (!isFetchingNextPage && !isFetchNextPageError) {
-      void fetchNextPage();
-    }
-  }, [fetchNextPage, isFetchingNextPage, isFetchNextPageError]);
 
   function toggle(product: ProductResponse, pressed: boolean) {
     setSelected((current) =>
@@ -86,38 +56,11 @@ export function PiecePicker({ onBack, onAdded }: PiecePickerProps) {
 
   return (
     <Box className="flex flex-col gap-lg">
-      <Box className="flex items-center gap-md">
-        <Button
-          label="Back"
-          leadingIcon={CaretLeft}
-          variant="secondary"
-          size="sm"
-          disabled={saving}
-          onClick={onBack}
-        />
-        <Text variant="heading">Add B&C Clothes You Own</Text>
-      </Box>
+      <Text variant="heading">Add B&C Clothes You Own</Text>
 
       <Box className="flex flex-col gap-lg lg:flex-row lg:items-start">
         <Box className="min-w-0 flex-1">
-          <Catalog
-            data={data}
-            isPending={isPending}
-            onRetry={() => void refetch()}
-            selected={selected}
-            onToggle={toggle}
-            disabled={saving}
-            atLimit={atLimit}
-            hasNextPage={hasNextPage}
-            onLoadMore={loadMore}
-          />
-          {isFetchNextPageError && (
-            <ErrorState
-              message="Couldn't load more pieces."
-              onRetry={() => void fetchNextPage()}
-              retryLabel="Retry"
-            />
-          )}
+          <Catalog selected={selected} onToggle={toggle} disabled={saving} atLimit={atLimit} />
         </Box>
 
         <Box className="flex flex-col gap-sm border p-md lg:sticky lg:top-md lg:w-1/4">
@@ -157,35 +100,37 @@ export function PiecePicker({ onBack, onAdded }: PiecePickerProps) {
 }
 
 type CatalogProps = {
-  data: InfiniteData<PageProductResponse> | undefined;
-  isPending: boolean;
-  onRetry: () => void;
   selected: ProductResponse[];
   onToggle: (product: ProductResponse, pressed: boolean) => void;
   disabled: boolean;
   // A selected card can still be unselected at the limit.
   atLimit: boolean;
-  hasNextPage: boolean;
-  onLoadMore: () => void;
 };
 
-function Catalog({
-  data,
-  isPending,
-  onRetry,
-  selected,
-  onToggle,
-  disabled,
-  atLimit,
-  hasNextPage,
-  onLoadMore,
-}: CatalogProps) {
+function Catalog({ selected, onToggle, disabled, atLimit }: CatalogProps) {
+  const {
+    data,
+    isPending,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isFetchNextPageError,
+    refetch,
+  } = usePagination(listProductsInfiniteOptions({ query: { limit: 24 } }));
+
+  const loadMore = useCallback(() => {
+    // The observer re-fires on rebuild, so fetching while errored would retry in a loop.
+    if (!isFetchingNextPage && !isFetchNextPageError) {
+      void fetchNextPage();
+    }
+  }, [fetchNextPage, isFetchingNextPage, isFetchNextPageError]);
+
   if (isPending) {
     return <Spinner />;
   }
 
   if (!data) {
-    return <ErrorState message="Couldn't load the pieces." onRetry={onRetry} />;
+    return <ErrorState message="Couldn't load the pieces." onRetry={() => void refetch()} />;
   }
 
   const products = data.pages.flatMap((page) => page.items);
@@ -195,23 +140,32 @@ function Catalog({
   }
 
   return (
-    <ul className="grid grid-cols-2 gap-md md:grid-cols-3">
-      {products.map((product) => {
-        const pressed = selected.some((picked) => picked.id === product.id);
+    <>
+      <ul className="grid grid-cols-2 gap-md md:grid-cols-3">
+        {products.map((product) => {
+          const pressed = selected.some((picked) => picked.id === product.id);
 
-        return (
-          <li key={product.id}>
-            <ImageCard
-              label={product.title}
-              src={product.image_url}
-              pressed={pressed}
-              onPressedChange={(nextPressed) => onToggle(product, nextPressed)}
-              disabled={disabled || (atLimit && !pressed)}
-            />
-          </li>
-        );
-      })}
-      {hasNextPage && <LoadMoreSentinel onVisible={onLoadMore} />}
-    </ul>
+          return (
+            <li key={product.id}>
+              <ImageCard
+                label={product.title}
+                src={product.image_url}
+                pressed={pressed}
+                onPressedChange={(nextPressed) => onToggle(product, nextPressed)}
+                disabled={disabled || (atLimit && !pressed)}
+              />
+            </li>
+          );
+        })}
+        {hasNextPage && <LoadMoreSentinel onVisible={loadMore} />}
+      </ul>
+      {isFetchNextPageError && (
+        <ErrorState
+          message="Couldn't load more pieces."
+          onRetry={() => void fetchNextPage()}
+          retryLabel="Retry"
+        />
+      )}
+    </>
   );
 }

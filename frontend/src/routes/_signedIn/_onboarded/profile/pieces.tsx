@@ -1,7 +1,7 @@
 import { Plus } from "@phosphor-icons/react";
-import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 import {
   listCurrentUserPiecesInfiniteOptions,
@@ -12,6 +12,7 @@ import {
 import { Box, Button, Empty, ErrorState, Link, Spinner, Text } from "@/design-system";
 import { LoadMoreSentinel } from "@/features/pieces/load-more-sentinel";
 import { OwnedPieceCard } from "@/features/pieces/owned-piece-card";
+import { usePagination } from "@/lib/use-pagination";
 
 export const Route = createFileRoute("/_signedIn/_onboarded/profile/pieces")({
   component: PiecesPage,
@@ -20,6 +21,7 @@ export const Route = createFileRoute("/_signedIn/_onboarded/profile/pieces")({
 function PiecesPage() {
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
+  const listRef = useRef<HTMLUListElement>(null);
 
   const {
     data,
@@ -29,17 +31,19 @@ function PiecesPage() {
     isFetchingNextPage,
     isFetchNextPageError,
     refetch,
-  } = useInfiniteQuery({
-    ...listCurrentUserPiecesInfiniteOptions({ query: { limit: 20 } }),
-    // An empty page param adds no cursor, so the first request gets the first page.
-    initialPageParam: {},
-    // has_more is the explicit signal, a null cursor alone shouldn't decide it.
-    getNextPageParam: (lastPage) =>
-      lastPage.has_more && lastPage.next_cursor !== null ? lastPage.next_cursor : undefined,
-  });
+  } = usePagination(listCurrentUserPiecesInfiniteOptions({ query: { limit: 20 } }));
+
+  const loadMore = useCallback(() => {
+    // The observer re-fires on rebuild, so fetching while errored would retry in a loop.
+    if (!isFetchingNextPage && !isFetchNextPageError) {
+      void fetchNextPage();
+    }
+  }, [fetchNextPage, isFetchingNextPage, isFetchNextPageError]);
 
   const removeMutation = useMutation({
     ...removeCurrentUserPieceMutation(),
+    // The pressed Remove button leaves with its card, so focus would fall back to the page.
+    onSuccess: () => listRef.current?.focus(),
     // The catalog leaves owned pieces out, so a removed piece goes back into the picker. Refreshed
     // on failure too: a 404 means the piece is already gone, and the list should stop showing it.
     onSettled: () =>
@@ -48,13 +52,6 @@ function PiecesPage() {
         queryClient.invalidateQueries({ queryKey: listProductsInfiniteQueryKey() }),
       ]),
   });
-
-  const loadMore = useCallback(() => {
-    // The observer re-fires on rebuild, so fetching while errored would retry in a loop.
-    if (!isFetchingNextPage && !isFetchNextPageError) {
-      void fetchNextPage();
-    }
-  }, [fetchNextPage, isFetchingNextPage, isFetchNextPageError]);
 
   if (isPending) {
     return <Spinner />;
@@ -73,7 +70,7 @@ function PiecesPage() {
           Pieces I Own
         </Text>
         <Box className="flex flex-col items-center gap-sm">
-          <Empty title={'Nothing is here, click on "Add Items" to show more'} />
+          <Empty title="No pieces yet" />
           <Link to="/pieces/add" variant="text" leadingIcon={Plus}>
             Add Items
           </Link>
@@ -98,15 +95,21 @@ function PiecesPage() {
           Couldn't remove that piece. Try again.
         </Text>
       )}
-      <ul className="grid grid-cols-2 gap-md md:grid-cols-3 lg:grid-cols-4">
+      <ul
+        ref={listRef}
+        tabIndex={-1}
+        aria-label="Pieces I own"
+        className="grid grid-cols-2 gap-md focus-ring md:grid-cols-3 lg:grid-cols-4"
+      >
         {pieces.map((piece) => (
           <OwnedPieceCard
             key={piece.id}
             piece={piece}
-            onRemove={
-              editing ? () => removeMutation.mutate({ path: { product_id: piece.id } }) : undefined
+            showRemove={editing}
+            onRemove={() => removeMutation.mutate({ path: { product_id: piece.id } })}
+            removing={
+              removeMutation.isPending && removeMutation.variables.path.product_id === piece.id
             }
-            removing={removeMutation.isPending}
           />
         ))}
         <li>
