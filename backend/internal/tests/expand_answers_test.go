@@ -14,7 +14,7 @@ func TestExpandAnswersDecodesTheAnswer(t *testing.T) {
 	fake := &llmtest.Fake{Text: `{"slots":{"top":"light pastel blouse","bottom":"linen midi skirt","accessory":"straw hat","shoe":"tan sandals"},` +
 		`"exclude_tags":["White"],"nice_tags":["Pastel","linen"]}`}
 
-	got, err := llm.ExpandAnswers(context.Background(), fake, map[string]string{"occasion": "summer wedding guest"})
+	got, err := llm.ExpandAnswers(context.Background(), fake, map[string]string{"occasion": "summer wedding guest"}, "")
 	if err != nil {
 		t.Fatalf("ExpandAnswers: %v", err)
 	}
@@ -39,7 +39,7 @@ func TestExpandAnswersRejectsUnknownFields(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := llm.ExpandAnswers(context.Background(), &llmtest.Fake{Text: tt.answer}, map[string]string{"occasion": "brunch"})
+			_, err := llm.ExpandAnswers(context.Background(), &llmtest.Fake{Text: tt.answer}, map[string]string{"occasion": "brunch"}, "")
 			if !errors.Is(err, llm.ErrInvalidOutput) {
 				t.Fatalf("err = %v, want ErrInvalidOutput", err)
 			}

@@ -32,8 +32,8 @@ export default {
     // defaults through extend below.
     colors: { transparent: "transparent", current: "currentColor", ...StatusColor },
     // Status colors work with any utility, like the defaults they replace.
-    textColor: { ...StatusColor, ...TextColor },
-    backgroundColor: { ...StatusColor, ...BackgroundColor },
+    textColor: { transparent: "transparent", ...StatusColor, ...TextColor },
+    backgroundColor: { transparent: "transparent", ...StatusColor, ...BackgroundColor },
     borderColor: { transparent: "transparent", ...StatusColor, ...BorderColor },
     outlineColor: OutlineColor,
     spacing: { 0: "0px", px: "1px", ...Spacing },
