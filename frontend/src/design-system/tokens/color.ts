@@ -28,6 +28,8 @@ export const BackgroundColor = {
   primary: Palette.ink,
   "control-off": Palette.slate,
   overlay: "rgba(0, 0, 0, 0.4)",
+  // Darkens a photo enough for inverse text to read on it. The opacity is the lofi homescreen's.
+  "photo-overlay": "rgba(0, 0, 0, 0.69)",
 } as const;
 
 // DEFAULT is the color the plain `border` class uses.
@@ -36,6 +38,8 @@ export const BorderColor = {
   primary: Palette.ink,
 } as const;
 
+// focus-inverse is for controls on a dark surface, where the ink ring disappears.
 export const OutlineColor = {
   focus: Palette.ink,
+  "focus-inverse": Palette.paper,
 } as const;

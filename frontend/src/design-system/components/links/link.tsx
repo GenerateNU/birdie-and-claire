@@ -2,6 +2,11 @@ import type { Icon } from "@phosphor-icons/react";
 import { createLink } from "@tanstack/react-router";
 import type { AnchorHTMLAttributes, Ref } from "react";
 
+import {
+  buttonClasses,
+  type ButtonSize,
+  type ButtonVariant,
+} from "@/design-system/components/buttons/variant";
 import { textLinkClasses } from "@/design-system/components/links/text-link-classes";
 import { joinClasses } from "@/design-system/utils/join-classes";
 
@@ -9,20 +14,33 @@ const textClasses = `inline-flex items-center gap-xxs ${textLinkClasses}`;
 
 type AnchorProps = AnchorHTMLAttributes<HTMLAnchorElement> & {
   ref?: Ref<HTMLAnchorElement>;
-  variant?: "plain" | "text";
   leadingIcon?: Icon;
   trailingIcon?: Icon;
-};
+} & ({ variant?: "plain" | "text"; size?: never } | { variant: ButtonVariant; size?: ButtonSize });
+
+function linkClasses(variant: AnchorProps["variant"], size: ButtonSize) {
+  if (variant === undefined || variant === "plain") {
+    return undefined;
+  }
+
+  if (variant === "text") {
+    return textClasses;
+  }
+
+  return buttonClasses(variant, size, true);
+}
 
 function Anchor({
-  variant = "plain",
+  variant,
+  size = "md",
   leadingIcon: LeadingIcon,
   trailingIcon: TrailingIcon,
   className,
   children,
   ...props
 }: AnchorProps) {
-  const classes = variant === "text" ? joinClasses(textClasses, className) : className;
+  const ownClasses = linkClasses(variant, size);
+  const classes = ownClasses === undefined ? className : joinClasses(ownClasses, className);
 
   return (
     <a className={classes} {...props}>
@@ -33,8 +51,5 @@ function Anchor({
   );
 }
 
-/**
- * A link to a route. Takes the router Link's props, so `to` is type-checked. Unstyled like the
- * router's Link unless `variant="text"` makes it an underlined text link.
- */
+/** A type-checked route link, unstyled unless `variant` styles it as a text link or a Button. */
 export const Link = createLink(Anchor);

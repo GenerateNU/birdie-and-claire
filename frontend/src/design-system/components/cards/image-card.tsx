@@ -1,7 +1,7 @@
 import { Toggle as BaseToggle } from "@base-ui/react/toggle";
-import { useState } from "react";
 
 import { cardFrameClasses } from "@/design-system/components/cards/card-classes";
+import { CardImage } from "@/design-system/components/cards/card-image";
 
 const imageCardClasses = `${cardFrameClasses} flex flex-col gap-xs p-xs text-body focus-ring data-[pressed]:border-primary`;
 
@@ -29,7 +29,6 @@ export function ImageCard({
   size = "fill",
   disabled = false,
 }: ImageCardProps) {
-  const [failedSrc, setFailedSrc] = useState<string | null>(null);
   const imageClasses = `${sizeClasses[size].image} w-full rounded-xs`;
 
   return (
@@ -39,17 +38,7 @@ export function ImageCard({
       disabled={disabled}
       className={`${imageCardClasses} ${sizeClasses[size].card}`}
     >
-      {src === null || src === failedSrc ? (
-        <span className={`block bg-placeholder ${imageClasses}`} />
-      ) : (
-        <img
-          src={src}
-          // The visible label names the card, so the image is decorative.
-          alt=""
-          onError={() => setFailedSrc(src)}
-          className={`object-cover ${imageClasses}`}
-        />
-      )}
+      <CardImage src={src} className={imageClasses} />
       {label}
     </BaseToggle>
   );

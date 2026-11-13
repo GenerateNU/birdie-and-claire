@@ -5,10 +5,12 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
 	"birdie-and-claire/internal/errs"
 	"birdie-and-claire/internal/models"
 	"birdie-and-claire/internal/shopify"
+	"birdie-and-claire/internal/utils/pagination"
 
 	"github.com/google/uuid"
 	"github.com/pgvector/pgvector-go"
@@ -29,6 +31,7 @@ type ProductRepository interface {
 	// DeactivateShopifyProductsExcept marks inactive every active Birdie & Claire product whose shopify_id is not in
 	// keepShopifyIDs, and returns how many it marked. Demo products are left alone.
 	DeactivateShopifyProductsExcept(ctx context.Context, keepShopifyIDs []int64) (int64, error)
+	ListUnownedProducts(ctx context.Context, userID uuid.UUID, params pagination.CursorParams) (pagination.Page[models.ProductResponse], error)
 }
 
 // untuned: a guess at how much one matching nice tag is worth in cosine distance
@@ -204,4 +207,115 @@ func (r *productRepository) DeactivateShopifyProductsExcept(ctx context.Context,
 		return 0, fmt.Errorf("count deactivated shopify products: %w", err)
 	}
 	return deactivated, nil
+}
+
+func (r *productRepository) ListUnownedProducts(ctx context.Context, userID uuid.UUID, params pagination.CursorParams) (pagination.Page[models.ProductResponse], error) {
+	return listProductPage(ctx, r.db, `
+		SELECT p.id, p.created_at AS sorted_at
+		FROM products p
+		WHERE NOT EXISTS (SELECT 1 FROM owned_products op WHERE op.user_id = $1 AND op.product_id = p.id)
+	`, userID, params, func(product models.ProductResponse, _ time.Time) models.ProductResponse {
+		return product
+	})
+}
+
+// listProductPage is the paging query behind every product list. rowSource selects the list's rows as
+// (id, sorted_at) and may use $1, the user's ID; it is always a constant in this package, never input.
+// Rows come newest sorted_at first, then by id, and toItem shapes each one for the response.
+func listProductPage[T any](
+	ctx context.Context,
+	db *sql.DB,
+	rowSource string,
+	userID uuid.UUID,
+	params pagination.CursorParams,
+	toItem func(product models.ProductResponse, sortedAt time.Time) T,
+) (pagination.Page[T], error) {
+	afterSortedAt, err := params.After().Time("sorted_at")
+	if err != nil {
+		return pagination.Page[T]{}, fmt.Errorf("list products for user %s: after cursor sorted_at: %w", userID, err)
+	}
+	afterID, err := params.After().UUID("id")
+	if err != nil {
+		return pagination.Page[T]{}, fmt.Errorf("list products for user %s: after cursor id: %w", userID, err)
+	}
+
+	rows, err := db.QueryContext(ctx, `
+		-- Paged before the product and image joins, so only the returned rows look them up.
+		WITH page AS (
+			SELECT id, sorted_at
+			FROM (`+rowSource+`) source
+			WHERE ($2::timestamptz IS NULL OR (sorted_at, id) < ($2::timestamptz, $3::uuid))
+			ORDER BY sorted_at DESC, id DESC
+			LIMIT $4
+		)
+		SELECT p.id, p.shopify_id, p.handle, p.title, p.product_type, p.slot, p.source, p.tags, p.created_at, p.updated_at,
+			first_image.url, page.sorted_at
+		FROM page
+		JOIN products p ON p.id = page.id
+		LEFT JOIN LATERAL (
+			SELECT pi.url
+			FROM product_images pi
+			WHERE pi.product_id = p.id
+			ORDER BY pi.position, pi.id
+			LIMIT 1
+		) first_image ON true
+		ORDER BY page.sorted_at DESC, page.id DESC
+	`, userID, afterSortedAt, afterID, params.Limit+1)
+	if err != nil {
+		return pagination.Page[T]{}, fmt.Errorf("list products for user %s: %w", userID, err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	type row struct {
+		product  models.ProductResponse
+		sortedAt time.Time
+	}
+	fetched := make([]row, 0, params.Limit+1)
+	for rows.Next() {
+		var next row
+		if err := rows.Scan(append(productScanTargets(&next.product), &next.sortedAt)...); err != nil {
+			return pagination.Page[T]{}, fmt.Errorf("list products for user %s: scan: %w", userID, err)
+		}
+		fetched = append(fetched, next)
+	}
+	if err := rows.Err(); err != nil {
+		return pagination.Page[T]{}, fmt.Errorf("list products for user %s: iterate: %w", userID, err)
+	}
+
+	pageRows, hasMore := pagination.Split(fetched, params.Limit)
+	// Non-nil so an empty page encodes as [] rather than null.
+	items := make([]T, 0, len(pageRows))
+	for _, pageRow := range pageRows {
+		items = append(items, toItem(pageRow.product, pageRow.sortedAt))
+	}
+	page := pagination.Page[T]{Items: items, HasMore: hasMore}
+	if !hasMore {
+		return page, nil
+	}
+
+	last := pageRows[len(pageRows)-1]
+	nextCursor, err := pagination.CursorFields{"sorted_at": last.sortedAt, "id": last.product.ID}.Encode()
+	if err != nil {
+		return pagination.Page[T]{}, fmt.Errorf("list products for user %s: encode cursor: %w", userID, err)
+	}
+	page.NextCursor = &nextCursor
+	return page, nil
+}
+
+// productScanTargets matches the product columns, id through the first image's url, in select order.
+func productScanTargets(product *models.ProductResponse) []any {
+	return []any{
+		&product.ID,
+		&product.ShopifyID,
+		&product.Handle,
+		&product.Title,
+		&product.ProductType,
+		&product.Slot,
+		&product.Source,
+		// text[] scans into []string.
+		&product.Tags,
+		&product.CreatedAt,
+		&product.UpdatedAt,
+		&product.ImageURL,
+	}
 }

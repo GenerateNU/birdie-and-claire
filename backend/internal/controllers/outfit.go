@@ -2,8 +2,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
-	"unicode/utf8"
 
 	"birdie-and-claire/internal/errs"
 	"birdie-and-claire/internal/models"
@@ -43,28 +41,7 @@ func checkDuplicateProductIDs(ids []uuid.UUID) error {
 	return nil
 }
 
-const maxOutfitNameLength = 100
-
-// checkOutfitNameLength exists because huma validates one copy of a key repeated in different casing but Go keeps the last; keep maxOutfitNameLength in sync with the maxLength:"100" tags.
-func checkOutfitNameLength(name string) error {
-	// Runes, not bytes, to match how huma counts maxLength.
-	if utf8.RuneCountInString(name) > maxOutfitNameLength {
-		return &huma.ErrorDetail{Location: "body.name", Message: fmt.Sprintf("name must be at most %d characters", maxOutfitNameLength)}
-	}
-	return nil
-}
-
 func (input *CreateOutfitInput) Resolve(huma.Context) []error {
-	if input.Body.Name == "" {
-		return []error{&huma.ErrorDetail{Location: "body.name", Message: "name must not be empty"}}
-	}
-	if err := checkOutfitNameLength(input.Body.Name); err != nil {
-		return []error{err}
-	}
-	// Huma validates one copy of a key repeated in different casing but Go keeps the last, so an empty list can get past minItems.
-	if len(input.Body.ProductIDs) == 0 {
-		return []error{&huma.ErrorDetail{Location: "body.product_ids", Message: "product_ids must not be empty"}}
-	}
 	if err := checkDuplicateProductIDs(input.Body.ProductIDs); err != nil {
 		return []error{err}
 	}
@@ -114,9 +91,6 @@ var _ huma.Resolver = (*UpdateOutfitInput)(nil)
 func (input *UpdateOutfitInput) Resolve(huma.Context) []error {
 	if input.Body.Name == "" && len(input.Body.ProductIDs) == 0 {
 		return []error{&huma.ErrorDetail{Location: "body", Message: "body must set name or product_ids"}}
-	}
-	if err := checkOutfitNameLength(input.Body.Name); err != nil {
-		return []error{err}
 	}
 	if err := checkDuplicateProductIDs(input.Body.ProductIDs); err != nil {
 		return []error{err}

@@ -12,6 +12,8 @@ export { TextButton } from "@/design-system/components/buttons/text-button";
 
 export { Toggle } from "@/design-system/components/buttons/toggle";
 
+export { CardImage } from "@/design-system/components/cards/card-image";
+
 export { ImageCard } from "@/design-system/components/cards/image-card";
 
 export { ListCard } from "@/design-system/components/cards/list-card";
@@ -33,6 +35,8 @@ export { Tabs } from "@/design-system/components/tabs/tabs";
 export { Dialog } from "@/design-system/components/dialog/dialog";
 
 export { Form } from "@/design-system/components/form/form";
+
+export { Header } from "@/design-system/components/header/header";
 
 export { Empty } from "@/design-system/components/status/empty";
 

@@ -8,6 +8,7 @@ export const ContentWidth = {
   md: "576px",
   lg: "672px",
   xl: "896px",
+  "2xl": "1339px",
 } as const;
 
 export const ScrollAreaHeight = "384px";

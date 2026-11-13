@@ -70,20 +70,33 @@ export default {
   },
   plugins: [
     plugin(({ addBase, addComponents }) => {
-      addBase({
-        "@font-face": {
-          fontFamily: FontFamily.sans[0],
-          // Emitted into src/index.css, so the path is relative to that file.
-          src: 'url("./design-system/assets/fonts/Montserrat-Variable.ttf") format("truetype")',
-          fontWeight: "100 900",
-          fontDisplay: "swap",
+      // An array, because an object can hold only one "@font-face" key.
+      addBase([
+        {
+          "@font-face": {
+            fontFamily: FontFamily.sans[0],
+            // Emitted into src/index.css, so the path is relative to that file.
+            src: 'url("./design-system/assets/fonts/Montserrat-Variable.ttf") format("truetype")',
+            fontWeight: "100 900",
+            fontDisplay: "swap",
+          },
         },
-        body: {
-          backgroundColor: BackgroundColor.background,
-          fontFamily: FontFamily.sans.join(", "),
-          color: TextColor.primary,
+        {
+          "@font-face": {
+            fontFamily: FontFamily.serif[0],
+            src: 'url("./design-system/assets/fonts/InstrumentSerif-Regular.ttf") format("truetype")',
+            fontWeight: "400",
+            fontDisplay: "swap",
+          },
         },
-      });
+        {
+          body: {
+            backgroundColor: BackgroundColor.background,
+            fontFamily: FontFamily.sans.join(", "),
+            color: TextColor.primary,
+          },
+        },
+      ]);
 
       addComponents({
         ".focus-ring:focus-visible": {
