@@ -25,7 +25,6 @@ type ProductRepository interface {
 	// hash its stored embedding was built from, which is nil when the sync has not embedded it yet.
 	UpsertShopifyProduct(ctx context.Context, product shopify.ShopifyProduct, slot models.ProductSlot) (uuid.UUID, *string, error)
 	SaveEmbedding(ctx context.Context, productID uuid.UUID, embedding []float32, embeddingHash string) error
-	// ClearEmbedding removes the product's embedding, so FindSimilar no longer returns it.
 	ClearEmbedding(ctx context.Context, productID uuid.UUID) error
 	// DeactivateShopifyProductsExcept marks inactive every active Birdie & Claire product whose shopify_id is not in
 	// keepShopifyIDs, and returns how many it marked. Demo products are left alone.
@@ -180,7 +179,6 @@ func (r *productRepository) SaveEmbedding(ctx context.Context, productID uuid.UU
 }
 
 func (r *productRepository) ClearEmbedding(ctx context.Context, productID uuid.UUID) error {
-	// a product with no embedding is left alone, so a rerun changes nothing
 	_, err := r.db.ExecContext(ctx, `
 		UPDATE products
 		SET embedding = NULL, embedding_hash = NULL

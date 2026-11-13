@@ -25,7 +25,7 @@ import (
 
 const (
 	shutdownTimeout     = 10 * time.Second
-	catalogSyncInterval = time.Hour
+	catalogSyncInterval = 24 * time.Hour
 )
 
 func main() {
