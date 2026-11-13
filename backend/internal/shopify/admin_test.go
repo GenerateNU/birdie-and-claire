@@ -170,9 +170,24 @@ func TestListActiveProductsMapsProductFields(t *testing.T) {
 			{ID: 111, URL: "https://cdn.shopify.com/front.jpg", AltText: "Front", Width: 1200, Height: 1600, Position: 1},
 			{ID: 333, URL: "https://cdn.shopify.com/back.jpg", Width: 1200, Height: 1600, Position: 3},
 		},
+		HasProcessingImages: true,
 	}}
 	if !reflect.DeepEqual(products, want) {
 		t.Errorf("got  %+v\nwant %+v", products, want)
+	}
+}
+
+func TestListActiveProductsLeavesOutFailedImages(t *testing.T) {
+	const node = `{"id":"gid://shopify/Product/1","media":{"pageInfo":{"hasNextPage":false},"nodes":[` +
+		`{"id":"gid://shopify/MediaImage/2","status":"FAILED","image":null}]}}`
+	client := newTestClient(t, respondWith(http.StatusOK, grantedTokenJSON), respondWith(http.StatusOK, buildPageJSON(false, "", node)))
+
+	products, err := client.ListActiveProducts(context.Background())
+	if err != nil {
+		t.Fatalf("ListActiveProducts: %v", err)
+	}
+	if len(products) != 1 || len(products[0].Images) != 0 || products[0].HasProcessingImages {
+		t.Fatalf("products = %+v, want one product with no images that is not waiting on processing", products)
 	}
 }
 
@@ -212,6 +227,30 @@ func TestListActiveProductsErrors(t *testing.T) {
 			token:   respondWith(http.StatusOK, grantedTokenJSON),
 			graphQL: respondWith(http.StatusOK, buildPageJSON(false, "", buildProductWithImageJSON(""))),
 			wantErr: "not an https URL",
+		},
+		{
+			name:    "next page with an empty cursor",
+			token:   respondWith(http.StatusOK, grantedTokenJSON),
+			graphQL: respondWith(http.StatusOK, buildPageJSON(true, "", buildProductJSON(1))),
+			wantErr: "does not advance",
+		},
+		{
+			name:  "next page with a cursor seen two pages back",
+			token: respondWith(http.StatusOK, grantedTokenJSON),
+			graphQL: func(w http.ResponseWriter, r *http.Request) {
+				next := "cursor-a"
+				if cursor := decodeGraphQLRequest(t, r).Variables.Cursor; cursor != nil && *cursor == "cursor-a" {
+					next = "cursor-b"
+				}
+				_, _ = io.WriteString(w, buildPageJSON(true, next, buildProductJSON(1)))
+			},
+			wantErr: "does not advance",
+		},
+		{
+			name:    "next page with the same cursor",
+			token:   respondWith(http.StatusOK, grantedTokenJSON),
+			graphQL: respondWith(http.StatusOK, buildPageJSON(true, "cursor-1", buildProductJSON(1))),
+			wantErr: "does not advance",
 		},
 		{
 			name:    "no data",

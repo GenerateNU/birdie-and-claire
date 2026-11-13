@@ -42,7 +42,7 @@ const productsQuery = `query ActiveProducts($cursor: String, $imagesPerProduct: 
         pageInfo { hasNextPage }
         nodes {
           id
-          ... on MediaImage { image { url altText width height } }
+          ... on MediaImage { status image { url altText width height } }
         }
       }
     }
@@ -114,8 +114,9 @@ type productNode struct {
 }
 
 type mediaNode struct {
-	ID string `json:"id"`
-	// null until Shopify finishes processing the upload
+	ID     string `json:"id"`
+	Status string `json:"status"`
+	// null until Shopify finishes processing the upload, and for good if processing failed
 	Image *struct {
 		URL     string `json:"url"`
 		AltText string `json:"altText"`
@@ -134,6 +135,7 @@ func (c *adminClient) ListActiveProducts(ctx context.Context) ([]ShopifyProduct,
 
 	var products []ShopifyProduct
 	var cursor *string
+	seenCursors := map[string]bool{}
 	for {
 		page, err := c.queryProducts(ctx, token, cursor)
 		if err != nil {
@@ -149,6 +151,11 @@ func (c *adminClient) ListActiveProducts(ctx context.Context) ([]ShopifyProduct,
 		if !page.PageInfo.HasNextPage {
 			return products, nil
 		}
+		// A cursor seen before would ask for the same pages forever.
+		if page.PageInfo.EndCursor == "" || seenCursors[page.PageInfo.EndCursor] {
+			return nil, fmt.Errorf("shopify: query products: next page has cursor %q, which does not advance", page.PageInfo.EndCursor)
+		}
+		seenCursors[page.PageInfo.EndCursor] = true
 		cursor = &page.PageInfo.EndCursor
 	}
 }
@@ -246,8 +253,14 @@ func parseProduct(node productNode) (ShopifyProduct, error) {
 	}
 
 	images := make([]ShopifyImage, 0, len(node.Media.Nodes))
+	hasProcessingImages := false
 	for i, media := range node.Media.Nodes {
 		if media.Image == nil {
+			// A failed image never gets a URL, so it is left out instead of
+			// holding back the product's images on every run.
+			if media.Status != "FAILED" {
+				hasProcessingImages = true
+			}
 			continue
 		}
 		imageID, err := parseGID(media.ID, "MediaImage")
@@ -270,13 +283,14 @@ func parseProduct(node productNode) (ShopifyProduct, error) {
 	}
 
 	return ShopifyProduct{
-		ID:          id,
-		Handle:      node.Handle,
-		Title:       node.Title,
-		ProductType: node.ProductType,
-		Category:    node.Category.FullName,
-		Tags:        node.Tags,
-		Images:      images,
+		ID:                  id,
+		Handle:              node.Handle,
+		Title:               node.Title,
+		ProductType:         node.ProductType,
+		Category:            node.Category.FullName,
+		Tags:                node.Tags,
+		Images:              images,
+		HasProcessingImages: hasProcessingImages,
 	}, nil
 }
 

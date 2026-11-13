@@ -11,6 +11,9 @@ type ShopifyProduct struct {
 	Category string
 	Tags     []string
 	Images   []ShopifyImage
+	// Shopify has no URL yet for an image it is still processing, so Images
+	// leaves it out and is incomplete.
+	HasProcessingImages bool
 }
 
 type ShopifyImage struct {
@@ -23,6 +26,5 @@ type ShopifyImage struct {
 }
 
 type CatalogSource interface {
-	// ListActiveProducts returns every active product in the store.
 	ListActiveProducts(ctx context.Context) ([]ShopifyProduct, error)
 }

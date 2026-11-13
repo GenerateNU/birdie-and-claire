@@ -53,6 +53,20 @@ func (e *recordingEmbedder) EmbedImage(_ context.Context, imageURL string) ([]fl
 
 func (e *recordingEmbedder) Warm(context.Context) error { return nil }
 
+// failingOnceEmbedder fails its first text embed, then works like recordingEmbedder.
+type failingOnceEmbedder struct {
+	recordingEmbedder
+	failed bool
+}
+
+func (e *failingOnceEmbedder) EmbedText(ctx context.Context, text string) ([]float32, error) {
+	if !e.failed {
+		e.failed = true
+		return nil, errors.New("embedder unavailable")
+	}
+	return e.recordingEmbedder.EmbedText(ctx, text)
+}
+
 // openSyncTestDB opens the dev database for a sync test. A sync deactivates every product it did not see, so the
 // products active before the test are set active again afterward, and the test's own products are deleted.
 func openSyncTestDB(t *testing.T) *sql.DB {
@@ -277,6 +291,50 @@ func TestCatalogSyncEmbedsOnlyProductsWithImages(t *testing.T) {
 	runSync(t, db, emb, product)
 	if mustFindSyncedRow(t, db, product.ID).hasEmbedding {
 		t.Fatal("a product that lost its images kept its embedding")
+	}
+}
+
+func TestCatalogSyncRetriesFailedEmbeddingNextRun(t *testing.T) {
+	db := openSyncTestDB(t)
+	ctx := context.Background()
+	product := newSyncProduct(t, db, topsCategory, 1)
+	catalog := &fakeCatalog{products: []shopify.ShopifyProduct{product}}
+	catalogSync := services.NewCatalogSyncService(repository.New(db), catalog, &failingOnceEmbedder{})
+
+	if err := catalogSync.Sync(ctx); err == nil {
+		t.Fatal("Sync with a failing embedder returned nil, want the embed error")
+	}
+	if row := mustFindSyncedRow(t, db, product.ID); !row.active || row.hasEmbedding {
+		t.Fatalf("after a failed embed, row = %+v, want an active product with no embedding", row)
+	}
+
+	if err := catalogSync.Sync(ctx); err != nil {
+		t.Fatalf("second Sync: %v", err)
+	}
+	if !mustFindSyncedRow(t, db, product.ID).hasEmbedding {
+		t.Fatal("the next run did not retry the failed embed")
+	}
+}
+
+func TestCatalogSyncKeepsImagesWhileShopifyProcessesOne(t *testing.T) {
+	db := openSyncTestDB(t)
+	product := newSyncProduct(t, db, topsCategory, 2)
+	emb := &recordingEmbedder{}
+	runSync(t, db, emb, product)
+	embedCalls := emb.calls
+
+	product.Images = product.Images[1:]
+	product.HasProcessingImages = true
+	// a new title changes the embedding's hash, so only the processing image holds the embed back
+	product.Title = "Renamed sync test sweater"
+	runSync(t, db, emb, product)
+
+	row := mustFindSyncedRow(t, db, product.ID)
+	if row.imageCount != 2 || !row.hasEmbedding {
+		t.Fatalf("row = %+v, want both stored images and the embedding kept", row)
+	}
+	if emb.calls != embedCalls {
+		t.Fatalf("made %d embed calls while an image was processing, want 0", emb.calls-embedCalls)
 	}
 }
 

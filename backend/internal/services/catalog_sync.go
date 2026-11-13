@@ -91,11 +91,20 @@ func (s *catalogSyncService) Sync(ctx context.Context) error {
 
 		// cloned, because filtering in place would rewrite the caller's slice
 		product.Tags = slices.DeleteFunc(slices.Clone(product.Tags), isMarketingTag)
-		productID, storedHash, err := s.saveProduct(ctx, product, slot)
+		productID, storedHash, err := s.repo.Product.UpsertShopifyProduct(ctx, product, slot)
 		if err != nil {
 			return err
 		}
 		syncedShopifyIDs = append(syncedShopifyIDs, product.ID)
+		// Replacing images from an incomplete list would delete the ones still
+		// processing, so the images and embedding wait for a run that has them all.
+		if product.HasProcessingImages {
+			log.Warn(ctx, "catalog sync: kept a product's images while Shopify processes one", "shopify_id", product.ID)
+			continue
+		}
+		if err := s.repo.ProductImage.ReplaceShopifyImages(ctx, productID, product.Images); err != nil {
+			return err
+		}
 		if err := s.refreshEmbedding(ctx, product, productID, storedHash); err != nil {
 			embedErrs = append(embedErrs, fmt.Errorf("refresh embedding of shopify product %d: %w", product.ID, err))
 		}
@@ -114,21 +123,6 @@ func (s *catalogSyncService) Sync(ctx context.Context) error {
 	return errors.Join(embedErrs...)
 }
 
-// saveProduct upserts the product and its images, and returns the product's id
-// and the hash its stored embedding was built from.
-func (s *catalogSyncService) saveProduct(ctx context.Context, product shopify.ShopifyProduct, slot models.ProductSlot) (uuid.UUID, *string, error) {
-	productID, storedHash, err := s.repo.Product.UpsertShopifyProduct(ctx, product, slot)
-	if err != nil {
-		return uuid.Nil, nil, err
-	}
-	if err := s.repo.ProductImage.ReplaceShopifyImages(ctx, productID, product.Images); err != nil {
-		return uuid.Nil, nil, err
-	}
-	return productID, storedHash, nil
-}
-
-// refreshEmbedding embeds the product again if what its embedding is built from
-// changed. A failure leaves the old embedding in place for the next run to retry.
 func (s *catalogSyncService) refreshEmbedding(ctx context.Context, product shopify.ShopifyProduct, productID uuid.UUID, storedHash *string) error {
 	// A product with no image has no picture to show in an outfit, so it is not recommended.
 	if len(product.Images) == 0 {
