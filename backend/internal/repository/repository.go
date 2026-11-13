@@ -10,6 +10,7 @@ type Repository struct {
 	OutfitReaction OutfitReactionRepository
 	Product        ProductRepository
 	ProductImage   ProductImageRepository
+	OwnedProduct   OwnedProductRepository
 }
 
 func New(database *sql.DB) *Repository {
@@ -19,5 +20,6 @@ func New(database *sql.DB) *Repository {
 		OutfitReaction: NewOutfitReactionRepository(database),
 		Product:        NewProductRepository(database),
 		ProductImage:   NewProductImageRepository(database),
+		OwnedProduct:   NewOwnedProductRepository(database),
 	}
 }
