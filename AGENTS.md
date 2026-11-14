@@ -68,6 +68,20 @@ work.
 - Use the language's real mechanism where one exists (`private`, unexported
   names, module scope, `#` fields). A leading underscore is a last resort.
 
+## Decide with data
+
+- When a choice can be measured, measure it before arguing about it. The
+  catalog is a few dozen products, so running all of them through two versions
+  of a change takes minutes and costs cents.
+- This covers prompt wording, embedded text, ranking weights, model choice, and
+  label quality.
+- Put the numbers in the pull request with how you got them, so a reviewer can
+  rerun them. Say how many items you checked. A small sample shows a
+  direction, not proof.
+- A guess is fine as a starting point when it is marked as one, like the
+  "untuned" bonus weights in `repository/product.go`. Replace it once someone
+  measures.
+
 ## Before changing behavior, grill
 
 Use the `grill` skill before writing or changing code that changes what the

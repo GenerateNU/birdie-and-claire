@@ -9,14 +9,16 @@ export const FontFamily = {
 };
 
 // Each key becomes a `text-<key>` class that sets size, line height, and weight. A class can't set
-// the font family, so display, heading-l, and heading-m also need `font-serif`; label-m, label-s,
-// and overline are uppercase in Figma and need `uppercase`.
+// the font family, so display, heading-l, and heading-m also need `font-serif`, and
+// heading-m-italic needs `font-serif italic`; label-m, label-s, and overline are uppercase in Figma
+// and need `uppercase`.
 export const TypeScale = {
   // Hi-fi styles, named after the Figma "B&C Type" styles.
   display: ["65px", { lineHeight: "1", fontWeight: "400" }],
   "heading-l": ["50px", { lineHeight: "1.05", fontWeight: "400" }],
   "heading-m": ["36px", { lineHeight: "1.1", fontWeight: "400" }],
   "heading-s": ["20px", { lineHeight: "1.3", fontWeight: "600" }],
+  "heading-m-italic": ["24px", { lineHeight: "1.1", fontWeight: "400" }],
   "body-l": ["16px", { lineHeight: "1.5", fontWeight: "400" }],
   "body-m": ["14px", { lineHeight: "1.5", fontWeight: "400" }],
   "body-s": ["13px", { lineHeight: "1.45", fontWeight: "400" }],

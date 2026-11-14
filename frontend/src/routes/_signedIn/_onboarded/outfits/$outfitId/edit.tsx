@@ -8,8 +8,16 @@ import {
   updateOutfitMutation,
 } from "@/api/generated/@tanstack/react-query.gen";
 import type { OutfitResponse, UpdateOutfitInputBody } from "@/api/generated/types.gen";
-import { Box, Button, EmptyState, ErrorState, Modal, Spinner, useToast } from "@/design-system";
-import { EditorHeader } from "@/features/outfits/editor-header";
+import {
+  Box,
+  Button,
+  EmptyState,
+  ErrorState,
+  Modal,
+  PageHeader,
+  Spinner,
+  useToast,
+} from "@/design-system";
 import { useEditorSelection } from "@/features/outfits/editor-selection";
 import { OutfitCanvas } from "@/features/outfits/outfit-canvas";
 import { useOutfitDraft } from "@/features/outfits/outfit-draft";
@@ -211,7 +219,11 @@ function OutfitEditor({ outfitId, outfit }: OutfitEditorProps) {
 function EditorFrame({ onSave, saveDisabled, children }: EditorFrameProps) {
   return (
     <Box className="flex h-screen flex-col">
-      <EditorHeader onSave={onSave} saveDisabled={saveDisabled} />
+      <PageHeader
+        title="Edit Outfit"
+        logoTo="/profile/outfits"
+        actions={<Button label="Save" onClick={onSave} disabled={saveDisabled} />}
+      />
       {children}
     </Box>
   );

@@ -12,11 +12,21 @@ export { TextButton } from "@/design-system/components/buttons/text-button";
 
 export { Toggle } from "@/design-system/components/buttons/toggle";
 
+export { AddTile } from "@/design-system/components/cards/add-tile";
+
 export { CardImage } from "@/design-system/components/cards/card-image";
 
-export { ImageCard } from "@/design-system/components/cards/image-card";
+export { CollectionCard } from "@/design-system/components/cards/collection-card";
+
+export { ImageOptionCard } from "@/design-system/components/cards/image-option-card";
+
+export { ItemCard } from "@/design-system/components/cards/item-card";
 
 export { ListCard } from "@/design-system/components/cards/list-card";
+
+export { OutfitCard } from "@/design-system/components/cards/outfit-card";
+
+export { PieceRow } from "@/design-system/components/cards/piece-row";
 
 export { Chip } from "@/design-system/components/chips/chip";
 
@@ -45,6 +55,14 @@ export { Tabs } from "@/design-system/components/tabs/tabs";
 export { Form } from "@/design-system/components/form/form";
 
 export { Header } from "@/design-system/components/header/header";
+
+export { PageHeader } from "@/design-system/components/header/page-header";
+
+export { SectionHeader } from "@/design-system/components/header/section-header";
+
+export { NavItem } from "@/design-system/components/navigation/nav-item";
+
+export { Sidebar } from "@/design-system/components/navigation/sidebar";
 
 export { Menu } from "@/design-system/components/menu/menu";
 

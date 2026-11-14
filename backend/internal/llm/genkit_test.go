@@ -907,8 +907,8 @@ func TestExpandAnswersCapsOutputAndTurnsOffReasoning(t *testing.T) {
 		t.Fatalf("ExpandAnswers: %v", err)
 	}
 	expand := stub.requests()[0]
-	if expand.MaxTokens != expandAnswersMaxOutputTokens {
-		t.Errorf("max_tokens = %d, want %d", expand.MaxTokens, expandAnswersMaxOutputTokens)
+	if expand.MaxTokens != 512 {
+		t.Errorf("max_tokens = %d, want the 512 set in expand_answers.prompt", expand.MaxTokens)
 	}
 	// reasoning tokens count against max_tokens, so with reasoning on the cap can leave no room for the answer
 	if expand.Reasoning == nil || expand.Reasoning.Effort != "none" {
