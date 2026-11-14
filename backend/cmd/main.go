@@ -76,7 +76,7 @@ func run() error {
 
 	app, _ := server.New(cfg, db, store, emb, llmClient, verifier)
 
-	catalogSync := services.NewCatalogSyncService(repository.New(db), shopify.New(cfg.Shopify), emb)
+	catalogSync := services.NewCatalogSyncService(repository.New(db), shopify.New(cfg.Shopify), emb, llmClient)
 	syncDone := make(chan struct{})
 	go func() {
 		defer close(syncDone)

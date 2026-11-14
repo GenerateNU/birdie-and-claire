@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"birdie-and-claire/internal/config"
+	"birdie-and-claire/internal/log"
 )
 
 const (
@@ -27,7 +28,7 @@ const (
 	imagesPerProduct = 50
 )
 
-// productsQuery requests about 110 of the 1000 points Shopify allows one query.
+// productsQuery requests about 135 of the 1000 points Shopify allows one query.
 const productsQuery = `query ActiveProducts($cursor: String, $imagesPerProduct: Int!) {
   products(first: 25, after: $cursor, query: "status:active") {
     pageInfo { hasNextPage endCursor }
@@ -36,8 +37,13 @@ const productsQuery = `query ActiveProducts($cursor: String, $imagesPerProduct: 
       handle
       title
       productType
+      description
       category { fullName }
       tags
+      options { name values }
+      fabricInfo: metafield(namespace: "custom", key: "fabric_info") { value }
+      materials: metafield(namespace: "custom", key: "materials") { value }
+      modelInfo: metafield(namespace: "custom", key: "model_info") { value }
       media(first: $imagesPerProduct, query: "media_type:IMAGE") {
         pageInfo { hasNextPage }
         nodes {
@@ -101,16 +107,29 @@ type productNode struct {
 	Handle      string `json:"handle"`
 	Title       string `json:"title"`
 	ProductType string `json:"productType"`
+	Description string `json:"description"`
 	Category    struct {
 		FullName string `json:"fullName"`
 	} `json:"category"`
-	Tags  []string `json:"tags"`
-	Media struct {
+	Tags    []string `json:"tags"`
+	Options []struct {
+		Name   string   `json:"name"`
+		Values []string `json:"values"`
+	} `json:"options"`
+	// null when the product has no value for the metafield
+	FabricInfo *metafieldNode `json:"fabricInfo"`
+	Materials  *metafieldNode `json:"materials"`
+	ModelInfo  *metafieldNode `json:"modelInfo"`
+	Media      struct {
 		PageInfo struct {
 			HasNextPage bool `json:"hasNextPage"`
 		} `json:"pageInfo"`
 		Nodes []mediaNode `json:"nodes"`
 	} `json:"media"`
+}
+
+type metafieldNode struct {
+	Value string `json:"value"`
 }
 
 type mediaNode struct {
@@ -142,7 +161,7 @@ func (c *adminClient) ListActiveProducts(ctx context.Context) ([]ShopifyProduct,
 			return nil, err
 		}
 		for _, node := range page.Nodes {
-			product, err := parseProduct(node)
+			product, err := parseProduct(ctx, node)
 			if err != nil {
 				return nil, err
 			}
@@ -242,7 +261,7 @@ func readStatusError(resp *http.Response) error {
 	return fmt.Errorf("%s: %s", resp.Status, bytes.TrimSpace(detail))
 }
 
-func parseProduct(node productNode) (ShopifyProduct, error) {
+func parseProduct(ctx context.Context, node productNode) (ShopifyProduct, error) {
 	id, err := parseGID(node.ID, "Product")
 	if err != nil {
 		return ShopifyProduct{}, err
@@ -282,16 +301,40 @@ func parseProduct(node productNode) (ShopifyProduct, error) {
 		})
 	}
 
+	options := make([]ShopifyOption, len(node.Options))
+	for i, option := range node.Options {
+		options[i] = ShopifyOption{Name: option.Name, Values: option.Values}
+	}
+	var materials []string
+	// A list metafield's value is the list encoded as a JSON string. Store staff can redefine the metafield as plain
+	// text, and that should cost the product its materials, not stop the whole sync.
+	if node.Materials != nil && json.Unmarshal([]byte(node.Materials.Value), &materials) != nil {
+		log.Warn(ctx, "shopify: left out a product's materials, which are not a JSON list", "shopify_id", id)
+		materials = nil
+	}
+
 	return ShopifyProduct{
 		ID:                  id,
 		Handle:              node.Handle,
 		Title:               node.Title,
 		ProductType:         node.ProductType,
+		Description:         node.Description,
 		Category:            node.Category.FullName,
 		Tags:                node.Tags,
+		Options:             options,
+		FabricInfo:          metafieldValue(node.FabricInfo),
+		Materials:           materials,
+		ModelInfo:           metafieldValue(node.ModelInfo),
 		Images:              images,
 		HasProcessingImages: hasProcessingImages,
 	}, nil
+}
+
+func metafieldValue(metafield *metafieldNode) string {
+	if metafield == nil {
+		return ""
+	}
+	return metafield.Value
 }
 
 // parseGID returns the number at the end of a Shopify global ID such as

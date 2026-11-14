@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	_ "embed"
 	"errors"
 	"fmt"
 	"net"
@@ -269,9 +268,6 @@ func productionDatabaseURL() (string, error) {
 	return databaseURL.String(), nil
 }
 
-//go:embed seeds/products.sql
-var productsSeed string
-
 func seed(root string, args []string) error {
 	if len(args) == 0 {
 		return errors.New("usage: db seed products")
@@ -292,14 +288,10 @@ func seedProducts(root string, args []string) error {
 		return err
 	}
 
-	// -1 runs the file in one transaction, so a failed row leaves nothing half-seeded.
-	cmd := compose(root, "exec", "-T", "db", "sh", "-c",
-		`psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 -q -1`)
-	cmd.Stdin = strings.NewReader(productsSeed)
-	if err := cmd.Run(); err != nil {
+	if err := compose(root, "run", "--rm", "--no-deps", "api", "go", "run", "./cmd/sync").Run(); err != nil {
 		return err
 	}
-	_, _ = fmt.Println("seeded the demo products")
+	_, _ = fmt.Println("synced the products from Shopify")
 	return nil
 }
 
