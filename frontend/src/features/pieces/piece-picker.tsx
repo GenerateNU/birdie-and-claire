@@ -95,32 +95,13 @@ export function PiecePicker({ onAdded }: PiecePickerProps) {
           <Catalog selected={selected} onToggle={toggle} disabled={saving} atLimit={atLimit} />
         </Box>
         {showingSelectedItems && (
-          <Box className="absolute inset-y-0 right-0 flex w-3/5 flex-col gap-md overflow-y-auto border-l bg-card p-md shadow-modal">
-            <Box className="flex flex-col items-center text-center">
-              <Box className="text-label-l-strong">Selected Items</Box>
-              <Text variant="body" className="text-secondary">
-                You can always add more in your profile later!
-              </Text>
-            </Box>
-            <ul className="grid grid-cols-2 gap-md">
-              {selected.map((product) => (
-                <li key={product.id} className="relative">
-                  <ItemCard name={product.title} src={product.image_url} size="sm" />
-                  <IconButton
-                    icon={TrashIcon}
-                    label={`Remove ${product.title}`}
-                    variant="secondary"
-                    size="sm"
-                    disabled={saving}
-                    className="absolute right-xs top-xs"
-                    onClick={() =>
-                      changeSelection(selected.filter((picked) => picked.id !== product.id))
-                    }
-                  />
-                </li>
-              ))}
-            </ul>
-          </Box>
+          <SelectedItemsPanel
+            selected={selected}
+            onRemove={(product) =>
+              changeSelection(selected.filter((picked) => picked.id !== product.id))
+            }
+            disabled={saving}
+          />
         )}
       </Box>
       {atLimit && (
@@ -149,6 +130,42 @@ export function PiecePicker({ onAdded }: PiecePickerProps) {
           Couldn't add your pieces. Try again.
         </Text>
       )}
+    </Box>
+  );
+}
+
+type SelectedItemsPanelProps = {
+  selected: ProductResponse[];
+  onRemove: (product: ProductResponse) => void;
+  disabled: boolean;
+};
+
+/** The picks so far, each with a remove button. Covers the right of the catalog. */
+function SelectedItemsPanel({ selected, onRemove, disabled }: SelectedItemsPanelProps) {
+  return (
+    <Box className="absolute inset-y-0 right-0 flex w-3/5 flex-col gap-md overflow-y-auto border-l bg-card p-md shadow-modal">
+      <Box className="flex flex-col items-center text-center">
+        <Box className="text-label-l-strong">Selected Items</Box>
+        <Text variant="body" className="text-secondary">
+          You can always add more in your profile later!
+        </Text>
+      </Box>
+      <ul className="grid grid-cols-2 gap-md">
+        {selected.map((product) => (
+          <li key={product.id} className="relative">
+            <ItemCard name={product.title} src={product.image_url} size="sm" />
+            <IconButton
+              icon={TrashIcon}
+              label={`Remove ${product.title}`}
+              variant="secondary"
+              size="sm"
+              disabled={disabled}
+              className="absolute right-xs top-xs"
+              onClick={() => onRemove(product)}
+            />
+          </li>
+        ))}
+      </ul>
     </Box>
   );
 }
