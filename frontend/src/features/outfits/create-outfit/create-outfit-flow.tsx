@@ -59,7 +59,16 @@ export function CreateOutfitFlow() {
   const answeredConditions =
     weatherTile === null || conditions.length === 0 ? null : conditions.join(",");
 
-  const weatherLabel = weatherTiles.find((tile) => tile.value === weatherTile)?.label ?? "None";
+  const weatherSummary =
+    weatherTile === null
+      ? "None"
+      : [
+          weatherTiles.find((tile) => tile.value === weatherTile)?.label,
+          ...weatherConditions
+            .filter(({ value }) => conditions.includes(value))
+            .map(({ label }) => label.toLowerCase()),
+        ].join(", ");
+
   const canContinue = chosenOccasion !== "";
 
   function selectCard(occasion: string, pressed: boolean) {
@@ -263,7 +272,7 @@ export function CreateOutfitFlow() {
       <Review
         occasion={chosenOccasion}
         weather={weather}
-        weatherLabel={weatherLabel}
+        weatherSummary={weatherSummary}
         setting={answeredSetting}
         conditions={answeredConditions}
         vibe={vibe}

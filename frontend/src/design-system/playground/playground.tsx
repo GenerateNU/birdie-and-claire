@@ -2,13 +2,16 @@ import {
   ArrowRightIcon,
   ArrowSquareOutIcon,
   BookmarkSimpleIcon,
+  CalendarBlankIcon,
   CaretLeftIcon,
   CaretRightIcon,
   CoatHangerIcon,
   DiamondsFourIcon,
   EnvelopeSimpleIcon,
   HouseIcon,
+  KeyboardIcon,
   MagnifyingGlassIcon,
+  PencilSimpleIcon,
   PlusIcon,
   ShareNetworkIcon,
   SunIcon,
@@ -500,13 +503,19 @@ export function Playground() {
             </Section>
 
             <Section id="list-card">
-              <Box className="flex max-w-content-sm flex-col gap-xs">
+              <Box className="flex max-w-content-sm flex-col divide-y border">
                 <ListCard
+                  icon={CalendarBlankIcon}
                   title="Occasion"
                   value="Work"
-                  action={{ label: "Edit", accessibleLabel: "Edit Occasion", onClick: () => {} }}
+                  action={{
+                    label: "Edit",
+                    accessibleLabel: "Edit Occasion",
+                    icon: PencilSimpleIcon,
+                    onClick: () => {},
+                  }}
                 />
-                <ListCard title="No action" value="Read only" />
+                <ListCard icon={KeyboardIcon} title="No action" value="“Read only”" italic />
               </Box>
             </Section>
 
