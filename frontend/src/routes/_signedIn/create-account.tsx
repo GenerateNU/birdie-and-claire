@@ -60,6 +60,8 @@ function CreateAccount() {
           {(field) => (
             <TextField
               label="Name"
+              // The endpoint caps name at 100 characters.
+              maxLength={100}
               aria-required
               value={field.state.value}
               onValueChange={field.handleChange}

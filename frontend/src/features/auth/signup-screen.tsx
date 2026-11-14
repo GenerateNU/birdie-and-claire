@@ -26,7 +26,12 @@ export function SignupScreen({
   const form = useForm({
     defaultValues: { name: defaultName, email: defaultEmail },
     validators: { onSubmit: signupSchema },
-    onSubmit: ({ value }) => onSubmit(value.name, value.email),
+    // TanStack passes the raw field values, so parse them to send the trimmed email.
+    onSubmit: ({ value }) => {
+      const { name, email } = signupSchema.parse(value);
+
+      onSubmit(name, email);
+    },
   });
 
   return (
@@ -39,6 +44,8 @@ export function SignupScreen({
               hideLabel
               placeholder="Enter Your Name"
               autoComplete="name"
+              // The endpoint caps name at 100 characters.
+              maxLength={100}
               aria-required
               value={field.state.value}
               onValueChange={field.handleChange}

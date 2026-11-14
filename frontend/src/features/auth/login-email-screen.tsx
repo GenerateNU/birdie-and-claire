@@ -23,7 +23,8 @@ export function LoginEmailScreen({
   const form = useForm({
     defaultValues: { email: defaultEmail },
     validators: { onSubmit: loginSchema },
-    onSubmit: ({ value }) => onSubmit(value.email),
+    // TanStack passes the raw field values, so parse them to send the trimmed email.
+    onSubmit: ({ value }) => onSubmit(loginSchema.parse(value).email),
   });
 
   return (

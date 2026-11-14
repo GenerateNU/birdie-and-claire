@@ -6,8 +6,9 @@ import type { CurrentUserResponse } from "@/api/generated/types.gen";
 import { Box, Button, Page, Text } from "@/design-system";
 import { supabase } from "@/lib/supabase";
 
-// Shown for every name error. The name's schema comes from the spec, which can't carry wording, so
-// zod's own messages read like "Invalid string: must match pattern /\S/".
+// Shown for a name error, which is only ever a blank name: the inputs stop at 100 characters. The
+// name's schema comes from the spec, which can't carry wording, so zod's own messages read like
+// "Invalid string: must match pattern /\S/".
 export const NAME_ERROR = "Enter your name.";
 
 /**
