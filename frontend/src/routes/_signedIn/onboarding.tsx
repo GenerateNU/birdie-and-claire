@@ -7,6 +7,7 @@ import { replaceCurrentUserStylePreferencesMutation } from "@/api/generated/@tan
 import type { StylePreferences } from "@/api/generated/types.gen";
 import { Box, Button, ImageOptionCard, Logo, Page, ProgressBar, Tabs, Text } from "@/design-system";
 import { AccountError, requireAccountStatus } from "@/features/account/account";
+import { takeReturnPath } from "@/features/auth/return-path";
 import { PiecePicker } from "@/features/pieces/piece-picker";
 import {
   fitFields,
@@ -73,7 +74,7 @@ function Onboarding() {
     ...replaceCurrentUserStylePreferencesMutation(),
     // Has to stay a full page load. The cached account status never expires, so a router
     // navigation would send the user straight back here.
-    onSuccess: () => window.location.assign("/"),
+    onSuccess: () => window.location.assign(takeReturnPath() ?? "/"),
   });
 
   // Still saving while the reload starts, so the buttons don't come back on in between.

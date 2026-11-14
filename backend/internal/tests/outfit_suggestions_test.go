@@ -102,7 +102,7 @@ func TestSuggestOutfitItemsRequiresProductID(t *testing.T) {
 }
 
 func newSuggestionService(db *sql.DB) services.OutfitService {
-	return services.NewOutfitService(repository.New(db), "")
+	return services.NewOutfitService(repository.New(db))
 }
 
 // insertSuggestionOutfit saves an outfit of the given products for a new user.
