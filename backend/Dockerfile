@@ -1,6 +1,6 @@
 # Production image for the droplet. dev.Dockerfile is the hot-reloading one
 # Compose uses locally.
-FROM golang:1.27.1-bookworm AS build
+FROM golang:1.27.4-bookworm AS build
 
 WORKDIR /src
 

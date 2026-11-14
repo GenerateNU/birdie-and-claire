@@ -15,6 +15,7 @@ import { FocusRing } from "./src/design-system/tokens/focus-ring";
 import {
   AddTileSize,
   AspectRatio,
+  CanvasPanelPadding,
   CardOverlayInset,
   CardSize,
   ChoiceRowHeight,
@@ -134,7 +135,11 @@ export default {
         "logo-onboarding": LogoSize.onboarding.height,
       },
       maxHeight: { "scroll-area": ScrollAreaHeight },
-      minHeight: { "choice-row": ChoiceRowHeight },
+      minHeight: { "choice-row": ChoiceRowHeight, outfit: OutfitCardSize.imageHeight },
+      padding: {
+        "canvas-panel-x": CanvasPanelPadding.x,
+        "canvas-panel-y": CanvasPanelPadding.y,
+      },
       inset: { "card-ring": CardOverlayInset.ring, "card-hover": CardOverlayInset.hover },
       aspectRatio: AspectRatio,
       size: {

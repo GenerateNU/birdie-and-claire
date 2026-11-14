@@ -54,7 +54,13 @@ function OutfitDetailsPage() {
     );
   }
 
-  const { name, description, tags, products } = outfitQuery.data;
+  const {
+    name,
+    description,
+    tags,
+    products,
+    add_all_to_cart_url: addAllToCartUrl,
+  } = outfitQuery.data;
 
   return (
     <main className="flex flex-col gap-xl p-md lg:h-screen lg:flex-row lg:gap-xxxl lg:p-xxl">
@@ -62,7 +68,7 @@ function OutfitDetailsPage() {
         style={canvasRatioStyle}
         className="order-2 aspect-[var(--canvas-ratio)] min-w-0 lg:order-none lg:aspect-auto lg:flex-1"
       >
-        <OutfitCanvas products={products} />
+        <OutfitCanvas products={products} variant="panel" />
       </Box>
       <section className="contents lg:flex lg:min-h-0 lg:w-content-md lg:flex-col lg:gap-lg lg:overflow-y-auto">
         <header className="order-1 flex shrink-0 flex-col gap-xxs border-b pb-lg">
@@ -105,7 +111,7 @@ function OutfitDetailsPage() {
           </ul>
         </header>
         <Box className="order-3 flex flex-col gap-xl">
-          <PiecesSection products={products} />
+          <PiecesSection products={products} addAllToCartUrl={addAllToCartUrl} />
           <ExternalPiecesSection />
         </Box>
       </section>

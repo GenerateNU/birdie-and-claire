@@ -18,7 +18,7 @@ import (
 // total counts every one of the user's outfits on every page, and only that user's.
 func TestListOutfitsTotalIgnoresCursor(t *testing.T) {
 	db := openTestDB(t)
-	service := services.NewOutfitService(repository.New(db))
+	service := services.NewOutfitService(repository.New(db), "")
 	ownerID := insertTestUser(t, db)
 	ctx := auth.WithUserID(context.Background(), ownerID)
 	for range 3 {
@@ -46,7 +46,7 @@ func TestListOutfitsTotalIgnoresCursor(t *testing.T) {
 
 func TestListOutfitsWithNoOutfitsHasZeroTotal(t *testing.T) {
 	db := openTestDB(t)
-	service := services.NewOutfitService(repository.New(db))
+	service := services.NewOutfitService(repository.New(db), "")
 	ctx := auth.WithUserID(context.Background(), insertTestUser(t, db))
 
 	page, err := service.List(ctx, cursorParams(t, 20, ""))
@@ -164,7 +164,7 @@ func TestListOutfitsPagesKeepEveryOutfitWhole(t *testing.T) {
 	db := openTestDB(t)
 	ownerID := insertTestUser(t, db)
 	saved := insertSavedOutfits(t, db, ownerID, outfitCount, emptyIndex)
-	service := services.NewOutfitService(repository.New(db))
+	service := services.NewOutfitService(repository.New(db), "")
 	ctx := auth.WithUserID(context.Background(), ownerID)
 
 	cursor := ""

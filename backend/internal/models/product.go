@@ -113,3 +113,12 @@ func (a *ProductAttributes) Scan(src any) error {
 	}
 	return json.Unmarshal(raw, a)
 }
+
+// ProductPurchaseInfo is what an outfit's detail needs to decide whether a product can be bought.
+type ProductPurchaseInfo struct {
+	Owned bool
+	// Active is false for a product the catalog sync has deactivated.
+	Active bool
+	// VariantShopifyID is the available variant with the lowest position, nil when none is available.
+	VariantShopifyID *int64
+}

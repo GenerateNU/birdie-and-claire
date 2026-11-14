@@ -5,7 +5,7 @@ import { useState } from "react";
 
 import { replaceCurrentUserStylePreferencesMutation } from "@/api/generated/@tanstack/react-query.gen";
 import type { StylePreferences } from "@/api/generated/types.gen";
-import { Box, Button, ImageOptionCard, Logo, Modal, Page, Tabs, Text } from "@/design-system";
+import { Box, Button, ImageOptionCard, Modal, Page, Text } from "@/design-system";
 import { AccountError, requireAccountStatus } from "@/features/account/account";
 import { takeReturnPath } from "@/features/auth/return-path";
 import {
@@ -36,27 +36,30 @@ type IntroStep = (typeof introSteps)[number];
 
 type OnboardingStep = IntroStep | PreferenceField;
 
-const fitTabs = fitFields.map((field) => ({ value: field, label: questions[field].name }));
-
 const fieldOrder: PreferenceField[] = ["style", ...fitFields];
 
 function isPreferenceField(step: OnboardingStep): step is PreferenceField {
   return !introSteps.some((introStep) => introStep === step);
 }
 
+const lastField = fieldOrder[fieldOrder.length - 1];
+
 function previousStep(step: OnboardingStep): OnboardingStep | null {
+  if (isPreferenceField(step)) {
+    const index = fieldOrder.indexOf(step);
+
+    return index === 0 ? "owns-pieces" : fieldOrder[index - 1];
+  }
+
   switch (step) {
     case "welcome":
     case "owns-pieces":
       return null;
     case "add-method":
-    case "style":
       return "owns-pieces";
     case "shop-login":
     case "pick-pieces":
       return "add-method";
-    default:
-      return "style";
   }
 }
 
@@ -84,23 +87,21 @@ function Onboarding() {
   }
 
   function nextFieldOrFinish(field: PreferenceField) {
-    const next = fieldOrder[fieldOrder.indexOf(field) + 1];
-
-    if (next === undefined) {
+    if (field === lastField) {
       saveMutation.mutate({ body: preferences });
 
       return;
     }
 
-    setStep(next);
+    setStep(fieldOrder[fieldOrder.indexOf(field) + 1]);
   }
 
   function nextButtonLabel(field: PreferenceField) {
     if (preferences[field].length === 0) {
-      return "No Preference";
+      return "No preference";
     }
 
-    return field === fieldOrder[fieldOrder.length - 1] ? "Finish" : "Next";
+    return field === lastField ? "Finish" : "Next";
   }
 
   if (step === "welcome") {
@@ -109,10 +110,7 @@ function Onboarding() {
 
   if (!isPreferenceField(step)) {
     return (
-      <OwnedPiecesLayout
-        onBack={back === null ? null : () => setStep(back)}
-        stage={step === "owns-pieces" ? "owns-pieces" : "add-pieces"}
-      >
+      <OwnedPiecesLayout onBack={back === null ? null : () => setStep(back)} stage="owned-items">
         {step === "owns-pieces" && (
           <ChoiceQuestion
             heading={<Text variant="heading-l">Do you own any Birdie & Claire clothes?</Text>}
@@ -168,43 +166,43 @@ function Onboarding() {
   }
 
   return (
-    <Page className="flex flex-col pb-xxxl">
+    <Page className="flex flex-col items-center gap-xxl">
       <OnboardingStepper stage={step === "style" ? "style" : "fit"} />
 
-      <Box className="flex flex-1 flex-col items-center gap-lg">
-        <Box className="flex flex-col items-center gap-xs">
-          <Logo className="w-full max-w-xs" />
-          <Text variant="heading">{questions[step].prompt}</Text>
-        </Box>
-        {/* Tabs<PreferenceField> because the style check can't narrow step to a fit field. */}
-        {step === "style" ? (
+      <Box className="flex flex-1 flex-col items-center justify-center gap-xxl">
+        <Text variant="display">{questions[step].prompt}</Text>
+        <Box className="flex flex-col items-center gap-lg">
+          <Text variant="body-l">{preferences[step].length} selected</Text>
           <Cards field={step} preferences={preferences} onToggle={toggle} disabled={saving} />
-        ) : (
-          <Tabs<PreferenceField>
-            tabs={fitTabs}
-            value={step}
-            onValueChange={setStep}
-            disabled={saving}
-          >
-            <Cards field={step} preferences={preferences} onToggle={toggle} disabled={saving} />
-          </Tabs>
-        )}
-        <Button
-          label={nextButtonLabel(step)}
-          loading={saving}
-          onClick={() => nextFieldOrFinish(step)}
-        />
-        {back !== null && (
+        </Box>
+        <Box className="flex flex-col items-center gap-sm">
+          {/* Keyed by step so a repeated Enter doesn't land on the next screen's button. Clicks past the
+              first of a double-click are ignored for the same reason. */}
           <Button
-            label="Back"
-            leadingIcon={ArrowLeftIcon}
-            variant="ghost"
-            size="sm"
-            disabled={saving}
-            onClick={() => setStep(back)}
+            key={step}
+            label={nextButtonLabel(step)}
+            variant={preferences[step].length === 0 ? "secondary" : "primary"}
+            className="w-onboarding-next"
+            loading={saving}
+            onClick={(event) => {
+              if (event.detail > 1) {
+                return;
+              }
+
+              nextFieldOrFinish(step);
+            }}
           />
-        )}
-        {saveMutation.isError && (
+          {back !== null && (
+            <Button
+              label="Back"
+              leadingIcon={ArrowLeftIcon}
+              variant="ghost"
+              disabled={saving}
+              onClick={() => setStep(back)}
+            />
+          )}
+        </Box>
+        {step === lastField && saveMutation.isError && (
           <Text variant="body" className="text-error">
             Couldn't save your preferences. Try again.
           </Text>
@@ -226,7 +224,7 @@ function Cards({ field, preferences, onToggle, disabled }: CardsProps) {
   const picked: readonly PreferenceValue[] = preferences[field];
 
   return (
-    <Box className="flex flex-wrap justify-center gap-md">
+    <Box className="flex flex-wrap justify-center gap-lg">
       {options.map((option) => (
         <ImageOptionCard
           key={option.value}
@@ -236,6 +234,7 @@ function Cards({ field, preferences, onToggle, disabled }: CardsProps) {
           onPressedChange={(pressed) => onToggle(field, option.value, pressed)}
           size="lg"
           selection="multi"
+          fit={field === "style" ? "cover" : "contain"}
           disabled={disabled}
         />
       ))}
