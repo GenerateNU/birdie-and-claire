@@ -10,7 +10,9 @@ import {
   EnvelopeSimpleIcon,
   ExportIcon,
   HouseIcon,
+  KeyboardIcon,
   MagnifyingGlassIcon,
+  PencilSimpleIcon,
   PlusIcon,
   SunIcon,
   UserIcon,
@@ -127,6 +129,8 @@ const textSamples = [
   { variant: "heading", scale: "heading-m" },
   { variant: "subheading", scale: "heading-s" },
   { variant: "body-l", scale: "body-l" },
+  { variant: "body-m", scale: "body-m" },
+  { variant: "label-l-strong", scale: "label-l-strong" },
   { variant: "body", scale: "body-m" },
   { variant: "caption", scale: "body-s" },
 ] as const;
@@ -525,13 +529,19 @@ export function Playground() {
             </Section>
 
             <Section id="list-card">
-              <Box className="flex max-w-content-sm flex-col gap-xs">
+              <Box className="flex max-w-content-sm flex-col divide-y border">
                 <ListCard
+                  icon={CalendarBlankIcon}
                   title="Occasion"
                   value="Work"
-                  action={{ label: "Edit", accessibleLabel: "Edit Occasion", onClick: () => {} }}
+                  action={{
+                    label: "Edit",
+                    accessibleLabel: "Edit Occasion",
+                    icon: PencilSimpleIcon,
+                    onClick: () => {},
+                  }}
                 />
-                <ListCard title="No action" value="Read only" />
+                <ListCard icon={KeyboardIcon} title="No action" value="“Read only”" italic />
               </Box>
             </Section>
 
@@ -1828,6 +1838,7 @@ function OutfitCardExamples() {
                     title="Work outfit 2"
                     pieces={sampleOutfitPieces}
                     src={samplePhoto}
+                    image={null}
                     menu={sampleMenu}
                     onOpen={() => {}}
                   />
@@ -1837,6 +1848,7 @@ function OutfitCardExamples() {
                     title="Work outfit 2"
                     pieces={sampleOutfitPieces}
                     src={samplePhoto}
+                    image={null}
                     selected={state.selected}
                     onSelectedChange={() => {}}
                   />
@@ -1850,12 +1862,19 @@ function OutfitCardExamples() {
         </Box>
       ))}
       <Box className="flex flex-wrap items-start gap-xl">
-        <OutfitCard mode="browse" title="No pieces or menu" src={samplePhoto} onOpen={() => {}} />
+        <OutfitCard
+          mode="browse"
+          title="No pieces or menu"
+          src={samplePhoto}
+          image={null}
+          onOpen={() => {}}
+        />
         <OutfitCard
           mode="browse"
           title="No image"
           pieces="A very long list of pieces that is cut off after two lines, no matter how long it gets"
           src={null}
+          image={null}
           onOpen={() => {}}
         />
         <OutfitCard
@@ -1863,6 +1882,7 @@ function OutfitCardExamples() {
           title="Interactive"
           pieces="Click to select"
           src={samplePhoto}
+          image={null}
           selected={selected}
           onSelectedChange={setSelected}
         />

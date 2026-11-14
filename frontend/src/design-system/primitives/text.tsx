@@ -9,6 +9,8 @@ const variants = {
   "heading-l": { tag: "h1", className: "font-serif text-heading-l" },
   "heading-m": { tag: "p", className: "font-serif text-heading-m" },
   "body-l": { tag: "p", className: "text-body-l" },
+  "body-m": { tag: "p", className: "text-body-m" },
+  "label-l-strong": { tag: "p", className: "text-label-l-strong uppercase" },
   body: { tag: "p", className: "text-body-m" },
   caption: { tag: "span", className: "text-body-s" },
 } as const;

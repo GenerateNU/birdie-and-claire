@@ -200,6 +200,7 @@ function PreferenceRow({ field, preferences, editing, saving, onToggle }: Prefer
             onPressedChange={(pressed) => onToggle(field, option.value, pressed)}
             size="sm"
             selection="multi"
+            fit={field === "style" ? "cover" : "contain"}
             disabled={!editing || saving}
           />
         ))}

@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useCallback } from "react";
 
 import { listOutfitsInfiniteOptions } from "@/api/generated/@tanstack/react-query.gen";
-import { EmptyState, ErrorState, Spinner, Text } from "@/design-system";
+import { Box, EmptyState, ErrorState, Skeleton, Text } from "@/design-system";
 import { OutfitList } from "@/features/outfits/outfit-list";
 import { usePagination } from "@/lib/use-pagination";
 
@@ -30,7 +30,25 @@ function OutfitsPage() {
   }, [fetchNextPage, isFetchingNextPage, isFetchNextPageError]);
 
   if (isPending) {
-    return <Spinner />;
+    return (
+      <>
+        <Text variant="heading" className="mb-xs">
+          Saved Outfits
+        </Text>
+        <Text variant="subheading" className="mb-lg">
+          All
+        </Text>
+        <Box
+          role="status"
+          aria-label="Loading your outfits"
+          className="grid grid-cols-1 gap-lg sm:grid-cols-2 lg:grid-cols-3"
+        >
+          {[0, 1, 2].map((item) => (
+            <Skeleton key={item} className="aspect-[3/1]" />
+          ))}
+        </Box>
+      </>
+    );
   }
 
   if (!data) {
