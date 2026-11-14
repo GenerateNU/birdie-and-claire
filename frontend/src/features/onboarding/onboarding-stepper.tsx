@@ -2,7 +2,6 @@ import { Box, ProgressStepper } from "@/design-system";
 
 export type OnboardingStage = "owns-pieces" | "add-pieces" | "style" | "fit";
 
-// Figma labels the steps only by number, so each stage's name goes to screen readers instead.
 const stages: { stage: OnboardingStage; name: string }[] = [
   { stage: "owns-pieces", name: "Birdie & Claire clothes" },
   { stage: "add-pieces", name: "Add your pieces" },
@@ -20,11 +19,10 @@ export function OnboardingStepper({ stage }: OnboardingStepperProps) {
   const currentStep = stages.findIndex((entry) => entry.stage === stage);
 
   return (
-    // 591px is the Progress Stepper instance in Figma's Own Any B&C Items.
     <Box
       role="group"
       aria-label={`Step ${currentStep + 1} of ${stages.length}: ${stages[currentStep].name}`}
-      className="mx-auto w-[591px]"
+      className="mx-auto w-onboarding-stepper"
     >
       <ProgressStepper steps={stepLabels} currentStep={currentStep} />
     </Box>

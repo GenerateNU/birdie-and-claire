@@ -28,6 +28,7 @@ import {
   MenuWidth,
   ModalImageWidth,
   ModalWidth,
+  OnboardingWidth,
   OutfitCardSize,
   PageHeaderHeight,
   RowThumbnailSize,
@@ -86,10 +87,15 @@ export default {
         "sidebar-collapsed": SidebarWidth.collapsed,
         "logo-sidebar": LogoSize.sidebar.width,
         "logo-header": LogoSize.header.width,
+        "logo-onboarding": LogoSize.onboarding.width,
+        ...Object.fromEntries(
+          Object.entries(OnboardingWidth).map(([key, value]) => [`onboarding-${key}`, value]),
+        ),
         ...Object.fromEntries(
           Object.entries(ContentWidth).map(([key, value]) => [`content-${key}`, value]),
         ),
       },
+      margin: { "onboarding-photo": OnboardingWidth.photo },
       maxWidth: {
         "empty-state": EmptyStateWidth,
         ...Object.fromEntries(
@@ -113,6 +119,7 @@ export default {
         "page-header": PageHeaderHeight,
         "logo-sidebar": LogoSize.sidebar.height,
         "logo-header": LogoSize.header.height,
+        "logo-onboarding": LogoSize.onboarding.height,
       },
       maxHeight: { "scroll-area": ScrollAreaHeight },
       minHeight: { "choice-row": ChoiceRowHeight },

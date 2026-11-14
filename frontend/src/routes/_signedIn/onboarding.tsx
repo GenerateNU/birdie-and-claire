@@ -44,8 +44,6 @@ function isPreferenceField(step: OnboardingStep): step is PreferenceField {
   return !introSteps.some((introStep) => introStep === step);
 }
 
-// Back from a fit field returns to style, because the fit fields switch through the tabs. "No" on
-// the first question skips the add-method question, so style goes back to the first question.
 function previousStep(step: OnboardingStep): OnboardingStep | null {
   switch (step) {
     case "welcome":
@@ -74,7 +72,6 @@ function Onboarding() {
     onSuccess: () => window.location.assign(takeReturnPath() ?? "/"),
   });
 
-  // Closing the picker mid-save would hide whether the pieces were added.
   const addingPieces = useIsMutating({ mutationKey: addOwnedPiecesMutationKey }) > 0;
 
   // Still saving while the reload starts, so the buttons don't come back on in between.
@@ -149,13 +146,11 @@ function Onboarding() {
             onSelect={setStep}
           />
         )}
-        {/* Stands in for connecting a Shopify account, which doesn't exist yet. */}
         {step === "shop-login" && <Text variant="display-hifi">Log in with Shop</Text>}
         <Modal
           open={step === "pick-pieces"}
           onClose={() => setStep("add-method")}
           title="Add Items"
-          // A shopper who finds none of their pieces still needs a way on to the style questions.
           actions={[
             {
               label: "Skip for now",

@@ -17,11 +17,9 @@ export function Welcome({ onStart }: WelcomeProps) {
       <CardImage src={hero} className="absolute inset-0 size-full" />
       <Box className="relative flex flex-col items-center gap-xxl">
         <Box className="bg-card">
-          {/* 332px is the Logo frame in Figma's Welcome to GTKY. */}
-          <Logo className="w-[332px]" />
+          <Logo className="w-logo-onboarding" />
         </Box>
-        {/* 591px is the Card frame in Figma's Welcome to GTKY. */}
-        <Box className="flex w-[591px] flex-col items-center gap-md bg-card p-xxl text-center">
+        <Box className="flex w-onboarding-card flex-col items-center gap-md bg-card p-xxl text-center">
           <Box className="flex flex-col items-center gap-xs">
             <Text variant="display-hifi">Let's Get To Know You!</Text>
             <Text variant="body-l">
@@ -36,7 +34,6 @@ export function Welcome({ onStart }: WelcomeProps) {
 }
 
 type OwnedPiecesLayoutProps = {
-  /** Null on the first question, which the design gives no Back. */
   onBack: (() => void) | null;
   stage: OnboardingStage;
   children: ReactNode;
@@ -45,12 +42,12 @@ type OwnedPiecesLayoutProps = {
 export function OwnedPiecesLayout({ onBack, stage, children }: OwnedPiecesLayoutProps) {
   return (
     <Page className="flex">
-      {/* 400px is the Image frame in Figma's Own Any B&C Items. The hero's subject stands right of
-          center, so 73% keeps her in the middle of the strip. Fixed so it sits outside the page's
-          padding. */}
-      <CardImage src={hero} className="fixed left-0 top-0 h-screen w-[400px] object-[73%_50%]" />
-      {/* Figma puts the stepper 80px from the top and Back 16px in from the photo's corner. */}
-      <Box className="relative ml-[400px] flex flex-1 flex-col items-center pt-xxxl">
+      {/* 73% keeps the stand-in hero's subject centered in the strip. */}
+      <CardImage
+        src={hero}
+        className="fixed left-0 top-0 h-screen w-onboarding-photo object-[73%_50%]"
+      />
+      <Box className="relative ml-onboarding-photo flex flex-1 flex-col items-center pt-xxxl">
         {onBack && (
           <Button
             label="Back"
@@ -81,8 +78,7 @@ export function ChoiceQuestion<T extends string>({
   return (
     <Box className="flex flex-col items-center gap-xl">
       <Box className="flex flex-col items-center gap-xs text-center">{heading}</Box>
-      {/* 565px is the Choice Group in Figma's Own Any B&C Items. */}
-      <Box className="w-[565px]">
+      <Box className="w-onboarding-choices">
         <ChoiceGroup options={options} value={null} onValueChange={onSelect} showRadio={false} />
       </Box>
     </Box>
