@@ -9,6 +9,9 @@ const variants = {
   subsubheading: { tag: "h3", className: "text-subheading uppercase" },
   body: { tag: "p", className: "text-body" },
   caption: { tag: "span", className: "text-caption" },
+  // Hi-fi styles. `-hifi` only where a lofi variant already has the name.
+  "display-hifi": { tag: "h1", className: "font-serif text-display" },
+  "body-l": { tag: "p", className: "text-body-l" },
 } as const;
 
 type TextVariant = keyof typeof variants;
