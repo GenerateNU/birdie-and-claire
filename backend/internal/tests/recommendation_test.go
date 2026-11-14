@@ -130,9 +130,20 @@ func newRecommendationService(answer string, emb *fakeEmbedder, products *fakePr
 	return services.NewRecommendationService(&repository.Repository{Product: products, User: &fakeUsers{}}, &llmtest.Fake{Text: answer}, emb)
 }
 
+// outfitTitles writes "" for a slot the outfit leaves out.
 func outfitTitles(outfit models.RecommendedOutfit) []string {
-	return []string{outfit.Top.Title, outfit.Bottom.Title, outfit.Accessory.Title, outfit.Shoe.Title}
+	var titles []string
+	for _, product := range []*models.ProductResponse{outfit.Top, outfit.Bottom, outfit.Accessory, outfit.Shoe} {
+		if product == nil {
+			titles = append(titles, "")
+			continue
+		}
+		titles = append(titles, product.Title)
+	}
+	return titles
 }
+
+var emptyCatalog = map[models.ProductSlot]int{models.SlotTop: 0, models.SlotBottom: 0, models.SlotAccessory: 0, models.SlotShoe: 0}
 
 func TestRecommendSearchesEverySlot(t *testing.T) {
 	emb := &fakeEmbedder{}
@@ -177,15 +188,15 @@ func TestRecommendBuildsEachOutfitFromOneRank(t *testing.T) {
 	}
 }
 
-func TestRecommendReturnsAsManyOutfitsAsTheShortestSlot(t *testing.T) {
+func TestRecommendReturnsAsManyOutfitsAsTheLongestSlot(t *testing.T) {
 	tests := []struct {
 		name   string
 		counts map[models.ProductSlot]int
 		want   int
 	}{
-		{name: "one shoe", counts: map[models.ProductSlot]int{models.SlotShoe: 1}, want: 1},
-		{name: "two bottoms", counts: map[models.ProductSlot]int{models.SlotBottom: 2, models.SlotShoe: 3}, want: 2},
-		{name: "no accessories", counts: map[models.ProductSlot]int{models.SlotAccessory: 0}, want: 0},
+		{name: "one shoe", counts: map[models.ProductSlot]int{models.SlotShoe: 1}, want: productsPerSlot},
+		{name: "every slot short", counts: map[models.ProductSlot]int{models.SlotTop: 2, models.SlotBottom: 1, models.SlotAccessory: 1, models.SlotShoe: 0}, want: 2},
+		{name: "nothing matched", counts: emptyCatalog, want: 0},
 	}
 
 	for _, tt := range tests {
@@ -199,6 +210,28 @@ func TestRecommendReturnsAsManyOutfitsAsTheShortestSlot(t *testing.T) {
 				t.Errorf("Outfits = %#v, want a non-nil list of %d", response.Outfits, tt.want)
 			}
 		})
+	}
+}
+
+func TestRecommendLeavesOutASlotThatRanOut(t *testing.T) {
+	products := &fakeProducts{counts: map[models.ProductSlot]int{models.SlotBottom: 1, models.SlotShoe: 0}}
+
+	response, err := newRecommendationService(expandedAllSlots, &fakeEmbedder{}, products).RecommendProducts(context.Background(), summerWedding)
+	if err != nil {
+		t.Fatalf("Recommend: %v", err)
+	}
+	want := [][]string{
+		{"top 1", "bottom 1", "accessory 1", ""},
+		{"top 2", "", "accessory 2", ""},
+		{"top 3", "", "accessory 3", ""},
+	}
+	if len(response.Outfits) != len(want) {
+		t.Fatalf("got %d outfits, want %d", len(response.Outfits), len(want))
+	}
+	for i, outfit := range response.Outfits {
+		if got := outfitTitles(outfit); !slices.Equal(got, want[i]) {
+			t.Errorf("outfit %d = %q, want %q", i, got, want[i])
+		}
 	}
 }
 
@@ -511,8 +544,27 @@ func TestRecommendRouteReturnsOutfits(t *testing.T) {
 	}
 }
 
-func TestRecommendRouteReturnsAnEmptyListWhenNoOutfitFits(t *testing.T) {
+func TestRecommendRouteLeavesOutAnEmptySlot(t *testing.T) {
 	products := &fakeProducts{counts: map[models.ProductSlot]int{models.SlotShoe: 0}}
+
+	response := recommendationAPI(t, &llmtest.Fake{Text: expandedAllSlots}, products, &fakeEmbedder{}).
+		Post("/api/v1/recommend", map[string]any{"occasion": "summer wedding"})
+	if response.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200: %s", response.Code, response.Body)
+	}
+	var body struct {
+		Outfits []map[string]json.RawMessage `json:"outfits"`
+	}
+	if err := json.Unmarshal(response.Body.Bytes(), &body); err != nil || len(body.Outfits) != productsPerSlot {
+		t.Fatalf("body = %s, want %d outfits", response.Body, productsPerSlot)
+	}
+	if _, hasShoe := body.Outfits[0]["shoe"]; hasShoe || len(body.Outfits[0]) != 3 {
+		t.Errorf("first outfit = %s, want top, bottom and accessory with no shoe key", response.Body)
+	}
+}
+
+func TestRecommendRouteReturnsAnEmptyListWhenNoOutfitFits(t *testing.T) {
+	products := &fakeProducts{counts: emptyCatalog}
 
 	response := recommendationAPI(t, &llmtest.Fake{Text: expandedAllSlots}, products, &fakeEmbedder{}).
 		Post("/api/v1/recommend", map[string]any{"occasion": "summer wedding"})
