@@ -2,7 +2,11 @@ import { describe, expect, test } from "bun:test";
 
 import type { InfiniteData } from "@tanstack/react-query";
 
-import type { ListOutfitsResponse, OutfitResponse } from "@/api/generated/types.gen";
+import type {
+  ListOutfitsResponse,
+  OutfitResponse,
+  PageOutfitResponse,
+} from "@/api/generated/types.gen";
 import {
   canFetchNextPage,
   isAlreadyDeleted,
@@ -115,13 +119,11 @@ describe("withoutOutfit", () => {
     };
   }
 
-  function loaded(...pages: string[][]): InfiniteData<ListOutfitsResponse> {
-    const total = pages.flat().length;
-
+  // A collection's pages have no total, and the saved outfits' pages do.
+  function collectionPages(...pages: string[][]): InfiniteData<PageOutfitResponse> {
     return {
       pages: pages.map((ids, index) => ({
         items: ids.map(outfit),
-        total,
         has_more: index < pages.length - 1,
         next_cursor: index < pages.length - 1 ? `cursor-${index}` : null,
       })),
@@ -129,18 +131,33 @@ describe("withoutOutfit", () => {
     };
   }
 
-  test("drops the outfit from the page it was on and lowers every page's total", () => {
-    const result = withoutOutfit(loaded(["a", "b"], ["c", "d"]), "c");
+  function savedPages(...pages: string[][]): InfiniteData<ListOutfitsResponse> {
+    const total = pages.flat().length;
+
+    return {
+      ...collectionPages(...pages),
+      pages: collectionPages(...pages).pages.map((page) => ({ ...page, total })),
+    };
+  }
+
+  test("drops the outfit from the page it was on and leaves the others", () => {
+    const result = withoutOutfit(collectionPages(["a", "b"], ["c", "d"]), "c");
 
     expect(result?.pages.map((page) => page.items.map((item) => item.id))).toEqual([
       ["a", "b"],
       ["d"],
     ]);
+  });
+
+  test("works on the saved outfits' pages too, and leaves their other fields as they were", () => {
+    const result = withoutOutfit(savedPages(["a", "b"], ["c"]), "b");
+
+    expect(result?.pages.map((page) => page.items.map((item) => item.id))).toEqual([["a"], ["c"]]);
     expect(result?.pages.map((page) => page.total)).toEqual([3, 3]);
   });
 
   test("keeps the paging details, so the next page is still the next page", () => {
-    const data = loaded(["a"], ["b"]);
+    const data = collectionPages(["a"], ["b"]);
     const result = withoutOutfit(data, "a");
 
     expect(result?.pageParams).toEqual(data.pageParams);
@@ -148,19 +165,19 @@ describe("withoutOutfit", () => {
   });
 
   test("leaves a page that is left with no outfits in place, so its cursor still works", () => {
-    const result = withoutOutfit(loaded(["a"], ["b"]), "a");
+    const result = withoutOutfit(collectionPages(["a"], ["b"]), "a");
 
     expect(result?.pages).toHaveLength(2);
     expect(result?.pages[0].items).toEqual([]);
   });
 
   test("returns the same data when the outfit isn't loaded", () => {
-    const data = loaded(["a", "b"]);
+    const data = collectionPages(["a", "b"]);
 
     expect(withoutOutfit(data, "elsewhere")).toBe(data);
   });
 
   test("returns undefined when nothing is cached", () => {
-    expect(withoutOutfit(undefined, "a")).toBeUndefined();
+    expect(withoutOutfit<PageOutfitResponse>(undefined, "a")).toBeUndefined();
   });
 });

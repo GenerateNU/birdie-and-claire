@@ -1,6 +1,6 @@
 import type { InfiniteData } from "@tanstack/react-query";
 
-import type { ErrorModel, ListOutfitsResponse, ProductResponse } from "@/api/generated/types.gen";
+import type { ErrorModel, ProductResponse } from "@/api/generated/types.gen";
 
 /** An outfit's product titles for its card's subtitle, in the order the API lists them. */
 export function piecesLine(products: Pick<ProductResponse, "title">[]): string {
@@ -49,13 +49,14 @@ export function nextFocusAfterDelete(outfitIds: string[], deletedId: string): st
 }
 
 /**
- * The loaded pages without `outfitId`, and every page's total one lower, so the list can drop a
- * deleted outfit before the refreshed list arrives. Pages that never had it come back unchanged.
+ * The loaded pages without `outfitId`, so a list can drop a deleted outfit before its refreshed pages
+ * arrive. It takes the saved outfits' pages and a collection's alike. Pages that never had it come
+ * back unchanged, and everything else on a page, such as its cursor, is left alone.
  */
-export function withoutOutfit(
-  data: InfiniteData<ListOutfitsResponse> | undefined,
+export function withoutOutfit<TPage extends { items: { id: string }[] }>(
+  data: InfiniteData<TPage> | undefined,
   outfitId: string,
-): InfiniteData<ListOutfitsResponse> | undefined {
+): InfiniteData<TPage> | undefined {
   if (!data?.pages.some((page) => page.items.some((outfit) => outfit.id === outfitId))) {
     return data;
   }
@@ -65,7 +66,6 @@ export function withoutOutfit(
     pages: data.pages.map((page) => ({
       ...page,
       items: page.items.filter((outfit) => outfit.id !== outfitId),
-      total: Math.max(0, page.total - 1),
     })),
   };
 }

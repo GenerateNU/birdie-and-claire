@@ -1,13 +1,29 @@
-import { useMutation, useQueryClient, type InfiniteData } from "@tanstack/react-query";
+import { useMutation, useQueryClient, type InfiniteData, type Query } from "@tanstack/react-query";
 
 import {
   deleteOutfitMutation,
   getOutfitQueryKey,
+  listCollectionOutfitsInfiniteQueryKey,
+  listCollectionsQueryKey,
   listOutfitsInfiniteQueryKey,
 } from "@/api/generated/@tanstack/react-query.gen";
-import type { ErrorModel, ListOutfitsResponse } from "@/api/generated/types.gen";
+import type { ErrorModel, PageOutfitResponse } from "@/api/generated/types.gen";
 import { useToast } from "@/design-system";
 import { isAlreadyDeleted, withoutOutfit } from "@/features/outfits/saved-outfits";
+
+// The saved outfits and each collection's outfits are separate lists of the same cards, so a deleted
+// outfit has to leave all of them. The generated keys carry the endpoint's id, so it is read from them.
+const outfitListIds = new Set([
+  listOutfitsInfiniteQueryKey()[0]._id,
+  listCollectionOutfitsInfiniteQueryKey({ path: { id: "" } })[0]._id,
+]);
+
+function isOutfitList(query: Query): boolean {
+  // SAFETY: every key the generated client makes is a one-item array of its params, with the id in it.
+  const [params] = query.queryKey as ReturnType<typeof listOutfitsInfiniteQueryKey>;
+
+  return params._infinite === true && outfitListIds.has(params._id);
+}
 
 export function useDeleteOutfit() {
   const queryClient = useQueryClient();
@@ -33,14 +49,16 @@ export function useDeleteOutfit() {
       const outfitId = variables.path.id;
 
       toast.show({ message: "Outfit deleted", variant: "success" });
-      // The card leaves the list now, so the modal doesn't wait on the list endpoint and a refresh
+      // The card leaves every list now, so the modal doesn't wait on the list endpoint and a refresh
       // that fails can't leave a deleted outfit behind. The refresh then settles anything else.
-      queryClient.setQueriesData<InfiniteData<ListOutfitsResponse>>(
-        { queryKey: listOutfitsInfiniteQueryKey() },
+      queryClient.setQueriesData<InfiniteData<PageOutfitResponse>>(
+        { predicate: isOutfitList },
         (data) => withoutOutfit(data, outfitId),
       );
       queryClient.removeQueries({ queryKey: getOutfitQueryKey({ path: { id: outfitId } }) });
-      void queryClient.invalidateQueries({ queryKey: listOutfitsInfiniteQueryKey() });
+      void queryClient.invalidateQueries({ predicate: isOutfitList });
+      // A collection shows how many outfits it holds, and pictures of its newest ones.
+      void queryClient.invalidateQueries({ queryKey: listCollectionsQueryKey() });
     },
   });
 
