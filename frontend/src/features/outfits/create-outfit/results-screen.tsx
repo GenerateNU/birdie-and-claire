@@ -43,7 +43,7 @@ export function ResultsScreen({
 }: ResultsScreenProps) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const selected = selectedIndex === null ? undefined : outfits[selectedIndex];
-  const [saveOpen, setSaveOpen] = useState(false);
+  const [saveDestination, setSaveDestination] = useState<"view" | "edit" | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const navigate = useNavigate();
   const toast = useToast();
@@ -51,7 +51,10 @@ export function ResultsScreen({
   const saveMutation = useMutation({
     ...createOutfitMutation(),
     onSuccess: (outfit) =>
-      void navigate({ to: "/outfits/$outfitId", params: { outfitId: outfit.id } }),
+      void navigate({
+        to: saveDestination === "edit" ? "/outfits/$outfitId/edit" : "/outfits/$outfitId",
+        params: { outfitId: outfit.id },
+      }),
     onError: () =>
       toast.show({ message: "Couldn't save the outfit. Try again.", variant: "error" }),
   });
@@ -108,8 +111,17 @@ export function ResultsScreen({
             <Box className="flex h-outfit w-outfit items-center bg-surface">
               <OutfitCollage products={outfitPieces(selected)} />
             </Box>
-            <Button label="Save outfit" className="w-outfit" onClick={() => setSaveOpen(true)} />
-            <Button label="Customize" variant="secondary" className="w-outfit" />
+            <Button
+              label="Save outfit"
+              className="w-outfit"
+              onClick={() => setSaveDestination("view")}
+            />
+            <Button
+              label="Customize"
+              variant="secondary"
+              className="w-outfit"
+              onClick={() => setSaveDestination("edit")}
+            />
           </Box>
           <Box className="flex flex-col gap-md border-l px-xl py-lg">
             <SectionHeader title="Outfit details" />
@@ -124,13 +136,13 @@ export function ResultsScreen({
             </Box>
           </Box>
           <SaveOutfitDialog
-            open={saveOpen}
+            open={saveDestination !== null}
             savedName={`${occasion} outfit ${outfits.indexOf(selected) + 1}`.slice(0, 100)}
             savedDescription=""
             savedTags={suggestedTags}
             productsChanged
             saving={saveMutation.isPending}
-            onCancel={() => setSaveOpen(false)}
+            onCancel={() => setSaveDestination(null)}
             onSave={(values) =>
               saveMutation.mutate({
                 body: { ...values, product_ids: outfitPieces(selected).map((piece) => piece.id) },
