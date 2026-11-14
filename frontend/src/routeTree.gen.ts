@@ -27,6 +27,8 @@ import { Route as SignedInOnboardedProfileOutfitsRouteImport } from './routes/_s
 import { Route as SignedInOnboardedProfilePiecesRouteImport } from './routes/_signedIn/_onboarded/profile/pieces'
 import { Route as SignedInOnboardedOutfitsOutfitIdIndexRouteImport } from './routes/_signedIn/_onboarded/outfits/$outfitId/index'
 import { Route as SignedInOnboardedOutfitsOutfitIdEditRouteImport } from './routes/_signedIn/_onboarded/outfits/$outfitId/edit'
+import { Route as SignedInOnboardedProfileCollectionsIndexRouteImport } from './routes/_signedIn/_onboarded/profile/collections/index'
+import { Route as SignedInOnboardedProfileCollectionsCollectionIdRouteImport } from './routes/_signedIn/_onboarded/profile/collections/$collectionId'
 import { Route as SignedInOnboardedProfileSettingsIndexRouteImport } from './routes/_signedIn/_onboarded/profile/settings/index'
 import { Route as SignedInOnboardedProfileSettingsStylePreferencesRouteImport } from './routes/_signedIn/_onboarded/profile/settings/style-preferences'
 
@@ -127,6 +129,18 @@ const SignedInOnboardedOutfitsOutfitIdEditRoute =
     path: '/outfits/$outfitId/edit',
     getParentRoute: () => SignedInOnboardedRouteRoute,
   } as any)
+const SignedInOnboardedProfileCollectionsIndexRoute =
+  SignedInOnboardedProfileCollectionsIndexRouteImport.update({
+    id: '/collections/',
+    path: '/collections/',
+    getParentRoute: () => SignedInOnboardedProfileRouteRoute,
+  } as any)
+const SignedInOnboardedProfileCollectionsCollectionIdRoute =
+  SignedInOnboardedProfileCollectionsCollectionIdRouteImport.update({
+    id: '/collections/$collectionId',
+    path: '/collections/$collectionId',
+    getParentRoute: () => SignedInOnboardedProfileRouteRoute,
+  } as any)
 const SignedInOnboardedProfileSettingsIndexRoute =
   SignedInOnboardedProfileSettingsIndexRouteImport.update({
     id: '/settings/',
@@ -156,8 +170,10 @@ export interface FileRoutesByFullPath {
   '/profile/pieces': typeof SignedInOnboardedProfilePiecesRoute
   '/profile/': typeof SignedInOnboardedProfileIndexRoute
   '/outfits/$outfitId/edit': typeof SignedInOnboardedOutfitsOutfitIdEditRoute
+  '/profile/collections/$collectionId': typeof SignedInOnboardedProfileCollectionsCollectionIdRoute
   '/profile/settings/style-preferences': typeof SignedInOnboardedProfileSettingsStylePreferencesRoute
   '/outfits/$outfitId/': typeof SignedInOnboardedOutfitsOutfitIdIndexRoute
+  '/profile/collections/': typeof SignedInOnboardedProfileCollectionsIndexRoute
   '/profile/settings/': typeof SignedInOnboardedProfileSettingsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -175,8 +191,10 @@ export interface FileRoutesByTo {
   '/profile/pieces': typeof SignedInOnboardedProfilePiecesRoute
   '/profile': typeof SignedInOnboardedProfileIndexRoute
   '/outfits/$outfitId/edit': typeof SignedInOnboardedOutfitsOutfitIdEditRoute
+  '/profile/collections/$collectionId': typeof SignedInOnboardedProfileCollectionsCollectionIdRoute
   '/profile/settings/style-preferences': typeof SignedInOnboardedProfileSettingsStylePreferencesRoute
   '/outfits/$outfitId': typeof SignedInOnboardedOutfitsOutfitIdIndexRoute
+  '/profile/collections': typeof SignedInOnboardedProfileCollectionsIndexRoute
   '/profile/settings': typeof SignedInOnboardedProfileSettingsIndexRoute
 }
 export interface FileRoutesById {
@@ -198,8 +216,10 @@ export interface FileRoutesById {
   '/_signedIn/_onboarded/profile/pieces': typeof SignedInOnboardedProfilePiecesRoute
   '/_signedIn/_onboarded/profile/': typeof SignedInOnboardedProfileIndexRoute
   '/_signedIn/_onboarded/outfits/$outfitId/edit': typeof SignedInOnboardedOutfitsOutfitIdEditRoute
+  '/_signedIn/_onboarded/profile/collections/$collectionId': typeof SignedInOnboardedProfileCollectionsCollectionIdRoute
   '/_signedIn/_onboarded/profile/settings/style-preferences': typeof SignedInOnboardedProfileSettingsStylePreferencesRoute
   '/_signedIn/_onboarded/outfits/$outfitId/': typeof SignedInOnboardedOutfitsOutfitIdIndexRoute
+  '/_signedIn/_onboarded/profile/collections/': typeof SignedInOnboardedProfileCollectionsIndexRoute
   '/_signedIn/_onboarded/profile/settings/': typeof SignedInOnboardedProfileSettingsIndexRoute
 }
 export interface FileRouteTypes {
@@ -220,8 +240,10 @@ export interface FileRouteTypes {
     | '/profile/pieces'
     | '/profile/'
     | '/outfits/$outfitId/edit'
+    | '/profile/collections/$collectionId'
     | '/profile/settings/style-preferences'
     | '/outfits/$outfitId/'
+    | '/profile/collections/'
     | '/profile/settings/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -239,8 +261,10 @@ export interface FileRouteTypes {
     | '/profile/pieces'
     | '/profile'
     | '/outfits/$outfitId/edit'
+    | '/profile/collections/$collectionId'
     | '/profile/settings/style-preferences'
     | '/outfits/$outfitId'
+    | '/profile/collections'
     | '/profile/settings'
   id:
     | '__root__'
@@ -261,8 +285,10 @@ export interface FileRouteTypes {
     | '/_signedIn/_onboarded/profile/pieces'
     | '/_signedIn/_onboarded/profile/'
     | '/_signedIn/_onboarded/outfits/$outfitId/edit'
+    | '/_signedIn/_onboarded/profile/collections/$collectionId'
     | '/_signedIn/_onboarded/profile/settings/style-preferences'
     | '/_signedIn/_onboarded/outfits/$outfitId/'
+    | '/_signedIn/_onboarded/profile/collections/'
     | '/_signedIn/_onboarded/profile/settings/'
   fileRoutesById: FileRoutesById
 }
@@ -402,6 +428,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignedInOnboardedOutfitsOutfitIdEditRouteImport
       parentRoute: typeof SignedInOnboardedRouteRoute
     }
+    '/_signedIn/_onboarded/profile/collections/': {
+      id: '/_signedIn/_onboarded/profile/collections/'
+      path: '/collections'
+      fullPath: '/profile/collections/'
+      preLoaderRoute: typeof SignedInOnboardedProfileCollectionsIndexRouteImport
+      parentRoute: typeof SignedInOnboardedProfileRouteRoute
+    }
+    '/_signedIn/_onboarded/profile/collections/$collectionId': {
+      id: '/_signedIn/_onboarded/profile/collections/$collectionId'
+      path: '/collections/$collectionId'
+      fullPath: '/profile/collections/$collectionId'
+      preLoaderRoute: typeof SignedInOnboardedProfileCollectionsCollectionIdRouteImport
+      parentRoute: typeof SignedInOnboardedProfileRouteRoute
+    }
     '/_signedIn/_onboarded/profile/settings/': {
       id: '/_signedIn/_onboarded/profile/settings/'
       path: '/settings'
@@ -423,7 +463,9 @@ interface SignedInOnboardedProfileRouteRouteChildren {
   SignedInOnboardedProfileOutfitsRoute: typeof SignedInOnboardedProfileOutfitsRoute
   SignedInOnboardedProfilePiecesRoute: typeof SignedInOnboardedProfilePiecesRoute
   SignedInOnboardedProfileIndexRoute: typeof SignedInOnboardedProfileIndexRoute
+  SignedInOnboardedProfileCollectionsCollectionIdRoute: typeof SignedInOnboardedProfileCollectionsCollectionIdRoute
   SignedInOnboardedProfileSettingsStylePreferencesRoute: typeof SignedInOnboardedProfileSettingsStylePreferencesRoute
+  SignedInOnboardedProfileCollectionsIndexRoute: typeof SignedInOnboardedProfileCollectionsIndexRoute
   SignedInOnboardedProfileSettingsIndexRoute: typeof SignedInOnboardedProfileSettingsIndexRoute
 }
 
@@ -432,8 +474,12 @@ const SignedInOnboardedProfileRouteRouteChildren: SignedInOnboardedProfileRouteR
     SignedInOnboardedProfileOutfitsRoute: SignedInOnboardedProfileOutfitsRoute,
     SignedInOnboardedProfilePiecesRoute: SignedInOnboardedProfilePiecesRoute,
     SignedInOnboardedProfileIndexRoute: SignedInOnboardedProfileIndexRoute,
+    SignedInOnboardedProfileCollectionsCollectionIdRoute:
+      SignedInOnboardedProfileCollectionsCollectionIdRoute,
     SignedInOnboardedProfileSettingsStylePreferencesRoute:
       SignedInOnboardedProfileSettingsStylePreferencesRoute,
+    SignedInOnboardedProfileCollectionsIndexRoute:
+      SignedInOnboardedProfileCollectionsIndexRoute,
     SignedInOnboardedProfileSettingsIndexRoute:
       SignedInOnboardedProfileSettingsIndexRoute,
   }
