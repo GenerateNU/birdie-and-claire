@@ -47,8 +47,8 @@ export function Dialog({
       }}
     >
       <DialogParts.Portal>
-        <DialogParts.Backdrop className="fixed inset-0 bg-overlay" />
-        <DialogParts.Popup className="fixed left-1/2 top-1/2 flex w-popup max-w-[calc(100vw-theme(spacing.md)*2)] -translate-x-1/2 -translate-y-1/2 flex-col gap-md rounded-lg bg-background p-lg text-primary">
+        <DialogParts.Backdrop className="fixed inset-0 bg-overlay motion-safe:transition-opacity motion-safe:data-[starting-style]:opacity-0 motion-safe:data-[ending-style]:opacity-0" />
+        <DialogParts.Popup className="fixed left-1/2 top-1/2 flex w-popup max-w-[calc(100vw-theme(spacing.md)*2)] -translate-x-1/2 -translate-y-1/2 flex-col gap-md rounded-lg bg-background p-lg text-primary motion-safe:transition-opacity motion-safe:data-[starting-style]:opacity-0 motion-safe:data-[ending-style]:opacity-0">
           <Box className="flex items-start justify-between gap-md">
             <DialogParts.Title className="text-subheading">{title}</DialogParts.Title>
             {dismissible && <DialogParts.Close render={<CloseButton />} />}

@@ -60,7 +60,7 @@ export function Tabs<T extends string>({
             {label}
             {/* Invisible rather than absent, so the row doesn't shift when the active tab moves. */}
             {underlined && (
-              <span className="invisible h-xxs w-xl rounded-full bg-primary group-data-[active]:visible" />
+              <span className="h-xxs w-xl rounded-full bg-primary opacity-0 motion-safe:transition-opacity group-data-[active]:opacity-100" />
             )}
           </BaseTabs.Tab>
         ))}

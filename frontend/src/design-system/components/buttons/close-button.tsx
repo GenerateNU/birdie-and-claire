@@ -6,7 +6,7 @@ export function CloseButton(props: ButtonHTMLAttributes<HTMLButtonElement>) {
     <button
       type="button"
       aria-label="Close"
-      className="rounded-xs px-xxs text-subheading leading-none text-secondary hover:text-primary focus-ring"
+      className="rounded-xs px-xxs text-subheading leading-none text-secondary hover:text-primary focus-ring motion-safe:transition-colors"
       {...props}
     >
       <X aria-hidden="true" />

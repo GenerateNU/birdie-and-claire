@@ -16,7 +16,7 @@ export type ToastData = {
   action?: ToastAction;
 };
 
-const rootClasses = `${cardFrameClasses} flex items-start gap-md p-md data-[type=success]:border-success data-[limited]:hidden`;
+const rootClasses = `${cardFrameClasses} flex items-start gap-md p-md data-[type=success]:border-success data-[limited]:hidden motion-safe:transition-opacity motion-safe:data-[starting-style]:opacity-0 motion-safe:data-[ending-style]:opacity-0`;
 
 type ToastProps = {
   toast: ToastObject<ToastData>;

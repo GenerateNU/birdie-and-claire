@@ -7,7 +7,7 @@ import { Logo } from "@/design-system/components/logo/logo";
 
 // tracking-wider is the lofi nav's 0.05em; the type tokens have no letter-spacing.
 const itemBaseClasses =
-  "inline-flex items-center gap-xs border-b-thick pb-xxs text-subheading font-normal uppercase tracking-wider focus-ring";
+  "inline-flex items-center gap-xs border-b-thick pb-xxs text-subheading font-normal uppercase tracking-wider focus-ring motion-safe:transition-colors";
 
 const activeItemClasses = `${itemBaseClasses} border-primary`;
 

@@ -10,7 +10,7 @@ import {
   IconButton,
   ImageCard,
   SearchField,
-  Spinner,
+  Skeleton,
   Tabs,
   Text,
 } from "@/design-system";
@@ -168,7 +168,13 @@ function SuggestedTiles({
   });
 
   if (suggestionsQuery.isPending) {
-    return <Spinner />;
+    return (
+      <Box role="status" aria-label="Loading suggestions" className="grid grid-cols-3 gap-md">
+        {[0, 1, 2].map((item) => (
+          <Skeleton key={item} className="aspect-portrait" />
+        ))}
+      </Box>
+    );
   }
 
   // Checked rather than isError, so a failed background refetch keeps the suggestions on screen.

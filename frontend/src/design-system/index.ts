@@ -46,6 +46,8 @@ export { ProgressBar } from "@/design-system/components/status/progress-bar";
 
 export { Spinner } from "@/design-system/components/status/spinner";
 
+export { Skeleton } from "@/design-system/components/status/skeleton";
+
 export { ToastProvider, useToast } from "@/design-system/components/toast/toast-manager";
 
 export { Box } from "@/design-system/primitives/box";

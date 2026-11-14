@@ -9,7 +9,7 @@ import {
 } from "@/api/generated/@tanstack/react-query.gen";
 import type { ProductResponse } from "@/api/generated/types.gen";
 import { zAddOwnedProductsInputBody } from "@/api/generated/zod.gen";
-import { Box, Button, Empty, ErrorState, ImageCard, Spinner, Text } from "@/design-system";
+import { Box, Button, Empty, ErrorState, ImageCard, Skeleton, Text } from "@/design-system";
 import { LoadMoreSentinel } from "@/features/pieces/load-more-sentinel";
 import { usePagination } from "@/lib/use-pagination";
 
@@ -129,7 +129,17 @@ function Catalog({ selected, onToggle, disabled, atLimit }: CatalogProps) {
   }, [fetchNextPage, isFetchingNextPage, isFetchNextPageError]);
 
   if (isPending) {
-    return <Spinner />;
+    return (
+      <Box
+        role="status"
+        aria-label="Loading pieces"
+        className="grid grid-cols-2 gap-md md:grid-cols-3"
+      >
+        {[0, 1, 2, 3, 4, 5].map((item) => (
+          <Skeleton key={item} className="aspect-portrait" />
+        ))}
+      </Box>
+    );
   }
 
   if (!data) {
