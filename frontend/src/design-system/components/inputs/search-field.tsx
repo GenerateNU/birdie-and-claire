@@ -7,7 +7,6 @@ import { joinClasses } from "@/design-system/utils/join-classes";
 
 const inputClasses = "w-full rounded-sm border bg-background px-sm py-xs focus-ring";
 
-// sm is the Figma field with 13px text and a 12px leading icon.
 const sizeClasses = {
   md: { textClass: "text-body", iconPaddingClass: "pl-xxxl", iconClass: "size-lg" },
   sm: { textClass: "text-body-s", iconPaddingClass: "pl-xxl", iconClass: "size-sm" },
