@@ -105,7 +105,13 @@ func (s *outfitService) GetShared(ctx context.Context, id uuid.UUID) (models.Sha
 	if err != nil {
 		return models.SharedOutfitResponse{}, err
 	}
-	return models.SharedOutfitResponse{ID: outfit.ID, Name: outfit.Name, Products: products}, nil
+	return models.SharedOutfitResponse{
+		ID:          outfit.ID,
+		Name:        outfit.Name,
+		Description: outfit.Description,
+		Tags:        outfit.Tags,
+		Products:    products,
+	}, nil
 }
 
 func (s *outfitService) Suggest(ctx context.Context, id uuid.UUID, productIDs []uuid.UUID, limit int) (models.OutfitSuggestionsResponse, error) {

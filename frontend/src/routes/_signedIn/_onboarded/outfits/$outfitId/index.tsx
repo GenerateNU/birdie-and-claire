@@ -14,11 +14,6 @@ export const Route = createFileRoute("/_signedIn/_onboarded/outfits/$outfitId/")
   component: OutfitDetailsPage,
 });
 
-// Placeholders until outfits have descriptions and tags.
-const PLACEHOLDER_DESCRIPTION = "This is a short description about the outfit...";
-
-const PLACEHOLDER_TAGS = ["Tag 1", "Tag 2", "Tag 3"];
-
 function OutfitDetailsPage() {
   const { outfitId } = Route.useParams();
 
@@ -53,7 +48,7 @@ function OutfitDetailsPage() {
     );
   }
 
-  const { name, products } = outfitQuery.data;
+  const { name, description, tags, products } = outfitQuery.data;
 
   return (
     <OutfitDetailsFrame>
@@ -106,16 +101,20 @@ function OutfitDetailsPage() {
                 <ShareOutfit outfitId={outfitId} />
               </Box>
             </Box>
-            <Text variant="body" className="text-secondary">
-              {PLACEHOLDER_DESCRIPTION}
-            </Text>
-            <ul className="flex flex-wrap gap-xs">
-              {PLACEHOLDER_TAGS.map((tag) => (
-                <li key={tag} className="rounded-full bg-placeholder px-md py-xxs text-caption">
-                  {tag}
-                </li>
-              ))}
-            </ul>
+            {description && (
+              <Text variant="body" className="break-words text-secondary">
+                {description}
+              </Text>
+            )}
+            {tags.length > 0 && (
+              <ul className="flex flex-wrap gap-xs">
+                {tags.map((tag) => (
+                  <li key={tag} className="rounded-full bg-placeholder px-md py-xxs text-caption">
+                    {tag}
+                  </li>
+                ))}
+              </ul>
+            )}
           </header>
           <PiecesSection products={products} />
           <ExternalPiecesSection />

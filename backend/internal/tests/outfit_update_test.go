@@ -38,6 +38,8 @@ func updateOutfitProbe(t *testing.T) humatest.TestAPI {
 	return api
 }
 
+const noFieldMessage = "body must set name, description, tags, or product_ids"
+
 func TestUpdateOutfitInputValidation(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -45,16 +47,33 @@ func TestUpdateOutfitInputValidation(t *testing.T) {
 		want     int
 		wantBody string
 	}{
-		{name: "empty body", body: `{}`, want: http.StatusUnprocessableEntity, wantBody: "body must set name or product_ids"},
+		{name: "empty body", body: `{}`, want: http.StatusUnprocessableEntity, wantBody: noFieldMessage},
 		// A null decodes to the zero value, which means not provided.
-		{name: "null name", body: `{"name": null}`, want: http.StatusUnprocessableEntity, wantBody: "body must set name or product_ids"},
-		{name: "null product_ids", body: `{"product_ids": null}`, want: http.StatusUnprocessableEntity, wantBody: "body must set name or product_ids"},
-		{name: "both null", body: `{"name": null, "product_ids": null}`, want: http.StatusUnprocessableEntity, wantBody: "body must set name or product_ids"},
+		{name: "null name", body: `{"name": null}`, want: http.StatusUnprocessableEntity, wantBody: noFieldMessage},
+		{name: "null product_ids", body: `{"product_ids": null}`, want: http.StatusUnprocessableEntity, wantBody: noFieldMessage},
+		{name: "null description", body: `{"description": null}`, want: http.StatusUnprocessableEntity, wantBody: noFieldMessage},
+		{name: "null tags", body: `{"tags": null}`, want: http.StatusUnprocessableEntity, wantBody: noFieldMessage},
+		{name: "all null", body: `{"name": null, "product_ids": null, "description": null, "tags": null}`, want: http.StatusUnprocessableEntity, wantBody: noFieldMessage},
+		// An empty description or tag list is a request to clear, so it counts as set.
+		{name: "empty description alone", body: `{"description": ""}`, want: http.StatusNoContent},
+		{name: "empty tags alone", body: `{"tags": []}`, want: http.StatusNoContent},
+		{name: "description alone", body: `{"description": "Rainy day brunch"}`, want: http.StatusNoContent},
+		{name: "tags alone", body: `{"tags": ["rain", "casual"]}`, want: http.StatusNoContent},
+		{name: "maximum 500 characters of description", body: `{"description": "` + strings.Repeat("d", 500) + `"}`, want: http.StatusNoContent},
+		{name: "above maximum 501 characters of description", body: `{"description": "` + strings.Repeat("d", 501) + `"}`, want: http.StatusUnprocessableEntity, wantBody: "expected length <= 500"},
+		{name: "maximum ten tags", body: `{"tags": ["a","b","c","d","e","f","g","h","i","j"]}`, want: http.StatusNoContent},
+		{name: "eleven tags", body: `{"tags": ["a","b","c","d","e","f","g","h","i","j","k"]}`, want: http.StatusUnprocessableEntity, wantBody: "expected array length <= 10"},
+		{name: "thirty-one character tag", body: `{"tags": ["` + strings.Repeat("t", 31) + `"]}`, want: http.StatusUnprocessableEntity, wantBody: "expected length <= 30"},
+		{name: "empty tag", body: `{"tags": [""]}`, want: http.StatusBadRequest, wantBody: "body.tags[0]"},
+		{name: "tag of spaces", body: `{"tags": ["  "]}`, want: http.StatusBadRequest, wantBody: "tag must not be blank"},
+		{name: "tags differing in case", body: `{"tags": ["Rain", "rain"]}`, want: http.StatusBadRequest, wantBody: "duplicate tag"},
+		{name: "repeated tags", body: `{"tags": ["rain"], "tags": []}`, want: http.StatusBadRequest, wantBody: "duplicate object member name"},
+		{name: "both null", body: `{"name": null, "product_ids": null}`, want: http.StatusUnprocessableEntity, wantBody: noFieldMessage},
 		{name: "null name beside product_ids", body: `{"name": null, "product_ids": ["` + productIDLower + `"]}`, want: http.StatusNoContent},
 		{name: "null product_ids beside name", body: `{"name": "fit", "product_ids": null}`, want: http.StatusNoContent},
 		{name: "mixed-case null product_ids beside name", body: `{"name": "x", "Product_IDs": null}`, want: http.StatusNoContent},
 		// A key in another casing is not the field, so only the exact key counts.
-		{name: "mis-cased name alone", body: `{"Name": "x"}`, want: http.StatusUnprocessableEntity, wantBody: "body must set name or product_ids"},
+		{name: "mis-cased name alone", body: `{"Name": "x"}`, want: http.StatusUnprocessableEntity, wantBody: noFieldMessage},
 		{name: "null NAME beside name", body: `{"NAME": null, "name": "x"}`, want: http.StatusNoContent},
 		{name: "empty NAME beside name", body: `{"name": "x", "NAME": ""}`, want: http.StatusNoContent},
 		{name: "empty PRODUCT_IDS beside product_ids", body: `{"product_ids": ["` + productIDLower + `"], "PRODUCT_IDS": []}`, want: http.StatusNoContent},
@@ -168,6 +187,45 @@ func TestUpdateOutfitChangesOnlyTheFieldsSent(t *testing.T) {
 	}
 	if got, want := productIDsOf(products), []uuid.UUID{replacement}; !slices.Equal(got, want) {
 		t.Fatalf("products = %v, want %v", got, want)
+	}
+}
+
+// Absent leaves description and tags alone; an empty value clears them.
+func TestUpdateOutfitDescriptionAndTags(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	repo := repository.NewOutfitRepository(db)
+	outfitID, ownerID := insertTestOutfit(t, db)
+
+	text := func(value string) *string { return &value }
+	steps := []struct {
+		name            string
+		params          models.UpdateOutfitParams
+		wantName        string
+		wantDescription string
+		wantTags        []string
+	}{
+		{name: "set both", params: models.UpdateOutfitParams{Description: text("Rainy day brunch"), Tags: []string{"rain", "casual"}}, wantDescription: "Rainy day brunch", wantTags: []string{"rain", "casual"}},
+		{name: "rename leaves both alone", params: models.UpdateOutfitParams{Name: "renamed"}, wantName: "renamed", wantDescription: "Rainy day brunch", wantTags: []string{"rain", "casual"}},
+		{name: "description only leaves tags alone", params: models.UpdateOutfitParams{Description: text("Sunday walk")}, wantName: "renamed", wantDescription: "Sunday walk", wantTags: []string{"rain", "casual"}},
+		{name: "tags only replaces the set", params: models.UpdateOutfitParams{Tags: []string{"sunny"}}, wantName: "renamed", wantDescription: "Sunday walk", wantTags: []string{"sunny"}},
+		{name: "empty description clears it", params: models.UpdateOutfitParams{Description: text("")}, wantName: "renamed", wantDescription: "", wantTags: []string{"sunny"}},
+		{name: "empty tags clear them", params: models.UpdateOutfitParams{Tags: []string{}}, wantName: "renamed", wantDescription: "", wantTags: []string{}},
+	}
+	for _, step := range steps {
+		returned, _, err := repo.Update(ctx, outfitID, step.params, ownerID)
+		if err != nil {
+			t.Fatalf("%s: update: %v", step.name, err)
+		}
+		stored, _, err := repo.GetByID(ctx, outfitID, ownerID)
+		if err != nil {
+			t.Fatalf("%s: get outfit: %v", step.name, err)
+		}
+		wantDescriptionAndTags(t, step.name+": returned", returned, step.wantDescription, step.wantTags)
+		wantDescriptionAndTags(t, step.name+": stored", stored, step.wantDescription, step.wantTags)
+		if step.wantName != "" && stored.Name != step.wantName {
+			t.Fatalf("%s: name = %q, want %q", step.name, stored.Name, step.wantName)
+		}
 	}
 }
 

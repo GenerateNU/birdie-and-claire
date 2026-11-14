@@ -7,12 +7,14 @@ import (
 )
 
 type Outfit struct {
-	ID        uuid.UUID  `json:"id"`
-	UserID    uuid.UUID  `json:"user_id"`
-	Name      string     `json:"name"`
-	SharedAt  *time.Time `json:"shared_at" doc:"When the outfit was shared by link, or null while it is private"`
-	CreatedAt time.Time  `json:"created_at"`
-	UpdatedAt time.Time  `json:"updated_at"`
+	ID          uuid.UUID  `json:"id"`
+	UserID      uuid.UUID  `json:"user_id"`
+	Name        string     `json:"name"`
+	Description string     `json:"description" doc:"Empty when the outfit has no description"`
+	Tags        []string   `json:"tags" nullable:"false" doc:"Free-text labels such as weather or occasion"`
+	SharedAt    *time.Time `json:"shared_at" doc:"When the outfit was shared by link, or null while it is private"`
+	CreatedAt   time.Time  `json:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at"`
 }
 
 type OutfitResponse struct {
@@ -23,9 +25,11 @@ type OutfitResponse struct {
 // SharedOutfitResponse is what anyone with a share link sees, so it leaves out
 // the owner and timestamps.
 type SharedOutfitResponse struct {
-	ID       uuid.UUID         `json:"id"`
-	Name     string            `json:"name"`
-	Products []ProductResponse `json:"products" nullable:"false"`
+	ID          uuid.UUID         `json:"id"`
+	Name        string            `json:"name"`
+	Description string            `json:"description"`
+	Tags        []string          `json:"tags" nullable:"false"`
+	Products    []ProductResponse `json:"products" nullable:"false"`
 }
 
 type ShareOutfitResponse struct {
@@ -38,12 +42,17 @@ type OutfitSuggestionsResponse struct {
 }
 
 type CreateOutfitParams struct {
-	Name       string
-	ProductIDs []uuid.UUID
+	Name        string
+	Description string
+	Tags        []string
+	ProductIDs  []uuid.UUID
 }
 
-// UpdateOutfitParams leaves an empty field unchanged; ProductIDs, when set, replaces the whole product set.
+// UpdateOutfitParams leaves an empty Name or ProductIDs unchanged. A nil Description or Tags is
+// unchanged too, while an empty one clears it. ProductIDs, when set, replaces the whole product set.
 type UpdateOutfitParams struct {
-	Name       string
-	ProductIDs []uuid.UUID
+	Name        string
+	Description *string
+	Tags        []string
+	ProductIDs  []uuid.UUID
 }
