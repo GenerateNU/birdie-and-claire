@@ -38,11 +38,7 @@ func run() error {
 		return err
 	}
 
-	handled, err := injectSecrets(root, os.Args[1:])
-	if handled {
-		return err
-	}
-	if err != nil {
+	if err := loadSecrets(root, os.Args[1:]); err != nil {
 		return err
 	}
 
