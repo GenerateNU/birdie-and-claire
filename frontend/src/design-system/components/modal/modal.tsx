@@ -18,6 +18,7 @@ type ModalProps = {
   subtitle?: string;
   message?: string;
   actions: ModalAction[];
+  leadingAction?: ModalAction;
   /** Lets a click outside, Esc, and a close button dismiss it. Without it, only an action closes. */
   dismissible?: boolean;
   size?: ModalSize;
@@ -33,6 +34,7 @@ export function Modal({
   subtitle,
   message,
   actions,
+  leadingAction,
   dismissible = false,
   size,
   image,
@@ -70,6 +72,7 @@ export function Modal({
             subtitle={subtitle}
             message={message}
             actions={actions}
+            leadingAction={leadingAction}
             size={size}
             image={image}
             onClose={dismissible ? onClose : undefined}

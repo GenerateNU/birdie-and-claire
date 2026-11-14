@@ -16,6 +16,7 @@ import {
   AddTileSize,
   AspectRatio,
   CanvasPanelPadding,
+  CardHoverOutlineWidth,
   CardOverlayInset,
   CardSize,
   ChoiceRowHeight,
@@ -32,6 +33,7 @@ import {
   ModalWidth,
   OnboardingWidth,
   OutfitCardSize,
+  OutfitGridRowGap,
   OutfitSlotSize,
   PageHeaderHeight,
   RadioDotSize,
@@ -105,7 +107,8 @@ export default {
           Object.entries(ContentWidth).map(([key, value]) => [`content-${key}`, value]),
         ),
       },
-      margin: { "onboarding-photo": OnboardingWidth.photo },
+      margin: { "onboarding-photo": OnboardingWidth.photo, "card-hover": CardHoverOutlineWidth },
+      gap: { "outfit-row": OutfitGridRowGap },
       maxWidth: {
         "empty-state": EmptyStateWidth,
         ...Object.fromEntries(
@@ -139,6 +142,7 @@ export default {
       padding: {
         "canvas-panel-x": CanvasPanelPadding.x,
         "canvas-panel-y": CanvasPanelPadding.y,
+        "card-hover": CardHoverOutlineWidth,
       },
       inset: { "card-ring": CardOverlayInset.ring, "card-hover": CardOverlayInset.hover },
       aspectRatio: AspectRatio,

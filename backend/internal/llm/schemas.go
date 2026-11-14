@@ -12,6 +12,7 @@ type ExpandedAnswers struct {
 type ExpandedSlots struct {
 	Top       string `json:"top"`
 	Bottom    string `json:"bottom"`
+	OnePiece  string `json:"one_piece"`
 	Accessory string `json:"accessory"`
 	Shoe      string `json:"shoe"`
 }

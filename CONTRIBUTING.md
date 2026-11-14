@@ -45,7 +45,7 @@ Keyflare has two environments. `dev` holds everything the local stack needs.
 `prod` is for interacting with the production database and server/web
 deployments.
 
-Keyflare is confined to `backend/cmd/tasks/keyflare.go` and one `injectSecrets`
+Keyflare is confined to `backend/cmd/tasks/keyflare.go` and one `loadSecrets`
 call in `main.go`. `compose.yaml` reads plain environment variables and Docker
 Compose picks up a `.env` file on its own, so dropping Keyflare means deleting
 that file and its call site, not editing the stack.
