@@ -87,7 +87,7 @@ export function SaveOutfitDialog({
       onClose={cancel}
       title="Save Outfit"
       actions={[
-        { label: "Cancel", variant: "ghost", onClick: cancel },
+        { label: "Cancel", variant: "ghost", onClick: cancel, disabled: saving },
         {
           label: "Confirm",
           variant: "primary",

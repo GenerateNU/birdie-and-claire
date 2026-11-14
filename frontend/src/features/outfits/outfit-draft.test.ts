@@ -3,17 +3,21 @@ import { describe, expect, test } from "bun:test";
 import { draftReducer, hasSameProducts, initialDraft } from "@/features/outfits/outfit-draft";
 import type { Product } from "@/features/outfits/outfit-items";
 
-function product(id: string, title: string): Product {
-  return { id, title, slot: "top", image_url: null };
+function product(id: string, title: string, slot: Product["slot"] = "top"): Product {
+  return { id, title, slot, image_url: null };
 }
 
 const shirt = product("shirt", "Shirt");
 
 const jeans = product("jeans", "Jeans");
 
-const boots = product("boots", "Boots");
+const boots = product("boots", "Boots", "shoe");
 
 const sweater = product("sweater", "Sweater");
+
+const trousers = product("trousers", "Trousers", "bottom");
+
+const dress = product("dress", "Dress", "one_piece");
 
 function productIds(state: ReturnType<typeof initialDraft>) {
   return state.items.map((item) => item.product.id);
@@ -25,6 +29,42 @@ describe("initialDraft", () => {
 
     expect(productIds(state)).toEqual(["shirt", "jeans", "boots"]);
     expect(state.items.map((item) => item.original)).toEqual([shirt, jeans, boots]);
+  });
+});
+
+describe("add", () => {
+  test("fills an empty draft with a new spot", () => {
+    const state = draftReducer(initialDraft([]), { type: "add", product: shirt });
+
+    expect(state.items).toEqual([{ product: shirt, original: shirt }]);
+  });
+
+  test("ignores a product that is already in the draft", () => {
+    const start = initialDraft([shirt]);
+
+    expect(draftReducer(start, { type: "add", product: shirt })).toBe(start);
+  });
+
+  test("a one-piece clears the top and bottom", () => {
+    const start = initialDraft([shirt, trousers, boots]);
+
+    const state = draftReducer(start, { type: "add", product: dress });
+
+    expect(productIds(state)).toEqual(["boots", "dress"]);
+  });
+
+  test("a top or bottom clears the one-piece", () => {
+    const start = initialDraft([dress]);
+
+    expect(productIds(draftReducer(start, { type: "add", product: trousers }))).toEqual([
+      "trousers",
+    ]);
+  });
+
+  test("undo brings back what the one-piece cleared", () => {
+    const added = draftReducer(initialDraft([shirt, trousers]), { type: "add", product: dress });
+
+    expect(productIds(draftReducer(added, { type: "undo" }))).toEqual(["shirt", "trousers"]);
   });
 });
 
@@ -67,10 +107,10 @@ describe("remove", () => {
     expect(productIds(state)).toEqual(["shirt"]);
   });
 
-  test("keeps the last item", () => {
-    const start = initialDraft([shirt]);
+  test("can empty the draft", () => {
+    const state = draftReducer(initialDraft([shirt]), { type: "remove", originId: "shirt" });
 
-    expect(draftReducer(start, { type: "remove", originId: "shirt" })).toBe(start);
+    expect(state.items).toEqual([]);
   });
 });
 

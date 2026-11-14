@@ -22,7 +22,9 @@ import { useCollectionOutfits } from "@/features/collections/use-collection-outf
 import { OutfitList } from "@/features/outfits/outfit-list";
 import { isEmptyList } from "@/features/outfits/saved-outfits";
 
-export const Route = createFileRoute("/_signedIn/_onboarded/profile/collections/$collectionId")({
+export const Route = createFileRoute(
+  "/_signedIn/_onboarded/_nav/profile/collections/$collectionId",
+)({
   component: CollectionDetailPage,
 });
 
@@ -90,6 +92,7 @@ function CollectionDetailPage() {
 }
 
 function CollectionOutfits({ collectionId }: { collectionId: string }) {
+  const navigate = useNavigate();
   const outfits = useCollectionOutfits(collectionId);
 
   if (outfits.status === "loading") {
@@ -121,6 +124,7 @@ function CollectionOutfits({ collectionId }: { collectionId: string }) {
           outfits={outfits.outfits}
           hasMore={outfits.hasMore}
           onLoadMore={outfits.loadMore}
+          onOpen={(outfitId) => void navigate({ to: "/outfits/$outfitId", params: { outfitId } })}
           addTile={false}
         />
       )}

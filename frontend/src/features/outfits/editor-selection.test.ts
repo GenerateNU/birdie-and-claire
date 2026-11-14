@@ -2,9 +2,11 @@ import { describe, expect, test } from "bun:test";
 
 import { selectionReducer } from "@/features/outfits/editor-selection";
 
-const nothing = { selectedOriginId: null, panelOriginId: null };
+const nothing = { selectedOriginId: null, panel: null };
 
-const onShirt = { selectedOriginId: "shirt", panelOriginId: "shirt" };
+const onShirt = { selectedOriginId: "shirt", panel: { originId: "shirt" } };
+
+const panelOnShirt = { selectedOriginId: null, panel: { originId: "shirt" } };
 
 describe("select", () => {
   test("an item selects it and opens its spot in the panel", () => {
@@ -14,7 +16,7 @@ describe("select", () => {
   test("another item moves both", () => {
     const state = selectionReducer(onShirt, { type: "select", originId: "jeans" });
 
-    expect(state).toEqual({ selectedOriginId: "jeans", panelOriginId: "jeans" });
+    expect(state).toEqual({ selectedOriginId: "jeans", panel: { originId: "jeans" } });
   });
 
   test("null clears the selection and the panel", () => {
@@ -24,10 +26,17 @@ describe("select", () => {
   });
 
   test("null clears the panel left open by a swap", () => {
-    const panelOnly = { selectedOriginId: null, panelOriginId: "shirt" };
-    const state = selectionReducer(panelOnly, { type: "select", originId: null });
+    const state = selectionReducer(panelOnShirt, { type: "select", originId: null });
 
     expect(state).toEqual(nothing);
+  });
+});
+
+describe("openSlot", () => {
+  test("opens the empty slot and clears the selection", () => {
+    const state = selectionReducer(onShirt, { type: "openSlot", slot: "shoe" });
+
+    expect(state).toEqual({ selectedOriginId: null, panel: { slot: "shoe" } });
   });
 });
 
@@ -35,7 +44,17 @@ describe("afterSwap", () => {
   test("clears the selection and keeps the panel", () => {
     const state = selectionReducer(onShirt, { type: "afterSwap" });
 
-    expect(state).toEqual({ selectedOriginId: null, panelOriginId: "shirt" });
+    expect(state).toEqual(panelOnShirt);
+  });
+});
+
+describe("afterAdd", () => {
+  test("moves the panel from the slot onto the added spot", () => {
+    const onShoeSlot = { selectedOriginId: null, panel: { slot: "shoe" as const } };
+
+    const state = selectionReducer(onShoeSlot, { type: "afterAdd", originId: "boots" });
+
+    expect(state).toEqual({ selectedOriginId: null, panel: { originId: "boots" } });
   });
 });
 
@@ -50,14 +69,23 @@ describe("dropRemovedSpots", () => {
   });
 
   test("clears both when the panel's spot is gone and nothing is selected", () => {
-    const panelOnly = { selectedOriginId: null, panelOriginId: "shirt" };
-
-    const state = selectionReducer(panelOnly, {
+    const state = selectionReducer(panelOnShirt, {
       type: "dropRemovedSpots",
       remainingOriginIds: ["jeans"],
     });
 
     expect(state).toEqual(nothing);
+  });
+
+  test("keeps an empty slot open", () => {
+    const onShoeSlot = { selectedOriginId: null, panel: { slot: "shoe" as const } };
+
+    const state = selectionReducer(onShoeSlot, {
+      type: "dropRemovedSpots",
+      remainingOriginIds: [],
+    });
+
+    expect(state).toBe(onShoeSlot);
   });
 
   test("returns the same state while every spot remains", () => {

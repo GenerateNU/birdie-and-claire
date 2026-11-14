@@ -7,7 +7,7 @@ import { OutfitList } from "@/features/outfits/outfit-list";
 import { isEmptyList } from "@/features/outfits/saved-outfits";
 import { useSavedOutfits } from "@/features/outfits/use-saved-outfits";
 
-export const Route = createFileRoute("/_signedIn/_onboarded/profile/outfits")({
+export const Route = createFileRoute("/_signedIn/_onboarded/_nav/profile/outfits")({
   component: OutfitsPage,
 });
 
@@ -59,6 +59,7 @@ function AllOutfits() {
           outfits={saved.outfits}
           hasMore={saved.hasMore}
           onLoadMore={saved.loadMore}
+          onOpen={(outfitId) => void navigate({ to: "/outfits/$outfitId", params: { outfitId } })}
           addTile
         />
       )}
