@@ -371,3 +371,65 @@ func TestProductsListNewestFirstWithoutOwnedAcrossPages(t *testing.T) {
 		t.Errorf("item = %+v, want the product's fields", page.Items[0])
 	}
 }
+
+func insertCatalogProduct(t *testing.T, db *sql.DB, source models.ProductSource, slot models.ProductSlot, productType *string, active bool, createdAt time.Time) uuid.UUID {
+	t.Helper()
+
+	var id uuid.UUID
+	err := db.QueryRowContext(context.Background(), `
+		INSERT INTO products (shopify_id, handle, title, slot, source, product_type, active, created_at)
+		VALUES ($1, 'test-product', 'Test product', $2, $3, $4, $5, $6)
+		RETURNING id
+	`, rand.Int64(), slot, source, productType, active, createdAt).Scan(&id)
+	if err != nil {
+		t.Fatalf("insert product: %v", err)
+	}
+	t.Cleanup(func() { _, _ = db.Exec(`DELETE FROM products WHERE id = $1`, id) })
+	return id
+}
+
+// The test products sit far in the future, so each category's first page starts with them.
+func TestBirdieAndClaireProductsListByCategory(t *testing.T) {
+	db := openTestDB(t)
+	userID := insertTestUser(t, db)
+	ctx := auth.WithUserID(context.Background(), userID)
+	future := time.Now().AddDate(100, 0, 0)
+	sweaters := "Sweaters"
+	tunics := "Tunics"
+	birdieAndClaire := models.SourceBirdieAndClaire
+
+	top := insertCatalogProduct(t, db, birdieAndClaire, models.SlotTop, &tunics, true, future.Add(9*time.Hour))
+	untypedTop := insertCatalogProduct(t, db, birdieAndClaire, models.SlotTop, nil, true, future.Add(8*time.Hour))
+	sweater := insertCatalogProduct(t, db, birdieAndClaire, models.SlotTop, &sweaters, true, future.Add(7*time.Hour))
+	bottom := insertCatalogProduct(t, db, birdieAndClaire, models.SlotBottom, nil, true, future.Add(6*time.Hour))
+	onePiece := insertCatalogProduct(t, db, birdieAndClaire, models.SlotOnePiece, nil, true, future.Add(5*time.Hour))
+	accessory := insertCatalogProduct(t, db, birdieAndClaire, models.SlotAccessory, nil, true, future.Add(4*time.Hour))
+	demoTop := insertCatalogProduct(t, db, models.SourceDemo, models.SlotTop, nil, true, future.Add(10*time.Hour))
+	inactiveTop := insertCatalogProduct(t, db, birdieAndClaire, models.SlotTop, nil, false, future.Add(11*time.Hour))
+	ownedTop := insertCatalogProduct(t, db, birdieAndClaire, models.SlotTop, nil, true, future.Add(12*time.Hour))
+
+	if err := repository.New(db).OwnedProduct.AddOwnedProducts(context.Background(), userID, []uuid.UUID{ownedTop}); err != nil {
+		t.Fatalf("add owned: %v", err)
+	}
+	service := services.NewProductService(repository.New(db))
+
+	cases := []struct {
+		category models.ProductCategory
+		want     []uuid.UUID
+	}{
+		{"tops", []uuid.UUID{top, untypedTop}},
+		{"sweaters", []uuid.UUID{sweater}},
+		{"bottoms", []uuid.UUID{bottom}},
+		{"jumpsuits", []uuid.UUID{onePiece}},
+		{"accessories", []uuid.UUID{accessory}},
+	}
+	for _, tc := range cases {
+		page, err := service.ListUnownedBirdieAndClaireProducts(ctx, tc.category, cursorParams(t, len(tc.want), ""))
+		if err != nil {
+			t.Fatalf("list %s: %v", tc.category, err)
+		}
+		if got := productIDs(page.Items); !slices.Equal(got, tc.want) {
+			t.Errorf("%s = %v, want %v (demo %v, inactive %v and owned %v left out)", tc.category, got, tc.want, demoTop, inactiveTop, ownedTop)
+		}
+	}
+}

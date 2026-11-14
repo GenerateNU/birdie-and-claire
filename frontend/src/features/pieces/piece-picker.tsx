@@ -1,11 +1,11 @@
+import { MagnifyingGlassIcon } from "@phosphor-icons/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
 
 import {
   addCurrentUserPiecesMutation,
+  listBirdieAndClaireProductsInfiniteOptions,
   listCurrentUserPiecesInfiniteQueryKey,
-  listProductsInfiniteOptions,
-  listProductsInfiniteQueryKey,
 } from "@/api/generated/@tanstack/react-query.gen";
 import type { ProductResponse } from "@/api/generated/types.gen";
 import { zAddOwnedProductsInputBody } from "@/api/generated/zod.gen";
@@ -15,16 +15,36 @@ import {
   EmptyState,
   ErrorState,
   ItemCard,
+  SearchField,
   SidePanel,
   Skeleton,
+  TabBar,
   Text,
 } from "@/design-system";
+import {
+  catalogCategories,
+  invalidateBirdieAndClaireCatalog,
+  type CatalogCategory,
+} from "@/features/pieces/birdie-and-claire-catalog";
 import { LoadMoreSentinel } from "@/features/pieces/load-more-sentinel";
 import { usePagination } from "@/lib/use-pagination";
 
 // The generated mutation options carry no key, so this names the picker's save for callers that
 // need to know it is in flight, through useIsMutating.
 export const addOwnedPiecesMutationKey = ["add-owned-pieces"];
+
+const categoryLabels: Record<CatalogCategory, string> = {
+  tops: "Tops",
+  sweaters: "Sweaters",
+  bottoms: "Bottoms",
+  jumpsuits: "Jumpsuits",
+  accessories: "Accessories",
+};
+
+const categoryTabs = catalogCategories.map((category) => ({
+  label: categoryLabels[category],
+  value: category,
+}));
 
 type PiecePickerProps = {
   onAdded: () => void;
@@ -35,6 +55,7 @@ export function PiecePicker({ onAdded }: PiecePickerProps) {
   const queryClient = useQueryClient();
   const [selected, setSelected] = useState<ProductResponse[]>([]);
   const [showingSelectedItems, setShowingSelectedItems] = useState(false);
+  const [category, setCategory] = useState<CatalogCategory>(catalogCategories[0]);
 
   const addMutation = useMutation({
     ...addCurrentUserPiecesMutation(),
@@ -43,7 +64,7 @@ export function PiecePicker({ onAdded }: PiecePickerProps) {
     onSuccess: () =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: listCurrentUserPiecesInfiniteQueryKey() }),
-        queryClient.invalidateQueries({ queryKey: listProductsInfiniteQueryKey() }),
+        invalidateBirdieAndClaireCatalog(queryClient),
       ]),
   });
 
@@ -102,13 +123,40 @@ export function PiecePicker({ onAdded }: PiecePickerProps) {
 
   return (
     <Box className="flex flex-col gap-lg">
-      {/* Scrolls inside part of the viewport so the buttons below stay in view, in the onboarding
-          modal and on /pieces/add alike. A scroll box clips on every side, so the padding leaves
-          room for the selected ring and hover outline outside the cards, and the negative margin
-          keeps the grid where Figma puts it. */}
-      <Box className="scrollbar-thin -m-sm max-h-[60vh] overflow-y-auto p-sm">
-        <Catalog selected={selected} onToggle={toggle} disabled={saving} atLimit={atLimit} />
-      </Box>
+      <TabBar
+        tabs={categoryTabs}
+        value={category}
+        onValueChange={setCategory}
+        disabled={saving}
+        trailing={
+          // Disabled until the API can search products (#194).
+          <SearchField
+            variant="bare"
+            leadingIcon={MagnifyingGlassIcon}
+            label="Search items"
+            placeholder="Search items"
+            value=""
+            onValueChange={() => {}}
+            onSubmit={() => {}}
+            disabled
+            className="w-full"
+          />
+        }
+      >
+        {/* Scrolls inside part of the viewport so the buttons below stay in view, in the
+            onboarding modal and on /pieces/add alike. A scroll box clips on every side, so the
+            padding leaves room for the selected ring and hover outline outside the cards, and
+            the negative margin keeps the grid where Figma puts it. */}
+        <Box className="scrollbar-thin -m-sm max-h-[60vh] overflow-y-auto p-sm">
+          <Catalog
+            category={category}
+            selected={selected}
+            onToggle={toggle}
+            disabled={saving}
+            atLimit={atLimit}
+          />
+        </Box>
+      </TabBar>
       {atLimit && (
         <Text variant="caption" className="text-center text-secondary">
           That's the most you can add at once.
@@ -156,6 +204,7 @@ export function PiecePicker({ onAdded }: PiecePickerProps) {
 }
 
 type CatalogProps = {
+  category: CatalogCategory;
   selected: ProductResponse[];
   onToggle: (product: ProductResponse, pressed: boolean) => void;
   disabled: boolean;
@@ -163,7 +212,7 @@ type CatalogProps = {
   atLimit: boolean;
 };
 
-function Catalog({ selected, onToggle, disabled, atLimit }: CatalogProps) {
+function Catalog({ category, selected, onToggle, disabled, atLimit }: CatalogProps) {
   const {
     data,
     isPending,
@@ -172,7 +221,7 @@ function Catalog({ selected, onToggle, disabled, atLimit }: CatalogProps) {
     isFetchingNextPage,
     isFetchNextPageError,
     refetch,
-  } = usePagination(listProductsInfiniteOptions({ query: { limit: 24 } }));
+  } = usePagination(listBirdieAndClaireProductsInfiniteOptions({ query: { category, limit: 24 } }));
 
   const loadMore = useCallback(() => {
     // The observer re-fires on rebuild, so fetching while errored would retry in a loop.
@@ -202,7 +251,7 @@ function Catalog({ selected, onToggle, disabled, atLimit }: CatalogProps) {
   const products = data.pages.flatMap((page) => page.items);
 
   if (products.length === 0) {
-    return <EmptyState title="You own every piece we have." />;
+    return <EmptyState title="You own every piece in this category." />;
   }
 
   return (

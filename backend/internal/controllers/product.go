@@ -32,3 +32,20 @@ func (c *ProductController) ListUnownedProducts(ctx context.Context, input *List
 	}
 	return &ListUnownedProductsOutput{Body: page}, nil
 }
+
+type ListUnownedBirdieAndClaireProductsInput struct {
+	pagination.CursorParams
+	Category models.ProductCategory `query:"category" required:"true" enum:"tops,sweaters,bottoms,jumpsuits,accessories" doc:"The Add Items tab to list. Shoes have no tab."`
+}
+
+type ListUnownedBirdieAndClaireProductsOutput struct {
+	Body pagination.Page[models.ProductResponse]
+}
+
+func (c *ProductController) ListUnownedBirdieAndClaireProducts(ctx context.Context, input *ListUnownedBirdieAndClaireProductsInput) (*ListUnownedBirdieAndClaireProductsOutput, error) {
+	page, err := c.service.ListUnownedBirdieAndClaireProducts(ctx, input.Category, input.CursorParams)
+	if err != nil {
+		return nil, errs.ToHuma(ctx, err)
+	}
+	return &ListUnownedBirdieAndClaireProductsOutput{Body: page}, nil
+}

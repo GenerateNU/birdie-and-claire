@@ -21,6 +21,8 @@ type SearchFieldProps = {
   disabled?: boolean;
   leadingIcon?: Icon;
   size?: keyof typeof iconSizes;
+  /** Bare drops the box, for a search field that sits in a row such as a tab bar. */
+  variant?: "boxed" | "bare";
   className?: string;
 };
 
@@ -36,6 +38,7 @@ export function SearchField({
   disabled = false,
   leadingIcon: LeadingIcon,
   size = "md",
+  variant = "boxed",
   className,
 }: SearchFieldProps) {
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
@@ -47,7 +50,7 @@ export function SearchField({
     onSubmit();
   }
 
-  const boxClasses = fieldBoxClasses({ disabled, invalid: false });
+  const boxClasses = variant === "bare" ? "" : fieldBoxClasses({ disabled, invalid: false });
   const sizedTextClasses = size === "sm" ? `${fieldTextClasses} text-body-s` : fieldTextClasses;
   const textClasses = inactive ? `${sizedTextClasses} text-secondary` : sizedTextClasses;
 

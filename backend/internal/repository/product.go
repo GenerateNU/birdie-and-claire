@@ -33,6 +33,8 @@ type ProductRepository interface {
 	// keepShopifyIDs, and returns how many it marked. Demo products are left alone.
 	DeactivateShopifyProductsExcept(ctx context.Context, keepShopifyIDs []int64) (int64, error)
 	ListUnownedProducts(ctx context.Context, userID uuid.UUID, params pagination.CursorParams) (pagination.Page[models.ProductResponse], error)
+	// ListUnownedBirdieAndClaireProducts lists the active store products in category that the user doesn't own.
+	ListUnownedBirdieAndClaireProducts(ctx context.Context, userID uuid.UUID, category models.ProductCategory, params pagination.CursorParams) (pagination.Page[models.ProductResponse], error)
 }
 
 const (
@@ -258,8 +260,30 @@ func (r *productRepository) ListUnownedProducts(ctx context.Context, userID uuid
 	})
 }
 
+func (r *productRepository) ListUnownedBirdieAndClaireProducts(ctx context.Context, userID uuid.UUID, category models.ProductCategory, params pagination.CursorParams) (pagination.Page[models.ProductResponse], error) {
+	// The categories are the picker's tabs from Figma, so Sweaters is split out of the top slot and a dress counts
+	// as a jumpsuit. Shoes have no tab. product_type is NULL for some products, hence IS DISTINCT FROM.
+	return listProductPage(ctx, r.db, `
+		SELECT p.id, p.created_at AS sorted_at
+		FROM products p
+		WHERE p.source = 'birdie_and_claire'
+			AND p.active
+			AND NOT EXISTS (SELECT 1 FROM owned_products op WHERE op.user_id = $1 AND op.product_id = p.id)
+			AND CASE $5::text
+				WHEN 'tops' THEN p.slot = 'top' AND p.product_type IS DISTINCT FROM 'Sweaters'
+				WHEN 'sweaters' THEN p.slot = 'top' AND p.product_type = 'Sweaters'
+				WHEN 'bottoms' THEN p.slot = 'bottom'
+				WHEN 'jumpsuits' THEN p.slot = 'one_piece'
+				WHEN 'accessories' THEN p.slot = 'accessory'
+			END
+	`, userID, params, func(product models.ProductResponse, _ time.Time) models.ProductResponse {
+		return product
+	}, category)
+}
+
 // listProductPage is the paging query behind every product list. rowSource selects the list's rows as
-// (id, sorted_at) and may use $1, the user's ID; it is always a constant in this package, never input.
+// (id, sorted_at) and may use $1, the user's ID, and $5 onward for sourceArgs; it is always a constant in this
+// package, never input.
 // Rows come newest sorted_at first, then by id, and toItem shapes each one for the response.
 func listProductPage[T any](
 	ctx context.Context,
@@ -268,6 +292,7 @@ func listProductPage[T any](
 	userID uuid.UUID,
 	params pagination.CursorParams,
 	toItem func(product models.ProductResponse, sortedAt time.Time) T,
+	sourceArgs ...any,
 ) (pagination.Page[T], error) {
 	afterSortedAt, err := params.After().Time("sorted_at")
 	if err != nil {
@@ -299,7 +324,7 @@ func listProductPage[T any](
 			LIMIT 1
 		) first_image ON true
 		ORDER BY page.sorted_at DESC, page.id DESC
-	`, userID, afterSortedAt, afterID, params.Limit+1)
+	`, append([]any{userID, afterSortedAt, afterID, params.Limit + 1}, sourceArgs...)...)
 	if err != nil {
 		return pagination.Page[T]{}, fmt.Errorf("list products for user %s: %w", userID, err)
 	}

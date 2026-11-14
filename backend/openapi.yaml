@@ -1201,6 +1201,61 @@ paths:
       summary: List catalog products the authenticated user can add to the pieces they own
       tags:
         - products
+  /api/v1/products/birdie-and-claire:
+    get:
+      description: Active store products only, newest first. Demo filler and owned products are left out.
+      operationId: list-birdie-and-claire-products
+      parameters:
+        - description: Max items to return
+          explode: false
+          in: query
+          name: limit
+          schema:
+            default: 20
+            description: Max items to return
+            format: int64
+            maximum: 100
+            minimum: 1
+            type: integer
+        - description: Opaque cursor from a previous page's next_cursor
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: Opaque cursor from a previous page's next_cursor
+            type: string
+        - description: The Add Items tab to list. Shoes have no tab.
+          explode: false
+          in: query
+          name: category
+          required: true
+          schema:
+            description: The Add Items tab to list. Shoes have no tab.
+            enum:
+              - tops
+              - sweaters
+              - bottoms
+              - jumpsuits
+              - accessories
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageProductResponse"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: List the Birdie & Claire products in one category that the authenticated user doesn't own
+      tags:
+        - products
   /api/v1/products/{product_id}/images:
     get:
       operationId: list-product-images

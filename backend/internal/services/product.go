@@ -12,6 +12,7 @@ import (
 // ProductService lists the catalog for the authenticated user to pick pieces from.
 type ProductService interface {
 	ListUnownedProducts(ctx context.Context, params pagination.CursorParams) (pagination.Page[models.ProductResponse], error)
+	ListUnownedBirdieAndClaireProducts(ctx context.Context, category models.ProductCategory, params pagination.CursorParams) (pagination.Page[models.ProductResponse], error)
 }
 
 type productService struct {
@@ -24,4 +25,8 @@ func NewProductService(repo *repository.Repository) ProductService {
 
 func (s *productService) ListUnownedProducts(ctx context.Context, params pagination.CursorParams) (pagination.Page[models.ProductResponse], error) {
 	return s.repo.Product.ListUnownedProducts(ctx, auth.UserID(ctx), params)
+}
+
+func (s *productService) ListUnownedBirdieAndClaireProducts(ctx context.Context, category models.ProductCategory, params pagination.CursorParams) (pagination.Page[models.ProductResponse], error) {
+	return s.repo.Product.ListUnownedBirdieAndClaireProducts(ctx, auth.UserID(ctx), category, params)
 }

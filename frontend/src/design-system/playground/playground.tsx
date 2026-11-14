@@ -73,6 +73,7 @@ import {
   StatusColor,
   Spinner,
   Tabs,
+  TabBar,
   Text,
   TextArea,
   TextColor,
@@ -171,6 +172,7 @@ const sectionTitles = {
   "empty-state": "Empty state",
   "error-state": "Error state",
   tabs: "Tabs",
+  "tab-bar": "Tab bar",
   divider: "Divider",
   logo: "Logo",
   "radio-group": "Radio group",
@@ -228,6 +230,7 @@ const navGroups = [
       "empty-state",
       "error-state",
       "tabs",
+      "tab-bar",
       "divider",
       "logo",
       "radio-group",
@@ -577,6 +580,10 @@ export function Playground() {
 
             <Section id="tabs">
               <TabsExamples />
+            </Section>
+
+            <Section id="tab-bar">
+              <TabBarExample />
             </Section>
 
             <Section id="divider">
@@ -2202,6 +2209,39 @@ function ModalExamples() {
         <TextField label="Outfit name" value={name} onValueChange={setName} />
       </Modal>
     </Box>
+  );
+}
+
+const tabBarTabs = [
+  { label: "Tops", value: "tops" },
+  { label: "Sweaters", value: "sweaters" },
+  { label: "Bottoms", value: "bottoms" },
+] as const;
+
+function TabBarExample() {
+  const [tab, setTab] = useState<(typeof tabBarTabs)[number]["value"]>("tops");
+
+  return (
+    <TabBar
+      tabs={[...tabBarTabs]}
+      value={tab}
+      onValueChange={setTab}
+      disabled={false}
+      trailing={
+        <SearchField
+          variant="bare"
+          leadingIcon={MagnifyingGlassIcon}
+          label="Search items"
+          placeholder="Search items"
+          value=""
+          onValueChange={() => {}}
+          onSubmit={() => {}}
+          className="w-full"
+        />
+      }
+    >
+      <Text variant="body">Content for {tab}</Text>
+    </TabBar>
   );
 }
 

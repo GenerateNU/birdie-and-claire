@@ -2,11 +2,11 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import {
   listCurrentUserPiecesInfiniteQueryKey,
-  listProductsInfiniteQueryKey,
   removeCurrentUserPieceMutation,
 } from "@/api/generated/@tanstack/react-query.gen";
 import type { OwnedProductResponse } from "@/api/generated/types.gen";
 import { ItemCard, Text } from "@/design-system";
+import { invalidateBirdieAndClaireCatalog } from "@/features/pieces/birdie-and-claire-catalog";
 
 type OwnedPieceCardProps = {
   piece: OwnedProductResponse;
@@ -25,7 +25,7 @@ export function OwnedPieceCard({ piece, onRemoved }: OwnedPieceCardProps) {
     onSettled: () =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: listCurrentUserPiecesInfiniteQueryKey() }),
-        queryClient.invalidateQueries({ queryKey: listProductsInfiniteQueryKey() }),
+        invalidateBirdieAndClaireCatalog(queryClient),
       ]),
   });
 
