@@ -10,7 +10,9 @@ import {
   EnvelopeSimpleIcon,
   ExportIcon,
   HouseIcon,
+  KeyboardIcon,
   MagnifyingGlassIcon,
+  PencilSimpleIcon,
   PlusIcon,
   SunIcon,
   UserIcon,
@@ -128,6 +130,8 @@ const textSamples = [
   { variant: "heading", scale: "heading-m" },
   { variant: "subheading", scale: "heading-s" },
   { variant: "body-l", scale: "body-l" },
+  { variant: "body-m", scale: "body-m" },
+  { variant: "label-l-strong", scale: "label-l-strong" },
   { variant: "body", scale: "body-m" },
   { variant: "caption", scale: "body-s" },
 ] as const;
@@ -528,13 +532,19 @@ export function Playground() {
             </Section>
 
             <Section id="list-card">
-              <Box className="flex max-w-content-sm flex-col gap-xs">
+              <Box className="flex max-w-content-sm flex-col divide-y border">
                 <ListCard
+                  icon={CalendarBlankIcon}
                   title="Occasion"
                   value="Work"
-                  action={{ label: "Edit", accessibleLabel: "Edit Occasion", onClick: () => {} }}
+                  action={{
+                    label: "Edit",
+                    accessibleLabel: "Edit Occasion",
+                    icon: PencilSimpleIcon,
+                    onClick: () => {},
+                  }}
                 />
-                <ListCard title="No action" value="Read only" />
+                <ListCard icon={KeyboardIcon} title="No action" value="“Read only”" italic />
               </Box>
             </Section>
 
