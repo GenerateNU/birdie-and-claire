@@ -18,11 +18,19 @@ export { ImageCard } from "@/design-system/components/cards/image-card";
 
 export { ListCard } from "@/design-system/components/cards/list-card";
 
-export { OptionCardGroup } from "@/design-system/components/cards/option-card-group";
+export { Chip } from "@/design-system/components/chips/chip";
+
+export { ChoiceGroup } from "@/design-system/components/choices/choice-group";
+
+export { OptionTileGroup } from "@/design-system/components/choices/option-tile-group";
 
 export { CodeInput } from "@/design-system/components/inputs/code-input";
 
 export { SearchField } from "@/design-system/components/inputs/search-field";
+
+export { SegmentedControl } from "@/design-system/components/inputs/segmented-control";
+
+export { TextArea } from "@/design-system/components/inputs/text-area";
 
 export { TextField } from "@/design-system/components/inputs/text-field";
 

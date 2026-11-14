@@ -15,10 +15,14 @@ import { FocusRing } from "./src/design-system/tokens/focus-ring";
 import {
   AspectRatio,
   CardSize,
+  ChoiceRowHeight,
   ContentWidth,
+  ControlSize,
   PopupWidth,
   ScrollAreaHeight,
+  TextAreaHeight,
   ThumbnailSize,
+  TileSize,
 } from "./src/design-system/tokens/layout";
 import { Opacity } from "./src/design-system/tokens/opacity";
 import { Shadow } from "./src/design-system/tokens/shadow";
@@ -50,6 +54,7 @@ export default {
         "card-sm": CardSize.sm.width,
         "card-lg": CardSize.lg.width,
         thumbnail: ThumbnailSize.width,
+        tile: TileSize.width,
         ...Object.fromEntries(
           Object.entries(ContentWidth).map(([key, value]) => [`content-${key}`, value]),
         ),
@@ -57,11 +62,16 @@ export default {
       maxWidth: Object.fromEntries(
         Object.entries(ContentWidth).map(([key, value]) => [`content-${key}`, value]),
       ),
-      height: { thumbnail: ThumbnailSize.height },
+      height: { thumbnail: ThumbnailSize.height, textarea: TextAreaHeight, tile: TileSize.height },
       maxHeight: { "scroll-area": ScrollAreaHeight },
-      minHeight: { "card-sm": CardSize.sm.height, "card-lg": CardSize.lg.height },
+      minHeight: {
+        "card-sm": CardSize.sm.height,
+        "card-lg": CardSize.lg.height,
+        "choice-row": ChoiceRowHeight,
+      },
       aspectRatio: AspectRatio,
       size: {
+        control: ControlSize,
         "avatar-sm": AvatarSize.sm,
         "avatar-md": AvatarSize.md,
         "avatar-lg": AvatarSize.lg,

@@ -23,6 +23,21 @@ export const CardSize = {
 
 export const ThumbnailSize = { width: "92px", height: "112px" } as const;
 
+// The checkbox and radio box (`size-control`), from Figma.
+export const ControlSize = "20px";
+
+// The text area's fixed box (`h-textarea`), from Figma.
+export const TextAreaHeight = "112px";
+
+// A choice row's smallest height (`min-h-choice-row`), from Figma.
+export const ChoiceRowHeight = "60px";
+
+// An option tile's fixed size (`w-tile`, `h-tile`), from Figma.
+export const TileSize = { width: "160px", height: "176px" } as const;
+
+// The icon on an option tile, in pixels for Phosphor's `size` prop.
+export const TileIconSize = 44;
+
 export const AspectRatio = {
   portrait: "3 / 4",
   landscape: "3 / 2",

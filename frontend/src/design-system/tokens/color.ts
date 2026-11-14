@@ -9,6 +9,7 @@ const Palette = {
   white: "#FFFFFF",
   tan: "#F0EFE9",
   slateSubtle: "#E3E5E9",
+  slateFaint: "#F3F4F6",
   slate: "#808798",
   slateStrong: "#5F6677",
   red: "#B3261E",
@@ -51,6 +52,8 @@ export const BackgroundColor = {
   "error-subtle": Palette.redSubtle,
   "success-subtle": Palette.greenSubtle,
   "control-off": Palette.slate,
+  // Fill of a disabled field, checkbox, radio, tile or chip.
+  disabled: Palette.slateFaint,
   overlay: "rgba(0, 0, 0, 0.4)",
   // Darkens a photo enough for inverse text to read on it. The opacity is the lofi homescreen's.
   "photo-overlay": "rgba(0, 0, 0, 0.69)",
@@ -61,6 +64,8 @@ export const BorderColor = {
   DEFAULT: Palette.slateSubtle,
   primary: Palette.ink,
   disabled: Palette.slate,
+  // An enabled field's outline, quieter than primary.
+  control: Palette.slate,
 } as const;
 
 // focus-inverse is for controls on a dark surface, where the ink ring disappears.
