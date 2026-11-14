@@ -134,8 +134,10 @@ func (s *recommendationService) RecommendProducts(ctx context.Context, request m
 			Shoe:      productAt(shoes, rank),
 		}
 		if wearsOnePiece(rank, tops, bottoms, onePieces) {
+			outfit.Kind = models.OutfitOnePiece
 			outfit.OnePiece = productAt(onePieces, rank)
 		} else {
+			outfit.Kind = models.OutfitSeparates
 			outfit.Top = productAt(tops, rank)
 			outfit.Bottom = productAt(bottoms, rank)
 		}
@@ -151,22 +153,31 @@ func productAt(products []repository.ScoredProduct, rank int) *models.ProductRes
 	return &products[rank].Product
 }
 
-// wearsOnePiece reports whether the outfit at rank takes its one-piece instead of its top and bottom. A complete shape
-// beats an incomplete one, and otherwise the lower score wins, with a tie broken at random.
+// wearsOnePiece reports whether the outfit at rank takes its one-piece instead of its top and bottom. A lone top or
+// bottom still counts, scored on its own, so a well-matched top beats a poorly matched dress. The lower score wins, with
+// a tie broken at random.
 func wearsOnePiece(rank int, tops, bottoms, onePieces []repository.ScoredProduct) bool {
 	if rank >= len(onePieces) {
 		return false
 	}
-	if rank >= len(tops) || rank >= len(bottoms) {
+	hasTop, hasBottom := rank < len(tops), rank < len(bottoms)
+	// untuned: each score is a distance to its own slot's phrase, so the two shapes are only roughly comparable
+	var separatesScore float64
+	switch {
+	case hasTop && hasBottom:
+		separatesScore = (tops[rank].Score + bottoms[rank].Score) / 2
+	case hasTop:
+		separatesScore = tops[rank].Score
+	case hasBottom:
+		separatesScore = bottoms[rank].Score
+	default:
 		return true
 	}
-	// untuned: each score is a distance to its own slot's phrase, so the two shapes are only roughly comparable
-	pairScore := (tops[rank].Score + bottoms[rank].Score) / 2
 	onePieceScore := onePieces[rank].Score
-	if onePieceScore == pairScore {
+	if onePieceScore == separatesScore {
 		return rand.IntN(2) == 0
 	}
-	return onePieceScore < pairScore
+	return onePieceScore < separatesScore
 }
 
 func (s *recommendationService) searchSlot(ctx context.Context, slot slotSearch, excludeTags, niceTags []string) ([]repository.ScoredProduct, error) {

@@ -448,9 +448,9 @@ async function requestOutfit(
       name: `${occasion} outfit`.slice(0, 100),
       // A slot the catalog couldn't fill is missing from the outfit.
       product_ids: [
-        firstOutfit.top,
-        firstOutfit.bottom,
-        firstOutfit.one_piece,
+        ...(firstOutfit.kind === "one_piece"
+          ? [firstOutfit.one_piece]
+          : [firstOutfit.top, firstOutfit.bottom]),
         firstOutfit.accessory,
         firstOutfit.shoe,
       ].flatMap((product) => (product === undefined ? [] : [product.id])),

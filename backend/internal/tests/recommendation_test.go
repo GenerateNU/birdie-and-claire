@@ -488,8 +488,28 @@ func TestRecommendPicksTheBetterShapeAtEachRank(t *testing.T) {
 			},
 		},
 		{
-			name:   "bottoms ran out",
+			name:   "bottoms ran out and the lone top matched better",
 			counts: map[models.ProductSlot]int{models.SlotBottom: 1},
+			want: [][]string{
+				{"top 1", "bottom 1", "", "accessory 1", "shoe 1"},
+				{"top 2", "", "", "accessory 2", "shoe 2"},
+				{"top 3", "", "", "accessory 3", "shoe 3"},
+			},
+		},
+		{
+			name:   "bottoms ran out and the one-piece matched better than the lone top",
+			counts: map[models.ProductSlot]int{models.SlotBottom: 1},
+			scores: map[models.ProductSlot]float64{models.SlotTop: 0.5, models.SlotBottom: 0.1, models.SlotOnePiece: 0.4},
+			want: [][]string{
+				{"top 1", "bottom 1", "", "accessory 1", "shoe 1"},
+				{"", "", "one_piece 2", "accessory 2", "shoe 2"},
+				{"", "", "one_piece 3", "accessory 3", "shoe 3"},
+			},
+		},
+		{
+			name:   "tops and bottoms ran out",
+			counts: map[models.ProductSlot]int{models.SlotTop: 1, models.SlotBottom: 1},
+			scores: map[models.ProductSlot]float64{models.SlotOnePiece: 1},
 			want: [][]string{
 				{"top 1", "bottom 1", "", "accessory 1", "shoe 1"},
 				{"", "", "one_piece 2", "accessory 2", "shoe 2"},
@@ -535,10 +555,10 @@ func TestRecommendBreaksAScoreTieWithOneShape(t *testing.T) {
 		t.Fatalf("Recommend: %v", err)
 	}
 	for i, outfit := range response.Outfits {
-		wearsOnePiece := outfit.OnePiece != nil && outfit.Top == nil && outfit.Bottom == nil
-		wearsSeparates := outfit.OnePiece == nil && outfit.Top != nil && outfit.Bottom != nil
+		wearsOnePiece := outfit.Kind == models.OutfitOnePiece && outfit.OnePiece != nil && outfit.Top == nil && outfit.Bottom == nil
+		wearsSeparates := outfit.Kind == models.OutfitSeparates && outfit.OnePiece == nil && outfit.Top != nil && outfit.Bottom != nil
 		if !wearsOnePiece && !wearsSeparates {
-			t.Errorf("outfit %d = %q, want either a one-piece or a top and bottom", i, outfitTitles(outfit))
+			t.Errorf("outfit %d = %s %q, want either a one-piece or a top and bottom, labeled by kind", i, outfit.Kind, outfitTitles(outfit))
 		}
 	}
 }
@@ -699,6 +719,9 @@ func TestRecommendRouteReturnsOutfits(t *testing.T) {
 	if got := outfitTitles(decoded.Outfits[0]); !slices.Equal(got, []string{"top 1", "bottom 1", "", "accessory 1", "shoe 1"}) {
 		t.Errorf("first outfit = %q, want each slot's first product", got)
 	}
+	if kind := decoded.Outfits[0].Kind; kind != models.OutfitSeparates {
+		t.Errorf("first outfit kind = %q, want %q", kind, models.OutfitSeparates)
+	}
 }
 
 func TestRecommendRouteLeavesOutAnEmptySlot(t *testing.T) {
@@ -715,8 +738,8 @@ func TestRecommendRouteLeavesOutAnEmptySlot(t *testing.T) {
 	if err := json.Unmarshal(response.Body.Bytes(), &body); err != nil || len(body.Outfits) != productsPerSlot {
 		t.Fatalf("body = %s, want %d outfits", response.Body, productsPerSlot)
 	}
-	if _, hasShoe := body.Outfits[0]["shoe"]; hasShoe || len(body.Outfits[0]) != 3 {
-		t.Errorf("first outfit = %s, want top, bottom and accessory with no shoe key", response.Body)
+	if _, hasShoe := body.Outfits[0]["shoe"]; hasShoe || len(body.Outfits[0]) != 4 {
+		t.Errorf("first outfit = %s, want kind, top, bottom and accessory with no shoe key", response.Body)
 	}
 }
 

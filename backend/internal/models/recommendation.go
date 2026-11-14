@@ -1,6 +1,10 @@
 package models
 
-import "github.com/danielgtaylor/huma/v2"
+import (
+	"reflect"
+
+	"github.com/danielgtaylor/huma/v2"
+)
 
 type RecommendationRequest struct {
 	Occasion string                 `json:"occasion" required:"true" minLength:"1" maxLength:"100" doc:"A preset such as \"Workday\" or the shopper's own words"`
@@ -73,15 +77,53 @@ type RecommendationResponse struct {
 	Outfits         []RecommendedOutfit           `json:"outfits" nullable:"false" doc:"Up to 3 outfits, best first; fewer only when every slot has fewer matching products"`
 }
 
-// RecommendedOutfit takes the same rank from each slot's search, so outfit n holds every slot's nth match. It holds either
-// a one-piece or a top and bottom, never both. A slot that found fewer than n products is left out, so one empty slot
-// never holds back the others.
+// OutfitKind says which shape a RecommendedOutfit has.
+type OutfitKind string
+
+const (
+	OutfitSeparates OutfitKind = "separates"
+	OutfitOnePiece  OutfitKind = "one_piece"
+)
+
+// RecommendedOutfit takes the same rank from each slot's search, so outfit n holds every slot's nth match. Kind says
+// whether it holds a top and bottom or a one-piece, never both. A slot that found fewer than n products is left out,
+// so one empty slot never holds back the others. The spec describes it as SeparatesOutfit or OnePieceOutfit.
 type RecommendedOutfit struct {
-	Top       *ProductResponse `json:"top,omitzero" doc:"Missing when no top matched or the outfit has a one-piece"`
-	Bottom    *ProductResponse `json:"bottom,omitzero" doc:"Missing when no bottom matched or the outfit has a one-piece"`
-	OnePiece  *ProductResponse `json:"one_piece,omitzero" doc:"A dress or jumpsuit in place of the top and bottom. Missing when the top and bottom matched better"`
+	Kind      OutfitKind       `json:"kind"`
+	Top       *ProductResponse `json:"top,omitzero"`
+	Bottom    *ProductResponse `json:"bottom,omitzero"`
+	OnePiece  *ProductResponse `json:"one_piece,omitzero"`
+	Accessory *ProductResponse `json:"accessory,omitzero"`
+	Shoe      *ProductResponse `json:"shoe,omitzero"`
+}
+
+// SeparatesOutfit and OnePieceOutfit exist only to describe RecommendedOutfit's two shapes in the spec.
+type SeparatesOutfit struct {
+	Kind      OutfitKind       `json:"kind" enum:"separates"`
+	Top       *ProductResponse `json:"top,omitzero" doc:"Missing when no top matched"`
+	Bottom    *ProductResponse `json:"bottom,omitzero" doc:"Missing when no bottom matched"`
 	Accessory *ProductResponse `json:"accessory,omitzero" doc:"Missing when no accessory matched"`
 	Shoe      *ProductResponse `json:"shoe,omitzero" doc:"Missing when no shoe matched"`
+}
+
+type OnePieceOutfit struct {
+	Kind      OutfitKind       `json:"kind" enum:"one_piece"`
+	OnePiece  *ProductResponse `json:"one_piece" doc:"A dress or jumpsuit in place of the top and bottom"`
+	Accessory *ProductResponse `json:"accessory,omitzero" doc:"Missing when no accessory matched"`
+	Shoe      *ProductResponse `json:"shoe,omitzero" doc:"Missing when no shoe matched"`
+}
+
+// Schema makes kind a discriminator, so a generated client can narrow an outfit to one shape.
+func (RecommendedOutfit) Schema(r huma.Registry) *huma.Schema {
+	separates := r.Schema(reflect.TypeFor[SeparatesOutfit](), true, "")
+	onePiece := r.Schema(reflect.TypeFor[OnePieceOutfit](), true, "")
+	return &huma.Schema{
+		OneOf: []*huma.Schema{separates, onePiece},
+		Discriminator: &huma.Discriminator{
+			PropertyName: "kind",
+			Mapping:      map[string]string{string(OutfitSeparates): separates.Ref, string(OutfitOnePiece): onePiece.Ref},
+		},
+	}
 }
 
 type RecommendationExpandedAnswers struct {
