@@ -56,6 +56,14 @@ export { Form } from "@/design-system/components/form/form";
 
 export { Header } from "@/design-system/components/header/header";
 
+export { PageHeader } from "@/design-system/components/header/page-header";
+
+export { SectionHeader } from "@/design-system/components/header/section-header";
+
+export { NavItem } from "@/design-system/components/navigation/nav-item";
+
+export { Sidebar } from "@/design-system/components/navigation/sidebar";
+
 export { Menu } from "@/design-system/components/menu/menu";
 
 export { MenuItem } from "@/design-system/components/menu/menu-item";
