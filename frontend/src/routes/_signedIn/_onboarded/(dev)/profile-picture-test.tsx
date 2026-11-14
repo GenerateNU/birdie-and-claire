@@ -1,4 +1,4 @@
-import { CaretLeftIcon } from "@phosphor-icons/react";
+import { ArrowLeftIcon } from "@phosphor-icons/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useRef, useState, type ChangeEvent } from "react";
@@ -12,7 +12,7 @@ import {
   createUserProfilePictureUploadUrl,
 } from "@/api/generated/sdk.gen";
 import { zCreateUserProfilePictureUploadUrlQuery } from "@/api/generated/zod.gen";
-import { Avatar, Box, Button, Page, Text, TextLink } from "@/design-system";
+import { Avatar, Box, Button, Link, Page, Text } from "@/design-system";
 
 export const Route = createFileRoute("/_signedIn/_onboarded/(dev)/profile-picture-test")({
   component: ProfilePictureTest,
@@ -81,9 +81,9 @@ function ProfilePictureTest() {
 
   return (
     <Page>
-      <TextLink to="/dev" leadingIcon={CaretLeftIcon}>
+      <Link to="/dev" variant="ghost" size="sm" leadingIcon={ArrowLeftIcon}>
         Dev
-      </TextLink>
+      </Link>
       <Text variant="heading" className="mt-md mb-xs">
         Profile picture test
       </Text>

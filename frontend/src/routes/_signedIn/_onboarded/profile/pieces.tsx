@@ -1,4 +1,3 @@
-import { PlusIcon } from "@phosphor-icons/react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useRef } from "react";
 
@@ -56,9 +55,7 @@ function PiecesPage() {
         </Text>
         <Box className="flex flex-col items-center gap-sm">
           <EmptyState title="No pieces yet" />
-          <TextLink to="/pieces/add" leadingIcon={PlusIcon}>
-            Add Items
-          </TextLink>
+          <TextLink to="/pieces/add">Add Items</TextLink>
         </Box>
       </>
     );

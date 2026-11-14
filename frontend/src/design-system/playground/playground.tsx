@@ -1,5 +1,6 @@
 import {
   ArrowClockwiseIcon,
+  ArrowLeftIcon,
   ArrowRightIcon,
   ArrowSquareOutIcon,
   BookmarkSimpleIcon,
@@ -284,9 +285,9 @@ export function Playground() {
 
         <main className="flex min-w-0 flex-1 flex-col gap-xl">
           <Box>
-            <TextLink to="/dev" leadingIcon={CaretLeftIcon}>
+            <Link to="/dev" variant="ghost" size="sm" leadingIcon={ArrowLeftIcon}>
               Dev
-            </TextLink>
+            </Link>
             <Text variant="heading" className="mt-md">
               Design system playground
             </Text>
@@ -353,14 +354,11 @@ export function Playground() {
                 <TextLink to="/playground" className="underline">
                   Forced hover
                 </TextLink>
-                <TextLink to="/playground" leadingIcon={CaretLeftIcon}>
-                  Leading icon
-                </TextLink>
-                <TextLink to="/playground" trailingIcon={ArrowRightIcon}>
-                  Trailing icon
+                <TextLink to="/playground" arrow={false}>
+                  Swap item
                 </TextLink>
               </Box>
-              <Label>TextLink · default · hover · leading icon · trailing icon</Label>
+              <Label>TextLink · default · hover · no arrow</Label>
               <Box className="flex flex-wrap items-center gap-md">
                 {buttonVariants.map((variant) =>
                   buttonSizes.map((size) => (
@@ -1897,7 +1895,7 @@ function PieceRowExamples() {
         detail="From where"
         src={samplePhoto}
         action={<Button label="Add to cart" size="sm" />}
-        secondaryAction={<Button label="View product" variant="secondary" size="sm" />}
+        secondaryAction={<Button label="View product" size="sm" />}
       />
       <PieceRow type="owned" name="No action" detail="From where" src={null} />
       <Label>
@@ -2033,6 +2031,7 @@ function ModalExamples() {
       <Box className="flex flex-col items-start gap-lg">
         <ModalPanel
           title="Modal title"
+          subtitle="Subtitle"
           message="Description"
           actions={[...sampleModalActions]}
           onClose={() => {}}
