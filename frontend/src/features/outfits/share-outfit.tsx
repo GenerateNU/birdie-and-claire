@@ -13,9 +13,9 @@ import { shareOutfitMutation } from "@/api/generated/@tanstack/react-query.gen";
 import {
   Box,
   Button,
-  Dialog,
   ErrorState,
   IconButton,
+  Modal,
   Spinner,
   TextField,
   useToast,
@@ -58,14 +58,17 @@ export function ShareOutfit({ outfitId }: ShareOutfitProps) {
       await navigator.clipboard.writeText(url);
       toast.show({ message: "Link copied", variant: "success" });
     } catch {
-      toast.show({ message: "Couldn't copy the link. Select it and copy it yourself." });
+      toast.show({
+        message: "Couldn't copy the link. Select it and copy it yourself.",
+        variant: "error",
+      });
     }
   }
 
   return (
     <>
       <Button label="Share" leadingIcon={ShareNetwork} onClick={openDialog} />
-      <Dialog open={open} onClose={() => setOpen(false)} title="Share" actions={[]} dismissible>
+      <Modal open={open} onClose={() => setOpen(false)} title="Share" actions={[]} dismissible>
         {share.isPending && <Spinner />}
         {share.isError && (
           <ErrorState message="Couldn't make a share link. Try again." onRetry={makeLink} />
@@ -99,7 +102,7 @@ export function ShareOutfit({ outfitId }: ShareOutfitProps) {
             </li>
           ))}
         </ul>
-      </Dialog>
+      </Modal>
     </>
   );
 }

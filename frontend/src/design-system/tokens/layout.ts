@@ -1,5 +1,17 @@
-// Width of floating panels: dialogs and the toast stack.
-export const PopupWidth = "384px";
+// A modal's width (`w-modal-<key>`), from Figma. The split modal is the large width.
+export const ModalWidth = { sm: "480px", md: "640px", lg: "880px" } as const;
+
+// The photo beside a split modal's content (`w-modal-image`), from Figma.
+export const ModalImageWidth = "360px";
+
+// A menu's fixed width (`w-menu`), from Figma.
+export const MenuWidth = "200px";
+
+// The widest an empty state grows (`max-w-empty-state`), from Figma.
+export const EmptyStateWidth = "400px";
+
+// The square behind an empty state's icon (`size-empty-state-icon`), from Figma.
+export const EmptyStateIconSize = "56px";
 
 // Widths for page content, narrowest first. Each becomes `max-w-content-<key>` and
 // `w-content-<key>`.

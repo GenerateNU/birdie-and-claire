@@ -1,4 +1,4 @@
-import { Box, Divider, Empty, Text, TextButton } from "@/design-system";
+import { Box, Divider, EmptyState, Text, TextButton } from "@/design-system";
 import type { DraftItem } from "@/features/outfits/outfit-draft";
 
 type OutfitDetailsProps = {
@@ -18,7 +18,7 @@ export function OutfitDetails({ items, onSwapItem }: OutfitDetailsProps) {
       </header>
       <Divider />
       {items.length === 0 ? (
-        <Empty title="This outfit has no items yet" className="px-xxxl py-lg" />
+        <EmptyState title="This outfit has no items yet" className="px-xxxl py-lg" />
       ) : (
         <ul className="flex min-h-0 flex-1 flex-col gap-md overflow-y-auto px-xxxl py-lg">
           {items.map(({ product, original }) => (

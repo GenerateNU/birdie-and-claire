@@ -2,7 +2,7 @@ import { ArrowsOut, CaretLeft, Plus } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
-import { Box, Empty, ErrorState, IconButton, Link, Spinner, Text } from "@/design-system";
+import { Box, EmptyState, ErrorState, IconButton, Link, Spinner, Text } from "@/design-system";
 import { ExternalPiecesSection } from "@/features/outfits/external-pieces-section";
 import { OutfitCanvas } from "@/features/outfits/outfit-canvas";
 import { OutfitDetailsFrame } from "@/features/outfits/outfit-details-frame";
@@ -35,7 +35,7 @@ function OutfitDetailsPage() {
   if (isOutfitNotFound(outfitQuery.error)) {
     return (
       <OutfitDetailsFrame>
-        <Empty title="Outfit not found" className="p-lg" />
+        <EmptyState title="Outfit not found" className="p-lg" />
       </OutfitDetailsFrame>
     );
   }

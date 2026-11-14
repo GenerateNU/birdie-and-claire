@@ -5,7 +5,7 @@ import { useState } from "react";
 import { suggestOutfitItemsOptions } from "@/api/generated/@tanstack/react-query.gen";
 import {
   Box,
-  Empty,
+  EmptyState,
   ErrorState,
   IconButton,
   ImageCard,
@@ -142,7 +142,7 @@ function SpotSwapPanel({ outfitId, items, originId, onSwap, onBack }: SpotSwapPa
             onSwap={onSwap}
           />
         ) : (
-          <Empty title="Coming soon" />
+          <EmptyState title="Coming soon" />
         )}
       </Tabs>
     </section>
@@ -189,7 +189,7 @@ function SuggestedTiles({
   );
 
   if (!tiles.some((product) => product.id !== original.id)) {
-    return <Empty title="No suggestions yet" />;
+    return <EmptyState title="No suggestions yet" />;
   }
 
   return (

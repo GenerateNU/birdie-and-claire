@@ -1,4 +1,4 @@
-import { Box, Button, Empty, Text } from "@/design-system";
+import { Box, Button, EmptyState, Text } from "@/design-system";
 import type { Product } from "@/features/outfits/outfit-items";
 import { PieceCard } from "@/features/outfits/piece-card";
 
@@ -17,7 +17,7 @@ export function PiecesSection({ products }: PiecesSectionProps) {
         </Text>
       </Box>
       {products.length === 0 ? (
-        <Empty title="This outfit has no items yet" />
+        <EmptyState title="This outfit has no items yet" />
       ) : (
         <>
           <ul className="flex min-h-0 flex-1 flex-col gap-md overflow-y-auto">
