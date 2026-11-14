@@ -5,7 +5,13 @@ import type { KeyboardEvent } from "react";
 import { Box } from "@/design-system/primitives/box";
 import { joinClasses } from "@/design-system/utils/join-classes";
 
-const inputClasses = "w-full rounded-sm border bg-background px-sm py-xs text-body focus-ring";
+const inputClasses = "w-full rounded-sm border bg-background px-sm py-xs focus-ring";
+
+// sm is the Figma field with 13px text and a 12px leading icon.
+const sizeClasses = {
+  md: { text: "text-body", iconPadding: "pl-xxxl", icon: "size-lg" },
+  sm: { text: "text-body-s", iconPadding: "pl-xxl", icon: "size-sm" },
+} as const;
 
 type SearchFieldProps = {
   label: string;
@@ -17,6 +23,7 @@ type SearchFieldProps = {
   maxLength?: number;
   inactive?: boolean;
   leadingIcon?: Icon;
+  size?: keyof typeof sizeClasses;
   className?: string;
 };
 
@@ -30,9 +37,12 @@ export function SearchField({
   maxLength,
   inactive = false,
   leadingIcon: LeadingIcon,
+  size = "md",
   className,
 }: SearchFieldProps) {
-  const stateClasses = inactive ? `${inputClasses} text-secondary` : inputClasses;
+  const { text, iconPadding, icon } = sizeClasses[size];
+  const sizedClasses = `${inputClasses} ${text}`;
+  const stateClasses = inactive ? `${sizedClasses} text-secondary` : sizedClasses;
 
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
     // Enter while an IME is composing confirms the character, not the field.
@@ -53,7 +63,9 @@ export function SearchField({
       onClick={onClick}
       maxLength={maxLength}
       enterKeyHint="go"
-      className={LeadingIcon ? `${stateClasses} pl-xxxl` : joinClasses(stateClasses, className)}
+      className={
+        LeadingIcon ? `${stateClasses} ${iconPadding}` : joinClasses(stateClasses, className)
+      }
     />
   );
 
@@ -65,7 +77,7 @@ export function SearchField({
     <Box className={joinClasses("relative", className)}>
       <LeadingIcon
         aria-hidden="true"
-        className="pointer-events-none absolute left-sm top-1/2 size-lg -translate-y-1/2 text-secondary"
+        className={`pointer-events-none absolute left-sm top-1/2 ${icon} -translate-y-1/2 text-secondary`}
       />
       {input}
     </Box>

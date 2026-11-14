@@ -1,3 +1,4 @@
+import { ArrowRightIcon, MagnifyingGlassIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 
 import {
@@ -15,6 +16,7 @@ import {
   Modal,
   OptionTileGroup,
   Page,
+  SearchField,
   SegmentedControl,
   Text,
   TextArea,
@@ -91,6 +93,11 @@ export function CreateOutfitFlow() {
     setStep(next);
   }
 
+  function skipCustom() {
+    setCustom("");
+    advanceTo("review");
+  }
+
   function goBackTo(previous: Step) {
     setReturnToReview(false);
     setStep(returnToReview ? "review" : previous);
@@ -128,6 +135,7 @@ export function CreateOutfitFlow() {
       <StepScreen
         step="weather"
         title="What’s the weather looking like?"
+        description={null}
         next={{ onClick: () => advanceTo("vibe"), disabled: weatherTile === null }}
         onBack={() => goBackTo("questions-intro")}
       >
@@ -173,6 +181,7 @@ export function CreateOutfitFlow() {
       <StepScreen
         step="vibe"
         title="What vibe describes you best?"
+        description={null}
         next={{ onClick: () => advanceTo("specifics"), disabled: vibe === null }}
         onBack={() => goBackTo("weather")}
       >
@@ -197,6 +206,7 @@ export function CreateOutfitFlow() {
       <StepScreen
         step="specifics"
         title="Are there any specific Birdie & Claire items you would like to include?"
+        description={null}
         next={null}
         onBack={() => goBackTo("vibe")}
       >
@@ -215,19 +225,35 @@ export function CreateOutfitFlow() {
     return (
       <StepScreen
         step="custom"
-        title="Describe the occasion"
-        next={{ onClick: () => advanceTo("review"), disabled: false }}
+        title="Anything else you’d like to tell us?"
+        description={
+          "Fine tune your outfit with more specific instructions and descriptions you’d want included.\nTotally optional, just a way for us to get your taste."
+        }
+        next={null}
         onBack={() => goBackTo("specifics")}
       >
-        <TextArea
-          className="mx-auto max-w-content-lg"
-          label="Enter any other details you would like considered."
-          placeholder="i.e. Outfit for a chill night out with long sleeves and rainy weather"
-          // The endpoint caps custom at 200 characters.
-          maxLength={200}
-          value={custom}
-          onValueChange={setCustom}
-        />
+        <Box className="flex flex-col items-center gap-xxl pt-md">
+          <SearchField
+            label="Anything else you’d like to tell us"
+            placeholder="Describe anything here (i.e. add gold ring, make vibe playful...)"
+            leadingIcon={MagnifyingGlassIcon}
+            size="sm"
+            // The endpoint caps custom at 200 characters.
+            maxLength={200}
+            value={custom}
+            onValueChange={setCustom}
+            onSubmit={() => advanceTo("review")}
+            className="w-full max-w-content-md"
+          />
+          <Box className="flex flex-col items-center gap-md">
+            <Button
+              label="Let’s go"
+              trailingIcon={ArrowRightIcon}
+              onClick={() => advanceTo("review")}
+            />
+            <Button label="Skip" variant="ghost" size="sm" onClick={skipCustom} />
+          </Box>
+        </Box>
       </StepScreen>
     );
   }

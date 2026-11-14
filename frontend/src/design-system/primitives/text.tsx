@@ -12,6 +12,7 @@ const variants = {
   // Hi-fi styles. `-hifi` only where a lofi variant already has the name.
   "display-hifi": { tag: "h1", className: "font-serif text-display" },
   "body-l": { tag: "p", className: "text-body-l" },
+  "body-m": { tag: "p", className: "text-body-m" },
 } as const;
 
 type TextVariant = keyof typeof variants;

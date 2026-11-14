@@ -7,12 +7,14 @@ import { barSteps, type BarStep } from "@/features/outfits/create-outfit/create-
 type StepScreenProps = {
   step: BarStep;
   title: string;
+  /** Sits right under the title. A newline in it starts a new line. */
+  description: string | null;
   next: { onClick: () => void; disabled: boolean } | null;
   onBack: () => void;
   children: ReactNode;
 };
 
-export function StepScreen({ step, title, next, onBack, children }: StepScreenProps) {
+export function StepScreen({ step, title, description, next, onBack, children }: StepScreenProps) {
   return (
     <Page className="flex flex-col items-center gap-xxxl">
       <Box className="w-full max-w-content-lg">
@@ -22,9 +24,16 @@ export function StepScreen({ step, title, next, onBack, children }: StepScreenPr
         />
       </Box>
       <Box className="flex w-full max-w-content-2xl flex-1 flex-col items-center justify-center gap-lg">
-        <Text variant="display-hifi" className="max-w-content-xl text-center">
-          {title}
-        </Text>
+        <Box className="flex flex-col items-center gap-xs text-center">
+          <Text variant="display-hifi" className="max-w-content-xl">
+            {title}
+          </Text>
+          {description !== null && (
+            <Text variant="body-m" className="whitespace-pre-line">
+              {description}
+            </Text>
+          )}
+        </Box>
         <Box className="w-full">{children}</Box>
         {next && <Button label="Next" disabled={next.disabled} onClick={next.onClick} />}
         <Button
