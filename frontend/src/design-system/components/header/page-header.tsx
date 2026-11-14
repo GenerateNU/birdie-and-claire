@@ -16,7 +16,7 @@ type PageHeaderProps = {
 /** The top bar of a full-screen flow, which has no sidebar: title, logo, then actions. */
 export function PageHeader({ title, logoTo, actions }: PageHeaderProps) {
   return (
-    <header className="grid h-page-header grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center border-b bg-card px-xxxl">
+    <header className="grid h-page-header shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center border-b bg-card px-xxxl">
       <h1 className="truncate font-serif text-heading-m text-primary">{title}</h1>
       <Link to={logoTo} className="focus-ring">
         <Logo className="h-logo-header w-logo-header object-cover object-bottom" />

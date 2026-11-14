@@ -37,9 +37,9 @@ type NavItemCommon = {
   className?: string;
 } & NavTarget;
 
-export type NavItemProps = NavItemCommon &
+type NavItemProps = NavItemCommon &
   (
-    | { level?: "main" | "collapsed"; icon: Icon }
+    | { level: "main" | "collapsed"; icon: Icon }
     // A sub item is indented text under a main item.
     | { level: "sub"; icon?: undefined }
   );
@@ -49,7 +49,7 @@ export type NavItemProps = NavItemCommon &
  * name and a native tooltip.
  */
 export function NavItem(props: NavItemProps) {
-  const { label, active = false, level = "main", className } = props;
+  const { label, active = false, level, className } = props;
   const ItemIcon = props.icon;
   const collapsed = level === "collapsed";
 
@@ -60,15 +60,16 @@ export function NavItem(props: NavItemProps) {
 
   const collapsedProps = collapsed ? { "aria-label": label, title: label } : {};
 
+  const showTick = level === "sub" && active;
+
   const content = (
     <>
       {ItemIcon && <ItemIcon size={20} aria-hidden="true" />}
       {!collapsed && <span className="min-w-0 flex-1 truncate">{label}</span>}
-      {level === "sub" &&
-        active && (
-          // Figma places the 2px tick 21px from the row's left edge.
-          <Box className="absolute left-[1.3125rem] top-xs h-md border-l-thick border-primary" />
-        )}
+      {/* Figma places the 2px tick 21px (1.3125rem) from the row's left edge. */}
+      {showTick && (
+        <Box className="absolute left-[1.3125rem] top-xs h-md border-l-thick border-primary" />
+      )}
     </>
   );
 
@@ -76,6 +77,9 @@ export function NavItem(props: NavItemProps) {
     return (
       <Link
         to={props.to}
+        // Only an exact match lets the router set aria-current, so a parent row stays quiet while
+        // its sub item is the current page.
+        activeOptions={{ exact: true }}
         aria-current={active ? "page" : undefined}
         className={classes}
         {...collapsedProps}
