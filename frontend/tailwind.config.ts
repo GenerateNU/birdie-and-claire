@@ -21,6 +21,7 @@ import {
   ThumbnailSize,
 } from "./src/design-system/tokens/layout";
 import { Opacity } from "./src/design-system/tokens/opacity";
+import { Shadow } from "./src/design-system/tokens/shadow";
 import { Spacing } from "./src/design-system/tokens/spacing";
 import { FontFamily, TypeScale } from "./src/design-system/tokens/typography";
 
@@ -38,6 +39,7 @@ export default {
     outlineColor: OutlineColor,
     spacing: { 0: "0px", px: "1px", ...Spacing },
     borderRadius: CornerRadius,
+    boxShadow: { none: "none", ...Shadow },
     borderWidth: { 0: "0px", ...BorderWidth },
     opacity: { 0: "0", 100: "1", ...Opacity },
     fontFamily: FontFamily,
