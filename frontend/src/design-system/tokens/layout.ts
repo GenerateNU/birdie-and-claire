@@ -82,12 +82,14 @@ export const OutfitSlotSize = {
 export const RowThumbnailSize = { width: "64px", height: "80px" } as const;
 
 // How far a card's hover outline reaches past the card (`p-card-hover`, `-m-card-hover`), from
-// Figma: 10px outside the whole card. A list pads itself by this much, so the outline stays inside it.
-export const CardHoverOutlineWidth = "10px";
+// Figma: 10px outside the whole card, which is 0.625rem at the default font size. A list pads itself
+// by this much, so the outline stays inside it.
+export const CardHoverOutlineWidth = "0.625rem";
 
 // How far a card's overlays reach past its box (`inset-card-ring`, `inset-card-hover`), from Figma:
 // the selected ring's outer edge sits 6px outside the photo (4px gap plus 2px border), the hover
-// outline CardHoverOutlineWidth outside the whole card.
+// outline CardHoverOutlineWidth outside the whole card. The hover reach is derived, not set by hand,
+// so it always equals the list's padding and margin.
 export const CardOverlayInset = { ring: "-6px", hover: `-${CardHoverOutlineWidth}` } as const;
 
 // The space between rows of outfit cards (`gap-y-outfit-row`), from Figma: 20px, which is 1.25rem
