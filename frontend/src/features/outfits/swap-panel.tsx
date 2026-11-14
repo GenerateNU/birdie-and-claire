@@ -5,10 +5,10 @@ import { useState } from "react";
 import { suggestOutfitItemsOptions } from "@/api/generated/@tanstack/react-query.gen";
 import {
   Box,
-  Empty,
+  EmptyState,
   ErrorState,
   IconButton,
-  ImageCard,
+  ImageOptionCard,
   SearchField,
   Spinner,
   Tabs,
@@ -44,7 +44,6 @@ const TAB_ORDER: SwapTab[] = ["suggested", "owned", "catalog"];
 
 const SLOT_NAMES: Record<Product["slot"], { heading: string; plural: string }> = {
   top: { heading: "TOP", plural: "Tops" },
-  one_piece: { heading: "ONE-PIECE", plural: "One-Pieces" },
   bottom: { heading: "BOTTOM", plural: "Bottoms" },
   shoe: { heading: "SHOE", plural: "Shoes" },
   accessory: { heading: "ACCESSORY", plural: "Accessories" },
@@ -91,8 +90,7 @@ function SpotSwapPanel({ outfitId, items, originId, onSwap, onBack }: SpotSwapPa
   const { original } = current;
 
   const { slot } = current.product;
-  // Swapping between a one-piece and a top and bottom isn't decided yet, so one-pieces can't be
-  // swapped at all for now.
+  // Swapping between a one-piece and a top and bottom isn't decided yet.
   const swappable = slot !== "one_piece";
   const otherSpotProductIds = new Set<string>();
 
@@ -108,7 +106,7 @@ function SpotSwapPanel({ outfitId, items, originId, onSwap, onBack }: SpotSwapPa
         <IconButton
           icon={CaretLeftIcon}
           label="Back to outfit details"
-          variant="plain"
+          variant="ghost"
           onClick={onBack}
         />
         <Text variant="subheading">EDIT {SLOT_NAMES[slot].heading}</Text>
@@ -150,12 +148,12 @@ function SpotSwapPanel({ outfitId, items, originId, onSwap, onBack }: SpotSwapPa
                 onSwap={onSwap}
               />
             ) : (
-              <Empty title="Coming soon" />
+              <EmptyState title="Coming soon" />
             )}
           </Tabs>
         </>
       ) : (
-        <Empty title="One-pieces can't be swapped yet" />
+        <EmptyState title="One-pieces can't be swapped yet" />
       )}
     </section>
   );
@@ -201,13 +199,13 @@ function SuggestedTiles({
   );
 
   if (!tiles.some((product) => product.id !== original.id)) {
-    return <Empty title="No suggestions yet" />;
+    return <EmptyState title="No suggestions yet" />;
   }
 
   return (
     <Box className="grid grid-cols-3 gap-md">
       {tiles.map((product) => (
-        <ImageCard
+        <ImageOptionCard
           key={product.id}
           label={product.title}
           src={product.image_url}

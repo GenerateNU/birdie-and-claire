@@ -5,7 +5,7 @@ import { useState } from "react";
 
 import { replaceCurrentUserStylePreferencesMutation } from "@/api/generated/@tanstack/react-query.gen";
 import type { StylePreferences } from "@/api/generated/types.gen";
-import { Box, Button, ImageCard, Logo, Page, ProgressBar, Tabs, Text } from "@/design-system";
+import { Box, Button, ImageOptionCard, Logo, Page, ProgressBar, Tabs, Text } from "@/design-system";
 import { AccountError, requireAccountStatus } from "@/features/account/account";
 import { PiecePicker } from "@/features/pieces/piece-picker";
 import {
@@ -110,7 +110,7 @@ function Onboarding() {
   }
 
   return (
-    <Page className="flex flex-col pb-xxl">
+    <Page className="flex flex-col pb-xxxl">
       <Box className="grid h-xl w-full grid-cols-3 items-center">
         {back !== null && (
           <Button
@@ -208,13 +208,14 @@ function Cards({ field, preferences, onToggle, disabled }: CardsProps) {
   return (
     <Box className="flex flex-wrap justify-center gap-md">
       {options.map((option) => (
-        <ImageCard
+        <ImageOptionCard
           key={option.value}
           label={option.label}
           src={null}
           pressed={picked.includes(option.value)}
           onPressedChange={(pressed) => onToggle(field, option.value, pressed)}
           size="lg"
+          selection="multi"
           disabled={disabled}
         />
       ))}

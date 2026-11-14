@@ -15,14 +15,14 @@ export function UndoRedoControls({ canUndo, canRedo, onUndo, onRedo }: UndoRedoC
       <IconButton
         icon={ArrowUUpLeftIcon}
         label="Undo"
-        variant="plain"
+        variant="ghost"
         disabled={!canUndo}
         onClick={onUndo}
       />
       <IconButton
         icon={ArrowUUpRightIcon}
         label="Redo"
-        variant="plain"
+        variant="ghost"
         disabled={!canRedo}
         onClick={onRedo}
       />

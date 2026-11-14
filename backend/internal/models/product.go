@@ -1,6 +1,9 @@
 package models
 
 import (
+	"database/sql/driver"
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -45,4 +48,64 @@ type Product struct {
 type ProductResponse struct {
 	Product
 	ImageURL *string `json:"image_url" doc:"URL of the product's lowest-position image, or null when it has none"`
+}
+
+// ProductAttributes are what the catalog sync's LLM read off a product's photo and store data. Every value comes from
+// the fixed lists below, so a shopper's saved pick compares against it directly.
+type ProductAttributes struct {
+	ProductTarget string `json:"product_target"`
+	// Each type is set only on a product in the slot it describes, and nil on every other product.
+	NecklineType *string     `json:"neckline_type"`
+	BottomType   *string     `json:"bottom_type"`
+	ShoeType     *string     `json:"shoe_type"`
+	Tags         ProductTags `json:"tags"`
+}
+
+// ProductTags groups a product's fixed-list labels. A recommendation's nice tags match every list, and its exclude
+// tags every list but Colors, since a product is sold in every color it lists.
+type ProductTags struct {
+	Colors    []string `json:"colors"`
+	Formality []string `json:"formality"`
+	Occasions []string `json:"occasions"`
+	Season    []string `json:"season"`
+	Pattern   []string `json:"pattern"`
+	Fabric    []string `json:"fabric"`
+	Fit       []string `json:"fit"`
+}
+
+// The lists come from docs/Style_Preferences_Design.md. The type lists repeat StylePreferences' enum values, which a
+// saved pick is compared against.
+var (
+	ProductTargets   = []string{"women", "men", "girls", "boys", "unisex"}
+	NecklineTypes    = []string{"high", "modest", "low"}
+	BottomTypes      = []string{"pants", "skirt", "shorts", "dress"}
+	ShoeTypes        = []string{"sneakers", "boots", "sandals", "heels", "flats"}
+	ProductTagValues = ProductTags{
+		Colors: []string{"black", "white", "grey", "charcoal", "navy", "blue", "green", "olive", "red", "pink", "purple",
+			"orange", "yellow", "brown", "beige", "cream", "gold", "silver", "bronze", "multi"},
+		Formality: []string{"casual", "smart_casual", "semi_formal", "formal"},
+		Occasions: []string{"everyday", "work", "party", "date_night", "wedding_guest", "brunch", "beach", "travel",
+			"workout", "lounge", "funeral"},
+		Season:  []string{"spring", "summer", "fall", "winter"},
+		Pattern: []string{"solid", "printed", "floral", "striped", "checked", "graphic", "embroidered"},
+		Fabric:  []string{"cotton", "linen", "silk", "wool", "denim", "leather", "synthetic", "knit", "metal", "chiffon"},
+		Fit:     []string{"slim", "regular", "relaxed", "oversized"},
+	}
+)
+
+func (a ProductAttributes) Value() (driver.Value, error) {
+	encoded, err := json.Marshal(a)
+	if err != nil {
+		return nil, fmt.Errorf("encode product attributes: %w", err)
+	}
+	return string(encoded), nil
+}
+
+// database/sql handles a NULL column itself and never calls Scan with nil.
+func (a *ProductAttributes) Scan(src any) error {
+	raw, ok := src.([]byte)
+	if !ok {
+		return fmt.Errorf("scan product attributes: unexpected type %T", src)
+	}
+	return json.Unmarshal(raw, a)
 }

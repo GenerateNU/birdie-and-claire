@@ -30,9 +30,11 @@ const (
 )
 
 type slotSearch struct {
-	name     models.ProductSlot
-	phrase   string
-	products *[]models.ProductResponse
+	name   models.ProductSlot
+	phrase string
+	// the shopper's saved picks for this slot's labeled type, such as their necklines for the top
+	typePicks []string
+	products  *[]models.ProductResponse
 }
 
 type RecommendationService interface {
@@ -83,12 +85,16 @@ func (s *recommendationService) RecommendProducts(ctx context.Context, request m
 		ExcludeTags: lowercaseTags(rawExpandedAnswers.ExcludeTags),
 		NiceTags:    lowercaseTags(rawExpandedAnswers.NiceTags),
 	}
+	var necklinePicks, bottomPicks, shoePicks []string
+	if stylePreferences != nil {
+		necklinePicks, bottomPicks, shoePicks = stylePreferences.Neckline, stylePreferences.Bottoms, stylePreferences.Shoes
+	}
 	var tops, bottoms, accessories, shoes []models.ProductResponse
 	slots := []slotSearch{
-		{name: models.SlotTop, phrase: expandedAnswers.Slots.Top, products: &tops},
-		{name: models.SlotBottom, phrase: expandedAnswers.Slots.Bottom, products: &bottoms},
+		{name: models.SlotTop, phrase: expandedAnswers.Slots.Top, typePicks: necklinePicks, products: &tops},
+		{name: models.SlotBottom, phrase: expandedAnswers.Slots.Bottom, typePicks: bottomPicks, products: &bottoms},
 		{name: models.SlotAccessory, phrase: expandedAnswers.Slots.Accessory, products: &accessories},
-		{name: models.SlotShoe, phrase: expandedAnswers.Slots.Shoe, products: &shoes},
+		{name: models.SlotShoe, phrase: expandedAnswers.Slots.Shoe, typePicks: shoePicks, products: &shoes},
 	}
 	if err := checkExpansionLimits(slots, expandedAnswers); err != nil {
 		return models.RecommendationResponse{}, err
@@ -97,7 +103,7 @@ func (s *recommendationService) RecommendProducts(ctx context.Context, request m
 	group, groupCtx := errgroup.WithContext(ctx)
 	for _, slot := range slots {
 		group.Go(func() error {
-			products, err := s.searchSlot(groupCtx, slot.name, slot.phrase, expandedAnswers.ExcludeTags, expandedAnswers.NiceTags)
+			products, err := s.searchSlot(groupCtx, slot, expandedAnswers.ExcludeTags, expandedAnswers.NiceTags)
 			if err != nil {
 				return err
 			}
@@ -123,16 +129,16 @@ func (s *recommendationService) RecommendProducts(ctx context.Context, request m
 	return models.RecommendationResponse{ExpandedAnswers: expandedAnswers, Outfits: outfits}, nil
 }
 
-func (s *recommendationService) searchSlot(ctx context.Context, slot models.ProductSlot, phrase string, excludeTags, niceTags []string) ([]models.ProductResponse, error) {
-	embedding, err := s.embedder.EmbedText(ctx, phrase)
+func (s *recommendationService) searchSlot(ctx context.Context, slot slotSearch, excludeTags, niceTags []string) ([]models.ProductResponse, error) {
+	embedding, err := s.embedder.EmbedText(ctx, slot.phrase)
 	// a rejected phrase is the model's, not the shopper's, and Modal's detail can quote it
 	if errors.Is(err, errs.ErrInvalidInput) {
-		return nil, fmt.Errorf("embed %s phrase: embedder rejected it", slot)
+		return nil, fmt.Errorf("embed %s phrase: embedder rejected it", slot.name)
 	}
 	if err != nil {
-		return nil, fmt.Errorf("embed %s phrase: %w", slot, err)
+		return nil, fmt.Errorf("embed %s phrase: %w", slot.name, err)
 	}
-	return s.repo.Product.FindSimilar(ctx, embedding, slot, excludeTags, niceTags, nil, productsPerSlot)
+	return s.repo.Product.FindSimilar(ctx, embedding, slot.name, excludeTags, niceTags, slot.typePicks, nil, productsPerSlot)
 }
 
 // the errors give sizes only, since the phrases and tags are the model's reading of shopper text

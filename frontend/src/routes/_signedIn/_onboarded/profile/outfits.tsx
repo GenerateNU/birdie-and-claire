@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useCallback } from "react";
 
 import { listOutfitsInfiniteOptions } from "@/api/generated/@tanstack/react-query.gen";
-import { Empty, ErrorState, Spinner, Text } from "@/design-system";
+import { EmptyState, ErrorState, Spinner, Text } from "@/design-system";
 import { OutfitList } from "@/features/outfits/outfit-list";
 import { usePagination } from "@/lib/use-pagination";
 
@@ -51,7 +51,7 @@ function OutfitsPage() {
         All
       </Text>
       {outfits.length === 0 ? (
-        <Empty title="No outfits yet" />
+        <EmptyState title="No outfits yet" />
       ) : (
         <OutfitList outfits={outfits} nextCursor={nextCursor} onLoadMore={onLoadMore} />
       )}

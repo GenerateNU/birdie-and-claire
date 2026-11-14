@@ -52,9 +52,9 @@ to the production storage bucket, and calls the production embedder. Do not
 exercise destructive flows on a preview.
 
 A production login works on a preview, but the preview database starts with
-no users, so you create the app account again there. It does start with the demo
-products from `backend/cmd/tasks/seeds/products.sql`: every push seeds them
-when the `products` table is empty. The database survives re-pushes and
+no users, so you create the app account again there. Its products come from the
+store: the API syncs the Shopify catalog when it starts, the same way production
+does. The database survives re-pushes and
 is dropped when the PR closes. Migrations run against it on every push; if you
 edit a migration that already ran, or main brings in an older-timestamped one,
 close and reopen the PR to start from a fresh database. Uploads from a preview
