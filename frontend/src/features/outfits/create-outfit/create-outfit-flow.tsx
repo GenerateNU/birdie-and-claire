@@ -103,7 +103,10 @@ export function CreateOutfitFlow() {
   }
 
   function skipCustom() {
-    setCustom("");
+    if (!returnToReview) {
+      setCustom("");
+    }
+
     advanceTo("review");
   }
 
