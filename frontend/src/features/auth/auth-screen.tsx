@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { Box, Logo, Text } from "@/design-system";
+import { Box, Logo, Page, Text } from "@/design-system";
 
 type AuthScreenProps = {
   title?: string;
@@ -11,11 +11,11 @@ type AuthScreenProps = {
 /** The logo above a card, the frame every login and sign-up screen shares. */
 export function AuthScreen({ title, subtitle, children }: AuthScreenProps) {
   return (
-    <Box className="flex min-h-screen flex-col items-center justify-center gap-lg p-md">
+    <Page className="flex flex-col items-center justify-center gap-lg">
       <Logo className="w-full max-w-xs" />
-      <Box className="flex w-full max-w-content-sm flex-col gap-sm rounded-md bg-surface p-lg">
+      <Box className="flex w-full max-w-content-sm flex-col gap-sm bg-surface p-lg">
         {title && (
-          <Text variant="subheading" className="text-center normal-case">
+          <Text variant="subheading" className="text-center">
             {title}
           </Text>
         )}
@@ -26,6 +26,6 @@ export function AuthScreen({ title, subtitle, children }: AuthScreenProps) {
         )}
         {children}
       </Box>
-    </Box>
+    </Page>
   );
 }

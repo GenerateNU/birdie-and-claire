@@ -1,4 +1,4 @@
-import { CaretLeft } from "@phosphor-icons/react";
+import { CaretLeftIcon } from "@phosphor-icons/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
@@ -95,10 +95,10 @@ function StylePreferencesEditor({ saved }: StylePreferencesEditorProps) {
           <Link
             to="/profile/settings"
             aria-label="Back to settings"
-            className="text-heading focus-ring"
-          >
-            <CaretLeft aria-hidden="true" />
-          </Link>
+            variant="ghost"
+            size="sm"
+            leadingIcon={CaretLeftIcon}
+          />
           <Text variant="heading">Style Preferences</Text>
         </Box>
         {!editing && <Button label="Edit" variant="secondary" size="sm" onClick={startEditing} />}
@@ -177,7 +177,7 @@ function PreferenceRow({ field, preferences, editing, saving, onToggle }: Prefer
           <ImageOptionCard
             key={option.value}
             label={option.label}
-            src={null}
+            src={option.image}
             pressed={picked.includes(option.value)}
             onPressedChange={(pressed) => onToggle(field, option.value, pressed)}
             size="sm"

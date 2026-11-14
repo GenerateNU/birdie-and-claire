@@ -12,8 +12,8 @@ export function QuestionsIntro({ onStart, onSkip, onBack }: QuestionsIntroProps)
   return (
     <Page className="flex flex-col items-center justify-center gap-xl text-center">
       <Box className="flex max-w-content-md flex-col gap-lg">
-        <Text variant="display-hifi">Sounds like a plan!</Text>
-        <Text variant="body">
+        <Text variant="display">Sounds like a plan!</Text>
+        <Text variant="body-l">
           To better style you to your personal and event preferences, answer a few additional
           questions about the occasion. This step is optional, but more information will help us
           style you better!

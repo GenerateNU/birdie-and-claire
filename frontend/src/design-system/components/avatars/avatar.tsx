@@ -1,9 +1,9 @@
 import { Avatar as BaseAvatar } from "@base-ui/react/avatar";
 
 const sizeClasses = {
-  sm: "size-avatar-sm text-caption",
-  md: "size-avatar-md text-body",
-  lg: "size-avatar-lg text-heading",
+  sm: "size-avatar-sm text-body-s",
+  md: "size-avatar-md text-body-m",
+  lg: "size-avatar-lg text-heading-s",
 } as const;
 
 type AvatarProps = {

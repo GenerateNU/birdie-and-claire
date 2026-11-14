@@ -123,7 +123,7 @@ export function Review({
 
   return (
     <Page className="flex flex-col items-center justify-center gap-xl">
-      <Text variant="display-hifi">Let’s Review</Text>
+      <Text variant="display">Let’s Review</Text>
       <Box className="flex w-full max-w-content-xl flex-col divide-y border">
         {rows.map((row) => (
           <ListCard

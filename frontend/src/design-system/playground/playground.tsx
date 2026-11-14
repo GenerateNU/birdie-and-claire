@@ -1,19 +1,19 @@
 import {
+  ArrowClockwiseIcon,
+  ArrowLeftIcon,
   ArrowRightIcon,
   ArrowSquareOutIcon,
   BookmarkSimpleIcon,
   CalendarBlankIcon,
   CaretLeftIcon,
-  CaretRightIcon,
   CoatHangerIcon,
-  DiamondsFourIcon,
   EnvelopeSimpleIcon,
+  ExportIcon,
   HouseIcon,
   KeyboardIcon,
   MagnifyingGlassIcon,
   PencilSimpleIcon,
   PlusIcon,
-  ShareNetworkIcon,
   SunIcon,
   UserIcon,
   XIcon,
@@ -30,11 +30,14 @@ import {
   Box,
   Button,
   Checkbox,
+  CheckboxList,
   Chip,
   ChoiceGroup,
   CodeInput,
   CollectionCard,
+  CopyField,
   Divider,
+  EditableTitle,
   EmptyState,
   ExternalLink,
   Form,
@@ -55,6 +58,7 @@ import {
   NavItem,
   OptionTileGroup,
   OutfitCard,
+  OutfitSlot,
   PageHeader,
   PieceRow,
   ProgressBar,
@@ -75,7 +79,6 @@ import {
   TextField,
   TextLink,
   Toast,
-  Toggle,
   TypeScale,
   useToast,
 } from "@/design-system";
@@ -121,16 +124,15 @@ const iconButtonVariants = ["primary", "secondary", "ghost"] as const;
 
 // The serif variants are named for their role, so their type-scale keys differ.
 const textSamples = [
-  { variant: "display", scales: ["display-sm", "display-lg"] },
-  { variant: "headline", scales: ["display-sm", "display-md"] },
-  { variant: "heading", scales: ["heading"] },
-  { variant: "subheading", scales: ["subheading"] },
-  { variant: "body", scales: ["body"] },
-  { variant: "caption", scales: ["caption"] },
-  { variant: "display-hifi", scales: ["display"] },
-  { variant: "body-l", scales: ["body-l"] },
-  { variant: "body-m", scales: ["body-m"] },
-  { variant: "label-l-strong", scales: ["label-l-strong"] },
+  { variant: "display", scale: "display" },
+  { variant: "headline", scale: "heading-l" },
+  { variant: "heading", scale: "heading-m" },
+  { variant: "subheading", scale: "heading-s" },
+  { variant: "body-l", scale: "body-l" },
+  { variant: "body-m", scale: "body-m" },
+  { variant: "label-l-strong", scale: "label-l-strong" },
+  { variant: "body", scale: "body-m" },
+  { variant: "caption", scale: "body-s" },
 ] as const;
 
 const sectionTitles = {
@@ -142,7 +144,7 @@ const sectionTitles = {
   "nav-item": "Nav item",
   sidebar: "Sidebar",
   checkbox: "Checkbox",
-  toggle: "Toggle",
+  "checkbox-list": "Checkbox list",
   "text-field": "Text field",
   "text-area": "Text area",
   chip: "Chip",
@@ -152,11 +154,14 @@ const sectionTitles = {
   form: "Form",
   "search-field": "Search field",
   "code-input": "Code input",
+  "copy-field": "Copy field",
+  "editable-title": "Editable title",
   "image-option-card": "Image option card",
   "add-tile": "Add tile",
   "item-card": "Item card",
   "collection-card": "Collection card",
   "outfit-card": "Outfit card",
+  "outfit-slot": "Outfit slot",
   "piece-row": "Piece row",
   "list-card": "List card",
   spinner: "Spinner",
@@ -195,7 +200,7 @@ const navGroups = [
       "nav-item",
       "sidebar",
       "checkbox",
-      "toggle",
+      "checkbox-list",
       "text-field",
       "text-area",
       "chip",
@@ -205,11 +210,14 @@ const navGroups = [
       "form",
       "search-field",
       "code-input",
+      "copy-field",
+      "editable-title",
       "image-option-card",
       "add-tile",
       "item-card",
       "collection-card",
       "outfit-card",
+      "outfit-slot",
       "piece-row",
       "list-card",
       "spinner",
@@ -261,7 +269,7 @@ export function Playground() {
           <Box className="sticky top-xl flex flex-col gap-lg">
             {navGroups.map((group) => (
               <Box key={group.title} className="flex flex-col gap-xxs">
-                <Link to="/playground" hash={group.hash} className="text-subheading text-primary">
+                <Link to="/playground" hash={group.hash} className="text-heading-s text-primary">
                   {group.title}
                 </Link>
                 {group.sections.map((id) => (
@@ -269,7 +277,7 @@ export function Playground() {
                     key={id}
                     to="/playground"
                     hash={id}
-                    className="text-body text-secondary hover:text-primary"
+                    className="text-body-m text-secondary hover:text-primary"
                   >
                     {sectionTitles[id]}
                   </Link>
@@ -281,9 +289,9 @@ export function Playground() {
 
         <main className="flex min-w-0 flex-1 flex-col gap-xl">
           <Box>
-            <TextLink to="/dev" leadingIcon={CaretLeftIcon}>
+            <Link to="/dev" variant="ghost" size="sm" leadingIcon={ArrowLeftIcon}>
               Dev
-            </TextLink>
+            </Link>
             <Text variant="heading" className="mt-md">
               Design system playground
             </Text>
@@ -314,7 +322,7 @@ export function Playground() {
               </Box>
               <Box className="flex items-center gap-md">
                 <Button label="Back" variant="secondary" leadingIcon={CaretLeftIcon} />
-                <Button label="Next" trailingIcon={CaretRightIcon} />
+                <Button label="Next" trailingIcon={ArrowRightIcon} />
               </Box>
               <Label>leadingIcon · trailingIcon</Label>
               <Box className="grid grid-cols-[repeat(5,max-content)] items-center gap-x-md gap-y-sm">
@@ -332,7 +340,7 @@ export function Playground() {
                 {iconButtonVariants.map((variant) => (
                   <IconButton
                     key={variant}
-                    icon={ShareNetworkIcon}
+                    icon={ExportIcon}
                     label="Share"
                     variant={variant}
                     disabled
@@ -350,14 +358,11 @@ export function Playground() {
                 <TextLink to="/playground" className="underline">
                   Forced hover
                 </TextLink>
-                <TextLink to="/playground" leadingIcon={CaretLeftIcon}>
-                  Leading icon
-                </TextLink>
-                <TextLink to="/playground" trailingIcon={ArrowRightIcon}>
-                  Trailing icon
+                <TextLink to="/playground" arrow={false}>
+                  Swap item
                 </TextLink>
               </Box>
-              <Label>TextLink · default · hover · leading icon · trailing icon</Label>
+              <Label>TextLink · default · hover · no arrow</Label>
               <Box className="flex flex-wrap items-center gap-md">
                 {buttonVariants.map((variant) =>
                   buttonSizes.map((size) => (
@@ -415,8 +420,10 @@ export function Playground() {
               </Stage>
             </Section>
 
-            <Section id="toggle">
-              <ToggleExamples />
+            <Section id="checkbox-list">
+              <Stage>
+                <CheckboxListExamples />
+              </Stage>
             </Section>
 
             <Section id="text-field">
@@ -467,6 +474,18 @@ export function Playground() {
               <CodeInputExamples />
             </Section>
 
+            <Section id="copy-field">
+              <Stage>
+                <CopyFieldExamples />
+              </Stage>
+            </Section>
+
+            <Section id="editable-title">
+              <Stage>
+                <EditableTitleExamples />
+              </Stage>
+            </Section>
+
             <Section id="image-option-card">
               <Stage>
                 <ImageOptionCardExamples />
@@ -494,6 +513,12 @@ export function Playground() {
             <Section id="outfit-card">
               <Stage>
                 <OutfitCardExamples />
+              </Stage>
+            </Section>
+
+            <Section id="outfit-slot">
+              <Stage>
+                <OutfitSlotExamples />
               </Stage>
             </Section>
 
@@ -606,11 +631,11 @@ export function Playground() {
             </Section>
 
             <Section id="text">
-              {textSamples.map(({ variant, scales }) => (
+              {textSamples.map(({ variant, scale }) => (
                 <Box key={variant} className="flex flex-col gap-xxs">
                   <Text variant={variant}>The quick brown fox</Text>
                   <Label>
-                    {variant} · {scales.map((scale) => scaleLabel(scale)).join(" · lg:")}
+                    {variant} · {scaleLabel(scale)}
                   </Label>
                 </Box>
               ))}
@@ -697,7 +722,7 @@ function Section({ id, children }: SectionProps) {
       id={id}
       className="flex scroll-mt-xl flex-col gap-md rounded-lg border bg-placeholder p-lg"
     >
-      <Text variant="subsubheading">{sectionTitles[id]}</Text>
+      <Text variant="subheading">{sectionTitles[id]}</Text>
       {children}
     </section>
   );
@@ -937,13 +962,12 @@ function TabsExamples() {
         <Text variant="body">Showing the {tab} panel.</Text>
       </Tabs>
       <Tabs
-        tabs={sampleTabs.map((sample) => ({ ...sample, icon: DiamondsFourIcon }))}
+        tabs={sampleTabs.map((sample) => ({ ...sample, icon: CoatHangerIcon }))}
         value={tab}
         onValueChange={setTab}
         disabled={false}
-        appearance="underline"
       >
-        <Text variant="body">Showing the {tab} panel, underline appearance.</Text>
+        <Text variant="body">Showing the {tab} panel, with icons.</Text>
       </Tabs>
     </Box>
   );
@@ -1043,17 +1067,6 @@ function CheckboxRow({ name, checked, indeterminate, hover }: CheckboxRowProps) 
         disabled
       />
     </>
-  );
-}
-
-function ToggleExamples() {
-  const [checked, setChecked] = useState(false);
-
-  return (
-    <Box className="flex flex-col gap-sm">
-      <Toggle label="Toggle" checked={checked} onCheckedChange={setChecked} />
-      <Toggle label="Disabled" checked onCheckedChange={() => {}} disabled />
-    </Box>
   );
 }
 
@@ -1347,6 +1360,15 @@ function ChoiceGroupExamples() {
           onValueChange={setChoice}
         />
       </Box>
+      <Box className="max-w-content-sm">
+        <ChoiceGroup
+          label="No radio"
+          options={choiceOptions}
+          value={choice}
+          onValueChange={setChoice}
+          hideRadio
+        />
+      </Box>
     </Box>
   );
 }
@@ -1387,7 +1409,11 @@ function OptionTileGroupExamples() {
       </Box>
       <OptionTileGroup
         label="No icon or subtitle"
-        options={radioOptions}
+        options={[
+          { label: "Workday", value: "workday" },
+          { label: "Night out", value: "night-out" },
+          { label: "Weekend", value: "weekend" },
+        ]}
         value={weather}
         onValueChange={setWeather}
       />
@@ -1417,6 +1443,7 @@ function CodeInputExamples() {
 function SearchFieldExamples() {
   const [value, setValue] = useState("");
   const [submitted, setSubmitted] = useState<string | null>(null);
+  const [search, setSearch] = useState("houndstooth");
 
   return (
     <Box className="flex max-w-content-sm flex-col gap-sm">
@@ -1439,11 +1466,117 @@ function SearchFieldExamples() {
       <SearchField
         label="With a leading icon"
         placeholder="Search items"
+        value={search}
+        onValueChange={setSearch}
+        onSubmit={() => {}}
+        leadingIcon={MagnifyingGlassIcon}
+      />
+      <Label>type to see the clear button</Label>
+      <SearchField
+        label="Disabled"
+        placeholder="Search items"
         value=""
         onValueChange={() => {}}
         onSubmit={() => {}}
         leadingIcon={MagnifyingGlassIcon}
+        disabled
       />
+    </Box>
+  );
+}
+
+function CopyFieldExamples() {
+  const [copies, setCopies] = useState(0);
+
+  return (
+    <Box className="flex max-w-content-sm flex-col gap-sm">
+      <CopyField
+        label="Share link"
+        value="https://birdieandclaire.com/s/yFSfg921"
+        onCopy={() => setCopies((count) => count + 1)}
+      />
+      <Label>copied {copies} times</Label>
+    </Box>
+  );
+}
+
+function EditableTitleExamples() {
+  const [title, setTitle] = useState("Weekend in Paris");
+
+  return (
+    <Box className="flex flex-col gap-sm">
+      <EditableTitle label="Outfit name" value={title} onValueChange={setTitle} maxLength={100} />
+      <Label>hover shows the pencil · click to edit · Enter or blur saves · Esc cancels</Label>
+    </Box>
+  );
+}
+
+function CheckboxListExamples() {
+  const [checked, setChecked] = useState<Record<string, boolean>>({ work1: true });
+
+  const collections = [
+    { value: "work1", label: "WORK OUTFIT 1 (3)" },
+    { value: "work2", label: "WORK OUTFIT 2 (0)" },
+    { value: "work3", label: "WORK OUTFIT 3 (2)" },
+  ];
+
+  return (
+    <CheckboxList
+      label="Collections"
+      items={collections.map((collection) => ({
+        ...collection,
+        checked: checked[collection.value] ?? false,
+      }))}
+      onCheckedChange={(value, isChecked) =>
+        setChecked((current) => ({ ...current, [value]: isChecked }))
+      }
+      className="max-w-content-sm"
+    />
+  );
+}
+
+function OutfitSlotExamples() {
+  const [hidden, setHidden] = useState(false);
+  const noop = () => {};
+
+  return (
+    <Box className="flex flex-wrap items-start gap-lg">
+      <Box className="flex flex-col gap-xs">
+        <Label>empty</Label>
+        <OutfitSlot title="Jacket" piece={null} onAdd={noop} />
+      </Box>
+      <Box className="flex flex-col gap-xs">
+        <Label>filled · Hide toggles hidden</Label>
+        <OutfitSlot
+          title="Houndstooth blazer"
+          piece={{ src: samplePhoto, bcStamp: true }}
+          visibility={{ hidden, onHiddenChange: setHidden }}
+          onSwap={noop}
+        />
+      </Box>
+      <Box className="flex flex-col gap-xs">
+        <Label>hidden</Label>
+        <OutfitSlot
+          title="Wide-leg trousers"
+          piece={{ src: null, bcStamp: false }}
+          visibility={{ hidden: true, onHiddenChange: noop }}
+          onSwap={noop}
+        />
+      </Box>
+      <Box className="flex flex-col gap-xs">
+        <Label>selected</Label>
+        <OutfitSlot
+          title="Beret"
+          piece={{ src: null, bcStamp: false }}
+          visibility={{ hidden: false, onHiddenChange: noop }}
+          onSwap={noop}
+          selected
+        />
+      </Box>
+      <Box className="flex flex-col gap-xs">
+        <Label>no visibility · Swap only</Label>
+        <OutfitSlot title="Loafers" piece={{ src: null, bcStamp: false }} onSwap={noop} />
+      </Box>
     </Box>
   );
 }
@@ -1497,6 +1630,19 @@ function ImageOptionCardExamples() {
           </Box>
         )),
       )}
+      <Box className="flex flex-col gap-md">
+        <Box className="flex flex-wrap items-start gap-xl">
+          <ImageOptionCard
+            label="Sneakers"
+            src={samplePhoto}
+            pressed={false}
+            onPressedChange={() => {}}
+            size="sm"
+            fit="contain"
+          />
+        </Box>
+        <Label>sm · fit contain, for product cutouts</Label>
+      </Box>
       <Box className="flex flex-wrap items-start gap-xl">
         <ImageOptionCard
           label="No subtitle"
@@ -1759,7 +1905,7 @@ function PieceRowExamples() {
         detail="From where"
         src={samplePhoto}
         action={<Button label="Add to cart" size="sm" />}
-        secondaryAction={<Button label="View product" variant="secondary" size="sm" />}
+        secondaryAction={<Button label="View product" size="sm" />}
       />
       <PieceRow type="owned" name="No action" detail="From where" src={null} />
       <Label>
@@ -1834,8 +1980,11 @@ function ProgressStepperExamples() {
         </Box>
       ))}
       <Box className="flex flex-col gap-xs">
-        <ProgressStepper steps={stepperLabels.slice(0, 4)} currentStep={2} />
-        <Label>done · done · current · upcoming</Label>
+        <ProgressStepper
+          steps={["Weather", "Vibe", "Specific items", "Additional info"]}
+          currentStep={2}
+        />
+        <Label>done · done · current · upcoming, as in create outfit</Label>
       </Box>
     </Box>
   );
@@ -1850,8 +1999,15 @@ function EmptyStateExamples() {
         action={{ label: "New collection", icon: PlusIcon, onClick: () => {} }}
       />
       <EmptyState title="No pieces yet" description="Pieces you own will show up here." />
-      <EmptyState title="Nothing saved for this occasion" icon={ShareNetworkIcon} />
+      <EmptyState title="Nothing saved for this occasion" icon={CalendarBlankIcon} />
       <EmptyState title="No outfits yet" action={{ label: "Create outfit", onClick: () => {} }} />
+      <EmptyState
+        title="No collections yet"
+        description="Make one, or bring in what you bought from the shop."
+        icon={CoatHangerIcon}
+        action={{ label: "New collection", icon: PlusIcon, onClick: () => {} }}
+        secondaryAction={{ label: "Sync with shop", icon: ArrowClockwiseIcon, onClick: () => {} }}
+      />
     </Box>
   );
 }
@@ -1885,6 +2041,7 @@ function ModalExamples() {
       <Box className="flex flex-col items-start gap-lg">
         <ModalPanel
           title="Modal title"
+          subtitle="Subtitle"
           message="Description"
           actions={[...sampleModalActions]}
           onClose={() => {}}

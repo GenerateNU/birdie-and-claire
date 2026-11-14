@@ -166,7 +166,7 @@ export function CreateOutfitFlow() {
             value={weatherTile}
             onValueChange={setWeatherTile}
           />
-          <Text variant="body">Anything else?</Text>
+          <Text variant="body-l">Anything else?</Text>
           <Box className="flex flex-wrap justify-center gap-xs">
             {weatherConditions.map(({ label, value }) => (
               <Chip
@@ -289,7 +289,7 @@ export function CreateOutfitFlow() {
   if (step === "occasion") {
     return (
       <Page className="flex flex-col items-center justify-center gap-xl">
-        <Text variant="display-hifi">What’s the occasion?</Text>
+        <Text variant="display">What’s the occasion?</Text>
         <Box className="flex flex-wrap items-start justify-center gap-lg">
           {occasions.map(({ name, src }) => (
             <ImageOptionCard

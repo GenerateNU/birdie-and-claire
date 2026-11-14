@@ -25,7 +25,7 @@ export function StepScreen({ step, title, description, next, onBack, children }:
       </Box>
       <Box className="flex w-full max-w-content-2xl flex-1 flex-col items-center justify-center gap-lg">
         <Box className="flex flex-col items-center gap-xs text-center">
-          <Text variant="display-hifi" className="max-w-content-xl">
+          <Text variant="display" className="max-w-content-xl">
             {title}
           </Text>
           {description !== null && (

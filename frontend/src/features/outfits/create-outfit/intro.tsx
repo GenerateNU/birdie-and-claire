@@ -39,8 +39,8 @@ export function Intro({ onStart }: IntroProps) {
       </Box>
       <Box className="flex flex-1 flex-col items-center justify-center gap-xl text-center">
         <Box className="flex flex-col gap-xs">
-          <Text variant="display-hifi">Hi there, {firstNameQuery.data}!</Text>
-          <Text variant="body">Let’s figure out what occasion you need styling for</Text>
+          <Text variant="display">Hi there, {firstNameQuery.data}!</Text>
+          <Text variant="body-l">Let’s figure out what occasion you need styling for</Text>
         </Box>
         <Button label="Let’s go" trailingIcon={ArrowRightIcon} onClick={onStart} />
       </Box>
