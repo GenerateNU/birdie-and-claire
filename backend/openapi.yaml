@@ -920,6 +920,31 @@ paths:
       tags:
         - outfits
   /api/v1/outfits/{id}:
+    delete:
+      description: The outfit's products are unlinked from it and stay in the catalog. Its reactions are deleted, and its share link stops working. Someone else's outfit and a missing one both return 404, so a repeated call returns 404.
+      operationId: delete-outfit
+      parameters:
+        - description: Outfit ID
+          in: path
+          name: id
+          required: true
+          schema:
+            description: Outfit ID
+            type: string
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Delete an outfit
+      tags:
+        - outfits
     get:
       operationId: get-outfit
       parameters:
