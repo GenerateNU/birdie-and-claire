@@ -9,19 +9,18 @@ import type { ErrorModel, ListOutfitsResponse } from "@/api/generated/types.gen"
 import { useToast } from "@/design-system";
 import { isAlreadyDeleted, withoutOutfit } from "@/features/outfits/saved-outfits";
 
-const generated = deleteOutfitMutation();
-
 export function useDeleteOutfit() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const deleteOptions = deleteOutfitMutation();
 
   // The toast and the list refresh are options of the mutation, not of mutate(), so they still run
   // when the user leaves the page while the delete is in flight.
   const mutation = useMutation({
-    ...generated,
-    mutationFn: async (...args: Parameters<NonNullable<typeof generated.mutationFn>>) => {
+    ...deleteOptions,
+    mutationFn: async (...args: Parameters<NonNullable<typeof deleteOptions.mutationFn>>) => {
       try {
-        await generated.mutationFn?.(...args);
+        await deleteOptions.mutationFn?.(...args);
       } catch (error) {
         // SAFETY: the API client throws an ApiError, which carries the response's status. Any other
         // failure, such as a dropped connection, has none, and isAlreadyDeleted reads it as undefined.
@@ -33,7 +32,7 @@ export function useDeleteOutfit() {
     onSuccess: (_data, variables) => {
       const outfitId = variables.path.id;
 
-      toast.show({ message: "Outfit deleted" });
+      toast.show({ message: "Outfit deleted", variant: "success" });
       // The card leaves the list now, so the modal doesn't wait on the list endpoint and a refresh
       // that fails can't leave a deleted outfit behind. The refresh then settles anything else.
       queryClient.setQueriesData<InfiniteData<ListOutfitsResponse>>(
