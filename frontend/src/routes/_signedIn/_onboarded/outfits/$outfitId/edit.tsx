@@ -23,8 +23,9 @@ import { OutfitCanvas } from "@/features/outfits/outfit-canvas";
 import { useOutfitDraft } from "@/features/outfits/outfit-draft";
 import type { Product } from "@/features/outfits/outfit-items";
 import { isOutfitNotFound, outfitQueryOptions } from "@/features/outfits/outfit-query";
-import { SaveOutfitDialog } from "@/features/outfits/save-outfit-dialog";
+import { SaveOutfitDialog, type SaveOutfitValues } from "@/features/outfits/save-outfit-dialog";
 import { SwapPanel } from "@/features/outfits/swap-panel";
+import { sameTags } from "@/features/outfits/tags-field";
 import { UndoRedoControls } from "@/features/outfits/undo-redo-controls";
 import { useLeaveGuard } from "@/features/outfits/use-leave-guard";
 
@@ -112,11 +113,19 @@ function OutfitEditor({ outfitId, outfit }: OutfitEditorProps) {
 
   const saving = saveMutation.isPending;
 
-  function save(name: string) {
+  function save(values: SaveOutfitValues) {
     const body: UpdateOutfitInputBody = {};
 
-    if (name !== outfit.name) {
-      body.name = name;
+    if (values.name !== outfit.name) {
+      body.name = values.name;
+    }
+
+    if (values.description !== outfit.description) {
+      body.description = values.description;
+    }
+
+    if (!sameTags(values.tags, outfit.tags)) {
+      body.tags = values.tags;
     }
 
     if (draft.isDirty) {
@@ -199,6 +208,8 @@ function OutfitEditor({ outfitId, outfit }: OutfitEditorProps) {
       <SaveOutfitDialog
         open={saveDialogOpen}
         savedName={outfit.name}
+        savedDescription={outfit.description}
+        savedTags={outfit.tags}
         productsChanged={draft.isDirty}
         saving={saving}
         onCancel={() => setSaveDialogOpen(false)}
