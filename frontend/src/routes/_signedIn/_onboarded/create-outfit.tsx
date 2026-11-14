@@ -89,8 +89,8 @@ const weatherTiles: { value: WeatherTile; label: string; subtitle: string; icon:
   { value: "freezing", label: "Freezing", subtitle: "Below 35°", icon: SnowflakeIcon },
 ];
 
-// The API has no cool or freezing, so those send its nearest values.
-const tileWeathers: Record<WeatherTile, RecommendationWeather> = {
+// Cool and freezing send the API's nearest values, chilly and cold.
+const tileToApiWeather: Record<WeatherTile, RecommendationWeather> = {
   hot: RecommendationWeather.HOT,
   warm: RecommendationWeather.WARM,
   cool: RecommendationWeather.CHILLY,
@@ -118,7 +118,8 @@ function CreateOutfit() {
   const [customOccasionOpen, setCustomOccasionOpen] = useState(false);
   const [customOccasionDraft, setCustomOccasionDraft] = useState("");
   const [weatherTile, setWeatherTile] = useState<WeatherTile | null>(null);
-  // The API has no field for these yet, so they only drive the screen and are never sent.
+  // A recommend request carries a single weather value, so the chips can't be sent alongside the
+  // temperature. Setting and chips only drive the screen and are never sent.
   const [setting, setSetting] = useState<"outdoors" | "indoors">("outdoors");
   const [conditions, setConditions] = useState<string[]>([]);
   const [vibe, setVibe] = useState<RecommendationVibe | null>(null);
@@ -127,7 +128,7 @@ function CreateOutfit() {
   const [custom, setCustom] = useState("");
 
   const chosenOccasion = cardOccasion ?? customOccasion.trim();
-  const weather = weatherTile === null ? null : tileWeathers[weatherTile];
+  const weather = weatherTile === null ? null : tileToApiWeather[weatherTile];
   const canContinue = chosenOccasion !== "";
 
   function selectCard(occasion: string, pressed: boolean) {
@@ -161,6 +162,11 @@ function CreateOutfit() {
     setStep(next);
   }
 
+  function goBackTo(previous: Step) {
+    setReturnToReview(false);
+    setStep(previous);
+  }
+
   function editFromReview(target: Step) {
     setReturnToReview(true);
     setStep(target);
@@ -183,7 +189,7 @@ function CreateOutfit() {
       <QuestionsIntro
         onStart={() => setStep("weather")}
         onSkip={() => setStep("review")}
-        onBack={() => setStep("occasion")}
+        onBack={() => goBackTo("occasion")}
       />
     );
   }
@@ -194,7 +200,7 @@ function CreateOutfit() {
         step="weather"
         title="What’s the weather looking like?"
         canContinue={weatherTile !== null}
-        onBack={() => setStep("questions-intro")}
+        onBack={() => goBackTo("questions-intro")}
         onNext={() => advanceTo("vibe")}
       >
         <Box className="flex flex-col items-center gap-lg">
@@ -240,7 +246,7 @@ function CreateOutfit() {
         step="vibe"
         title="Describe the occasion"
         canContinue={vibe !== null}
-        onBack={() => setStep("weather")}
+        onBack={() => goBackTo("weather")}
         onNext={() => advanceTo("specifics")}
       >
         <Box className="capitalize">
@@ -261,7 +267,7 @@ function CreateOutfit() {
         step="specifics"
         title="Describe the occasion"
         canContinue={specificsAnswer !== null}
-        onBack={() => setStep("vibe")}
+        onBack={() => goBackTo("vibe")}
         onNext={() => advanceTo("custom")}
       >
         <Box className="flex flex-col gap-lg">
@@ -288,7 +294,7 @@ function CreateOutfit() {
         step="custom"
         title="Describe the occasion"
         canContinue
-        onBack={() => setStep("specifics")}
+        onBack={() => goBackTo("specifics")}
         onNext={() => advanceTo("review")}
       >
         <TextArea
@@ -317,7 +323,7 @@ function CreateOutfit() {
 
   return (
     <Page className="flex flex-col items-center justify-center gap-xl">
-      <h1 className="font-serif text-display">What’s the occasion?</h1>
+      <Text variant="display-hifi">What’s the occasion?</Text>
       <Box className="flex flex-wrap items-start justify-center gap-lg">
         {occasions.map(({ name, src }) => (
           <ImageOptionCard
@@ -396,7 +402,7 @@ function Intro({ onStart }: IntroProps) {
       </Box>
       <Box className="flex flex-1 flex-col items-center justify-center gap-xl text-center">
         <Box className="flex flex-col gap-xs">
-          <h1 className="font-serif text-display">Hi there, {firstNameQuery.data}!</h1>
+          <Text variant="display-hifi">Hi there, {firstNameQuery.data}!</Text>
           <Text variant="body">Let’s figure out what occasion you need styling for</Text>
         </Box>
         <Button label="Let’s go" trailingIcon={ArrowRightIcon} onClick={onStart} />
@@ -415,7 +421,7 @@ function QuestionsIntro({ onStart, onSkip, onBack }: QuestionsIntroProps) {
   return (
     <Page className="flex flex-col items-center justify-center gap-xl text-center">
       <Box className="flex max-w-content-md flex-col gap-lg">
-        <h1 className="font-serif text-display">Sounds like a plan!</h1>
+        <Text variant="display-hifi">Sounds like a plan!</Text>
         <Text variant="body">
           To better style you to your personal and event preferences, answer a few additional
           questions about the occasion. This step is optional, but more information will help us
@@ -456,7 +462,9 @@ function StepScreen({ step, title, canContinue, onBack, onNext, children }: Step
         />
       </Box>
       <Box className="flex w-full max-w-content-xl flex-1 flex-col items-center justify-center gap-lg">
-        <h1 className="text-center font-serif text-display">{title}</h1>
+        <Text variant="display-hifi" className="text-center">
+          {title}
+        </Text>
         <Box className="w-full">{children}</Box>
         <Button label="Next" disabled={!canContinue} onClick={onNext} />
         <Button
