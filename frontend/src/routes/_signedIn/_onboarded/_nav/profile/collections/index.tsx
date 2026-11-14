@@ -14,7 +14,7 @@ import { CollectionFormDialog } from "@/features/collections/collection-form-dia
 import { EditCollection } from "@/features/collections/edit-collection";
 import { SavedOutfitsLayout } from "@/features/collections/saved-outfits-layout";
 
-export const Route = createFileRoute("/_signedIn/_onboarded/profile/collections/")({
+export const Route = createFileRoute("/_signedIn/_onboarded/_nav/profile/collections/")({
   component: CollectionsPage,
 });
 

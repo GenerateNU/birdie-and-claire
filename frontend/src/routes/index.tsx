@@ -16,8 +16,11 @@ export const Route = createFileRoute("/")({
       return { signedIn: false };
     }
 
+    // Someone partway through onboarding can land here from its X. The landing's links lead to
+    // onboarded-only pages, whose guard sends them back to finish.
     await requireAccountStatus({ queryClient: context.queryClient, userId: session.user.id }, [
       "onboarded",
+      "needs-preferences",
     ]);
 
     return { signedIn: true };

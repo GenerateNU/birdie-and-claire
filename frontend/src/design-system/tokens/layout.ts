@@ -122,6 +122,10 @@ export const TileSize = { width: "10rem", height: "11rem" } as const;
 // The icon on an option tile, for Phosphor's `size` prop.
 export const TileIconSize = "2.75rem";
 
+// The outfit editor's side panel (`w-editor-panel`), from Figma's editor frames: the Add Items
+// panel right of the canvas, which fits two outfit slots side by side.
+export const EditorPanelWidth = "600px";
+
 // A sidebar's width (`w-sidebar`, `w-sidebar-collapsed`), from Figma.
 export const SidebarWidth = { expanded: "15rem", collapsed: "4.5rem" } as const;
 

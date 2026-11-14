@@ -2,7 +2,7 @@ import { ArrowRightIcon } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 
 import { getCurrentUserOptions } from "@/api/generated/@tanstack/react-query.gen";
-import { Box, Button, ErrorState, Link, Page, Spinner, Text } from "@/design-system";
+import { Box, Button, ErrorState, Page, Spinner, Text } from "@/design-system";
 import { firstName } from "@/features/account/first-name";
 
 type IntroProps = {
@@ -27,11 +27,6 @@ export function Intro({ onStart }: IntroProps) {
 
   return (
     <Page className="flex flex-col">
-      <Box className="flex justify-end">
-        <Link to="/" variant="secondary" size="sm">
-          Exit
-        </Link>
-      </Box>
       <Box className="flex flex-1 flex-col items-center justify-center gap-xl text-center">
         <Box className="flex flex-col gap-xs">
           <Text variant="display">Hi there, {firstNameQuery.data}!</Text>
