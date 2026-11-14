@@ -50,7 +50,7 @@ func (c *UserController) GetUser(ctx context.Context, _ *struct{}) (*CurrentUser
 
 type CreateUserInput struct {
 	Body struct {
-		Name string `json:"name" required:"true" minLength:"1" maxLength:"100" doc:"Display name; leading and trailing whitespace is removed"`
+		Name string `json:"name" required:"true" minLength:"1" maxLength:"100" pattern:"\\S" doc:"Display name; leading and trailing whitespace is removed"`
 	}
 }
 
@@ -58,6 +58,8 @@ var _ huma.Resolver = (*CreateUserInput)(nil)
 
 func (input *CreateUserInput) Resolve(huma.Context) []error {
 	input.Body.Name = strings.TrimSpace(input.Body.Name)
+	// Not a repeat of the pattern tag. Go's \S only knows ASCII whitespace, but TrimSpace also
+	// removes Unicode spaces like U+00A0, so a name made of those passes the tag and trims to "".
 	if input.Body.Name == "" {
 		return []error{&huma.ErrorDetail{Location: "body.name", Message: "name must not be blank"}}
 	}

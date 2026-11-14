@@ -22,14 +22,7 @@ function Login() {
     return (
       <VerifyScreen
         email={flow.email}
-        code={flow.code}
-        onCodeChange={flow.changeCode}
-        codeError={flow.codeError}
-        resendSecondsLeft={flow.resendSecondsLeft}
-        resendError={flow.resendError}
-        busy={flow.busy}
-        onResend={() => void flow.resendCode()}
-        onSubmit={flow.verifyCode}
+        onVerified={flow.finishVerification}
         onChangeEmail={flow.changeEmail}
       />
     );
@@ -38,12 +31,10 @@ function Login() {
   if (flow.step === "signup") {
     return (
       <SignupScreen
-        name={flow.name}
-        onNameChange={flow.setName}
-        email={flow.email}
-        onEmailChange={flow.setEmail}
-        busy={flow.busy}
-        onSubmit={flow.sendCode}
+        defaultName={flow.name}
+        defaultEmail={flow.email}
+        sending={flow.sendingCode}
+        onSubmit={flow.sendSignupCode}
         onBack={flow.backToChoice}
       />
     );
@@ -52,10 +43,9 @@ function Login() {
   if (flow.step === "login-email") {
     return (
       <LoginEmailScreen
-        email={flow.email}
-        onEmailChange={flow.setEmail}
-        busy={flow.busy}
-        onSubmit={flow.sendCode}
+        defaultEmail={flow.email}
+        sending={flow.sendingCode}
+        onSubmit={flow.sendLoginCode}
         onBack={flow.backToChoice}
       />
     );

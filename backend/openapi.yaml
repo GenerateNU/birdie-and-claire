@@ -70,6 +70,7 @@ components:
           description: Display name; leading and trailing whitespace is removed
           maxLength: 100
           minLength: 1
+          pattern: \S
           type: string
       required:
         - name

@@ -1,47 +1,52 @@
 import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect, useState, type SyntheticEvent } from "react";
+import { useEffect, useState } from "react";
 
 import { createCurrentUserMutation } from "@/api/generated/@tanstack/react-query.gen";
 import { useToast } from "@/design-system";
-import { supabase } from "@/lib/supabase";
+import { sendCode } from "@/features/auth/otp";
 
 type Step = "choice" | "login-email" | "signup" | "verify" | "verified";
 
 type AuthPath = "login" | "signup";
 
-// Supabase's default minimum time between codes sent to one address; an earlier resend is refused.
-const RESEND_COUNTDOWN_SECONDS = 60;
-
 const VERIFIED_REDIRECT_MS = 2000;
 
-// The error codes Supabase answers with when a code was requested too soon after the last one.
-const RATE_LIMIT_CODES = ["over_email_send_rate_limit", "over_request_rate_limit"];
-
-/** The login and sign-up flow: which step is showing, its fields, and what each action does. */
+/** The login and sign-up flow: which step is showing, the name and email it was given, and what
+ * happens after each step. */
 export function useAuthFlow() {
   const toast = useToast();
   const navigate = useNavigate();
-  const createAccountMutation = useMutation(createCurrentUserMutation());
   const [step, setStep] = useState<Step>("choice");
   const [path, setPath] = useState<AuthPath>("login");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [code, setCode] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [codeError, setCodeError] = useState<string | null>(null);
-  const [resendError, setResendError] = useState<string | null>(null);
-  const [resendSecondsLeft, setResendSecondsLeft] = useState(0);
 
-  useEffect(() => {
-    if (step !== "verify" || resendSecondsLeft === 0) {
-      return;
-    }
+  const sendCodeMutation = useMutation({
+    mutationFn: sendCode,
+    onSuccess: () => setStep("verify"),
+    onError: () => toast.show({ message: "Couldn't send the code. Try again.", variant: "error" }),
+  });
 
-    const timer = setTimeout(() => setResendSecondsLeft(resendSecondsLeft - 1), 1000);
+  const createAccountMutation = useMutation({
+    ...createCurrentUserMutation(),
+    onSuccess: () => setStep("verified"),
+    onError: async (error) => {
+      if (error.status === 409) {
+        toast.show({ message: "You already have an account, so we signed you in." });
+        setStep("verified");
 
-    return () => clearTimeout(timer);
-  }, [step, resendSecondsLeft]);
+        return;
+      }
+
+      toast.show({
+        message: "Couldn't create your account, please enter your name again",
+        variant: "error",
+      });
+      // A router navigation, not a page load, so the toast stays on screen.
+      await navigate({ to: "/create-account" });
+    },
+  });
 
   useEffect(() => {
     if (step !== "verified") {
@@ -64,89 +69,25 @@ export function useAuthFlow() {
     setStep("choice");
   }
 
-  function resetVerifyStep() {
-    setCode("");
-    setCodeError(null);
-    setResendError(null);
+  function sendLoginCode(nextEmail: string) {
+    setEmail(nextEmail);
+    sendCodeMutation.mutate(nextEmail);
   }
 
-  async function sendCode(e: SyntheticEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setBusy(true);
-
-    const { error } = await supabase.auth.signInWithOtp({ email });
-
-    setBusy(false);
-
-    if (error) {
-      toast.show({ message: "Couldn't send the code. Try again.", variant: "error" });
-
-      return;
-    }
-
-    resetVerifyStep();
-    setResendSecondsLeft(RESEND_COUNTDOWN_SECONDS);
-    setStep("verify");
-  }
-
-  async function resendCode() {
-    setResendError(null);
-    setBusy(true);
-
-    const { error } = await supabase.auth.signInWithOtp({ email });
-
-    setBusy(false);
-
-    if (error) {
-      setResendError(
-        RATE_LIMIT_CODES.includes(error.code ?? "")
-          ? "Please wait a moment before asking for a new code."
-          : "Couldn't send a new code. Try again.",
-      );
-
-      return;
-    }
-
-    // The new code replaces the old one, so digits already typed can only fail.
-    resetVerifyStep();
-    setResendSecondsLeft(RESEND_COUNTDOWN_SECONDS);
-    toast.show({ message: "New code sent" });
+  function sendSignupCode(nextName: string, nextEmail: string) {
+    setName(nextName);
+    setEmail(nextEmail);
+    sendCodeMutation.mutate(nextEmail);
   }
 
   function changeEmail() {
-    resetVerifyStep();
     setStep(path === "login" ? "login-email" : "signup");
   }
 
-  function changeCode(next: string) {
-    setCode(next);
-    setCodeError(null);
-  }
-
-  async function verifyCode(e: SyntheticEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setBusy(true);
-
-    const { error } = await supabase.auth.verifyOtp({ email, token: code, type: "email" });
-
-    setBusy(false);
-
-    // Supabase answers a wrong code and an expired one the same way.
-    if (error?.code === "otp_expired") {
-      setCode("");
-      setCodeError("Incorrect code entered. Please try again.");
-
-      return;
-    }
-
-    if (error) {
-      toast.show({ message: "Couldn't verify the code. Try again.", variant: "error" });
-
-      return;
-    }
-
+  // Runs after the code is verified, so the account request carries the new session.
+  function finishVerification() {
     if (path === "signup") {
-      createAccount();
+      createAccountMutation.mutate({ body: { name } });
 
       return;
     }
@@ -154,50 +95,16 @@ export function useAuthFlow() {
     setStep("verified");
   }
 
-  // Runs after the code is verified, so the request carries the new session.
-  function createAccount() {
-    setBusy(true);
-    createAccountMutation.mutate(
-      { body: { name } },
-      {
-        onSuccess: () => setStep("verified"),
-        onError: async (error) => {
-          if (error.status === 409) {
-            toast.show({ message: "You already have an account, so we signed you in." });
-            setStep("verified");
-
-            return;
-          }
-
-          toast.show({
-            message: "Couldn't create your account, please enter your name again",
-            variant: "error",
-          });
-          // A router navigation, not a page load, so the toast stays on screen.
-          await navigate({ to: "/create-account" });
-        },
-        onSettled: () => setBusy(false),
-      },
-    );
-  }
-
   return {
     step,
     name,
-    setName,
     email,
-    setEmail,
-    code,
-    busy,
-    codeError,
-    resendError,
-    resendSecondsLeft,
+    sendingCode: sendCodeMutation.isPending,
     choosePath,
     backToChoice,
-    sendCode,
-    resendCode,
+    sendLoginCode,
+    sendSignupCode,
     changeEmail,
-    changeCode,
-    verifyCode,
+    finishVerification,
   };
 }
