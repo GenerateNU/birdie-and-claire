@@ -1,14 +1,14 @@
-import { createOutfit, recommendProducts } from "@/api/generated/sdk.gen";
+import { recommendProducts } from "@/api/generated/sdk.gen";
 import type {
   RecommendationDetail,
+  RecommendationResponse,
   RecommendationSetting,
   RecommendationVibe,
   RecommendationWeather,
 } from "@/api/generated/types.gen";
 
-/** Recommends outfits for the answers and saves the first one.
- * Returns the new outfit's ID, or null when no outfit could be built. */
-export async function requestOutfit(
+/** Recommends up to three outfits for the answers, best first. Empty when no slot had a match. */
+export async function recommendOutfits(
   occasion: string,
   weather: RecommendationWeather | null,
   setting: RecommendationSetting | null,
@@ -16,7 +16,7 @@ export async function requestOutfit(
   vibe: RecommendationVibe | null,
   custom: string,
   signal: AbortSignal,
-): Promise<string | null> {
+): Promise<RecommendationResponse["outfits"]> {
   const details: RecommendationDetail[] = [];
 
   if (weather !== null) {
@@ -46,29 +46,5 @@ export async function requestOutfit(
     throwOnError: true,
   });
 
-  // Empty only when no slot had a matching product.
-  const firstOutfit = recommendation.outfits.at(0);
-
-  if (firstOutfit === undefined) {
-    return null;
-  }
-
-  const { data: outfit } = await createOutfit({
-    body: {
-      // The endpoint caps name at 100 characters.
-      name: `${occasion} outfit`.slice(0, 100),
-      // A slot the catalog couldn't fill is missing from the outfit.
-      product_ids: [
-        ...(firstOutfit.kind === "one_piece"
-          ? [firstOutfit.one_piece]
-          : [firstOutfit.top, firstOutfit.bottom]),
-        firstOutfit.accessory,
-        firstOutfit.shoe,
-      ].flatMap((product) => (product === undefined ? [] : [product.id])),
-    },
-    signal,
-    throwOnError: true,
-  });
-
-  return outfit.id;
+  return recommendation.outfits;
 }

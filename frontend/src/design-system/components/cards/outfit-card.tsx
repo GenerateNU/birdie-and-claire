@@ -70,7 +70,7 @@ export function OutfitCard(props: OutfitCardProps) {
         />
       )}
       <CardFooter menu={props.mode === "browse" ? props.menu : undefined} className="gap-xxs">
-        <Box className="text-label-l-strong">{title}</Box>
+        <Box className="truncate text-label-l-strong">{title}</Box>
         {pieces && <Box className="line-clamp-2 text-body-s text-secondary">{pieces}</Box>}
       </CardFooter>
       <CardHoverOutline />
