@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"net/url"
 	"slices"
 	"strings"
 
@@ -169,7 +168,7 @@ func (s *catalogSyncService) refreshAttributes(ctx context.Context, product shop
 // better than the title and store tags alone, and the embedder reads only the first 77 tokens.
 func (s *catalogSyncService) refreshEmbedding(ctx context.Context, product shopify.ShopifyProduct, synced repository.SyncedProduct) error {
 	text := strings.Join(append([]string{product.Title}, product.Tags...), ", ")
-	imageURL, err := resizedImageURL(product.Images[0].URL)
+	imageURL, err := shopify.ResizedImageURL(product.Images[0].URL, imageWidth)
 	if err != nil {
 		return err
 	}
@@ -201,7 +200,7 @@ func labelInput(product shopify.ShopifyProduct, slot models.ProductSlot) (llm.Pr
 
 	imageURLs := make([]string, 0, labeledImagesPerProduct)
 	for _, image := range product.Images[:min(len(product.Images), labeledImagesPerProduct)] {
-		imageURL, err := resizedImageURL(image.URL)
+		imageURL, err := shopify.ResizedImageURL(image.URL, imageWidth)
 		if err != nil {
 			return llm.ProductLabelInput{}, err
 		}
@@ -247,19 +246,6 @@ func isMarketingTag(tag string) bool {
 		}
 	}
 	return false
-}
-
-// resizedImageURL keeps the URL's existing query, which on Shopify's CDN holds the
-// image version.
-func resizedImageURL(imageURL string) (string, error) {
-	parsed, err := url.Parse(imageURL)
-	if err != nil {
-		return "", fmt.Errorf("parse image url: %w", err)
-	}
-	query := parsed.Query()
-	query.Set("width", imageWidth)
-	parsed.RawQuery = query.Encode()
-	return parsed.String(), nil
 }
 
 func hashInputs(inputs ...string) string {
