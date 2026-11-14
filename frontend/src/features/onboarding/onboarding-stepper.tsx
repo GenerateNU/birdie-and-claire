@@ -1,30 +1,26 @@
 import { Box, ProgressStepper } from "@/design-system";
 
-export type OnboardingStage = "owns-pieces" | "add-pieces" | "style" | "fit";
+export type OnboardingStage = "owned-items" | "style" | "fit";
 
-const stages: { stage: OnboardingStage; name: string }[] = [
-  { stage: "owns-pieces", name: "Birdie & Claire clothes" },
-  { stage: "add-pieces", name: "Add your pieces" },
-  { stage: "style", name: "Style" },
-  { stage: "fit", name: "Fit preferences" },
+const stages: { stage: OnboardingStage; label: string }[] = [
+  { stage: "owned-items", label: "Owned Items" },
+  { stage: "style", label: "Style" },
+  { stage: "fit", label: "Preferences" },
 ];
 
-const stepLabels = stages.map((_, index) => `Step ${index + 1}`);
+const stepLabels = stages.map((entry) => entry.label);
 
 type OnboardingStepperProps = {
   stage: OnboardingStage;
 };
 
 export function OnboardingStepper({ stage }: OnboardingStepperProps) {
-  const currentStep = stages.findIndex((entry) => entry.stage === stage);
-
   return (
-    <Box
-      role="group"
-      aria-label={`Step ${currentStep + 1} of ${stages.length}: ${stages[currentStep].name}`}
-      className="mx-auto w-onboarding-stepper"
-    >
-      <ProgressStepper steps={stepLabels} currentStep={currentStep} />
+    <Box className="mx-auto w-onboarding-stepper">
+      <ProgressStepper
+        steps={stepLabels}
+        currentStep={stages.findIndex((entry) => entry.stage === stage)}
+      />
     </Box>
   );
 }

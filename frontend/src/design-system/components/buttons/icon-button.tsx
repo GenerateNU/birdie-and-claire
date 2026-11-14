@@ -1,5 +1,6 @@
 import { Button as BaseButton } from "@base-ui/react/button";
 import type { Icon } from "@phosphor-icons/react";
+import { motion } from "motion/react";
 import type { ComponentProps } from "react";
 import {
   buttonVariantClasses,
@@ -43,6 +44,7 @@ export function IconButton({
 
   return (
     <BaseButton
+      render={<motion.button whileTap={{ scale: 0.95 }} />}
       type="button"
       aria-label={label}
       className={joinClasses(buttonClasses, className)}
