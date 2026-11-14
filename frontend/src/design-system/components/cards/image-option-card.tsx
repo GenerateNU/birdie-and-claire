@@ -25,7 +25,6 @@ type ImageOptionCardProps = {
   size?: keyof typeof sizeClasses;
   /** `multi` marks the card with a checkbox in its top-right corner. */
   selection?: "single" | "multi";
-  /** `contain` shows a whole product cutout on the surface color instead of cropping it. */
   fit?: "cover" | "contain";
   disabled?: boolean;
 };

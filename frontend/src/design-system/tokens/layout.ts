@@ -61,8 +61,7 @@ export const CollectionCardSize = {
 // An outfit card's width and image height (`w-outfit`, `h-outfit`), from Figma.
 export const OutfitCardSize = { width: "240px", imageHeight: "300px" } as const;
 
-// An outfit slot's width and photo heights (`w-outfit-slot`, `h-outfit-slot-*`), from Figma. The
-// empty slot's dashed box is taller because it has no action row under it.
+// An outfit slot's width and photo heights (`w-outfit-slot`, `h-outfit-slot-*`), from Figma.
 export const OutfitSlotSize = {
   width: "258px",
   photoHeight: "168px",

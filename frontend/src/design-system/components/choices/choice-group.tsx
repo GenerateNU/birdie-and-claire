@@ -33,7 +33,6 @@ type ChoiceGroupProps<T extends string> = {
   options: ChoiceOption<T>[];
   value: T | null;
   onValueChange: (value: T) => void;
-  /** Leaves the radio out of each row, so only the row's border and fill show the choice. */
   hideRadio?: boolean;
 };
 

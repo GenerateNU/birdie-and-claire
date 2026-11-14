@@ -9,18 +9,16 @@ type CheckboxListItem = {
 };
 
 type CheckboxListProps = {
-  /** The group's accessible name, like "Collections". */
   label: string;
   items: CheckboxListItem[];
   onCheckedChange: (value: string, checked: boolean) => void;
   className?: string;
 };
 
-/** Full-width rows with the label on the left and a checkbox on the right, like picking the
- * collections an outfit belongs to. */
+/** Rows with the label on the left and a checkbox on the right. */
 export function CheckboxList({ label, items, onCheckedChange, className }: CheckboxListProps) {
   return (
-    // 20px between rows, from Figma. It sits between the md and lg spacing tokens.
+    // 20px from Figma; no spacing token matches.
     <Box
       role="group"
       aria-label={label}

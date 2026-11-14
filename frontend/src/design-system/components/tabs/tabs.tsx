@@ -10,7 +10,6 @@ const appearanceClasses = {
     tab: "px-lg py-xs text-caption text-primary border-r border-primary last:border-r-0 first:rounded-l-full last:rounded-r-full data-[active]:bg-primary data-[active]:text-inverse focus-ring",
   },
   // Fills its container's height and scrolls the panel, so a long grid stays under the tabs.
-  // The transparent bottom border keeps every tab the same height as the underlined active one.
   underline: {
     root: "flex min-h-0 w-full flex-1 flex-col gap-md",
     panel: "min-h-0 w-full flex-1 overflow-y-auto",
@@ -32,8 +31,7 @@ type TabsProps<T extends string> = {
   value: T;
   onValueChange: (value: T) => void;
   disabled: boolean;
-  /** segmented is a pill row. underline is a row of content-width tabs over a rule, with the
-   * active tab underlined. */
+  /** segmented is a pill row. underline underlines the active tab. */
   appearance?: keyof typeof appearanceClasses;
   children: ReactNode;
 };
@@ -63,7 +61,6 @@ export function Tabs<T extends string>({
             key={tabValue}
             value={tabValue}
             disabled={disabled}
-            // An icon tab stacks its icon above the label, as in the editor.
             className={underlined && TabIcon ? `${classes.tab} flex-col` : classes.tab}
           >
             {underlined && TabIcon && <TabIcon size={underlineIconSize} aria-hidden="true" />}

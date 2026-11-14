@@ -17,15 +17,12 @@ type SearchFieldProps = {
   onSubmit: () => void;
   onClick?: () => void;
   maxLength?: number;
-  /** Greys the text, for a field whose value isn't the one in use. */
   inactive?: boolean;
   disabled?: boolean;
   leadingIcon?: Icon;
   className?: string;
 };
 
-/** A labelless input with an optional leading icon. A clear button shows while it has text and is
- * active. */
 export function SearchField({
   label,
   placeholder,
@@ -75,7 +72,7 @@ export function SearchField({
           variant="ghost"
           size="sm"
           onClick={() => onValueChange("")}
-          // Pulls the 32px button into the field's padding so the x lines up like Figma's 16px icon.
+          // Pulls the 32px button into the padding so the x sits where Figma's 16px icon does.
           className="-mr-xs"
         />
       )}

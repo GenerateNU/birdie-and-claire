@@ -15,17 +15,15 @@ type EmptySlotProps = {
 type FilledSlotProps = {
   title: string;
   piece: { src: string | null; bcStamp: boolean };
-  /** Fades the photo and swaps Hide for Show. */
   hidden: boolean;
   onHiddenChange: (hidden: boolean) => void;
   onSwap: () => void;
-  /** Draws the heavy outline for the slot being edited. */
   selected?: boolean;
 };
 
 type OutfitSlotProps = EmptySlotProps | FilledSlotProps;
 
-/** One piece slot in the outfit editor's panel. An empty slot is a dashed box that adds a piece. */
+/** One piece slot in the outfit editor's panel. */
 export function OutfitSlot(props: OutfitSlotProps) {
   if (props.piece === null) {
     return (

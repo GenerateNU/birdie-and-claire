@@ -6,18 +6,15 @@ import { useState, type KeyboardEvent } from "react";
 import { joinClasses } from "@/design-system/utils/join-classes";
 
 type EditableTitleProps = {
-  /** What the title names, like "Outfit name". Read out with the edit button and the input. */
   label: string;
   value: string;
-  /** Called with the trimmed text when an edit is committed. Not called for an empty or unchanged
-   * title. */
+  /** Gets the trimmed text. Not called for an empty or unchanged title. */
   onValueChange: (value: string) => void;
   maxLength?: number;
   className?: string;
 };
 
-/** A display-size title that turns into an input when clicked. Enter or leaving the field saves,
- * Esc cancels. */
+/** A display-size title that turns into an input when clicked. */
 export function EditableTitle({
   label,
   value,

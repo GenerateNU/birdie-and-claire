@@ -25,7 +25,6 @@ type CheckboxBoxProps = {
   disabled?: boolean;
 };
 
-/** The box alone, for a design-system part that lays out its own `group` label around it. */
 export function CheckboxBox({
   checked,
   indeterminate = false,

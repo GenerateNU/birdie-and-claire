@@ -10,7 +10,7 @@ type EmptyStateProps = {
   /** Shown on the square above the title. */
   icon?: Icon;
   action?: EmptyStateAction;
-  /** An outlined button under `action`, as wide as the column. Ignored without `action`. */
+  /** Ignored without `action`. */
   secondaryAction?: EmptyStateAction;
   className?: string;
 };

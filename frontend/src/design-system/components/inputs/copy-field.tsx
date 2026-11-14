@@ -5,19 +5,17 @@ import { Box } from "@/design-system/primitives/box";
 import { joinClasses } from "@/design-system/utils/join-classes";
 
 type CopyFieldProps = {
-  /** The field's accessible name. It has no visible label. */
   label: string;
   value: string;
   onCopy: () => void;
   className?: string;
 };
 
-/** Read-only text, like a share link, with a Copy button beside it. Focusing the text selects it,
- * for copying by hand when the clipboard is blocked. */
+/** Read-only text, like a share link, with a Copy button beside it. */
 export function CopyField({ label, value, onCopy, className }: CopyFieldProps) {
   return (
     <Box className={joinClasses("flex gap-sm", className)}>
-      {/* Not uppercase like Figma: links are case-sensitive, and someone may type this one out. */}
+      {/* Not uppercase like Figma: links are case-sensitive. */}
       <BaseInput
         aria-label={label}
         value={value}
