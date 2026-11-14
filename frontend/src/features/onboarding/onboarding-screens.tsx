@@ -23,8 +23,8 @@ export function Welcome({ onStart }: WelcomeProps) {
         {/* 591px is the Card frame in Figma's Welcome to GTKY. */}
         <Box className="flex w-[591px] flex-col items-center gap-md bg-card p-xxl text-center">
           <Box className="flex flex-col items-center gap-xs">
-            <Text variant="largeTitle">Let's Get To Know You!</Text>
-            <Text variant="body">
+            <Text variant="display-hifi">Let's Get To Know You!</Text>
+            <Text variant="body-l">
               Tell us about your preferences and style so we can personalize your recommendations!
             </Text>
           </Box>

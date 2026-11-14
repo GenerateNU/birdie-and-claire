@@ -110,7 +110,7 @@ export function OnboardingFlow() {
       >
         {step === "owns-pieces" && (
           <ChoiceQuestion
-            heading={<Text variant="title">Do you own any Birdie & Claire clothes?</Text>}
+            heading={<Text variant="heading-l">Do you own any Birdie & Claire clothes?</Text>}
             options={[
               { value: "add-method", label: "Yes, I'm an existing customer!" },
               { value: "style", label: "No, I'm new!" },
@@ -122,8 +122,8 @@ export function OnboardingFlow() {
           <ChoiceQuestion
             heading={
               <>
-                <Text variant="largeTitle">Welcome back!</Text>
-                <Text variant="subtitle">Add your Birdie & Claire items</Text>
+                <Text variant="display-hifi">Welcome back!</Text>
+                <Text variant="heading-m">Add your Birdie & Claire items</Text>
               </>
             }
             options={[
@@ -142,7 +142,7 @@ export function OnboardingFlow() {
           />
         )}
         {/* Stands in for connecting a Shopify account, which doesn't exist yet. */}
-        {step === "shop-login" && <Text variant="largeTitle">Log in with Shop</Text>}
+        {step === "shop-login" && <Text variant="display-hifi">Log in with Shop</Text>}
         <Modal
           open={step === "pick-pieces"}
           onClose={() => setStep("add-method")}
