@@ -32,7 +32,7 @@ export function TagsField({ tags, onTagsChange, disabled }: TagsFieldProps) {
     const parsed = tagSchema.safeParse(draft);
 
     if (!parsed.success) {
-      setError("That tag is too long.");
+      setError("Tags can be up to 30 characters. Try a shorter one.");
 
       return;
     }
@@ -40,7 +40,7 @@ export function TagsField({ tags, onTagsChange, disabled }: TagsFieldProps) {
     const tag = parsed.data;
 
     if (tags.some((existing) => existing.toLowerCase() === tag.toLowerCase())) {
-      setError("You already added that tag.");
+      setError("This outfit already has that tag. Try a different one.");
 
       return;
     }
@@ -48,7 +48,7 @@ export function TagsField({ tags, onTagsChange, disabled }: TagsFieldProps) {
     const nextTags = [...tags, tag];
 
     if (!tagsSchema.safeParse(nextTags).success) {
-      setError("You can't add more tags.");
+      setError("An outfit can have up to 10 tags. Remove one to add another.");
 
       return;
     }
