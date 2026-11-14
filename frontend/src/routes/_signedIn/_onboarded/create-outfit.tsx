@@ -14,7 +14,12 @@ import {
   type CurrentUserResponse,
   type RecommendationDetail,
 } from "@/api/generated/types.gen";
+import casualOutingPhoto from "@/design-system/assets/occasions/casual-outing.png";
+import nightOutPhoto from "@/design-system/assets/occasions/night-out.jpg";
+import weddingPhoto from "@/design-system/assets/occasions/wedding.jpg";
+import workDayPhoto from "@/design-system/assets/occasions/work-day.jpg";
 import {
+  AddTile,
   Box,
   Button,
   ChoiceGroup,
@@ -23,9 +28,9 @@ import {
   ImageOptionCard,
   Link,
   ListCard,
+  Modal,
   OptionTileGroup,
   Page,
-  SearchField,
   Spinner,
   Text,
   TextArea,
@@ -42,16 +47,11 @@ const barSteps = ["weather", "vibe", "specifics", "custom"] as const;
 
 type BarStep = (typeof barSteps)[number];
 
-// Photos live in the public Supabase bucket the product images use, until occasions
-// come from the backend. Travel reuses festive.png until it has a photo of its own.
-const occasionImageBase =
-  "https://zrjwxlrjnnohojbassya.supabase.co/storage/v1/object/public/image_data/occasions";
-
 const occasions = [
-  { name: "Workday", src: `${occasionImageBase}/workwear.png` },
-  { name: "Night Out", src: `${occasionImageBase}/nightout.png` },
-  { name: "Weekend", src: `${occasionImageBase}/casual.png` },
-  { name: "Travel", src: `${occasionImageBase}/festive.png` },
+  { name: "Work Day", src: workDayPhoto },
+  { name: "Wedding", src: weddingPhoto },
+  { name: "Casual Outing", src: casualOutingPhoto },
+  { name: "Night Out", src: nightOutPhoto },
 ];
 
 const weathers = Object.values(RecommendationWeather);
@@ -71,6 +71,8 @@ function CreateOutfit() {
   const [returnToReview, setReturnToReview] = useState(false);
   const [cardOccasion, setCardOccasion] = useState<string | null>(null);
   const [customOccasion, setCustomOccasion] = useState("");
+  const [customOccasionOpen, setCustomOccasionOpen] = useState(false);
+  const [customOccasionDraft, setCustomOccasionDraft] = useState("");
   const [weather, setWeather] = useState<RecommendationWeather | null>(null);
   const [vibe, setVibe] = useState<RecommendationVibe | null>(null);
   // Held only to drive the screen: picking B&C items to style is out of scope, so it is never sent.
@@ -82,11 +84,22 @@ function CreateOutfit() {
 
   function selectCard(occasion: string, pressed: boolean) {
     setCardOccasion(pressed ? occasion : null);
+
+    if (pressed) {
+      setCustomOccasion("");
+    }
   }
 
-  function switchToCustomOccasion(text: string) {
-    setCustomOccasion(text);
+  function openCustomOccasion() {
+    setCustomOccasionDraft(customOccasion);
+    setCustomOccasionOpen(true);
+  }
+
+  function confirmCustomOccasion() {
+    setCustomOccasion(customOccasionDraft.trim());
     setCardOccasion(null);
+    setCustomOccasionOpen(false);
+    advanceTo("weather");
   }
 
   function advanceTo(next: Step) {
@@ -221,33 +234,48 @@ function CreateOutfit() {
   }
 
   return (
-    <Page className="flex flex-col items-center gap-lg">
-      <Text variant="heading">What's the occasion?</Text>
-      <Box className="grid w-full max-w-content-xl grid-cols-2 gap-md md:grid-cols-4">
+    <Page className="flex flex-col items-center justify-center gap-xl">
+      <h1 className="font-serif text-display">What’s the occasion?</h1>
+      <Box className="flex flex-wrap items-start justify-center gap-lg">
         {occasions.map(({ name, src }) => (
           <ImageOptionCard
             key={name}
-            label={name}
+            // A wrapping `uppercase` doesn't reach the label: Tailwind's preflight resets
+            // text-transform on buttons, and the card is one.
+            label={name.toUpperCase()}
             src={src}
+            size="lg"
             pressed={cardOccasion === name}
             onPressedChange={(pressed) => selectCard(name, pressed)}
           />
         ))}
+        <AddTile title="Something else?" label="Add your own" onClick={openCustomOccasion} />
       </Box>
-      <Text variant="caption">OR</Text>
-      <SearchField
-        label="Describe your own occasion"
-        placeholder="Describe your own…"
-        value={customOccasion}
-        onValueChange={switchToCustomOccasion}
-        onSubmit={continueFromOccasion}
-        onClick={() => setCardOccasion(null)}
-        // The endpoint caps occasion at 100 characters.
-        maxLength={100}
-        inactive={cardOccasion !== null}
-        className="max-w-content-md"
-      />
-      <Button label="Continue" disabled={!canContinue} onClick={continueFromOccasion} />
+      <Button label="Next" disabled={!canContinue} onClick={continueFromOccasion} />
+      <Modal
+        open={customOccasionOpen}
+        onClose={() => setCustomOccasionOpen(false)}
+        title="Describe your own occasion"
+        dismissible
+        actions={[
+          { label: "Cancel", variant: "ghost", onClick: () => setCustomOccasionOpen(false) },
+          {
+            label: "Confirm",
+            variant: "primary",
+            disabled: customOccasionDraft.trim() === "",
+            onClick: confirmCustomOccasion,
+          },
+        ]}
+      >
+        <TextArea
+          label="Describe the occasion"
+          placeholder="Type here…"
+          // The endpoint caps occasion at 100 characters.
+          maxLength={100}
+          value={customOccasionDraft}
+          onValueChange={setCustomOccasionDraft}
+        />
+      </Modal>
     </Page>
   );
 }
