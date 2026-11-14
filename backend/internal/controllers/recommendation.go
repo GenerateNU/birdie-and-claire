@@ -49,6 +49,10 @@ func (input *RecommendProductsInput) Resolve(huma.Context) []error {
 			if !slices.Contains(models.RecommendationWeathers, detail.Value) {
 				problems = append(problems, &huma.ErrorDetail{Location: location + ".value", Message: "value must be a listed weather", Value: detail.Value})
 			}
+		case models.DetailSetting:
+			if !slices.Contains(models.RecommendationSettings, detail.Value) {
+				problems = append(problems, &huma.ErrorDetail{Location: location + ".value", Message: "value must be a listed setting", Value: detail.Value})
+			}
 		case models.DetailVibe:
 			if !slices.Contains(models.RecommendationVibes, detail.Value) {
 				problems = append(problems, &huma.ErrorDetail{Location: location + ".value", Message: "value must be a listed vibe", Value: detail.Value})
