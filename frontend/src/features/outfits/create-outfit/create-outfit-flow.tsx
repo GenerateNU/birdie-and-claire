@@ -220,6 +220,7 @@ export function CreateOutfitFlow() {
         onBack={() => goBackTo("vibe")}
       >
         <Box className="mx-auto max-w-content-sm">
+          {/* Yes and No both continue, and the answer isn't sent, until the catalog screen exists. */}
           <ChoiceGroup
             options={specificsOptions}
             value={null}

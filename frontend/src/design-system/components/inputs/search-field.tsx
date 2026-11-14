@@ -9,8 +9,8 @@ const inputClasses = "w-full rounded-sm border bg-background px-sm py-xs focus-r
 
 // sm is the Figma field with 13px text and a 12px leading icon.
 const sizeClasses = {
-  md: { text: "text-body", iconPadding: "pl-xxxl", icon: "size-lg" },
-  sm: { text: "text-body-s", iconPadding: "pl-xxl", icon: "size-sm" },
+  md: { textClass: "text-body", iconPaddingClass: "pl-xxxl", iconClass: "size-lg" },
+  sm: { textClass: "text-body-s", iconPaddingClass: "pl-xxl", iconClass: "size-sm" },
 } as const;
 
 type SearchFieldProps = {
@@ -40,8 +40,8 @@ export function SearchField({
   size = "md",
   className,
 }: SearchFieldProps) {
-  const { text, iconPadding, icon } = sizeClasses[size];
-  const sizedClasses = `${inputClasses} ${text}`;
+  const { textClass, iconPaddingClass, iconClass } = sizeClasses[size];
+  const sizedClasses = `${inputClasses} ${textClass}`;
   const stateClasses = inactive ? `${sizedClasses} text-secondary` : sizedClasses;
 
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
@@ -64,7 +64,7 @@ export function SearchField({
       maxLength={maxLength}
       enterKeyHint="go"
       className={
-        LeadingIcon ? `${stateClasses} ${iconPadding}` : joinClasses(stateClasses, className)
+        LeadingIcon ? `${stateClasses} ${iconPaddingClass}` : joinClasses(stateClasses, className)
       }
     />
   );
@@ -77,7 +77,7 @@ export function SearchField({
     <Box className={joinClasses("relative", className)}>
       <LeadingIcon
         aria-hidden="true"
-        className={`pointer-events-none absolute left-sm top-1/2 ${icon} -translate-y-1/2 text-secondary`}
+        className={`pointer-events-none absolute left-sm top-1/2 ${iconClass} -translate-y-1/2 text-secondary`}
       />
       {input}
     </Box>

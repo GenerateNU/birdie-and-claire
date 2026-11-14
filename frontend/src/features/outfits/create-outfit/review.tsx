@@ -110,6 +110,7 @@ export function Review({
       title: "Vibe",
       value: vibeCards.find((card) => card.vibe === vibe)?.label ?? "None",
     },
+    // Always "None" until catalog selection exists.
     { step: "specifics", icon: CoatHangerIcon, title: "Items to include", value: "None" },
     {
       step: "custom",
