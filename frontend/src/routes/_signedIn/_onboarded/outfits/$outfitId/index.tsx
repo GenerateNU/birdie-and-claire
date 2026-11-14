@@ -15,11 +15,6 @@ export const Route = createFileRoute("/_signedIn/_onboarded/outfits/$outfitId/")
   component: OutfitDetailsPage,
 });
 
-// Placeholders until outfits have descriptions and tags (#119).
-const PLACEHOLDER_DESCRIPTION = "This is a short description about the outfit...";
-
-const PLACEHOLDER_TAGS = ["Tag 1", "Tag 2", "Tag 3"];
-
 // SAFETY: CSSProperties has no index for custom properties; the value is a plain string.
 const canvasRatioStyle = {
   "--canvas-ratio": `${CANVAS_SIZE.width} / ${CANVAS_SIZE.height}`,
@@ -59,7 +54,7 @@ function OutfitDetailsPage() {
     );
   }
 
-  const { name, products } = outfitQuery.data;
+  const { name, description, tags, products } = outfitQuery.data;
 
   return (
     <main className="flex flex-col gap-xl p-md lg:h-screen lg:flex-row lg:gap-xxxl lg:p-xxl">
@@ -96,9 +91,9 @@ function OutfitDetailsPage() {
           <Text variant="display-hifi" className="break-words">
             {name}
           </Text>
-          <Text variant="body-l">{PLACEHOLDER_DESCRIPTION}</Text>
+          {description && <Text variant="body-l">{description}</Text>}
           <ul className="flex flex-wrap gap-sm py-sm">
-            {PLACEHOLDER_TAGS.map((tag) => (
+            {tags.map((tag) => (
               // Static text styled like a Chip: tags aren't selectable on this page.
               <li
                 key={tag}

@@ -44,15 +44,15 @@ func NewOutfitRepository(database *sql.DB) OutfitRepository {
 func (r *outfitRepository) Create(ctx context.Context, params models.CreateOutfitParams, userID uuid.UUID) (models.Outfit, []models.ProductResponse, error) {
 	rows, err := r.db.QueryContext(ctx, `
 		WITH new_outfit AS (
-			INSERT INTO outfits (user_id, name)
-			VALUES ($1, $2)
-			RETURNING id, user_id, name, shared_at, created_at, updated_at
+			INSERT INTO outfits (user_id, name, description, tags)
+			VALUES ($1, $2, $4, COALESCE($5::text[], '{}'))
+			RETURNING id, user_id, name, description, tags, shared_at, created_at, updated_at
 		), new_outfit_products AS (
 			INSERT INTO outfit_products (outfit_id, product_id)
 			SELECT new_outfit.id, unnest($3::uuid[]) FROM new_outfit
 			RETURNING outfit_id, product_id
 		)
-		SELECT o.id, o.user_id, o.name, o.shared_at, o.created_at, o.updated_at,
+		SELECT o.id, o.user_id, o.name, o.description, o.tags, o.shared_at, o.created_at, o.updated_at,
 			p.id, p.shopify_id, p.handle, p.title, p.product_type, p.slot, p.source, p.tags, p.created_at, p.updated_at,
 			first_image.url
 		-- A WITH's parts share one snapshot, so the outfit_products table can't see these rows yet.
@@ -68,7 +68,7 @@ func (r *outfitRepository) Create(ctx context.Context, params models.CreateOutfi
 		) first_image ON true
 		-- Head to toe, the order the outfit pages list pieces in.
 		ORDER BY array_position(ARRAY['top', 'one_piece', 'bottom', 'shoe', 'accessory']::product_slot[], p.slot), p.id
-	`, userID, params.Name, params.ProductIDs)
+	`, userID, params.Name, params.ProductIDs, params.Description, params.Tags)
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) && pgErr.Code == foreignKeyViolation && pgErr.ConstraintName == outfitProductFKey {
 		return models.Outfit{}, nil, fmt.Errorf("create outfit: unknown product: %w", errs.ErrConflict)
@@ -85,7 +85,7 @@ func (r *outfitRepository) Create(ctx context.Context, params models.CreateOutfi
 	products := make([]models.ProductResponse, 0, len(params.ProductIDs))
 	for rows.Next() {
 		var product models.ProductResponse
-		targets := []any{&outfit.ID, &outfit.UserID, &outfit.Name, &outfit.SharedAt, &outfit.CreatedAt, &outfit.UpdatedAt}
+		targets := []any{&outfit.ID, &outfit.UserID, &outfit.Name, &outfit.Description, &outfit.Tags, &outfit.SharedAt, &outfit.CreatedAt, &outfit.UpdatedAt}
 		if err := rows.Scan(append(targets, productScanTargets(&product)...)...); err != nil {
 			return models.Outfit{}, nil, fmt.Errorf("scan created outfit: %w", err)
 		}
@@ -110,7 +110,7 @@ type querier interface {
 
 func getOutfitByID(ctx context.Context, dbOrTx querier, id uuid.UUID, userID uuid.UUID) (models.Outfit, []models.ProductResponse, error) {
 	rows, err := dbOrTx.QueryContext(ctx, `
-		SELECT o.id, o.user_id, o.name, o.shared_at, o.created_at, o.updated_at,
+		SELECT o.id, o.user_id, o.name, o.description, o.tags, o.shared_at, o.created_at, o.updated_at,
 			p.id, p.shopify_id, p.handle, p.title, p.product_type, p.slot, p.source, p.tags, p.created_at, p.updated_at,
 			first_image.url
 		FROM outfits o
@@ -153,10 +153,13 @@ func (r *outfitRepository) Update(ctx context.Context, id uuid.UUID, params mode
 	var updated uuid.UUID
 	err = tx.QueryRowContext(ctx, `
 		UPDATE outfits
-		SET name = COALESCE(NULLIF($3, ''), name), updated_at = now()
+		SET name = COALESCE(NULLIF($3, ''), name),
+			description = COALESCE($4::text, description),
+			tags = COALESCE($5::text[], tags),
+			updated_at = now()
 		WHERE id = $1 AND user_id = $2
 		RETURNING id
-	`, id, userID, params.Name).Scan(&updated)
+	`, id, userID, params.Name, params.Description, params.Tags).Scan(&updated)
 	if errors.Is(err, sql.ErrNoRows) {
 		return models.Outfit{}, nil, errs.ErrNotFound
 	}
@@ -198,7 +201,7 @@ func (r *outfitRepository) Update(ctx context.Context, id uuid.UUID, params mode
 // GetShared returns ErrNotFound for a private outfit as well as a missing one.
 func (r *outfitRepository) GetShared(ctx context.Context, id uuid.UUID) (models.Outfit, string, []models.ProductResponse, error) {
 	rows, err := r.db.QueryContext(ctx, `
-		SELECT o.id, o.user_id, o.name, o.shared_at, o.created_at, o.updated_at, COALESCE(u.name, ''),
+		SELECT o.id, o.user_id, o.name, o.description, o.tags, o.shared_at, o.created_at, o.updated_at, COALESCE(u.name, ''),
 			p.id, p.shopify_id, p.handle, p.title, p.product_type, p.slot, p.source, p.tags, p.created_at, p.updated_at,
 			first_image.url
 		FROM outfits o
@@ -278,7 +281,7 @@ func (r *outfitRepository) List(ctx context.Context, userID uuid.UUID, params pa
 
 	// No products join: under LIMIT it would count joined rows, not outfits.
 	rows, err := r.db.QueryContext(ctx, `
-		SELECT id, user_id, name, shared_at, created_at, updated_at
+		SELECT id, user_id, name, description, tags, shared_at, created_at, updated_at
 		FROM outfits
 		WHERE user_id = $1
 			AND ($2::timestamptz IS NULL OR (created_at, id) < ($2::timestamptz, $3::uuid))
@@ -294,7 +297,7 @@ func (r *outfitRepository) List(ctx context.Context, userID uuid.UUID, params pa
 	outfits := make([]models.Outfit, 0, params.Limit+1)
 	for rows.Next() {
 		var outfit models.Outfit
-		if err := rows.Scan(&outfit.ID, &outfit.UserID, &outfit.Name, &outfit.SharedAt, &outfit.CreatedAt, &outfit.UpdatedAt); err != nil {
+		if err := rows.Scan(&outfit.ID, &outfit.UserID, &outfit.Name, &outfit.Description, &outfit.Tags, &outfit.SharedAt, &outfit.CreatedAt, &outfit.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("list outfits for user %s: scan: %w", userID, err)
 		}
 		outfits = append(outfits, outfit)
@@ -328,6 +331,8 @@ func scanOutfitWithProducts(rows *sql.Rows, includeOwner bool) (models.Outfit, s
 			&outfit.ID,
 			&outfit.UserID,
 			&outfit.Name,
+			&outfit.Description,
+			&outfit.Tags,
 			&outfit.SharedAt,
 			&outfit.CreatedAt,
 			&outfit.UpdatedAt,

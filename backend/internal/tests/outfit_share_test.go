@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"net/http"
+	"slices"
 	"testing"
 
 	"birdie-and-claire/internal/auth"
@@ -104,6 +105,28 @@ func TestSharedOutfitIsReadableOnlyWhileShared(t *testing.T) {
 
 	_, _, _, err = repo.GetShared(ctx, uuid.New())
 	wantNotFound(t, err)
+}
+
+func TestSharedOutfitShowsDescriptionAndTags(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	repo := repository.NewOutfitRepository(db)
+	outfitID, ownerID := insertTestOutfit(t, db)
+	description := "Rainy day brunch"
+	if _, _, err := repo.Update(ctx, outfitID, models.UpdateOutfitParams{Description: &description, Tags: []string{"rain", "casual"}}, ownerID); err != nil {
+		t.Fatalf("update: %v", err)
+	}
+	if err := repo.Share(ctx, outfitID, ownerID); err != nil {
+		t.Fatalf("share: %v", err)
+	}
+
+	shared, err := services.NewOutfitService(repository.New(db)).GetShared(ctx, outfitID)
+	if err != nil {
+		t.Fatalf("get shared outfit: %v", err)
+	}
+	if shared.Description != description || !slices.Equal(shared.Tags, []string{"rain", "casual"}) {
+		t.Fatalf("description = %q, tags = %v, want %q, [rain casual]", shared.Description, shared.Tags, description)
+	}
 }
 
 func TestShareLinksToFrontendPageAndCreditsOwner(t *testing.T) {
