@@ -264,6 +264,7 @@ components:
             - bottom
             - accessory
             - shoe
+            - one_piece
           type: string
         source:
           description: birdie_and_claire for a product sold in the store, demo for seeded filler that is not for sale
@@ -416,6 +417,7 @@ components:
             - bottom
             - accessory
             - shoe
+            - one_piece
           type: string
         source:
           description: birdie_and_claire for a product sold in the store, demo for seeded filler that is not for sale

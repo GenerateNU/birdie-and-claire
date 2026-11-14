@@ -159,7 +159,7 @@ func lowercaseTags(tags []string) []string {
 }
 
 // picks are listed in this order so the same picks always produce the same prompt text, whatever order they were
-// saved in. dress is left out because outfits have no dress slot (#117).
+// saved in. dress is left out because recommended outfits don't include one-pieces yet.
 var (
 	bottomsInOnboardingOrder = []string{"pants", "skirt", "shorts"}
 	shoesInOnboardingOrder   = []string{"sneakers", "boots", "sandals", "heels", "flats"}
