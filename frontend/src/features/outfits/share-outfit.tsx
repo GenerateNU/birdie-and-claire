@@ -1,10 +1,10 @@
 import {
-  ChatCircleText,
-  EnvelopeSimple,
-  InstagramLogo,
-  RedditLogo,
-  ShareNetwork,
-  XLogo,
+  ChatCircleTextIcon,
+  EnvelopeSimpleIcon,
+  InstagramLogoIcon,
+  RedditLogoIcon,
+  ShareIcon,
+  XLogoIcon,
 } from "@phosphor-icons/react";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
@@ -27,11 +27,11 @@ type ShareOutfitProps = {
 
 // Shown but disabled until sharing to each app is built.
 const SHARE_TARGETS = [
-  { name: "Messages", Icon: ChatCircleText },
-  { name: "Instagram", Icon: InstagramLogo },
-  { name: "X", Icon: XLogo },
-  { name: "Gmail", Icon: EnvelopeSimple },
-  { name: "Reddit", Icon: RedditLogo },
+  { name: "Messages", Icon: ChatCircleTextIcon },
+  { name: "Instagram", Icon: InstagramLogoIcon },
+  { name: "X", Icon: XLogoIcon },
+  { name: "Gmail", Icon: EnvelopeSimpleIcon },
+  { name: "Reddit", Icon: RedditLogoIcon },
 ];
 
 /** The Share button and the dialog it opens, which holds the outfit's public link. */
@@ -67,7 +67,7 @@ export function ShareOutfit({ outfitId }: ShareOutfitProps) {
 
   return (
     <>
-      <Button label="Share" leadingIcon={ShareNetwork} onClick={openDialog} />
+      <Button label="Share" size="sm" leadingIcon={ShareIcon} onClick={openDialog} />
       <Modal open={open} onClose={() => setOpen(false)} title="Share" actions={[]} dismissible>
         {share.isPending && <Spinner />}
         {share.isError && (

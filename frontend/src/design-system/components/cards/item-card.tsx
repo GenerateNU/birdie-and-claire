@@ -28,6 +28,14 @@ const sizeClasses = {
     checkBox: "size-control",
     checkIconSize: 12,
   },
+  xs: {
+    card: "w-item-xs",
+    photo: "h-item-xs",
+    name: "text-label-s",
+    stamp: "size-stamp-sm",
+    checkBox: "size-control",
+    checkIconSize: 12,
+  },
 };
 
 type ItemCardProps = {

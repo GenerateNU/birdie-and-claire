@@ -12,10 +12,12 @@ type PieceRowProps = {
   type: "owned" | "bc";
   /** A TextButton for Swap on an owned piece, or a small secondary Button for Add to cart. */
   action?: ReactNode;
+  /** A second control stacked under `action`, such as View product beside Add to cart. */
+  secondaryAction?: ReactNode;
 };
 
 /** One piece in an outfit, as a row with a thumbnail. Fills the width it is given. */
-export function PieceRow({ name, detail, src, type, action }: PieceRowProps) {
+export function PieceRow({ name, detail, src, type, action, secondaryAction }: PieceRowProps) {
   return (
     <Box className="flex w-full items-center gap-md border-b py-sm text-primary">
       <Box className="relative h-row-thumbnail w-row-thumbnail shrink-0 overflow-hidden bg-surface">
@@ -32,7 +34,12 @@ export function PieceRow({ name, detail, src, type, action }: PieceRowProps) {
         <Box className="text-label-l-strong">{name}</Box>
         <Box className="text-body-s text-secondary">{detail}</Box>
       </Box>
-      {action && <Box className="shrink-0">{action}</Box>}
+      {(action || secondaryAction) && (
+        <Box className="flex shrink-0 flex-col gap-xs">
+          {action}
+          {secondaryAction}
+        </Box>
+      )}
     </Box>
   );
 }
