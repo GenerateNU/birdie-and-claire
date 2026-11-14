@@ -56,6 +56,10 @@ export const ItemCardSize = {
   xs: { width: "80px", photoHeight: "80px" },
 } as const;
 
+// Two rows of medium item cards and the gap between them (`h-item-grid`), from Figma: each row is
+// the photo, the 8px gap, and a one-line name.
+export const ItemGridHeight = "518px";
+
 // The B&C stamp on an item card's photo (`size-stamp-*`), from Figma.
 export const StampSize = { md: "48px", sm: "36px" } as const;
 

@@ -16,6 +16,8 @@ type OwnedProductService interface {
 	ListOwnedProducts(ctx context.Context, params pagination.CursorParams) (pagination.Page[models.OwnedProductResponse], error)
 	// AddOwnedProducts fails with errs.ErrConflict when a product is not in the catalog.
 	AddOwnedProducts(ctx context.Context, productIDs []uuid.UUID) error
+	// UpdateOwnedProducts fails with errs.ErrConflict when an added product is not in the catalog.
+	UpdateOwnedProducts(ctx context.Context, addIDs, removeIDs []uuid.UUID) error
 	RemoveOwnedProduct(ctx context.Context, productID uuid.UUID) error
 }
 
@@ -33,6 +35,10 @@ func (s *ownedProductService) ListOwnedProducts(ctx context.Context, params pagi
 
 func (s *ownedProductService) AddOwnedProducts(ctx context.Context, productIDs []uuid.UUID) error {
 	return s.repo.OwnedProduct.AddOwnedProducts(ctx, auth.UserID(ctx), productIDs)
+}
+
+func (s *ownedProductService) UpdateOwnedProducts(ctx context.Context, addIDs, removeIDs []uuid.UUID) error {
+	return s.repo.OwnedProduct.UpdateOwnedProducts(ctx, auth.UserID(ctx), addIDs, removeIDs)
 }
 
 func (s *ownedProductService) RemoveOwnedProduct(ctx context.Context, productID uuid.UUID) error {

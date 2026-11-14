@@ -3,6 +3,7 @@ package tests
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"math/rand/v2"
 	"net/http"
 	"slices"
@@ -397,16 +398,17 @@ func TestBirdieAndClaireProductsListByCategory(t *testing.T) {
 	sweaters := "Sweaters"
 	tunics := "Tunics"
 	birdieAndClaire := models.SourceBirdieAndClaire
+	const active, inactive = true, false
 
-	top := insertCatalogProduct(t, db, birdieAndClaire, models.SlotTop, &tunics, true, future.Add(9*time.Hour))
-	untypedTop := insertCatalogProduct(t, db, birdieAndClaire, models.SlotTop, nil, true, future.Add(8*time.Hour))
-	sweater := insertCatalogProduct(t, db, birdieAndClaire, models.SlotTop, &sweaters, true, future.Add(7*time.Hour))
-	bottom := insertCatalogProduct(t, db, birdieAndClaire, models.SlotBottom, nil, true, future.Add(6*time.Hour))
-	onePiece := insertCatalogProduct(t, db, birdieAndClaire, models.SlotOnePiece, nil, true, future.Add(5*time.Hour))
-	accessory := insertCatalogProduct(t, db, birdieAndClaire, models.SlotAccessory, nil, true, future.Add(4*time.Hour))
-	demoTop := insertCatalogProduct(t, db, models.SourceDemo, models.SlotTop, nil, true, future.Add(10*time.Hour))
-	inactiveTop := insertCatalogProduct(t, db, birdieAndClaire, models.SlotTop, nil, false, future.Add(11*time.Hour))
-	ownedTop := insertCatalogProduct(t, db, birdieAndClaire, models.SlotTop, nil, true, future.Add(12*time.Hour))
+	ownedTop := insertCatalogProduct(t, db, birdieAndClaire, models.SlotTop, nil, active, future.Add(12*time.Hour))
+	inactiveTop := insertCatalogProduct(t, db, birdieAndClaire, models.SlotTop, nil, inactive, future.Add(11*time.Hour))
+	demoTop := insertCatalogProduct(t, db, models.SourceDemo, models.SlotTop, nil, active, future.Add(10*time.Hour))
+	top := insertCatalogProduct(t, db, birdieAndClaire, models.SlotTop, &tunics, active, future.Add(9*time.Hour))
+	untypedTop := insertCatalogProduct(t, db, birdieAndClaire, models.SlotTop, nil, active, future.Add(8*time.Hour))
+	sweater := insertCatalogProduct(t, db, birdieAndClaire, models.SlotTop, &sweaters, active, future.Add(7*time.Hour))
+	bottom := insertCatalogProduct(t, db, birdieAndClaire, models.SlotBottom, nil, active, future.Add(6*time.Hour))
+	onePiece := insertCatalogProduct(t, db, birdieAndClaire, models.SlotOnePiece, nil, active, future.Add(5*time.Hour))
+	accessory := insertCatalogProduct(t, db, birdieAndClaire, models.SlotAccessory, nil, active, future.Add(4*time.Hour))
 
 	if err := repository.New(db).OwnedProduct.AddOwnedProducts(context.Background(), userID, []uuid.UUID{ownedTop}); err != nil {
 		t.Fatalf("add owned: %v", err)
@@ -417,19 +419,120 @@ func TestBirdieAndClaireProductsListByCategory(t *testing.T) {
 		category models.ProductCategory
 		want     []uuid.UUID
 	}{
-		{"tops", []uuid.UUID{top, untypedTop}},
+		{"tops", []uuid.UUID{ownedTop, top, untypedTop}},
 		{"sweaters", []uuid.UUID{sweater}},
 		{"bottoms", []uuid.UUID{bottom}},
 		{"jumpsuits", []uuid.UUID{onePiece}},
 		{"accessories", []uuid.UUID{accessory}},
 	}
 	for _, tc := range cases {
-		page, err := service.ListUnownedBirdieAndClaireProducts(ctx, tc.category, cursorParams(t, len(tc.want), ""))
+		page, err := service.ListBirdieAndClaireProducts(ctx, tc.category, cursorParams(t, len(tc.want), ""))
 		if err != nil {
 			t.Fatalf("list %s: %v", tc.category, err)
 		}
-		if got := productIDs(page.Items); !slices.Equal(got, tc.want) {
-			t.Errorf("%s = %v, want %v (demo %v, inactive %v and owned %v left out)", tc.category, got, tc.want, demoTop, inactiveTop, ownedTop)
+		got := make([]uuid.UUID, 0, len(page.Items))
+		for _, item := range page.Items {
+			got = append(got, item.ID)
+			if item.Owned != (item.ID == ownedTop) {
+				t.Errorf("%s: product %v owned = %v", tc.category, item.ID, item.Owned)
+			}
 		}
+		if !slices.Equal(got, tc.want) {
+			t.Errorf("%s = %v, want %v (demo %v and inactive %v left out)", tc.category, got, tc.want, demoTop, inactiveTop)
+		}
+	}
+}
+
+func ownedProductIDs(t *testing.T, db *sql.DB, userID uuid.UUID) []uuid.UUID {
+	t.Helper()
+
+	rows, err := db.QueryContext(context.Background(), `
+		SELECT product_id FROM owned_products WHERE user_id = $1
+	`, userID)
+	if err != nil {
+		t.Fatalf("list owned: %v", err)
+	}
+	defer func() { _ = rows.Close() }()
+	ids := make([]uuid.UUID, 0)
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			t.Fatalf("scan owned: %v", err)
+		}
+		ids = append(ids, id)
+	}
+	slices.SortFunc(ids, func(a, b uuid.UUID) int { return strings.Compare(a.String(), b.String()) })
+	return ids
+}
+
+func sortedIDs(ids ...uuid.UUID) []uuid.UUID {
+	slices.SortFunc(ids, func(a, b uuid.UUID) int { return strings.Compare(a.String(), b.String()) })
+	return ids
+}
+
+func TestUpdatePiecesAddsAndRemovesTogether(t *testing.T) {
+	db := openTestDB(t)
+	userID := insertTestUser(t, db)
+	ctx := auth.WithUserID(context.Background(), userID)
+	kept := insertTestProduct(t, db)
+	removed := insertTestProduct(t, db)
+	added := insertTestProduct(t, db)
+	service := services.NewOwnedProductService(repository.New(db))
+
+	if err := service.AddOwnedProducts(ctx, []uuid.UUID{kept, removed}); err != nil {
+		t.Fatalf("add owned: %v", err)
+	}
+	notOwned := insertTestProduct(t, db)
+	if err := service.UpdateOwnedProducts(ctx, []uuid.UUID{added, kept}, []uuid.UUID{removed, notOwned}); err != nil {
+		t.Fatalf("update owned: %v", err)
+	}
+	if got, want := ownedProductIDs(t, db, userID), sortedIDs(kept, added); !slices.Equal(got, want) {
+		t.Fatalf("owned = %v, want %v", got, want)
+	}
+
+	// An unknown added product fails the whole change, so the removal in it doesn't happen either.
+	err := service.UpdateOwnedProducts(ctx, []uuid.UUID{uuid.New()}, []uuid.UUID{kept})
+	if !errors.Is(err, errs.ErrConflict) {
+		t.Fatalf("update with unknown product err = %v, want ErrConflict", err)
+	}
+	if got, want := ownedProductIDs(t, db, userID), sortedIDs(kept, added); !slices.Equal(got, want) {
+		t.Fatalf("owned after failed update = %v, want %v unchanged", got, want)
+	}
+}
+
+type updatePiecesProbeInput struct {
+	controllers.UpdateOwnedProductsInput
+}
+
+func TestUpdatePiecesValidatesProductIDs(t *testing.T) {
+	ids := newProductIDs(2)
+	tests := []struct {
+		name       string
+		body       map[string]any
+		wantStatus int
+	}{
+		{name: "add only", body: map[string]any{"add_product_ids": ids[:1], "remove_product_ids": []string{}}, wantStatus: http.StatusNoContent},
+		{name: "remove only", body: map[string]any{"add_product_ids": []string{}, "remove_product_ids": ids[:1]}, wantStatus: http.StatusNoContent},
+		{name: "nothing", body: map[string]any{"add_product_ids": []string{}, "remove_product_ids": []string{}}, wantStatus: http.StatusBadRequest},
+		{name: "missing remove", body: map[string]any{"add_product_ids": ids[:1]}, wantStatus: http.StatusUnprocessableEntity},
+		{name: "fifty one adds", body: map[string]any{"add_product_ids": newProductIDs(51), "remove_product_ids": []string{}}, wantStatus: http.StatusUnprocessableEntity},
+		{name: "same product in both", body: map[string]any{"add_product_ids": ids[:1], "remove_product_ids": ids[:1]}, wantStatus: http.StatusBadRequest},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			_, api := humatest.New(t, server.APIConfig(&config.Configuration{}))
+			huma.Register(api, huma.Operation{
+				OperationID: "update-pieces-probe",
+				Method:      http.MethodPatch,
+				Path:        "/probe",
+			}, func(_ context.Context, _ *updatePiecesProbeInput) (*struct{}, error) {
+				return nil, nil
+			})
+			response := api.Patch("/probe", test.body)
+			if response.Code != test.wantStatus {
+				t.Fatalf("status = %d, want %d: %s", response.Code, test.wantStatus, response.Body)
+			}
+		})
 	}
 }

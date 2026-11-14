@@ -8,7 +8,7 @@ export const catalogCategories = zListBirdieAndClaireProductsQuery.shape.categor
 
 export type CatalogCategory = (typeof catalogCategories)[number];
 
-/** Refetches every tab of the catalog. It leaves owned pieces out, so adding or removing one changes it. */
+/** Refetches every tab of the catalog. It marks owned pieces, so adding or removing one changes it. */
 export function invalidateBirdieAndClaireCatalog(queryClient: QueryClient) {
   return Promise.all(
     catalogCategories.map((category) =>
