@@ -28,6 +28,7 @@ type OutfitRepository interface {
 	GetByID(ctx context.Context, id uuid.UUID, userID uuid.UUID) (models.Outfit, []models.ProductResponse, error)
 	GetShared(ctx context.Context, id uuid.UUID) (models.Outfit, string, []models.ProductResponse, error)
 	Update(ctx context.Context, id uuid.UUID, params models.UpdateOutfitParams, userID uuid.UUID) (models.Outfit, []models.ProductResponse, error)
+	Delete(ctx context.Context, id uuid.UUID, userID uuid.UUID) error
 	Share(ctx context.Context, id uuid.UUID, userID uuid.UUID) error
 	Unshare(ctx context.Context, id uuid.UUID, userID uuid.UUID) error
 	List(ctx context.Context, userID uuid.UUID, params pagination.CursorParams) ([]models.Outfit, error)
@@ -196,6 +197,24 @@ func (r *outfitRepository) Update(ctx context.Context, id uuid.UUID, params mode
 		return models.Outfit{}, nil, fmt.Errorf("update outfit %s: commit: %w", id, err)
 	}
 	return outfit, products, nil
+}
+
+// Delete returns ErrNotFound for an outfit userID does not own. The outfit's
+// products and reactions go with it through ON DELETE CASCADE.
+func (r *outfitRepository) Delete(ctx context.Context, id uuid.UUID, userID uuid.UUID) error {
+	var deleted uuid.UUID
+	err := r.db.QueryRowContext(ctx, `
+		DELETE FROM outfits
+		WHERE id = $1 AND user_id = $2
+		RETURNING id
+	`, id, userID).Scan(&deleted)
+	if errors.Is(err, sql.ErrNoRows) {
+		return errs.ErrNotFound
+	}
+	if err != nil {
+		return fmt.Errorf("delete outfit %s: %w", id, err)
+	}
+	return nil
 }
 
 // GetShared returns ErrNotFound for a private outfit as well as a missing one.

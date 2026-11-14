@@ -41,6 +41,16 @@ func OutfitRoutes(api huma.API, params types.RouteParams) {
 	}, controller.Update)
 
 	huma.Register(api, huma.Operation{
+		OperationID:   "delete-outfit",
+		Method:        http.MethodDelete,
+		Path:          "/api/v1/outfits/{id}",
+		DefaultStatus: http.StatusNoContent,
+		Summary:       "Delete an outfit",
+		Description:   "The outfit's products are unlinked from it and stay in the catalog. Its reactions are deleted, and its share link stops working. Someone else's outfit and a missing one both return 404, so a repeated call returns 404.",
+		Tags:          []string{"outfits"},
+	}, controller.Delete)
+
+	huma.Register(api, huma.Operation{
 		OperationID: "suggest-outfit-items",
 		Method:      http.MethodGet,
 		Path:        "/api/v1/outfits/{id}/suggestions",

@@ -170,6 +170,14 @@ func (c *OutfitController) Unshare(ctx context.Context, input *OutfitIDInput) (*
 	return nil, nil
 }
 
+// Delete removes one of the authenticated user's outfits.
+func (c *OutfitController) Delete(ctx context.Context, input *OutfitIDInput) (*struct{}, error) {
+	if err := c.service.Delete(ctx, input.ID); err != nil {
+		return nil, errs.ToHuma(ctx, err)
+	}
+	return nil, nil
+}
+
 type SharedOutfitOutput struct {
 	Body models.SharedOutfitResponse
 }
