@@ -146,6 +146,11 @@ func (c *adminClient) ListActiveProducts(ctx context.Context) ([]ShopifyProduct,
 			if err != nil {
 				return nil, err
 			}
+			// The sync keeps the stored images while one is processing, so
+			// scoring them would be wasted.
+			if !product.HasProcessingImages {
+				product.Images = c.putGarmentShotFirst(ctx, product)
+			}
 			products = append(products, product)
 		}
 		if !page.PageInfo.HasNextPage {
