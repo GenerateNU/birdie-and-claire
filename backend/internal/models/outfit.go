@@ -9,7 +9,7 @@ import (
 )
 
 type ListOutfitsResponse struct {
-	pagination.Page[Outfit]
+	pagination.Page[OutfitResponse]
 	Total int `json:"total" doc:"How many outfits the user has saved, counting every page"`
 }
 
