@@ -76,7 +76,7 @@ function SavedOutfitBases() {
         onOpen={(outfitId) =>
           void navigate({ to: "/create-outfit/build", search: { base: outfitId } })
         }
-        showAddTile={false}
+        addTile={false}
       />
       {saved.loadMoreError && (
         <ErrorState

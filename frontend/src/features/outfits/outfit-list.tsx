@@ -16,11 +16,11 @@ type OutfitListProps = {
   hasMore: boolean;
   onLoadMore: () => void;
   onOpen: (outfitId: string) => void;
-  /** Ends the list with a tile that starts a new outfit. */
-  showAddTile: boolean;
+  /** Whether the list ends with the tile that opens the outfit builder. */
+  addTile: boolean;
 };
 
-export function OutfitList({ outfits, hasMore, onLoadMore, onOpen, showAddTile }: OutfitListProps) {
+export function OutfitList({ outfits, hasMore, onLoadMore, onOpen, addTile }: OutfitListProps) {
   const navigate = useNavigate();
   const sentinelRef = useRef<HTMLLIElement>(null);
 
@@ -65,7 +65,7 @@ export function OutfitList({ outfits, hasMore, onLoadMore, onOpen, showAddTile }
       {/* Spans the grid, so it only comes into view after the last card. */}
       {hasMore && <li ref={sentinelRef} aria-hidden="true" className="col-span-full h-px" />}
       {/* Ends the list, so it waits for the last page rather than moving as pages load. */}
-      {!hasMore && showAddTile && (
+      {!hasMore && addTile && (
         <li className="flex">
           <AddTile
             size="outfit"

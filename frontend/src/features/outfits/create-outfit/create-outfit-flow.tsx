@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import {
   RecommendationSetting,
+  type RecommendationResponse,
   type RecommendationCondition,
   type RecommendationVibe,
 } from "@/api/generated/types.gen";
@@ -35,6 +36,7 @@ import {
 } from "@/features/outfits/create-outfit/create-outfit-options";
 import { Intro } from "@/features/outfits/create-outfit/intro";
 import { QuestionsIntro } from "@/features/outfits/create-outfit/questions-intro";
+import { ResultsScreen } from "@/features/outfits/create-outfit/results-screen";
 import { Review } from "@/features/outfits/create-outfit/review";
 import { StepScreen } from "@/features/outfits/create-outfit/step-screen";
 
@@ -57,7 +59,8 @@ export function CreateOutfitFlow() {
 
 function OccasionSteps() {
   const [step, setStep] = useState<Step>("intro");
-  // Set by Review's Edit buttons, so Next or Back on the edited step goes back to Review.
+  // Set by the Edit buttons on Review and in Occasion Details, so Next or Back on the edited step
+  // goes back to Review.
   const [returnToReview, setReturnToReview] = useState(false);
   const [cardOccasion, setCardOccasion] = useState<string | null>(null);
   const [customOccasion, setCustomOccasion] = useState("");
@@ -69,6 +72,7 @@ function OccasionSteps() {
   const [conditions, setConditions] = useState<RecommendationCondition[]>([]);
   const [vibe, setVibe] = useState<RecommendationVibe | null>(null);
   const [custom, setCustom] = useState("");
+  const [outfits, setOutfits] = useState<RecommendationResponse["outfits"]>([]);
 
   const chosenOccasion = cardOccasion ?? customOccasion.trim();
   const weather = weatherTile === null ? null : tileToApiWeather[weatherTile];
@@ -119,6 +123,11 @@ function OccasionSteps() {
     }
 
     setStep(next);
+  }
+
+  function showResults(found: RecommendationResponse["outfits"]) {
+    setOutfits(found);
+    setStep("results");
   }
 
   function skipCustom() {
@@ -300,6 +309,21 @@ function OccasionSteps() {
         conditions={answeredConditions}
         vibe={vibe}
         custom={custom.trim()}
+        onEdit={editFromReview}
+        onResults={showResults}
+      />
+    );
+  }
+
+  if (step === "results") {
+    return (
+      <ResultsScreen
+        occasion={chosenOccasion}
+        weatherLabel={weatherTiles.find((tile) => tile.value === weatherTile)?.label ?? null}
+        weatherSummary={weatherSummary}
+        vibe={vibe}
+        custom={custom.trim()}
+        outfits={outfits}
         onEdit={editFromReview}
       />
     );

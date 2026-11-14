@@ -663,8 +663,8 @@ func TestCatalogSyncDeactivatesMissingProductAndKeepsSavedOutfit(t *testing.T) {
 	if err != nil {
 		t.Fatalf("FindSimilar: %v", err)
 	}
-	for _, product := range similar {
-		if product.ID == removedID {
+	for _, scored := range similar {
+		if scored.Product.ID == removedID {
 			t.Fatal("FindSimilar returned an inactive product")
 		}
 	}

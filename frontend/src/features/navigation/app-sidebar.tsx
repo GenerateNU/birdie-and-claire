@@ -29,7 +29,7 @@ const mainItems: AppSidebarItem[] = [
     label: "Saved outfits",
     icon: BookmarkSimpleIcon,
     to: "/profile/outfits",
-    activeOn: ["/profile/outfits", "/outfits/$outfitId"],
+    activeOn: ["/profile/outfits", "/profile/collections", "/outfits/$outfitId"],
   },
 ];
 

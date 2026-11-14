@@ -31,6 +31,8 @@ import { Route as SignedInOnboardedNavProfileOutfitsRouteImport } from './routes
 import { Route as SignedInOnboardedNavProfilePiecesRouteImport } from './routes/_signedIn/_onboarded/_nav/profile/pieces'
 import { Route as SignedInOnboardedOutfitsOutfitIdEditRouteImport } from './routes/_signedIn/_onboarded/outfits/$outfitId/edit'
 import { Route as SignedInOnboardedNavOutfitsOutfitIdIndexRouteImport } from './routes/_signedIn/_onboarded/_nav/outfits/$outfitId/index'
+import { Route as SignedInOnboardedNavProfileCollectionsIndexRouteImport } from './routes/_signedIn/_onboarded/_nav/profile/collections/index'
+import { Route as SignedInOnboardedNavProfileCollectionsCollectionIdRouteImport } from './routes/_signedIn/_onboarded/_nav/profile/collections/$collectionId'
 import { Route as SignedInOnboardedNavProfileSettingsIndexRouteImport } from './routes/_signedIn/_onboarded/_nav/profile/settings/index'
 import { Route as SignedInOnboardedNavProfileSettingsStylePreferencesRouteImport } from './routes/_signedIn/_onboarded/_nav/profile/settings/style-preferences'
 
@@ -154,6 +156,18 @@ const SignedInOnboardedNavOutfitsOutfitIdIndexRoute =
     path: '/outfits/$outfitId/',
     getParentRoute: () => SignedInOnboardedNavRouteRoute,
   } as any)
+const SignedInOnboardedNavProfileCollectionsIndexRoute =
+  SignedInOnboardedNavProfileCollectionsIndexRouteImport.update({
+    id: '/collections/',
+    path: '/collections/',
+    getParentRoute: () => SignedInOnboardedNavProfileRouteRoute,
+  } as any)
+const SignedInOnboardedNavProfileCollectionsCollectionIdRoute =
+  SignedInOnboardedNavProfileCollectionsCollectionIdRouteImport.update({
+    id: '/collections/$collectionId',
+    path: '/collections/$collectionId',
+    getParentRoute: () => SignedInOnboardedNavProfileRouteRoute,
+  } as any)
 const SignedInOnboardedNavProfileSettingsIndexRoute =
   SignedInOnboardedNavProfileSettingsIndexRouteImport.update({
     id: '/settings/',
@@ -186,8 +200,10 @@ export interface FileRoutesByFullPath {
   '/profile/pieces': typeof SignedInOnboardedNavProfilePiecesRoute
   '/outfits/$outfitId/edit': typeof SignedInOnboardedOutfitsOutfitIdEditRoute
   '/profile/': typeof SignedInOnboardedNavProfileIndexRoute
+  '/profile/collections/$collectionId': typeof SignedInOnboardedNavProfileCollectionsCollectionIdRoute
   '/profile/settings/style-preferences': typeof SignedInOnboardedNavProfileSettingsStylePreferencesRoute
   '/outfits/$outfitId/': typeof SignedInOnboardedNavOutfitsOutfitIdIndexRoute
+  '/profile/collections/': typeof SignedInOnboardedNavProfileCollectionsIndexRoute
   '/profile/settings/': typeof SignedInOnboardedNavProfileSettingsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -208,8 +224,10 @@ export interface FileRoutesByTo {
   '/profile/pieces': typeof SignedInOnboardedNavProfilePiecesRoute
   '/outfits/$outfitId/edit': typeof SignedInOnboardedOutfitsOutfitIdEditRoute
   '/profile': typeof SignedInOnboardedNavProfileIndexRoute
+  '/profile/collections/$collectionId': typeof SignedInOnboardedNavProfileCollectionsCollectionIdRoute
   '/profile/settings/style-preferences': typeof SignedInOnboardedNavProfileSettingsStylePreferencesRoute
   '/outfits/$outfitId': typeof SignedInOnboardedNavOutfitsOutfitIdIndexRoute
+  '/profile/collections': typeof SignedInOnboardedNavProfileCollectionsIndexRoute
   '/profile/settings': typeof SignedInOnboardedNavProfileSettingsIndexRoute
 }
 export interface FileRoutesById {
@@ -235,8 +253,10 @@ export interface FileRoutesById {
   '/_signedIn/_onboarded/_nav/profile/pieces': typeof SignedInOnboardedNavProfilePiecesRoute
   '/_signedIn/_onboarded/outfits/$outfitId/edit': typeof SignedInOnboardedOutfitsOutfitIdEditRoute
   '/_signedIn/_onboarded/_nav/profile/': typeof SignedInOnboardedNavProfileIndexRoute
+  '/_signedIn/_onboarded/_nav/profile/collections/$collectionId': typeof SignedInOnboardedNavProfileCollectionsCollectionIdRoute
   '/_signedIn/_onboarded/_nav/profile/settings/style-preferences': typeof SignedInOnboardedNavProfileSettingsStylePreferencesRoute
   '/_signedIn/_onboarded/_nav/outfits/$outfitId/': typeof SignedInOnboardedNavOutfitsOutfitIdIndexRoute
+  '/_signedIn/_onboarded/_nav/profile/collections/': typeof SignedInOnboardedNavProfileCollectionsIndexRoute
   '/_signedIn/_onboarded/_nav/profile/settings/': typeof SignedInOnboardedNavProfileSettingsIndexRoute
 }
 export interface FileRouteTypes {
@@ -260,8 +280,10 @@ export interface FileRouteTypes {
     | '/profile/pieces'
     | '/outfits/$outfitId/edit'
     | '/profile/'
+    | '/profile/collections/$collectionId'
     | '/profile/settings/style-preferences'
     | '/outfits/$outfitId/'
+    | '/profile/collections/'
     | '/profile/settings/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -282,8 +304,10 @@ export interface FileRouteTypes {
     | '/profile/pieces'
     | '/outfits/$outfitId/edit'
     | '/profile'
+    | '/profile/collections/$collectionId'
     | '/profile/settings/style-preferences'
     | '/outfits/$outfitId'
+    | '/profile/collections'
     | '/profile/settings'
   id:
     | '__root__'
@@ -308,8 +332,10 @@ export interface FileRouteTypes {
     | '/_signedIn/_onboarded/_nav/profile/pieces'
     | '/_signedIn/_onboarded/outfits/$outfitId/edit'
     | '/_signedIn/_onboarded/_nav/profile/'
+    | '/_signedIn/_onboarded/_nav/profile/collections/$collectionId'
     | '/_signedIn/_onboarded/_nav/profile/settings/style-preferences'
     | '/_signedIn/_onboarded/_nav/outfits/$outfitId/'
+    | '/_signedIn/_onboarded/_nav/profile/collections/'
     | '/_signedIn/_onboarded/_nav/profile/settings/'
   fileRoutesById: FileRoutesById
 }
@@ -477,6 +503,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignedInOnboardedNavOutfitsOutfitIdIndexRouteImport
       parentRoute: typeof SignedInOnboardedNavRouteRoute
     }
+    '/_signedIn/_onboarded/_nav/profile/collections/': {
+      id: '/_signedIn/_onboarded/_nav/profile/collections/'
+      path: '/collections'
+      fullPath: '/profile/collections/'
+      preLoaderRoute: typeof SignedInOnboardedNavProfileCollectionsIndexRouteImport
+      parentRoute: typeof SignedInOnboardedNavProfileRouteRoute
+    }
+    '/_signedIn/_onboarded/_nav/profile/collections/$collectionId': {
+      id: '/_signedIn/_onboarded/_nav/profile/collections/$collectionId'
+      path: '/collections/$collectionId'
+      fullPath: '/profile/collections/$collectionId'
+      preLoaderRoute: typeof SignedInOnboardedNavProfileCollectionsCollectionIdRouteImport
+      parentRoute: typeof SignedInOnboardedNavProfileRouteRoute
+    }
     '/_signedIn/_onboarded/_nav/profile/settings/': {
       id: '/_signedIn/_onboarded/_nav/profile/settings/'
       path: '/settings'
@@ -498,7 +538,9 @@ interface SignedInOnboardedNavProfileRouteRouteChildren {
   SignedInOnboardedNavProfileOutfitsRoute: typeof SignedInOnboardedNavProfileOutfitsRoute
   SignedInOnboardedNavProfilePiecesRoute: typeof SignedInOnboardedNavProfilePiecesRoute
   SignedInOnboardedNavProfileIndexRoute: typeof SignedInOnboardedNavProfileIndexRoute
+  SignedInOnboardedNavProfileCollectionsCollectionIdRoute: typeof SignedInOnboardedNavProfileCollectionsCollectionIdRoute
   SignedInOnboardedNavProfileSettingsStylePreferencesRoute: typeof SignedInOnboardedNavProfileSettingsStylePreferencesRoute
+  SignedInOnboardedNavProfileCollectionsIndexRoute: typeof SignedInOnboardedNavProfileCollectionsIndexRoute
   SignedInOnboardedNavProfileSettingsIndexRoute: typeof SignedInOnboardedNavProfileSettingsIndexRoute
 }
 
@@ -510,8 +552,12 @@ const SignedInOnboardedNavProfileRouteRouteChildren: SignedInOnboardedNavProfile
       SignedInOnboardedNavProfilePiecesRoute,
     SignedInOnboardedNavProfileIndexRoute:
       SignedInOnboardedNavProfileIndexRoute,
+    SignedInOnboardedNavProfileCollectionsCollectionIdRoute:
+      SignedInOnboardedNavProfileCollectionsCollectionIdRoute,
     SignedInOnboardedNavProfileSettingsStylePreferencesRoute:
       SignedInOnboardedNavProfileSettingsStylePreferencesRoute,
+    SignedInOnboardedNavProfileCollectionsIndexRoute:
+      SignedInOnboardedNavProfileCollectionsIndexRoute,
     SignedInOnboardedNavProfileSettingsIndexRoute:
       SignedInOnboardedNavProfileSettingsIndexRoute,
   }

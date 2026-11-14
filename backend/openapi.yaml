@@ -23,6 +23,54 @@ components:
       required:
         - keys_loaded
       type: object
+    Collection:
+      additionalProperties: false
+      properties:
+        created_at:
+          format: date-time
+          type: string
+        description:
+          description: Empty when the collection has no description
+          type: string
+        id:
+          type: string
+        name:
+          type: string
+      required:
+        - id
+        - name
+        - description
+        - created_at
+      type: object
+    CollectionSummaryResponse:
+      additionalProperties: false
+      properties:
+        created_at:
+          format: date-time
+          type: string
+        description:
+          description: Empty when the collection has no description
+          type: string
+        id:
+          type: string
+        name:
+          type: string
+        outfit_count:
+          format: int64
+          type: integer
+        thumbnail_urls:
+          description: One image for each of the up to 4 most recently added outfits, newest first
+          items:
+            type: string
+          type: array
+      required:
+        - outfit_count
+        - thumbnail_urls
+        - id
+        - name
+        - description
+        - created_at
+      type: object
     ConfirmProfilePictureInputBody:
       additionalProperties: false
       properties:
@@ -31,6 +79,21 @@ components:
           type: string
       required:
         - key
+      type: object
+    CreateCollectionInputBody:
+      additionalProperties: false
+      properties:
+        description:
+          description: Free-text description of the collection
+          maxLength: 250
+          type: string
+        name:
+          description: Display name for the collection
+          maxLength: 100
+          minLength: 1
+          type: string
+      required:
+        - name
       type: object
     CreateOutfitInputBody:
       additionalProperties: false
@@ -190,6 +253,26 @@ components:
           type: string
       required:
         - status
+      type: object
+    OnePieceOutfit:
+      additionalProperties: false
+      properties:
+        accessory:
+          $ref: "#/components/schemas/ProductResponse"
+          description: Missing when no accessory matched
+        kind:
+          enum:
+            - one_piece
+          type: string
+        one_piece:
+          $ref: "#/components/schemas/ProductResponse"
+          description: A dress or jumpsuit in place of the top and bottom
+        shoe:
+          $ref: "#/components/schemas/ProductResponse"
+          description: Missing when no shoe matched
+      required:
+        - kind
+        - one_piece
       type: object
     OutfitDetailProductResponse:
       additionalProperties: false
@@ -424,6 +507,42 @@ components:
         - created_at
         - updated_at
       type: object
+    PageCollectionSummaryResponse:
+      additionalProperties: false
+      properties:
+        has_more:
+          type: boolean
+        items:
+          items:
+            $ref: "#/components/schemas/CollectionSummaryResponse"
+          type: array
+        next_cursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - next_cursor
+        - has_more
+      type: object
+    PageOutfitResponse:
+      additionalProperties: false
+      properties:
+        has_more:
+          type: boolean
+        items:
+          items:
+            $ref: "#/components/schemas/OutfitResponse"
+          type: array
+        next_cursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - next_cursor
+        - has_more
+      type: object
     PageOwnedProductResponse:
       additionalProperties: false
       properties:
@@ -656,6 +775,9 @@ components:
           type: string
         bottom:
           type: string
+        one_piece:
+          description: Searched only when the shopper includes one-pieces
+          type: string
         shoe:
           type: string
         top:
@@ -663,6 +785,7 @@ components:
       required:
         - top
         - bottom
+        - one_piece
         - accessory
         - shoe
       type: object
@@ -692,7 +815,14 @@ components:
         outfits:
           description: Up to 3 outfits, best first; fewer only when every slot has fewer matching products
           items:
-            $ref: "#/components/schemas/RecommendedOutfit"
+            discriminator:
+              mapping:
+                one_piece: "#/components/schemas/OnePieceOutfit"
+                separates: "#/components/schemas/SeparatesOutfit"
+              propertyName: kind
+            oneOf:
+              - $ref: "#/components/schemas/SeparatesOutfit"
+              - $ref: "#/components/schemas/OnePieceOutfit"
           type: array
       required:
         - expanded_answers
@@ -722,7 +852,7 @@ components:
         - snowy
         - storm
       type: string
-    RecommendedOutfit:
+    SeparatesOutfit:
       additionalProperties: false
       properties:
         accessory:
@@ -731,12 +861,18 @@ components:
         bottom:
           $ref: "#/components/schemas/ProductResponse"
           description: Missing when no bottom matched
+        kind:
+          enum:
+            - separates
+          type: string
         shoe:
           $ref: "#/components/schemas/ProductResponse"
           description: Missing when no shoe matched
         top:
           $ref: "#/components/schemas/ProductResponse"
           description: Missing when no top matched
+      required:
+        - kind
       type: object
     ShareOutfitResponse:
       additionalProperties: false
@@ -784,12 +920,13 @@ components:
           items:
             enum:
               - pants
-              - dress
               - skirt
               - shorts
             type: string
           type: array
           uniqueItems: true
+        include_one_pieces:
+          type: boolean
         neckline:
           items:
             enum:
@@ -825,6 +962,20 @@ components:
         - neckline
         - bottoms
         - shoes
+        - include_one_pieces
+      type: object
+    UpdateCollectionInputBody:
+      additionalProperties: false
+      properties:
+        description:
+          description: New description; an empty string clears it
+          maxLength: 250
+          type: string
+        name:
+          description: New display name for the collection
+          maxLength: 100
+          minLength: 1
+          type: string
       type: object
     UpdateOutfitInputBody:
       additionalProperties: false
@@ -927,6 +1078,210 @@ paths:
       summary: Get a shared outfit without signing in
       tags:
         - outfits
+  /api/v1/collections:
+    get:
+      description: Newest first, each with its outfit count and up to 4 thumbnails.
+      operationId: list-collections
+      parameters:
+        - description: Max items to return
+          explode: false
+          in: query
+          name: limit
+          schema:
+            default: 20
+            description: Max items to return
+            format: int64
+            maximum: 100
+            minimum: 1
+            type: integer
+        - description: Opaque cursor from a previous page's next_cursor
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: Opaque cursor from a previous page's next_cursor
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageCollectionSummaryResponse"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: List the authenticated user's collections
+      tags:
+        - collections
+    post:
+      operationId: create-collection
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCollectionInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CollectionSummaryResponse"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Create a collection
+      tags:
+        - collections
+  /api/v1/collections/{id}:
+    delete:
+      description: The collection's outfits stay saved. Someone else's collection and a missing one both return 404, so a repeated call returns 404.
+      operationId: delete-collection
+      parameters:
+        - description: Collection ID
+          in: path
+          name: id
+          required: true
+          schema:
+            description: Collection ID
+            type: string
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Delete a collection
+      tags:
+        - collections
+    get:
+      description: Someone else's collection and a missing one both return 404.
+      operationId: get-collection
+      parameters:
+        - description: Collection ID
+          in: path
+          name: id
+          required: true
+          schema:
+            description: Collection ID
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Collection"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Get one of the authenticated user's collections
+      tags:
+        - collections
+    patch:
+      operationId: update-collection
+      parameters:
+        - description: Collection ID
+          in: path
+          name: id
+          required: true
+          schema:
+            description: Collection ID
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCollectionInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Collection"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Update a collection's name or description
+      tags:
+        - collections
+  /api/v1/collections/{id}/outfits:
+    get:
+      description: Newest added first. Someone else's collection and a missing one both return 404.
+      operationId: list-collection-outfits
+      parameters:
+        - description: Collection ID
+          in: path
+          name: id
+          required: true
+          schema:
+            description: Collection ID
+            type: string
+        - description: Max items to return
+          explode: false
+          in: query
+          name: limit
+          schema:
+            default: 20
+            description: Max items to return
+            format: int64
+            maximum: 100
+            minimum: 1
+            type: integer
+        - description: Opaque cursor from a previous page's next_cursor
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: Opaque cursor from a previous page's next_cursor
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageOutfitResponse"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: List the outfits in one of the authenticated user's collections
+      tags:
+        - collections
   /api/v1/embedder/warm:
     post:
       description: "Boots a Modal container ahead of an embed call and reports how long it took: tens of seconds on a cold start, well under one when a container is already up. Modal keeps the container warm for about 60 seconds."

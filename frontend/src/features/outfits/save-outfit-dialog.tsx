@@ -14,9 +14,6 @@ const saveSchema = z.object({
 
 export type SaveOutfitValues = z.infer<typeof saveSchema>;
 
-const descriptionMaxLength =
-  zUpdateOutfitInputBody.shape.description.unwrap().maxLength ?? undefined;
-
 type SaveOutfitDialogProps = {
   open: boolean;
   savedName: string;
@@ -49,7 +46,7 @@ export function SaveOutfitDialog({
         tags: value.tags,
       };
 
-      // Enter in a field submits the form even while the Save button is disabled.
+      // Enter in a field submits the form even while Confirm is disabled.
       if (!hasChanges(values)) {
         return;
       }
@@ -121,7 +118,7 @@ export function SaveOutfitDialog({
             <TextArea
               label="Description (optional)"
               placeholder="What is it for?"
-              maxLength={descriptionMaxLength}
+              maxLength={250}
               disabled={saving}
               value={field.state.value}
               onValueChange={field.handleChange}
