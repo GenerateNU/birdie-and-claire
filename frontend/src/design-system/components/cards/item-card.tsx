@@ -65,6 +65,7 @@ export function ItemCard({
   } = sizeClasses[size];
 
   const selected = selection?.selected ?? false;
+  const showHover = selection !== undefined && !disabled;
 
   return (
     <Box
@@ -72,7 +73,7 @@ export function ItemCard({
     >
       <Box className={`relative w-full shrink-0 bg-card ${photo}`}>
         <CardImage src={src} fit="contain" className="size-full" />
-        {!disabled && <CardWash />}
+        {showHover && <CardWash />}
         {selected && <CardSelectedRing />}
         {bcStamp && (
           <img
@@ -97,7 +98,7 @@ export function ItemCard({
         <Box className={nameClasses}>{name}</Box>
         {detail && <Box className="text-body-s text-secondary">{detail}</Box>}
       </CardFooter>
-      {!disabled && <CardHoverOutline />}
+      {showHover && <CardHoverOutline />}
     </Box>
   );
 }

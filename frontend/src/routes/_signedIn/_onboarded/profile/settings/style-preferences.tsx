@@ -181,6 +181,7 @@ function PreferenceRow({ field, preferences, editing, saving, onToggle }: Prefer
             pressed={picked.includes(option.value)}
             onPressedChange={(pressed) => onToggle(field, option.value, pressed)}
             size="sm"
+            selection="multi"
             disabled={!editing || saving}
           />
         ))}

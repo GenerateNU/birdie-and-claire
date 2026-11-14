@@ -11,7 +11,7 @@ import { joinClasses } from "@/design-system/utils/join-classes";
 // still. They rely on the card's root carrying `group` and `relative`, and they leave hover out of
 // a disabled card by not being rendered.
 
-/** The light outline around a hovered card, 10px outside it. */
+/** The light outline around a hovered card. */
 export function CardHoverOutline() {
   return (
     <Box
@@ -33,7 +33,7 @@ export function CardWash() {
   );
 }
 
-/** The ring around a selected card's photo, 4px outside it. Goes inside the photo. */
+/** The ring around a selected card's photo, with a 4px gap. Goes inside the photo. */
 export function CardSelectedRing() {
   return (
     <Box
@@ -63,11 +63,12 @@ export function CardCheckBox({
     ? "border-primary bg-primary text-inverse"
     : "border-primary bg-card";
 
-  const hoverClasses = hoverOnly && !checked ? "opacity-0 group-hover:opacity-100" : "";
+  const showOnHover = hoverOnly && !checked;
+  const hoverClasses = showOnHover ? "opacity-0 group-hover:opacity-100" : "";
 
   return (
     <Box
-      data-card-hover={hoverOnly && !checked ? true : undefined}
+      data-card-hover={showOnHover ? true : undefined}
       aria-hidden="true"
       className={`pointer-events-none absolute flex items-center justify-center ${stateClasses} ${hoverClasses} ${className}`}
     >

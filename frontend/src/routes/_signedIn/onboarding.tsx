@@ -215,6 +215,7 @@ function Cards({ field, preferences, onToggle, disabled }: CardsProps) {
           pressed={picked.includes(option.value)}
           onPressedChange={(pressed) => onToggle(field, option.value, pressed)}
           size="lg"
+          selection="multi"
           disabled={disabled}
         />
       ))}

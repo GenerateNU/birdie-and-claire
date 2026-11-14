@@ -21,7 +21,7 @@ const sizeClasses = {
   collection: {
     tile: "h-collection w-collection gap-lg",
     textGap: "gap-sm",
-    title: "",
+    title: "text-label-l-strong",
     label: "text-label-m",
     iconSize: 28,
   },
@@ -29,7 +29,7 @@ const sizeClasses = {
 
 type AddTileProps = {
   label: string;
-  /** A line above the label. Not shown on the collection size. */
+  /** A line above the label. */
   title?: string;
   /** `collection` is as big as a collection card, for the end of a collections grid. */
   size?: keyof typeof sizeClasses;
@@ -48,7 +48,7 @@ export function AddTile({ label, title, size = "lg", onClick }: AddTileProps) {
     >
       <PlusIcon size={iconSize} aria-hidden="true" />
       <Box className={`flex flex-col items-center ${textGap}`}>
-        {title && size !== "collection" && <Box className={titleClasses}>{title}</Box>}
+        {title && <Box className={titleClasses}>{title}</Box>}
         <Box className={`${labelClasses} uppercase text-secondary`}>{label}</Box>
       </Box>
     </BaseButton>

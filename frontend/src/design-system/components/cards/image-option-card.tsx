@@ -53,7 +53,7 @@ export function ImageOptionCard({
         <CardImage src={src} className={`size-full ${disabled ? "opacity-disabled" : ""}`} />
         {!disabled && <CardWash />}
         {pressed && <CardSelectedRing />}
-        {selection === "multi" && !disabled && (
+        {selection === "multi" && (pressed || !disabled) && (
           <CardCheckBox
             checked={pressed}
             hoverOnly

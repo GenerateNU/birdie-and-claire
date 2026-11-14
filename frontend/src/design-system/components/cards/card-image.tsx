@@ -14,13 +14,13 @@ type CardImageProps = {
  * themselves with visible text, so the image is decorative. */
 export function CardImage({ src, fit = "cover", className }: CardImageProps) {
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
-  const fitClasses = fit === "cover" ? "object-cover" : "object-contain mix-blend-multiply";
+  const isCover = fit === "cover";
 
   if (src === null || src === failedSrc) {
-    return (
-      <span className={joinClasses(fit === "cover" ? "block bg-surface" : "block", className)} />
-    );
+    return <span className={joinClasses(isCover ? "block bg-surface" : "block", className)} />;
   }
+
+  const fitClasses = isCover ? "object-cover" : "object-contain mix-blend-multiply";
 
   return (
     <img

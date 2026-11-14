@@ -162,6 +162,7 @@ function Catalog({ selected, onToggle, disabled, atLimit }: CatalogProps) {
                 label={product.title}
                 src={product.image_url}
                 pressed={pressed}
+                selection="multi"
                 onPressedChange={(nextPressed) => onToggle(product, nextPressed)}
                 disabled={disabled || (atLimit && !pressed)}
               />

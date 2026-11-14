@@ -64,8 +64,8 @@ export const OutfitCardSize = { width: "240px", imageHeight: "300px" } as const;
 export const RowThumbnailSize = { width: "64px", height: "80px" } as const;
 
 // How far a card's overlays reach past its box (`inset-card-ring`, `inset-card-hover`), from Figma:
-// the selected ring sits 4px outside the photo (2px border plus 4px gap), the hover outline 10px
-// outside the whole card.
+// the selected ring's outer edge sits 6px outside the photo (4px gap plus 2px border), the hover
+// outline 10px outside the whole card.
 export const CardOverlayInset = { ring: "-6px", hover: "-10px" } as const;
 
 export const ThumbnailSize = { width: "92px", height: "112px" } as const;
