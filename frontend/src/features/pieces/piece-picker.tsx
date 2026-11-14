@@ -195,13 +195,9 @@ function Catalog({ selected, onToggle, disabled, atLimit }: CatalogProps) {
 
   if (isPending) {
     return (
-      <Box
-        role="status"
-        aria-label="Loading pieces"
-        className="grid grid-cols-2 gap-md md:grid-cols-3"
-      >
-        {[0, 1, 2, 3, 4, 5].map((item) => (
-          <Skeleton key={item} className="aspect-portrait" />
+      <Box role="status" aria-label="Loading pieces" className="grid grid-cols-4 gap-lg">
+        {[0, 1, 2, 3, 4, 5, 6, 7].map((item) => (
+          <Skeleton key={item} className="h-item-md w-item-md" />
         ))}
       </Box>
     );

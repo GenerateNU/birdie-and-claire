@@ -182,7 +182,7 @@ function Onboarding() {
       <Box className="mt-lg flex flex-1 flex-col items-center">
         <Box className="flex flex-col items-center gap-lg">
           <Text variant="heading-l">{questions[step].prompt}</Text>
-          <Text variant="body">{preferences[step].length} selected</Text>
+          <Text variant="body-l">{preferences[step].length} selected</Text>
         </Box>
         <Box className={layout.cards}>
           <Cards field={step} preferences={preferences} onToggle={toggle} disabled={saving} />
