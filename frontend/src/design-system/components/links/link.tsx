@@ -27,7 +27,8 @@ function Anchor({
 }: AnchorProps) {
   const isButton = variant !== undefined && variant !== "plain";
   const classes = isButton ? joinClasses(buttonClasses(variant, size), className) : className;
-  const iconSize = isButton ? buttonIconSize[size] : undefined;
+  // 1em is Phosphor's own default, so an unstyled link's icons follow its text.
+  const iconSize = isButton ? buttonIconSize[size] : "1em";
 
   return (
     <a className={classes} {...props}>

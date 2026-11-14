@@ -1,5 +1,5 @@
-// A disabled control sets data-disabled, which comes after hover and active in Tailwind's
-// variant order, so the data-[disabled] classes win those ties.
+// Base UI's Button sets data-disabled when disabled. That variant comes after hover and active
+// in Tailwind's order, so the data-[disabled] classes win those ties. Link has no disabled state.
 export const buttonVariantClasses = {
   primary:
     "bg-primary text-inverse hover:bg-primary-hover active:bg-primary-pressed data-[disabled]:bg-placeholder data-[disabled]:text-disabled",
@@ -12,7 +12,7 @@ export const buttonVariantClasses = {
 } as const;
 
 const buttonBaseClasses =
-  "inline-flex items-center justify-center gap-xs rounded-none uppercase focus-ring";
+  "inline-flex items-center justify-center gap-xs whitespace-nowrap rounded-none uppercase focus-ring";
 
 // Heights are Figma's 40px and 32px, which are the xxl and xl spacing steps.
 const buttonSizeClasses = {
@@ -22,7 +22,7 @@ const buttonSizeClasses = {
 
 // Ghost buttons read as text, so Figma pads them less.
 const buttonPaddingClasses = {
-  solid: { md: "px-lg", sm: "px-md" },
+  default: { md: "px-lg", sm: "px-md" },
   ghost: { md: "px-sm", sm: "px-xs" },
 } as const;
 
@@ -33,7 +33,7 @@ export type ButtonVariant = keyof typeof buttonVariantClasses;
 export type ButtonSize = keyof typeof buttonSizeClasses;
 
 export function buttonClasses(variant: ButtonVariant, size: ButtonSize) {
-  const padding = buttonPaddingClasses[variant === "ghost" ? "ghost" : "solid"][size];
+  const padding = buttonPaddingClasses[variant === "ghost" ? "ghost" : "default"][size];
 
   return `${buttonBaseClasses} ${buttonVariantClasses[variant]} ${buttonSizeClasses[size]} ${padding}`;
 }

@@ -10,13 +10,13 @@ import { joinClasses } from "@/design-system/utils/join-classes";
 
 const iconButtonBaseClasses = "inline-flex items-center justify-center rounded-none focus-ring";
 
-// Square like Figma's Icon Button: 40px and 32px, which are the xxl and xl spacing steps.
+// Square like Figma's Icon Button, the same heights as Button.
 const iconButtonSizeClasses = {
   md: "size-xxl",
   sm: "size-xl",
 } as const;
 
-const iconSize = { md: 20, sm: 16 } as const;
+const iconButtonIconSize = { md: 20, sm: 16 } as const;
 
 type IconButtonProps = {
   ref?: Ref<HTMLButtonElement>;
@@ -54,7 +54,7 @@ export function IconButton({
       title={title}
       className={joinClasses(buttonClasses, className)}
     >
-      <ButtonIcon size={iconSize[size]} aria-hidden="true" />
+      <ButtonIcon size={iconButtonIconSize[size]} aria-hidden="true" />
     </BaseButton>
   );
 }

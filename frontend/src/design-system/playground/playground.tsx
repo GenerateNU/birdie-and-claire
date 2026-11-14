@@ -259,7 +259,7 @@ export function Playground() {
                   <IconButtonRow key={variant} variant={variant} />
                 ))}
               </Box>
-              <Label>IconButton · disabled shown in the last row</Label>
+              <Label>IconButton · primary · secondary · ghost, disabled below</Label>
               <Box className="flex items-center gap-md">
                 {iconButtonVariants.map((variant) => (
                   <IconButton
@@ -280,7 +280,7 @@ export function Playground() {
                 <Link to="/playground">Default (unstyled)</Link>
                 <TextLink to="/playground">See all</TextLink>
                 <TextLink to="/playground" className="underline">
-                  Hover
+                  Forced hover
                 </TextLink>
                 <TextLink to="/playground" leadingIcon={CaretLeftIcon}>
                   Leading icon

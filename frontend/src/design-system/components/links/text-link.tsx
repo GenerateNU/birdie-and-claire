@@ -11,7 +11,7 @@ type TextAnchorProps = AnchorHTMLAttributes<HTMLAnchorElement> & {
   trailingIcon?: Icon;
 };
 
-const iconSize = 16;
+const textLinkIconSize = 16;
 
 function TextAnchor({
   leadingIcon: LeadingIcon,
@@ -24,9 +24,9 @@ function TextAnchor({
 
   return (
     <a className={classes} {...props}>
-      {LeadingIcon && <LeadingIcon size={iconSize} aria-hidden="true" />}
+      {LeadingIcon && <LeadingIcon size={textLinkIconSize} aria-hidden="true" />}
       {children}
-      {TrailingIcon && <TrailingIcon size={iconSize} aria-hidden="true" />}
+      {TrailingIcon && <TrailingIcon size={textLinkIconSize} aria-hidden="true" />}
     </a>
   );
 }
