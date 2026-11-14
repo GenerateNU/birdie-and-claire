@@ -29,7 +29,8 @@ export type Step =
   | "vibe"
   | "specifics"
   | "custom"
-  | "review";
+  | "review"
+  | "results";
 
 export const barSteps = [
   { step: "weather", label: "Weather" },

@@ -3,6 +3,7 @@ import { useState } from "react";
 
 import {
   RecommendationSetting,
+  type RecommendedOutfit,
   type RecommendationCondition,
   type RecommendationVibe,
 } from "@/api/generated/types.gen";
@@ -33,6 +34,7 @@ import {
 } from "@/features/outfits/create-outfit/create-outfit-options";
 import { Intro } from "@/features/outfits/create-outfit/intro";
 import { QuestionsIntro } from "@/features/outfits/create-outfit/questions-intro";
+import { ResultsScreen } from "@/features/outfits/create-outfit/results-screen";
 import { Review } from "@/features/outfits/create-outfit/review";
 import { StepScreen } from "@/features/outfits/create-outfit/step-screen";
 
@@ -50,6 +52,7 @@ export function CreateOutfitFlow() {
   const [conditions, setConditions] = useState<RecommendationCondition[]>([]);
   const [vibe, setVibe] = useState<RecommendationVibe | null>(null);
   const [custom, setCustom] = useState("");
+  const [outfits, setOutfits] = useState<RecommendedOutfit[]>([]);
 
   const chosenOccasion = cardOccasion ?? customOccasion.trim();
   const weather = weatherTile === null ? null : tileToApiWeather[weatherTile];
@@ -100,6 +103,11 @@ export function CreateOutfitFlow() {
     }
 
     setStep(next);
+  }
+
+  function showResults(found: RecommendedOutfit[]) {
+    setOutfits(found);
+    setStep("results");
   }
 
   function skipCustom() {
@@ -282,8 +290,13 @@ export function CreateOutfitFlow() {
         vibe={vibe}
         custom={custom.trim()}
         onEdit={editFromReview}
+        onResults={showResults}
       />
     );
+  }
+
+  if (step === "results") {
+    return <ResultsScreen occasion={chosenOccasion} outfits={outfits} />;
   }
 
   if (step === "occasion") {

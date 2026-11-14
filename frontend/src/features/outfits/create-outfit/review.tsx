@@ -8,18 +8,18 @@ import {
   type Icon,
 } from "@phosphor-icons/react";
 import { useMutation } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 
 import { warmEmbedderMutation } from "@/api/generated/@tanstack/react-query.gen";
 import type {
+  RecommendedOutfit,
   RecommendationSetting,
   RecommendationVibe,
   RecommendationWeather,
 } from "@/api/generated/types.gen";
 import { Box, Button, ListCard, Page, Text, useToast } from "@/design-system";
 import { vibeCards, type Step } from "@/features/outfits/create-outfit/create-outfit-options";
-import { requestOutfit } from "@/features/outfits/create-outfit/request-outfit";
+import { recommendOutfits } from "@/features/outfits/create-outfit/recommend-outfits";
 
 type ReviewProps = {
   occasion: string;
@@ -34,6 +34,7 @@ type ReviewProps = {
   // Empty when the shopper skipped Custom.
   custom: string;
   onEdit: (step: Step) => void;
+  onResults: (outfits: RecommendedOutfit[]) => void;
 };
 
 export function Review({
@@ -45,15 +46,15 @@ export function Review({
   vibe,
   custom,
   onEdit,
+  onResults,
 }: ReviewProps) {
   const toast = useToast();
-  const navigate = useNavigate();
   const abortController = useRef(new AbortController());
   const { mutate: warmEmbedder } = useMutation(warmEmbedderMutation());
 
   const createMutation = useMutation({
     mutationFn: () =>
-      requestOutfit(
+      recommendOutfits(
         occasion,
         weather,
         setting,
@@ -62,8 +63,8 @@ export function Review({
         custom,
         abortController.current.signal,
       ),
-    onSuccess: async (outfitId) => {
-      if (outfitId === null) {
+    onSuccess: (outfits) => {
+      if (outfits.length === 0) {
         toast.show({
           message:
             "Couldn't build a full outfit for that, try changing the weather, vibe or custom details",
@@ -73,7 +74,7 @@ export function Review({
         return;
       }
 
-      await navigate({ to: "/outfits/$outfitId", params: { outfitId } });
+      onResults(outfits);
     },
     onError: () => {
       if (abortController.current.signal.aborted) {
@@ -87,9 +88,7 @@ export function Review({
     },
   });
 
-  // Stays on through the navigation to the new outfit.
-  const creating =
-    createMutation.isPending || (createMutation.isSuccess && createMutation.data !== null);
+  const creating = createMutation.isPending;
 
   useEffect(() => {
     // StrictMode mounts twice, and the first unmount aborts the controller, so make a fresh one.
@@ -97,7 +96,7 @@ export function Review({
     // Best effort: a cold embedder takes tens of seconds, so start it while the user reviews.
     warmEmbedder({});
 
-    // Leaving the page cancels a pending create, so it can't navigate back to the new outfit.
+    // Leaving the page cancels a pending request, so it can't open the results afterwards.
     return () => abortController.current.abort();
   }, [warmEmbedder]);
 
