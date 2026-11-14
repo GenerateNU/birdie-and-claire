@@ -8,8 +8,16 @@ import {
   updateOutfitMutation,
 } from "@/api/generated/@tanstack/react-query.gen";
 import type { OutfitResponse, UpdateOutfitInputBody } from "@/api/generated/types.gen";
-import { Box, Button, Dialog, Empty, ErrorState, Spinner, useToast } from "@/design-system";
-import { EditorHeader } from "@/features/outfits/editor-header";
+import {
+  Box,
+  Button,
+  EmptyState,
+  ErrorState,
+  Modal,
+  PageHeader,
+  Spinner,
+  useToast,
+} from "@/design-system";
 import { useEditorSelection } from "@/features/outfits/editor-selection";
 import { OutfitCanvas } from "@/features/outfits/outfit-canvas";
 import { useOutfitDraft } from "@/features/outfits/outfit-draft";
@@ -49,7 +57,7 @@ function OutfitEditorPage() {
   if (isOutfitNotFound(outfitQuery.error)) {
     return (
       <EditorFrame onSave={ignoreSave} saveDisabled>
-        <Empty title="Outfit not found" className="p-lg" />
+        <EmptyState title="Outfit not found" className="px-lg" />
       </EditorFrame>
     );
   }
@@ -98,7 +106,8 @@ function OutfitEditor({ outfitId, outfit }: OutfitEditorProps) {
       leave.stay();
       void navigate({ to: "/outfits/$outfitId", params: { outfitId }, replace: true });
     },
-    onError: () => toast.show({ message: "Couldn't save your outfit. Try again." }),
+    onError: () =>
+      toast.show({ message: "Couldn't save your outfit. Try again.", variant: "error" }),
   });
 
   const saving = saveMutation.isPending;
@@ -129,8 +138,8 @@ function OutfitEditor({ outfitId, outfit }: OutfitEditorProps) {
   }
 
   // Disabled while saving, so a navigation held mid-save can't leave or open a second save.
-  const leaveDialogActions: ComponentProps<typeof Dialog>["actions"] = [
-    { label: "Exit", variant: "secondary", onClick: leave.exit, disabled: saving },
+  const leaveDialogActions: ComponentProps<typeof Modal>["actions"] = [
+    { label: "Exit", variant: "ghost", onClick: leave.exit, disabled: saving },
     {
       label: "Save",
       variant: "primary",
@@ -195,7 +204,7 @@ function OutfitEditor({ outfitId, outfit }: OutfitEditorProps) {
         onCancel={() => setSaveDialogOpen(false)}
         onSave={save}
       />
-      <Dialog
+      <Modal
         open={leave.blocked}
         onClose={leave.stay}
         title="You have unsaved outfit edits"
@@ -210,7 +219,11 @@ function OutfitEditor({ outfitId, outfit }: OutfitEditorProps) {
 function EditorFrame({ onSave, saveDisabled, children }: EditorFrameProps) {
   return (
     <Box className="flex h-screen flex-col">
-      <EditorHeader onSave={onSave} saveDisabled={saveDisabled} />
+      <PageHeader
+        title="Edit Outfit"
+        logoTo="/profile/outfits"
+        actions={<Button label="Save" onClick={onSave} disabled={saveDisabled} />}
+      />
       {children}
     </Box>
   );

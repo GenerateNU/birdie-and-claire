@@ -11,12 +11,11 @@ import (
 	"strings"
 
 	"birdie-and-claire/internal/embedder"
+	"birdie-and-claire/internal/llm"
 	"birdie-and-claire/internal/log"
 	"birdie-and-claire/internal/models"
 	"birdie-and-claire/internal/repository"
 	"birdie-and-claire/internal/shopify"
-
-	"github.com/google/uuid"
 )
 
 // Shopify's taxonomy category, matched on the prefix of its full name. The first
@@ -45,14 +44,19 @@ var (
 	marketingTagPrefixes = []string{"gifts", "quiz results"}
 )
 
-// Shopify's CDN resizes an image to this width before it is embedded, which
-// keeps every image under the embedder's 10 MB limit.
-const embeddingImageWidth = "1024"
+const (
+	// Shopify's CDN resizes an image to this width before it is embedded or
+	// labeled, which keeps every image under the embedder's 10 MB limit.
+	imageWidth = "1024"
+	// The first images are the product on its own and on a model. Later ones
+	// repeat them in other colors, which the store details already list.
+	labeledImagesPerProduct = 3
+)
 
 type CatalogSyncService interface {
 	// Sync makes the products table match the store's active products. A product
-	// whose embedding fails to refresh is retried on the next run, and its error is
-	// returned after every other product is synced.
+	// whose attributes or embedding fail to refresh is retried on the next run, and
+	// its error is returned after every other product is synced.
 	Sync(ctx context.Context) error
 }
 
@@ -60,10 +64,11 @@ type catalogSyncService struct {
 	repo     *repository.Repository
 	catalog  shopify.CatalogSource
 	embedder embedder.Embedder
+	llm      llm.Client
 }
 
-func NewCatalogSyncService(repo *repository.Repository, catalog shopify.CatalogSource, emb embedder.Embedder) CatalogSyncService {
-	return &catalogSyncService{repo: repo, catalog: catalog, embedder: emb}
+func NewCatalogSyncService(repo *repository.Repository, catalog shopify.CatalogSource, emb embedder.Embedder, llmClient llm.Client) CatalogSyncService {
+	return &catalogSyncService{repo: repo, catalog: catalog, embedder: emb, llm: llmClient}
 }
 
 func (s *catalogSyncService) Sync(ctx context.Context) error {
@@ -78,7 +83,7 @@ func (s *catalogSyncService) Sync(ctx context.Context) error {
 	}
 
 	syncedShopifyIDs := make([]int64, 0, len(products))
-	var embedErrs []error
+	var refreshErrs []error
 	for _, product := range products {
 		slot, found := slotForCategory(product.Category)
 		if !found {
@@ -90,7 +95,7 @@ func (s *catalogSyncService) Sync(ctx context.Context) error {
 
 		// cloned, because filtering in place would rewrite the caller's slice
 		product.Tags = slices.DeleteFunc(slices.Clone(product.Tags), isMarketingTag)
-		productID, storedHash, err := s.repo.Product.UpsertShopifyProduct(ctx, product, slot)
+		synced, err := s.repo.Product.UpsertShopifyProduct(ctx, product, slot)
 		if err != nil {
 			return err
 		}
@@ -101,11 +106,11 @@ func (s *catalogSyncService) Sync(ctx context.Context) error {
 			log.Warn(ctx, "catalog sync: kept a product's images while Shopify processes one", "shopify_id", product.ID)
 			continue
 		}
-		if err := s.repo.ProductImage.ReplaceShopifyImages(ctx, productID, product.Images); err != nil {
+		if err := s.repo.ProductImage.ReplaceShopifyImages(ctx, synced.ID, product.Images); err != nil {
 			return err
 		}
-		if err := s.refreshEmbedding(ctx, product, productID, storedHash); err != nil {
-			embedErrs = append(embedErrs, fmt.Errorf("refresh embedding of shopify product %d: %w", product.ID, err))
+		if err := s.refreshAttributesAndEmbedding(ctx, product, slot, synced); err != nil {
+			refreshErrs = append(refreshErrs, fmt.Errorf("shopify product %d: %w", product.ID, err))
 		}
 	}
 	// Every product was skipped, which more likely means the categories came back
@@ -118,30 +123,98 @@ func (s *catalogSyncService) Sync(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	log.Debug(ctx, "catalog sync: done", "synced", len(syncedShopifyIDs), "deactivated", deactivated, "embed_failures", len(embedErrs))
-	return errors.Join(embedErrs...)
+	log.Debug(ctx, "catalog sync: done", "synced", len(syncedShopifyIDs), "deactivated", deactivated, "refresh_failures", len(refreshErrs))
+	return errors.Join(refreshErrs...)
 }
 
-func (s *catalogSyncService) refreshEmbedding(ctx context.Context, product shopify.ShopifyProduct, productID uuid.UUID, storedHash *string) error {
-	// A product with no image has no picture to show in an outfit, so it is not recommended.
+// refreshAttributesAndEmbedding refreshes each on its own, so a product that fails to label still gets its vector.
+func (s *catalogSyncService) refreshAttributesAndEmbedding(ctx context.Context, product shopify.ShopifyProduct, slot models.ProductSlot, synced repository.SyncedProduct) error {
+	// A product with no image has no picture to show in an outfit, so it is not recommended or labeled.
 	if len(product.Images) == 0 {
-		return s.repo.Product.ClearEmbedding(ctx, productID)
+		return s.repo.Product.ClearEmbedding(ctx, synced.ID)
 	}
+	var refreshErrs []error
+	if err := s.refreshAttributes(ctx, product, slot, synced); err != nil {
+		refreshErrs = append(refreshErrs, fmt.Errorf("refresh attributes: %w", err))
+	}
+	if err := s.refreshEmbedding(ctx, product, synced); err != nil {
+		refreshErrs = append(refreshErrs, fmt.Errorf("refresh embedding: %w", err))
+	}
+	return errors.Join(refreshErrs...)
+}
 
-	text := strings.Join(append([]string{product.Title}, product.Tags...), ", ")
-	imageURL, err := shopify.ResizedImageURL(product.Images[0].URL, embeddingImageWidth)
+// refreshAttributes labels the product again only when what it is labeled from changed.
+func (s *catalogSyncService) refreshAttributes(ctx context.Context, product shopify.ShopifyProduct, slot models.ProductSlot, synced repository.SyncedProduct) error {
+	input, err := labelInput(product, slot)
 	if err != nil {
 		return err
 	}
-	hash := hashEmbeddingInputs(text, imageURL)
-	if storedHash != nil && *storedHash == hash {
+	hash, err := llm.LabelInputHash(input)
+	if err != nil {
+		return err
+	}
+	if synced.AttributesHash != nil && *synced.AttributesHash == hash {
+		return nil
+	}
+
+	attributes, err := llm.LabelProduct(ctx, s.llm, input)
+	if err != nil {
+		return err
+	}
+	return s.repo.Product.SaveAttributes(ctx, synced.ID, attributes, hash)
+}
+
+// refreshEmbedding leaves the attributes out of the embedded text. On the store's catalog, adding them retrieved no
+// better than the title and store tags alone, and the embedder reads only the first 77 tokens.
+func (s *catalogSyncService) refreshEmbedding(ctx context.Context, product shopify.ShopifyProduct, synced repository.SyncedProduct) error {
+	text := strings.Join(append([]string{product.Title}, product.Tags...), ", ")
+	imageURL, err := shopify.ResizedImageURL(product.Images[0].URL, imageWidth)
+	if err != nil {
+		return err
+	}
+	hash := hashInputs(text, imageURL)
+	if synced.EmbeddingHash != nil && *synced.EmbeddingHash == hash {
 		return nil
 	}
 	embedding, err := s.embedProduct(ctx, text, imageURL)
 	if err != nil {
 		return err
 	}
-	return s.repo.Product.SaveEmbedding(ctx, productID, embedding, hash)
+	return s.repo.Product.SaveEmbedding(ctx, synced.ID, embedding, hash)
+}
+
+func labelInput(product shopify.ShopifyProduct, slot models.ProductSlot) (llm.ProductLabelInput, error) {
+	var storeDetails []string
+	for _, option := range product.Options {
+		storeDetails = append(storeDetails, option.Name+": "+strings.Join(option.Values, ", "))
+	}
+	if product.FabricInfo != "" {
+		storeDetails = append(storeDetails, "fabric: "+product.FabricInfo)
+	}
+	if len(product.Materials) > 0 {
+		storeDetails = append(storeDetails, "materials: "+strings.Join(product.Materials, ", "))
+	}
+	if product.ModelInfo != "" {
+		storeDetails = append(storeDetails, "fit: "+product.ModelInfo)
+	}
+
+	imageURLs := make([]string, 0, labeledImagesPerProduct)
+	for _, image := range product.Images[:min(len(product.Images), labeledImagesPerProduct)] {
+		imageURL, err := shopify.ResizedImageURL(image.URL, imageWidth)
+		if err != nil {
+			return llm.ProductLabelInput{}, err
+		}
+		imageURLs = append(imageURLs, imageURL)
+	}
+
+	return llm.ProductLabelInput{
+		Slot:         slot,
+		Title:        product.Title,
+		Description:  product.Description,
+		Tags:         product.Tags,
+		StoreDetails: storeDetails,
+		ImageURLs:    imageURLs,
+	}, nil
 }
 
 func slotForCategory(category string) (models.ProductSlot, bool) {
@@ -175,8 +248,8 @@ func isMarketingTag(tag string) bool {
 	return false
 }
 
-func hashEmbeddingInputs(text, imageURL string) string {
-	sum := sha256.Sum256([]byte(text + "\n" + imageURL))
+func hashInputs(inputs ...string) string {
+	sum := sha256.Sum256([]byte(strings.Join(inputs, "\n")))
 	return hex.EncodeToString(sum[:])
 }
 

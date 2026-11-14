@@ -131,8 +131,8 @@ func (s *outfitService) Suggest(ctx context.Context, id uuid.UUID, productIDs []
 			continue
 		}
 
-		// nil tag lists: FindSimilar treats a NULL list as matching no tag
-		similar, err := s.repo.Product.FindSimilar(ctx, embedding, slot, nil, nil, excludeProductIDs, limit)
+		// nil lists: FindSimilar treats a NULL list as matching nothing
+		similar, err := s.repo.Product.FindSimilar(ctx, embedding, slot, nil, nil, nil, excludeProductIDs, limit)
 		if err != nil {
 			return models.OutfitSuggestionsResponse{}, err
 		}

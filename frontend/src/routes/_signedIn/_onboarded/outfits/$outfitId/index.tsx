@@ -2,7 +2,7 @@ import { ArrowsOut, CaretLeft, Plus } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
-import { Box, Empty, ErrorState, IconButton, Link, Spinner, Text } from "@/design-system";
+import { Box, EmptyState, ErrorState, IconButton, Link, Spinner, Text } from "@/design-system";
 import { ExternalPiecesSection } from "@/features/outfits/external-pieces-section";
 import { OutfitCanvas } from "@/features/outfits/outfit-canvas";
 import { OutfitDetailsFrame } from "@/features/outfits/outfit-details-frame";
@@ -35,7 +35,7 @@ function OutfitDetailsPage() {
   if (isOutfitNotFound(outfitQuery.error)) {
     return (
       <OutfitDetailsFrame>
-        <Empty title="Outfit not found" className="p-lg" />
+        <EmptyState title="Outfit not found" className="px-lg" />
       </OutfitDetailsFrame>
     );
   }
@@ -60,7 +60,7 @@ function OutfitDetailsPage() {
       {/* The canvas fits the height under the header. Side by side from lg up, with the back button
           beside the canvas as in the Figma. Narrower than that, the panels stack and split the
           height. */}
-      <main className="flex min-h-0 flex-1 flex-col gap-xl p-md lg:flex-row lg:gap-xxl lg:px-xxl">
+      <main className="flex min-h-0 flex-1 flex-col gap-xl p-md lg:flex-row lg:gap-xxxl lg:px-xxxl">
         <Link
           to="/profile/outfits"
           aria-label="Back to saved outfits"
@@ -81,7 +81,7 @@ function OutfitDetailsPage() {
               <IconButton
                 icon={ArrowsOut}
                 label="Expand the outfit, coming soon"
-                variant="outlined"
+                variant="secondary"
                 disabled
                 title="Coming soon"
               />
@@ -99,7 +99,7 @@ function OutfitDetailsPage() {
                 <IconButton
                   icon={Plus}
                   label="Save the outfit to a collection, coming soon"
-                  variant="outlined"
+                  variant="secondary"
                   disabled
                   title="Coming soon"
                 />
