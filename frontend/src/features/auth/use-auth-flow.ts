@@ -7,7 +7,7 @@ import { useToast } from "@/design-system";
 import { sendCode } from "@/features/auth/otp";
 import { takeReturnPath } from "@/features/auth/return-path";
 
-type Step = "choice" | "login-email" | "signup" | "verify" | "verified";
+type Step = "login-email" | "signup" | "verify" | "verified";
 
 type AuthPath = "login" | "signup";
 
@@ -18,7 +18,7 @@ const VERIFIED_REDIRECT_MS = 2000;
 export function useAuthFlow() {
   const toast = useToast();
   const navigate = useNavigate();
-  const [step, setStep] = useState<Step>("choice");
+  const [step, setStep] = useState<Step>("login-email");
   const [path, setPath] = useState<AuthPath>("login");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -66,10 +66,6 @@ export function useAuthFlow() {
     setStep(nextPath === "login" ? "login-email" : "signup");
   }
 
-  function backToChoice() {
-    setStep("choice");
-  }
-
   function sendLoginCode(nextEmail: string) {
     setEmail(nextEmail);
     sendCodeMutation.mutate(nextEmail);
@@ -102,7 +98,6 @@ export function useAuthFlow() {
     email,
     sendingCode: sendCodeMutation.isPending,
     choosePath,
-    backToChoice,
     sendLoginCode,
     sendSignupCode,
     changeEmail,

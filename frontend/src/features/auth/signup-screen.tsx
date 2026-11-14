@@ -1,4 +1,5 @@
 import { useForm } from "@tanstack/react-form";
+import { ArrowLeftIcon, EnvelopeSimpleIcon } from "@phosphor-icons/react";
 
 import { zCreateUserInputBody } from "@/api/generated/zod.gen";
 import { Button, Form, TextField } from "@/design-system";
@@ -36,13 +37,12 @@ export function SignupScreen({
 
   return (
     <AuthScreen title="Create an Account">
-      <Form form={form} className="flex flex-col gap-sm">
+      <Form form={form} className="flex flex-col gap-lg">
         <form.Field name="name">
           {(field) => (
             <TextField
               label="Name"
-              hideLabel
-              placeholder="Enter Your Name"
+              placeholder="Enter your name"
               autoComplete="name"
               // The endpoint caps name at 100 characters.
               maxLength={100}
@@ -59,9 +59,9 @@ export function SignupScreen({
           {(field) => (
             <TextField
               label="Email"
-              hideLabel
               inputMode="email"
-              placeholder="Enter your email address"
+              placeholder="Enter your email"
+              trailingIcon={EnvelopeSimpleIcon}
               autoComplete="email"
               aria-required
               value={field.state.value}
@@ -72,14 +72,14 @@ export function SignupScreen({
             />
           )}
         </form.Field>
+        <Button label="Sign up" type="submit" loading={sending} loadingLabel="Signing up…" />
         <Button
-          label="Sign up"
-          type="submit"
-          variant="secondary"
-          loading={sending}
-          loadingLabel="Signing up…"
+          label="Back"
+          variant="ghost"
+          leadingIcon={ArrowLeftIcon}
+          onClick={onBack}
+          disabled={sending}
         />
-        <Button label="Back" variant="secondary" size="sm" onClick={onBack} disabled={sending} />
       </Form>
     </AuthScreen>
   );

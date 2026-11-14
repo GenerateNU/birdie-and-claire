@@ -11,16 +11,16 @@ type AuthScreenProps = {
 /** The logo above a card, the frame every login and sign-up screen shares. */
 export function AuthScreen({ title, subtitle, children }: AuthScreenProps) {
   return (
-    <Page className="flex flex-col items-center justify-center gap-lg">
-      <Logo className="w-full max-w-xs" />
-      <Box className="flex w-full max-w-content-sm flex-col gap-sm bg-surface p-lg">
+    <Page className="flex flex-col items-center justify-center gap-xxl">
+      <Logo className="w-logo-header object-cover object-bottom" />
+      <Box className="flex w-full max-w-content-sm flex-col gap-lg border bg-card p-xxl">
         {title && (
-          <Text variant="subheading" className="text-center">
+          <Text variant="heading" className="text-center">
             {title}
           </Text>
         )}
         {subtitle && (
-          <Text variant="caption" className="text-center">
+          <Text variant="body-m" className="text-center text-secondary">
             {subtitle}
           </Text>
         )}
