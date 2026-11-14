@@ -12,8 +12,7 @@ import (
 )
 
 const productLabelsAnswer = `{"product_target":"women","neckline_type":"modest","bottom_type":"","shoe_type":"",` +
-	`"tags":{"colors":["navy"],"formality":[],"occasions":[],"season":[],"pattern":[],"fabric":[],"fit":[]},` +
-	`"details":["ribbed cuffs"],"style_note":"A navy sweater."}`
+	`"tags":{"colors":["navy"],"formality":[],"occasions":[],"season":[],"pattern":[],"fabric":[],"fit":[]}}`
 
 func imageURLParts(content any) []string {
 	parts, _ := content.([]any)
@@ -61,8 +60,8 @@ func TestLabelProductSendsTheStoreDataAndEveryImage(t *testing.T) {
 	if got := imageURLParts(sent.Messages[1].Content); strings.Join(got, " ") != strings.Join(input.ImageURLs, " ") {
 		t.Errorf("image parts = %v, want %v", got, input.ImageURLs)
 	}
-	if sent.MaxTokens != 1024 || sent.Reasoning == nil || sent.Reasoning.Effort != "none" {
-		t.Errorf("max_tokens = %d, reasoning = %+v, want label_product.prompt's 1024 with effort none", sent.MaxTokens, sent.Reasoning)
+	if sent.MaxTokens != 512 || sent.Reasoning == nil || sent.Reasoning.Effort != "none" {
+		t.Errorf("max_tokens = %d, reasoning = %+v, want label_product.prompt's 512 with effort none", sent.MaxTokens, sent.Reasoning)
 	}
 }
 

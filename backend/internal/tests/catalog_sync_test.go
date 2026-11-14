@@ -26,9 +26,8 @@ const (
 	dressesCategory = "Apparel & Accessories > Clothing > Dresses"
 )
 
-// a valid label with nothing on any list, so the embedded text is the title and store tags alone
-const emptyLabels = `{"product_target":"women","neckline_type":"","bottom_type":"","shoe_type":"","tags":` + emptyTagLists +
-	`,"details":[],"style_note":""}`
+// a valid label with nothing on any list
+const emptyLabels = `{"product_target":"women","neckline_type":"","bottom_type":"","shoe_type":"","tags":` + emptyTagLists + `}`
 
 func emptyLabeler() *llmtest.Fake {
 	return &llmtest.Fake{Text: emptyLabels}
@@ -355,15 +354,14 @@ func storedAttributes(t *testing.T, db *sql.DB, shopifyID int64) *models.Product
 	return attributes
 }
 
-func TestCatalogSyncLabelsProductAndEmbedsItsLabels(t *testing.T) {
+func TestCatalogSyncLabelsProductButEmbedsOnlyTitleAndTags(t *testing.T) {
 	db := openSyncTestDB(t)
 	product := newSyncProduct(t, db, topsCategory, 1)
 	product.Description = "A soft crew neck sweater."
 	product.Options = []shopify.ShopifyOption{{Name: "Color", Values: []string{"Navy", "Ivory"}}}
 	product.FabricInfo = "100% merino wool"
 	labels := `{"product_target":"women","neckline_type":"modest","bottom_type":"skirt","shoe_type":"","tags":` +
-		`{"colors":["navy","cream"],"formality":["casual"],"occasions":[],"season":["winter"],"pattern":["solid"],"fabric":["wool"],"fit":["regular"]},` +
-		`"details":["ribbed cuffs"],"style_note":"A warm everyday layer."}`
+		`{"colors":["navy","cream"],"formality":["casual"],"occasions":[],"season":["winter"],"pattern":["solid"],"fabric":["wool"],"fit":["regular"]}}`
 	labeler := &llmtest.Fake{Text: labels}
 	emb := &recordingEmbedder{}
 
@@ -377,8 +375,7 @@ func TestCatalogSyncLabelsProductAndEmbedsItsLabels(t *testing.T) {
 	if attributes == nil || attributes.NecklineType == nil || *attributes.NecklineType != "modest" || attributes.BottomType != nil {
 		t.Fatalf("attributes = %+v, want a modest neckline and no bottom type on a top", attributes)
 	}
-	want := "Sync test sweater, modest neckline, solid, wool, regular, ribbed cuffs, navy, cream, Knitwear, casual, winter, A warm everyday layer."
-	if emb.lastText != want {
+	if want := "Sync test sweater, Knitwear"; emb.lastText != want {
 		t.Fatalf("embedded text = %q, want %q", emb.lastText, want)
 	}
 }
@@ -401,7 +398,7 @@ func TestCatalogSyncRelabelsOnlyAChangedProduct(t *testing.T) {
 	}
 }
 
-func TestCatalogSyncRetriesFailedLabelNextRun(t *testing.T) {
+func TestCatalogSyncEmbedsAndRetriesAProductThatFailedToLabel(t *testing.T) {
 	db := openSyncTestDB(t)
 	ctx := context.Background()
 	product := newSyncProduct(t, db, topsCategory, 1)
@@ -412,8 +409,8 @@ func TestCatalogSyncRetriesFailedLabelNextRun(t *testing.T) {
 	if err := catalogSync.Sync(ctx); err == nil {
 		t.Fatal("Sync with a failing labeler returned nil, want the label error")
 	}
-	if row := mustFindSyncedRow(t, db, product.ID); !row.active || row.hasEmbedding || emb.calls != 0 {
-		t.Fatalf("after a failed label, row = %+v with %d embed calls, want an active product that was not embedded", row, emb.calls)
+	if row := mustFindSyncedRow(t, db, product.ID); !row.active || !row.hasEmbedding {
+		t.Fatalf("after a failed label, row = %+v, want an active product that was still embedded", row)
 	}
 	if attributes := storedAttributes(t, db, product.ID); attributes != nil {
 		t.Fatalf("after a failed label, attributes = %+v, want none", attributes)
@@ -422,16 +419,15 @@ func TestCatalogSyncRetriesFailedLabelNextRun(t *testing.T) {
 	if err := catalogSync.Sync(ctx); err != nil {
 		t.Fatalf("second Sync: %v", err)
 	}
-	if storedAttributes(t, db, product.ID) == nil || !mustFindSyncedRow(t, db, product.ID).hasEmbedding {
-		t.Fatal("the next run did not retry the failed label and embed")
+	if storedAttributes(t, db, product.ID) == nil {
+		t.Fatal("the next run did not retry the failed label")
 	}
 }
 
 func TestCatalogSyncKeepsOldLabelsWhenRelabelingFails(t *testing.T) {
 	db := openSyncTestDB(t)
 	product := newSyncProduct(t, db, topsCategory, 1)
-	labels := `{"product_target":"women","neckline_type":"modest","bottom_type":"","shoe_type":"","tags":` + emptyTagLists +
-		`,"details":[],"style_note":""}`
+	labels := `{"product_target":"women","neckline_type":"modest","bottom_type":"","shoe_type":"","tags":` + emptyTagLists + `}`
 	runSyncWithLabeler(t, db, &recordingEmbedder{}, &llmtest.Fake{Text: labels}, product)
 
 	product.Description = "Now with pockets."

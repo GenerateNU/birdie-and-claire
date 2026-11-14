@@ -48,8 +48,8 @@ type ProductResponse struct {
 	ImageURL *string `json:"image_url" doc:"URL of the product's lowest-position image, or null when it has none"`
 }
 
-// ProductAttributes are what the catalog sync's LLM read off a product's photo and store data. Every value outside
-// Details and StyleNote comes from the fixed lists below, so a shopper's saved pick compares against it directly.
+// ProductAttributes are what the catalog sync's LLM read off a product's photo and store data. Every value comes from
+// the fixed lists below, so a shopper's saved pick compares against it directly.
 type ProductAttributes struct {
 	ProductTarget string `json:"product_target"`
 	// Each type is set only on a product in the slot it describes, and nil on every other product.
@@ -57,12 +57,10 @@ type ProductAttributes struct {
 	BottomType   *string     `json:"bottom_type"`
 	ShoeType     *string     `json:"shoe_type"`
 	Tags         ProductTags `json:"tags"`
-	// short free-text phrases, such as "ribbed cuffs", that only go into the embedded text
-	Details   []string `json:"details"`
-	StyleNote string   `json:"style_note"`
 }
 
-// ProductTags groups a product's fixed-list labels. Recommendation tags match against every list at once.
+// ProductTags groups a product's fixed-list labels. A recommendation's nice tags match every list, and its exclude
+// tags every list but Colors, since a product is sold in every color it lists.
 type ProductTags struct {
 	Colors    []string `json:"colors"`
 	Formality []string `json:"formality"`

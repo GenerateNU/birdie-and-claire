@@ -6,17 +6,7 @@ config:
   reasoning:
     effort: none
 input:
-  schema:
-    answers: string
-    has_style_preferences: boolean
-    tag_vocabulary(object):
-      colors(array): string
-      formality(array): string
-      occasions(array): string
-      season(array): string
-      pattern(array): string
-      fabric(array): string
-      fit(array): string
+  schema: expandAnswersInput
 ---
 {{role "system"}}
 You turn a shopper's answers into product searches for an outfit with four slots: top, bottom, accessory, and shoe.

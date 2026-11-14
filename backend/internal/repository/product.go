@@ -19,8 +19,8 @@ import (
 type ProductRepository interface {
 	Exists(ctx context.Context, productID uuid.UUID) (bool, error)
 	// FindSimilar ranks a slot's products by distance to embedding, less a bonus per matching niceTag and a bonus when the
-	// product's labeled type is one of typePicks. Tags match both the store's tags and the labeled tag lists; pass them
-	// lowercase. typePicks and excludeProductIDs may be nil.
+	// product's labeled type is one of typePicks. Tags match both the store's tags and the labeled tag lists, except
+	// that a labeled color never excludes; pass them lowercase. typePicks and excludeProductIDs may be nil.
 	FindSimilar(ctx context.Context, embedding []float32, slot models.ProductSlot, excludeTags, niceTags, typePicks []string, excludeProductIDs []uuid.UUID, limit int) ([]models.ProductResponse, error)
 	// GetEmbedding returns a nil embedding for a product that has none yet, and ErrNotFound for a missing product.
 	GetEmbedding(ctx context.Context, productID uuid.UUID) ([]float32, models.ProductSlot, error)
@@ -46,7 +46,6 @@ const (
 // value was built from, and nil when the sync has not built it yet.
 type SyncedProduct struct {
 	ID             uuid.UUID
-	Attributes     *models.ProductAttributes
 	AttributesHash *string
 	EmbeddingHash  *string
 }
@@ -104,18 +103,20 @@ func (r *productRepository) FindSimilar(ctx context.Context, embedding []float32
 			FROM products p
 			CROSS JOIN LATERAL (
 				-- stored tags keep the catalog's casing, so they are lowered; labeled tags are already lowercase
-				SELECT array_agg(DISTINCT tag) AS tags
+				SELECT array_agg(DISTINCT tag) AS tags,
+					-- a product is sold in every color it lists, so offering one never rules it out
+					array_agg(DISTINCT tag) FILTER (WHERE excludable) AS excludable_tags
 				FROM (
-					SELECT lower(store_tag) FROM unnest(p.tags) store_tag
+					SELECT lower(store_tag), true FROM unnest(p.tags) store_tag
 					UNION ALL
-					SELECT jsonb_array_elements_text(tag_list) FROM jsonb_each(p.attributes->'tags') labels(name, tag_list)
-				) every_tag(tag)
+					SELECT jsonb_array_elements_text(tag_list), name <> 'colors' FROM jsonb_each(p.attributes->'tags') labels(name, tag_list)
+				) every_tag(tag, excludable)
 			) all_tags
 			WHERE p.embedding IS NOT NULL
 				AND p.active
 				AND p.slot = $2
 				-- a NULL list matches no tag
-				AND NOT EXISTS (SELECT 1 FROM unnest(all_tags.tags) tag WHERE tag = ANY($3::text[]))
+				AND NOT EXISTS (SELECT 1 FROM unnest(all_tags.excludable_tags) tag WHERE tag = ANY($3::text[]))
 				-- <> ALL over a NULL array is NULL and would drop every row, so a nil list becomes an empty one
 				AND p.id <> ALL(COALESCE($7::uuid[], '{}'))
 			ORDER BY score, p.id
@@ -181,14 +182,14 @@ func (r *productRepository) UpsertShopifyProduct(ctx context.Context, product sh
 			-- an unchanged product keeps its updated_at, so a rerun changes nothing
 			WHERE (products.handle, products.title, products.product_type, products.tags, products.slot, products.active)
 				IS DISTINCT FROM (EXCLUDED.handle, EXCLUDED.title, EXCLUDED.product_type, EXCLUDED.tags, EXCLUDED.slot, true)
-			RETURNING id, attributes, attributes_hash, embedding_hash
+			RETURNING id, attributes_hash, embedding_hash
 		)
-		SELECT id, attributes, attributes_hash, embedding_hash FROM upserted
+		SELECT id, attributes_hash, embedding_hash FROM upserted
 		UNION ALL
 		-- the skipped update returns no row, and this select still sees the row as it was before the statement
-		SELECT id, attributes, attributes_hash, embedding_hash FROM products WHERE shopify_id = $1 AND NOT EXISTS (SELECT 1 FROM upserted)
+		SELECT id, attributes_hash, embedding_hash FROM products WHERE shopify_id = $1 AND NOT EXISTS (SELECT 1 FROM upserted)
 	`, product.ID, product.Handle, product.Title, product.ProductType, product.Tags, slot).Scan(
-		&synced.ID, &synced.Attributes, &synced.AttributesHash, &synced.EmbeddingHash)
+		&synced.ID, &synced.AttributesHash, &synced.EmbeddingHash)
 	if err != nil {
 		return SyncedProduct{}, fmt.Errorf("upsert shopify product %d: %w", product.ID, err)
 	}

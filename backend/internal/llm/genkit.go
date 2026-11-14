@@ -81,9 +81,12 @@ func newGenkitClient(ctx context.Context, cfg config.LLMConfig, retry middleware
 	}
 
 	retry.Statuses = retryStatuses
+	// WithPromptFS reads the prompts directory by default, so no WithPromptDir
+	g := genkit.Init(ctx, genkit.WithPlugins(plugin), genkit.WithPromptFS(promptFS))
+	// each prompt's frontmatter names its input type, so the Go struct is the only definition of the schema
+	genkit.DefineSchemasFor(g, expandAnswersInput{}, labelProductInput{})
 	return &genkitClient{
-		// WithPromptFS reads the prompts directory by default, so no WithPromptDir
-		genkit:  genkit.Init(ctx, genkit.WithPlugins(plugin), genkit.WithPromptFS(promptFS)),
+		genkit:  g,
 		modelID: cfg.Model,
 		model:   openrouter.ModelRef(cfg.Model, nil),
 		retry:   retry,

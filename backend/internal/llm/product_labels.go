@@ -2,6 +2,9 @@ package llm
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"slices"
@@ -46,8 +49,6 @@ type productLabels struct {
 	BottomType    string             `json:"bottom_type"`
 	ShoeType      string             `json:"shoe_type"`
 	Tags          models.ProductTags `json:"tags"`
-	Details       []string           `json:"details"`
-	StyleNote     string             `json:"style_note"`
 }
 
 type labelVocabulary struct {
@@ -116,8 +117,6 @@ func toProductAttributes(labels productLabels, slot models.ProductSlot) (models.
 			Fabric:    keepListed(labels.Tags.Fabric, models.ProductTagValues.Fabric),
 			Fit:       keepListed(labels.Tags.Fit, models.ProductTagValues.Fit),
 		},
-		Details:   keepNonBlank(labels.Details),
-		StyleNote: strings.TrimSpace(labels.StyleNote),
 	}
 	switch slot {
 	case models.SlotTop:
@@ -154,14 +153,19 @@ func listedOrNil(value string, allowed []string) *string {
 	return &value
 }
 
-func keepNonBlank(values []string) []string {
-	kept := make([]string, 0, len(values))
-	for _, value := range values {
-		if value = strings.TrimSpace(value); value != "" {
-			kept = append(kept, value)
-		}
+// LabelInputHash changes when the product's label input or the labeling prompt changes, so editing the prompt
+// relabels the catalog on the next sync.
+func LabelInputHash(input ProductLabelInput) (string, error) {
+	prompt, err := promptFS.ReadFile("prompts/label_product.prompt")
+	if err != nil {
+		return "", fmt.Errorf("read label prompt: %w", err)
 	}
-	return kept
+	encodedInput, err := json.Marshal(input)
+	if err != nil {
+		return "", fmt.Errorf("encode label input: %w", err)
+	}
+	sum := sha256.Sum256(append(prompt, encodedInput...))
+	return hex.EncodeToString(sum[:]), nil
 }
 
 func stripEachDotpromptMarkers(values []string) []string {

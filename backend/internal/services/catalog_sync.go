@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -129,50 +128,47 @@ func (s *catalogSyncService) Sync(ctx context.Context) error {
 	return errors.Join(refreshErrs...)
 }
 
-// refreshAttributesAndEmbedding leaves the old vector in place when labeling fails, because the embedded text includes
-// the attributes.
+// refreshAttributesAndEmbedding refreshes each on its own, so a product that fails to label still gets its vector.
 func (s *catalogSyncService) refreshAttributesAndEmbedding(ctx context.Context, product shopify.ShopifyProduct, slot models.ProductSlot, synced repository.SyncedProduct) error {
 	// A product with no image has no picture to show in an outfit, so it is not recommended or labeled.
 	if len(product.Images) == 0 {
 		return s.repo.Product.ClearEmbedding(ctx, synced.ID)
 	}
-	attributes, err := s.refreshAttributes(ctx, product, slot, synced)
-	if err != nil {
-		return fmt.Errorf("refresh attributes: %w", err)
+	var refreshErrs []error
+	if err := s.refreshAttributes(ctx, product, slot, synced); err != nil {
+		refreshErrs = append(refreshErrs, fmt.Errorf("refresh attributes: %w", err))
 	}
-	if err := s.refreshEmbedding(ctx, product, attributes, synced); err != nil {
-		return fmt.Errorf("refresh embedding: %w", err)
+	if err := s.refreshEmbedding(ctx, product, synced); err != nil {
+		refreshErrs = append(refreshErrs, fmt.Errorf("refresh embedding: %w", err))
 	}
-	return nil
+	return errors.Join(refreshErrs...)
 }
 
 // refreshAttributes labels the product again only when what it is labeled from changed.
-func (s *catalogSyncService) refreshAttributes(ctx context.Context, product shopify.ShopifyProduct, slot models.ProductSlot, synced repository.SyncedProduct) (models.ProductAttributes, error) {
+func (s *catalogSyncService) refreshAttributes(ctx context.Context, product shopify.ShopifyProduct, slot models.ProductSlot, synced repository.SyncedProduct) error {
 	input, err := labelInput(product, slot)
 	if err != nil {
-		return models.ProductAttributes{}, err
+		return err
 	}
-	encodedInput, err := json.Marshal(input)
+	hash, err := llm.LabelInputHash(input)
 	if err != nil {
-		return models.ProductAttributes{}, fmt.Errorf("encode label input: %w", err)
+		return err
 	}
-	hash := hashInputs(string(encodedInput))
-	if synced.Attributes != nil && synced.AttributesHash != nil && *synced.AttributesHash == hash {
-		return *synced.Attributes, nil
+	if synced.AttributesHash != nil && *synced.AttributesHash == hash {
+		return nil
 	}
 
 	attributes, err := llm.LabelProduct(ctx, s.llm, input)
 	if err != nil {
-		return models.ProductAttributes{}, err
+		return err
 	}
-	if err := s.repo.Product.SaveAttributes(ctx, synced.ID, attributes, hash); err != nil {
-		return models.ProductAttributes{}, err
-	}
-	return attributes, nil
+	return s.repo.Product.SaveAttributes(ctx, synced.ID, attributes, hash)
 }
 
-func (s *catalogSyncService) refreshEmbedding(ctx context.Context, product shopify.ShopifyProduct, attributes models.ProductAttributes, synced repository.SyncedProduct) error {
-	text := embeddingText(product, attributes)
+// refreshEmbedding leaves the attributes out of the embedded text. On the store's catalog, adding them retrieved no
+// better than the title and store tags alone, and the embedder reads only the first 77 tokens.
+func (s *catalogSyncService) refreshEmbedding(ctx context.Context, product shopify.ShopifyProduct, synced repository.SyncedProduct) error {
+	text := strings.Join(append([]string{product.Title}, product.Tags...), ", ")
 	imageURL, err := resizedImageURL(product.Images[0].URL)
 	if err != nil {
 		return err
@@ -220,29 +216,6 @@ func labelInput(product shopify.ShopifyProduct, slot models.ProductSlot) (llm.Pr
 		StoreDetails: storeDetails,
 		ImageURLs:    imageURLs,
 	}, nil
-}
-
-// embeddingText puts the details first, because the embedder reads only the first 77 tokens and ranking already
-// matches the fixed tag lists in SQL. Colors come late since a product lists every color it is sold in.
-func embeddingText(product shopify.ShopifyProduct, attributes models.ProductAttributes) string {
-	terms := []string{product.Title}
-	if attributes.NecklineType != nil {
-		terms = append(terms, *attributes.NecklineType+" neckline")
-	}
-	for _, productType := range []*string{attributes.BottomType, attributes.ShoeType} {
-		if productType != nil {
-			terms = append(terms, *productType)
-		}
-	}
-	tags := attributes.Tags
-	for _, list := range [][]string{tags.Pattern, tags.Fabric, tags.Fit, attributes.Details, tags.Colors, product.Tags,
-		tags.Formality, tags.Occasions, tags.Season} {
-		terms = append(terms, list...)
-	}
-	if attributes.StyleNote != "" {
-		terms = append(terms, attributes.StyleNote)
-	}
-	return strings.Join(terms, ", ")
 }
 
 func slotForCategory(category string) (models.ProductSlot, bool) {

@@ -15,7 +15,7 @@ const emptyTagLists = `{"colors":[],"formality":[],"occasions":[],"season":[],"p
 
 func labelAnswer(target, neckline, bottom, shoe, tags string) string {
 	return `{"product_target":"` + target + `","neckline_type":"` + neckline + `","bottom_type":"` + bottom +
-		`","shoe_type":"` + shoe + `","tags":` + tags + `,"details":[" ribbed cuffs ",""],"style_note":" A navy sweater. "}`
+		`","shoe_type":"` + shoe + `","tags":` + tags + `}`
 }
 
 func TestLabelProductKeepsOnlyListedValues(t *testing.T) {
@@ -46,9 +46,6 @@ func TestLabelProductKeepsOnlyListedValues(t *testing.T) {
 		if !slices.Equal(lists[0], lists[1]) {
 			t.Errorf("%s = %q, want %q", name, lists[0], lists[1])
 		}
-	}
-	if !slices.Equal(got.Details, []string{"ribbed cuffs"}) || got.StyleNote != "A navy sweater." {
-		t.Errorf("free text = %q / %q, want it trimmed with blanks dropped", got.Details, got.StyleNote)
 	}
 }
 

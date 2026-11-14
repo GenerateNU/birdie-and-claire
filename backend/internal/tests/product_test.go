@@ -195,7 +195,7 @@ func labeledTop(neckline string, tags models.ProductTags) *models.ProductAttribu
 			*list = []string{}
 		}
 	}
-	return &models.ProductAttributes{ProductTarget: "women", NecklineType: &neckline, Tags: tags, Details: []string{}}
+	return &models.ProductAttributes{ProductTarget: "women", NecklineType: &neckline, Tags: tags}
 }
 
 func TestFindSimilarRewardsAPickedType(t *testing.T) {
@@ -218,15 +218,15 @@ func TestFindSimilarRewardsAPickedType(t *testing.T) {
 func TestFindSimilarMatchesLabeledTags(t *testing.T) {
 	db := openTestDB(t)
 
-	near := insertSlotProduct(t, db, testProduct{slot: models.SlotTop, attributes: labeledTop("low", models.ProductTags{Colors: []string{"white"}}), embedding: productEmbedding(0.1)})
+	near := insertSlotProduct(t, db, testProduct{slot: models.SlotTop, attributes: labeledTop("low", models.ProductTags{Pattern: []string{"floral"}}), embedding: productEmbedding(0.1)})
 	far := insertSlotProduct(t, db, testProduct{slot: models.SlotTop, attributes: labeledTop("low", models.ProductTags{Occasions: []string{"date_night"}}), embedding: productEmbedding(0.17)})
 	ownIDs := []uuid.UUID{near, far}
 
 	if got := findSimilarIDs(t, db, ownIDs, nil, []string{"date_night"}); !slices.Equal(got, []uuid.UUID{far, near}) {
 		t.Errorf("with nice tag date_night: got %v, want the date_night row first", got)
 	}
-	if got := findSimilarIDs(t, db, ownIDs, []string{"white"}, nil); !slices.Equal(got, []uuid.UUID{far}) {
-		t.Errorf("excluding white: got %v, want only %v", got, far)
+	if got := findSimilarIDs(t, db, ownIDs, []string{"floral"}, nil); !slices.Equal(got, []uuid.UUID{far}) {
+		t.Errorf("excluding floral: got %v, want only %v", got, far)
 	}
 }
 
@@ -241,5 +241,22 @@ func TestFindSimilarCountsATagOnBothListsOnce(t *testing.T) {
 
 	if got := findSimilarIDs(t, db, ownIDs, nil, []string{"knit"}); !slices.Equal(got, []uuid.UUID{near, far}) {
 		t.Errorf("with nice tag knit: got %v, want the nearer row still first", got)
+	}
+}
+
+func TestFindSimilarNeverExcludesALabeledColor(t *testing.T) {
+	db := openTestDB(t)
+
+	// sold in white and black, so a shopper who rules out white can still buy it
+	offeredInWhite := insertSlotProduct(t, db, testProduct{slot: models.SlotTop,
+		attributes: labeledTop("high", models.ProductTags{Colors: []string{"white", "black"}}), embedding: productEmbedding(0.1)})
+	storeTaggedWhite := insertSlotProduct(t, db, testProduct{slot: models.SlotTop, tags: []string{"White"}, embedding: productEmbedding(0.2)})
+	ownIDs := []uuid.UUID{offeredInWhite, storeTaggedWhite}
+
+	if got := findSimilarIDs(t, db, ownIDs, []string{"white"}, nil); !slices.Equal(got, []uuid.UUID{offeredInWhite}) {
+		t.Errorf("excluding white: got %v, want only the product that is also sold in black", got)
+	}
+	if got := findSimilarIDs(t, db, []uuid.UUID{offeredInWhite}, nil, []string{"black"}); !slices.Equal(got, []uuid.UUID{offeredInWhite}) {
+		t.Errorf("with nice tag black: got %v, want the labeled color to still match", got)
 	}
 }
