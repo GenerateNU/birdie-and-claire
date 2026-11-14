@@ -1,32 +1,59 @@
-// Placeholder palette until designers hand over branding. Private on purpose: pages
-// and components use the semantic tokens below, never a raw color.
+// Hi-fi palette from the Figma style guide. Private on purpose: pages and components use the
+// semantic tokens below, never a raw color.
 const Palette = {
-  ink: "#282828",
-  slate: "#8B91A3",
+  ink: "#242424",
+  inkHover: "#484846",
+  inkPressed: "#6E6E6B",
+  slatePressed: "#C9CDD5",
   paper: "#FDFDFD",
-  cream: "#F2F1EB",
-  mist: "#E7E8EC",
+  white: "#FFFFFF",
+  tan: "#F0EFE9",
+  slateSubtle: "#E3E5E9",
+  slateFaint: "#F3F4F6",
+  slate: "#808798",
+  slateStrong: "#5F6677",
+  red: "#B3261E",
+  redHover: "#8F1E18",
+  redPressed: "#721813",
+  redSubtle: "#F6E3E1",
+  green: "#2E6B4F",
+  greenSubtle: "#E4EEE8",
 } as const;
 
+// warning and info stay raw because Figma has no counterpart for them yet. They are the only
+// values outside Palette.
 export const StatusColor = {
-  success: "#16A34A",
-  error: "#DC2626",
+  success: Palette.green,
+  error: Palette.red,
   warning: "#D97706",
   info: "#2563EB",
 } as const;
 
 export const TextColor = {
   primary: Palette.ink,
-  secondary: Palette.slate,
+  secondary: Palette.slateStrong,
+  disabled: Palette.slate,
   inverse: Palette.paper,
 } as const;
 
 export const BackgroundColor = {
   background: Palette.paper,
-  surface: Palette.cream,
-  placeholder: Palette.mist,
+  surface: Palette.tan,
+  card: Palette.white,
+  placeholder: Palette.slateSubtle,
+  // Hover on neutral surfaces such as rows and secondary controls.
+  hover: Palette.slateSubtle,
   primary: Palette.ink,
+  "primary-hover": Palette.inkHover,
+  "primary-pressed": Palette.inkPressed,
+  pressed: Palette.slatePressed,
+  "error-hover": Palette.redHover,
+  "error-pressed": Palette.redPressed,
+  "error-subtle": Palette.redSubtle,
+  "success-subtle": Palette.greenSubtle,
   "control-off": Palette.slate,
+  // Fill of a disabled field, checkbox, radio, tile or chip.
+  disabled: Palette.slateFaint,
   overlay: "rgba(0, 0, 0, 0.4)",
   // Darkens a photo enough for inverse text to read on it. The opacity is the lofi homescreen's.
   "photo-overlay": "rgba(0, 0, 0, 0.69)",
@@ -34,8 +61,11 @@ export const BackgroundColor = {
 
 // DEFAULT is the color the plain `border` class uses.
 export const BorderColor = {
-  DEFAULT: Palette.mist,
+  DEFAULT: Palette.slateSubtle,
   primary: Palette.ink,
+  disabled: Palette.slate,
+  // An enabled field's outline, quieter than primary.
+  control: Palette.slate,
 } as const;
 
 // focus-inverse is for controls on a dark surface, where the ink ring disappears.

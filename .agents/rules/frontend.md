@@ -57,9 +57,10 @@ as a review finding, not a preference.
   fits, such as a semantic `<nav>`, `<header>`, or `<ul>`.
 - Import `Link` from `@/design-system`, never from `@tanstack/react-router`.
   Lint enforces this. With no variant it is unstyled like the router's, for
-  cards, nav rows, and images. `variant="text"` makes it an underlined text link.
-  `variant="primary"` and `"secondary"` style it like the Button of that
-  variant, and only those take a `size`.
+  cards, nav rows, and images. A `variant` of `"primary"`, `"secondary"`,
+  `"ghost"`, or `"destructive"` styles it like the Button of that variant, and
+  only those take a `size`. For an inline text link, use `TextLink`, which has
+  the same routing props.
 - Use `Box`, never a raw `<div>`, including inside the design system. Its own
   components import it from `@/design-system/primitives/box`, not the index.
 - A missing component goes in the design system, and only when a page uses

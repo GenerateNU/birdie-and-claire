@@ -55,7 +55,7 @@ type HeroProps = {
 
 function Hero({ signedIn, onExploreFeatures }: HeroProps) {
   return (
-    <Box className="relative flex flex-1 flex-col items-center justify-center gap-lg px-md py-xxl text-inverse lg:px-xxl">
+    <Box className="relative flex flex-1 flex-col items-center justify-center gap-lg px-md py-xxxl text-inverse lg:px-xxxl">
       <img src={heroPhoto} alt="" className="absolute inset-0 size-full object-cover" />
       <Box className="absolute inset-0 bg-photo-overlay" />
       <Box className="relative flex w-full flex-col items-center gap-lg">
@@ -72,18 +72,12 @@ function Hero({ signedIn, onExploreFeatures }: HeroProps) {
           <Button
             label="Explore features"
             variant="secondary"
-            size="lg"
             trailingIcon={ArrowRightIcon}
             onClick={onExploreFeatures}
             className="focus-visible:outline-focus-inverse"
           />
           {!signedIn && (
-            <Link
-              to="/login"
-              variant="secondary"
-              size="lg"
-              className="focus-visible:outline-focus-inverse"
-            >
+            <Link to="/login" variant="secondary" className="focus-visible:outline-focus-inverse">
               Create an account
             </Link>
           )}
