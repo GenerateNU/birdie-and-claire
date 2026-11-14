@@ -28,6 +28,8 @@ export { TextField } from "@/design-system/components/inputs/text-field";
 
 export { Link } from "@/design-system/components/links/link";
 
+export { TextLink } from "@/design-system/components/links/text-link";
+
 export { Logo } from "@/design-system/components/logo/logo";
 
 export { Tabs } from "@/design-system/components/tabs/tabs";

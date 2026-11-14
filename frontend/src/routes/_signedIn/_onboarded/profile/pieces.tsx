@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useRef, useState } from "react";
 
 import { listCurrentUserPiecesInfiniteOptions } from "@/api/generated/@tanstack/react-query.gen";
-import { Box, Button, Empty, ErrorState, Link, Spinner, Text } from "@/design-system";
+import { Box, Button, Empty, ErrorState, Link, Spinner, Text, TextLink } from "@/design-system";
 import { LoadMoreSentinel } from "@/features/pieces/load-more-sentinel";
 import { OwnedPieceCard } from "@/features/pieces/owned-piece-card";
 import { usePagination } from "@/lib/use-pagination";
@@ -56,9 +56,9 @@ function PiecesPage() {
         </Text>
         <Box className="flex flex-col items-center gap-sm">
           <Empty title="No pieces yet" />
-          <Link to="/pieces/add" variant="text" leadingIcon={Plus}>
+          <TextLink to="/pieces/add" leadingIcon={Plus}>
             Add Items
-          </Link>
+          </TextLink>
         </Box>
       </>
     );

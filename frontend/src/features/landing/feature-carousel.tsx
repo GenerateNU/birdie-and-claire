@@ -97,7 +97,7 @@ export function FeatureCarousel() {
           ref={previousRef}
           icon={CaretLeftIcon}
           label="Previous feature"
-          variant="outlined"
+          variant="secondary"
           onClick={() => goTo(index - 1)}
           className={isFirst ? "invisible shrink-0" : "shrink-0"}
         />
@@ -110,7 +110,7 @@ export function FeatureCarousel() {
           ref={nextRef}
           icon={CaretRightIcon}
           label="Next feature"
-          variant="outlined"
+          variant="secondary"
           onClick={() => goTo(index + 1)}
           className={isLast ? "invisible shrink-0" : "shrink-0"}
         />

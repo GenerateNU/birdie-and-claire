@@ -72,18 +72,12 @@ function Hero({ signedIn, onExploreFeatures }: HeroProps) {
           <Button
             label="Explore features"
             variant="secondary"
-            size="lg"
             trailingIcon={ArrowRightIcon}
             onClick={onExploreFeatures}
             className="focus-visible:outline-focus-inverse"
           />
           {!signedIn && (
-            <Link
-              to="/login"
-              variant="secondary"
-              size="lg"
-              className="focus-visible:outline-focus-inverse"
-            >
+            <Link to="/login" variant="secondary" className="focus-visible:outline-focus-inverse">
               Create an account
             </Link>
           )}

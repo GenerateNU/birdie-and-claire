@@ -3,6 +3,8 @@
 const Palette = {
   ink: "#242424",
   inkHover: "#484846",
+  inkPressed: "#6E6E6B",
+  slatePressed: "#C9CDD5",
   paper: "#FDFDFD",
   white: "#FFFFFF",
   tan: "#F0EFE9",
@@ -42,6 +44,8 @@ export const BackgroundColor = {
   hover: Palette.slateSubtle,
   primary: Palette.ink,
   "primary-hover": Palette.inkHover,
+  "primary-pressed": Palette.inkPressed,
+  pressed: Palette.slatePressed,
   "error-hover": Palette.redHover,
   "error-pressed": Palette.redPressed,
   "error-subtle": Palette.redSubtle,
@@ -56,6 +60,7 @@ export const BackgroundColor = {
 export const BorderColor = {
   DEFAULT: Palette.slateSubtle,
   primary: Palette.ink,
+  disabled: Palette.slate,
 } as const;
 
 // focus-inverse is for controls on a dark surface, where the ink ring disappears.

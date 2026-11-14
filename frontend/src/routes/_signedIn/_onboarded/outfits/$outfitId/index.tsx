@@ -81,7 +81,7 @@ function OutfitDetailsPage() {
               <IconButton
                 icon={ArrowsOut}
                 label="Expand the outfit, coming soon"
-                variant="outlined"
+                variant="secondary"
                 disabled
                 title="Coming soon"
               />
@@ -99,7 +99,7 @@ function OutfitDetailsPage() {
                 <IconButton
                   icon={Plus}
                   label="Save the outfit to a collection, coming soon"
-                  variant="outlined"
+                  variant="secondary"
                   disabled
                   title="Coming soon"
                 />

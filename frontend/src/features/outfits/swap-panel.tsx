@@ -104,7 +104,7 @@ function SpotSwapPanel({ outfitId, items, originId, onSwap, onBack }: SpotSwapPa
         <IconButton
           icon={CaretLeftIcon}
           label="Back to outfit details"
-          variant="plain"
+          variant="ghost"
           onClick={onBack}
         />
         <Text variant="subheading">EDIT {SLOT_NAMES[slot].heading}</Text>

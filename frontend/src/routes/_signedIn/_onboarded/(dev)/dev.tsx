@@ -4,7 +4,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { listOutfitsInfiniteQueryKey } from "@/api/generated/@tanstack/react-query.gen";
 import { createOutfit } from "@/api/generated/sdk.gen";
-import { Box, Button, Link, Page, Text } from "@/design-system";
+import { Box, Button, Page, Text, TextLink } from "@/design-system";
 
 export const Route = createFileRoute("/_signedIn/_onboarded/(dev)/dev")({
   component: Dev,
@@ -75,12 +75,12 @@ function Dev() {
         .
       </Text>
       <Box className="flex flex-col items-start gap-xxs">
-        <Link variant="text" to="/profile-picture-test" trailingIcon={CaretRight}>
+        <TextLink to="/profile-picture-test" trailingIcon={CaretRight}>
           Profile picture test
-        </Link>
-        <Link variant="text" to="/playground" trailingIcon={CaretRight}>
+        </TextLink>
+        <TextLink to="/playground" trailingIcon={CaretRight}>
           Design system playground
-        </Link>
+        </TextLink>
       </Box>
       <Box className="mt-lg flex flex-col items-start gap-xs">
         <Button
