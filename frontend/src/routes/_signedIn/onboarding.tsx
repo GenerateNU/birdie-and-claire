@@ -173,8 +173,8 @@ function Onboarding() {
   // The style frame and the fit frames space their screens differently in Figma.
   const layout =
     step === "style"
-      ? { logo: "w-logo-onboarding", cards: "mt-xl", buttons: "mt-xxxl" }
-      : { logo: "w-logo-onboarding-fit", cards: "mt-lg", buttons: "mt-xl" };
+      ? { cards: "mt-xl", buttons: "mt-xxxl" }
+      : { cards: "mt-lg", buttons: "mt-xl" };
 
   return (
     <Page className="flex flex-col pb-xxxl">
@@ -182,7 +182,7 @@ function Onboarding() {
 
       <Box className="mt-lg flex flex-1 flex-col items-center">
         <Box className="flex flex-col items-center gap-lg">
-          <Logo className={layout.logo} />
+          {step !== "style" && <Logo className="w-logo-onboarding-fit" />}
           <Text variant="heading-l">{questions[step].prompt}</Text>
           <Text variant="body">{preferences[step].length} selected</Text>
         </Box>
