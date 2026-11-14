@@ -82,6 +82,9 @@ export const CollectionCardSize = {
 // An outfit card's width and image height (`w-outfit`, `h-outfit`), from Figma.
 export const OutfitCardSize = { width: "240px", imageHeight: "300px" } as const;
 
+// The home hero's height and the photo's width (`h-hero`, `w-hero-photo`), from Figma.
+export const HomeHeroSize = { height: "19.375rem", photoWidth: "27.0625rem" } as const;
+
 // An outfit slot's width and photo heights (`w-outfit-slot`, `h-outfit-slot-*`), from Figma.
 export const OutfitSlotSize = {
   width: "258px",

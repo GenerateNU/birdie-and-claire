@@ -17,14 +17,12 @@ type AppSidebarItem = {
   label: string;
   icon: Icon;
   to: LinkProps["to"];
-  /** The routes that mark this item, matched fuzzily so nested pages count. Empty never marks it. */
+  /** The routes that mark this item, matched fuzzily so nested pages count, except "/", which matches only itself. */
   activeOn: LinkProps["to"][];
 };
 
 const mainItems: AppSidebarItem[] = [
-  // There's no signed-in home page yet, so Home opens the saved outfits, which already have their
-  // own item.
-  { label: "Home", icon: HouseIcon, to: "/profile/outfits", activeOn: [] },
+  { label: "Home", icon: HouseIcon, to: "/", activeOn: ["/"] },
   {
     label: "Saved outfits",
     icon: BookmarkSimpleIcon,
@@ -51,14 +49,14 @@ export function AppSidebar() {
       label,
       icon,
       to,
-      active: activeOn.some((route) => Boolean(matchRoute({ to: route, fuzzy: true }))),
+      active: activeOn.some((route) => Boolean(matchRoute({ to: route, fuzzy: route !== "/" }))),
     };
   }
 
   return (
     <Sidebar
       collapse={null}
-      logoTo="/profile/outfits"
+      logoTo="/"
       action={{ label: "New outfit", onClick: () => void navigate({ to: "/create-outfit" }) }}
       items={mainItems.map(toSidebarItem)}
       secondaryItems={[
