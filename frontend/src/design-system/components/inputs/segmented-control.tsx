@@ -4,7 +4,7 @@ import { joinClasses } from "@/design-system/utils/join-classes";
 
 // A disabled segment sets data-disabled, which comes after hover in Tailwind's variant order.
 const segmentClasses =
-  "flex h-xl cursor-pointer items-center justify-center bg-card px-md text-body-s text-primary hover:bg-hover data-[checked]:bg-primary data-[checked]:text-inverse data-[checked]:hover:bg-primary data-[disabled]:cursor-default data-[disabled]:bg-disabled data-[disabled]:text-disabled data-[disabled]:data-[checked]:bg-placeholder focus-ring";
+  "flex h-xl cursor-pointer items-center justify-center bg-card px-md text-body-s text-primary hover:bg-hover data-[checked]:bg-primary data-[checked]:text-inverse data-[checked]:hover:bg-primary data-[disabled]:cursor-default data-[disabled]:bg-disabled data-[disabled]:text-disabled data-[disabled]:data-[checked]:bg-placeholder data-[disabled]:data-[checked]:text-disabled focus-ring";
 
 type SegmentOption<T extends string> = {
   label: string;

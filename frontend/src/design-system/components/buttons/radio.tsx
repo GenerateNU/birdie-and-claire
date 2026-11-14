@@ -1,23 +1,16 @@
 import { Radio } from "@base-ui/react/radio";
 import { RadioGroup as BaseRadioGroup } from "@base-ui/react/radio-group";
 import { useId } from "react";
-import { joinClasses } from "@/design-system/utils/join-classes";
+import {
+  dotStateClasses,
+  radioStateClasses,
+} from "@/design-system/components/buttons/radio-classes";
 import { Box } from "@/design-system/primitives/box";
+import { joinClasses } from "@/design-system/utils/join-classes";
 
-// The label carries `group`, so hovering the text lights up the radio too. A disabled radio leaves
-// group-hover out, because group-hover would win over a data-[disabled] class.
+// The label carries `group`, so hovering the text lights up the radio too.
 const radioClasses =
   "flex size-control shrink-0 items-center justify-center rounded-full border data-[checked]:border-medium focus-ring";
-
-const radioStateClasses = {
-  enabled: "border-primary bg-card group-hover:bg-hover",
-  disabled: "border-disabled bg-disabled",
-};
-
-const dotStateClasses = {
-  enabled: "bg-primary",
-  disabled: "bg-control-off",
-};
 
 type RadioOption<T extends string> = {
   label: string;
@@ -64,7 +57,10 @@ export function RadioGroup<T extends string>({
       className={joinClasses("flex flex-col gap-xs", className)}
     >
       {label && (
-        <Box id={labelId} className="text-label-l text-primary">
+        <Box
+          id={labelId}
+          className={disabled ? "text-label-l text-disabled" : "text-label-l text-primary"}
+        >
           {label}
         </Box>
       )}

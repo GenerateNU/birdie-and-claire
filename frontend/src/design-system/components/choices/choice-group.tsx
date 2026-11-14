@@ -1,6 +1,10 @@
 import { Radio } from "@base-ui/react/radio";
 import { RadioGroup as BaseRadioGroup } from "@base-ui/react/radio-group";
 import { useId } from "react";
+import {
+  dotStateClasses,
+  radioStateClasses,
+} from "@/design-system/components/buttons/radio-classes";
 import { Box } from "@/design-system/primitives/box";
 
 // The row carries `group`, so its radio follows the row's hover and checked state. A disabled row
@@ -16,16 +20,6 @@ const rowStateClasses = {
 
 const radioClasses =
   "flex size-control shrink-0 items-center justify-center rounded-full border group-data-[checked]:border-medium";
-
-const radioStateClasses = {
-  enabled: "border-primary bg-card group-hover:bg-hover",
-  disabled: "border-disabled bg-disabled",
-};
-
-const dotStateClasses = {
-  enabled: "bg-primary",
-  disabled: "bg-control-off",
-};
 
 type ChoiceOption<T extends string> = {
   label: string;

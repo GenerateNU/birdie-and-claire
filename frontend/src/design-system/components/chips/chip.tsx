@@ -2,9 +2,10 @@ import { Toggle as BaseToggle } from "@base-ui/react/toggle";
 import type { Icon } from "@phosphor-icons/react";
 import { joinClasses } from "@/design-system/utils/join-classes";
 
-// A disabled chip sets data-disabled, which comes after hover in Tailwind's variant order.
+// A disabled chip sets data-disabled, which comes after hover in Tailwind's variant order. The
+// disabled and pressed pair is spelled out so it beats data-[pressed] and its hover.
 const chipClasses =
-  "inline-flex items-center gap-xxs bg-placeholder text-body-s text-primary hover:bg-pressed data-[pressed]:bg-primary data-[pressed]:text-inverse data-[pressed]:hover:bg-primary data-[disabled]:bg-disabled data-[disabled]:text-disabled focus-ring";
+  "inline-flex items-center gap-xxs bg-placeholder text-body-s text-primary hover:bg-pressed data-[pressed]:bg-primary data-[pressed]:text-inverse data-[pressed]:hover:bg-primary data-[disabled]:bg-disabled data-[disabled]:text-disabled data-[disabled]:data-[pressed]:bg-placeholder data-[disabled]:data-[pressed]:text-disabled focus-ring";
 
 const sizes = {
   md: { classes: "h-xl px-sm", iconSize: 14 },
