@@ -7,7 +7,7 @@ const appearanceClasses = {
     root: "flex w-full flex-col items-center gap-md",
     panel: "w-full",
     list: "flex rounded-full border border-primary",
-    tab: "px-lg py-xs text-caption text-primary border-r border-primary last:border-r-0 first:rounded-l-full last:rounded-r-full data-[active]:bg-primary data-[active]:text-inverse focus-ring",
+    tab: "px-lg py-xs text-caption text-primary border-r border-primary last:border-r-0 first:rounded-l-full last:rounded-r-full motion-safe:transition-colors data-[active]:bg-primary data-[active]:text-inverse focus-ring",
   },
   // Fills its container's height and scrolls the panel, so a long grid stays under the tabs.
   underline: {

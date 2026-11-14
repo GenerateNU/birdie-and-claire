@@ -16,7 +16,7 @@ export function ProgressBar({ label, step, stepCount }: ProgressBarProps) {
       className="w-full max-w-content-sm"
     >
       <Progress.Track className="h-xxs w-full overflow-hidden rounded-full bg-placeholder">
-        <Progress.Indicator className="bg-primary" />
+        <Progress.Indicator className="bg-primary motion-safe:transition-all" />
       </Progress.Track>
     </Progress.Root>
   );

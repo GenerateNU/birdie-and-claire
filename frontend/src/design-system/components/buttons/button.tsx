@@ -1,5 +1,6 @@
 import { Button as BaseButton } from "@base-ui/react/button";
 import type { Icon } from "@phosphor-icons/react";
+import { motion } from "motion/react";
 import type { MouseEventHandler } from "react";
 import {
   buttonClasses,
@@ -42,6 +43,7 @@ export function Button({
 
   return (
     <BaseButton
+      render={<motion.button whileTap={{ scale: 0.98 }} />}
       type={type}
       onClick={onClick}
       disabled={disabled || loading}

@@ -8,7 +8,7 @@ import { Text } from "@/design-system/primitives/text";
 
 const defaultGridClasses = "grid grid-cols-2 gap-md md:grid-cols-4";
 
-const optionCardClasses = `${cardFrameClasses} flex cursor-pointer items-center justify-center p-lg text-body focus-ring data-[checked]:border-primary`;
+const optionCardClasses = `${cardFrameClasses} flex cursor-pointer items-center justify-center p-lg text-body focus-ring motion-safe:transition-colors data-[checked]:border-primary`;
 
 type OptionCardOption<T extends string> = {
   label: string;

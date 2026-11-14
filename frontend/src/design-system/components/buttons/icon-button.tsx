@@ -1,5 +1,6 @@
 import { Button as BaseButton } from "@base-ui/react/button";
 import type { Icon } from "@phosphor-icons/react";
+import { motion } from "motion/react";
 import type { MouseEventHandler, Ref } from "react";
 import { joinClasses } from "@/design-system/utils/join-classes";
 
@@ -37,6 +38,7 @@ export function IconButton({
 
   return (
     <BaseButton
+      render={<motion.button whileTap={{ scale: 0.95 }} />}
       ref={ref}
       type="button"
       onClick={onClick}

@@ -1,9 +1,10 @@
 import { Toggle as BaseToggle } from "@base-ui/react/toggle";
+import { motion } from "motion/react";
 
 import { cardFrameClasses } from "@/design-system/components/cards/card-classes";
 import { CardImage } from "@/design-system/components/cards/card-image";
 
-const imageCardClasses = `${cardFrameClasses} flex flex-col gap-xs p-xs text-body focus-ring data-[pressed]:border-primary`;
+const imageCardClasses = `${cardFrameClasses} flex flex-col gap-xs p-xs text-body focus-ring motion-safe:transition-colors data-[pressed]:border-primary`;
 
 // fill takes the width its container gives it.
 const sizeClasses = {
@@ -33,6 +34,7 @@ export function ImageCard({
 
   return (
     <BaseToggle
+      render={<motion.button whileTap={{ scale: 0.98 }} />}
       pressed={pressed}
       onPressedChange={onPressedChange}
       disabled={disabled}

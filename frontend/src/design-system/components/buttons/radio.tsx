@@ -5,7 +5,7 @@ import { joinClasses } from "@/design-system/utils/join-classes";
 import { Text } from "@/design-system/primitives/text";
 
 const radioClasses =
-  "flex size-md items-center justify-center rounded-full border bg-background data-[checked]:border-primary focus-ring";
+  "flex size-md items-center justify-center rounded-full border bg-background motion-safe:transition-colors data-[checked]:border-primary focus-ring";
 
 const dotClasses = "size-xs rounded-full bg-primary";
 

@@ -3,7 +3,7 @@ import { Check } from "@phosphor-icons/react";
 import { joinClasses } from "@/design-system/utils/join-classes";
 
 const boxClasses =
-  "flex size-md items-center justify-center rounded-xs border bg-background text-caption text-inverse data-[checked]:border-primary data-[checked]:bg-primary focus-ring";
+  "flex size-md items-center justify-center rounded-xs border bg-background text-caption text-inverse motion-safe:transition-colors data-[checked]:border-primary data-[checked]:bg-primary focus-ring";
 
 type CheckboxProps = {
   label: string;
