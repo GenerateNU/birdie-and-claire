@@ -116,7 +116,7 @@ export function OnboardingFlow() {
               { value: "add-method", label: "Yes, I'm an existing customer!" },
               { value: "style", label: "No, I'm new!" },
             ]}
-            onContinue={setStep}
+            onSelect={setStep}
           />
         )}
         {(step === "add-method" || step === "pick-pieces") && (
@@ -127,7 +127,7 @@ export function OnboardingFlow() {
               { value: "pick-pieces", label: "Add owned items manually" },
               { value: "shop-login", label: "Connect with Shop" },
             ]}
-            onContinue={setStep}
+            onSelect={setStep}
           />
         )}
         {step === "shop-login" && <ShopLoginPlaceholder />}

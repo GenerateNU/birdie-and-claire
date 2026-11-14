@@ -1,8 +1,8 @@
 import { ArrowLeftIcon } from "@phosphor-icons/react";
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 
 import hero from "@/design-system/assets/landing/hero.jpg";
-import { Box, Button, CardImage, ChoiceGroup, Logo, Page, Text } from "@/design-system";
+import { Box, Button, CardImage, Logo, Page, Text } from "@/design-system";
 import { OnboardingStepper, type OnboardingStage } from "@/features/onboarding/onboarding-stepper";
 
 // Every screen reuses the landing hero until design exports the onboarding photos.
@@ -70,19 +70,17 @@ type ChoiceQuestionProps<T extends string> = {
   question: string;
   subtitle?: string;
   options: { value: T; label: string }[];
-  onContinue: (value: T) => void;
+  onSelect: (value: T) => void;
 };
 
-// Continue moves on, not picking a row: a radio group also picks a row as the arrow keys move
-// focus through it, which would skip the screen for keyboard users.
+// Buttons, not ChoiceGroup: picking an answer moves on at once, and a radio group would also pick
+// one as the arrow keys move focus through it.
 export function ChoiceQuestion<T extends string>({
   question,
   subtitle,
   options,
-  onContinue,
+  onSelect,
 }: ChoiceQuestionProps<T>) {
-  const [answer, setAnswer] = useState<T | null>(null);
-
   return (
     <Box className="flex flex-col items-center gap-lg">
       <Box className="flex flex-col items-center gap-xs text-center">
@@ -90,17 +88,18 @@ export function ChoiceQuestion<T extends string>({
         {subtitle && <Text variant="subtitle">{subtitle}</Text>}
       </Box>
       {/* 564px is the answer rows' width in Figma's Own Any B&C Items 1. */}
-      <Box className="flex w-[564px] flex-col gap-lg">
-        <ChoiceGroup options={options} value={answer} onValueChange={setAnswer} />
-        <Button
-          label="Continue"
-          disabled={answer === null}
-          onClick={() => {
-            if (answer !== null) {
-              onContinue(answer);
-            }
-          }}
-        />
+      <Box className="flex w-[564px] flex-col gap-sm">
+        {options.map((option) => (
+          <Button
+            key={option.value}
+            label={option.label}
+            variant="secondary"
+            // Important, because Button's own justify-center otherwise wins. The hi-fi rows are
+            // left-aligned.
+            className="w-full !justify-start"
+            onClick={() => onSelect(option.value)}
+          />
+        ))}
       </Box>
     </Box>
   );
