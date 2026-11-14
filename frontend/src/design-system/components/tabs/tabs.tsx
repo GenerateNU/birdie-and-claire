@@ -7,7 +7,7 @@ const appearanceClasses = {
     root: "flex w-full flex-col items-center gap-md",
     panel: "w-full",
     list: "flex rounded-full border border-primary",
-    tab: "px-lg py-xs text-caption text-primary border-r border-primary last:border-r-0 first:rounded-l-full last:rounded-r-full data-[active]:bg-primary data-[active]:text-inverse focus-ring",
+    tab: "px-lg py-xs text-caption text-primary border-r border-primary last:border-r-0 first:rounded-l-full last:rounded-r-full motion-safe:transition-colors data-[active]:bg-primary data-[active]:text-inverse focus-ring",
   },
   // Fills its container's height and scrolls the panel, so a long grid stays under the tabs.
   underline: {
@@ -60,7 +60,7 @@ export function Tabs<T extends string>({
             {label}
             {/* Invisible rather than absent, so the row doesn't shift when the active tab moves. */}
             {underlined && (
-              <span className="invisible h-xxs w-xl rounded-full bg-primary group-data-[active]:visible" />
+              <span className="h-xxs w-xl rounded-full bg-primary opacity-0 motion-safe:transition-opacity group-data-[active]:opacity-100" />
             )}
           </BaseTabs.Tab>
         ))}

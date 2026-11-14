@@ -1,4 +1,5 @@
 import { Toggle as BaseToggle } from "@base-ui/react/toggle";
+import { motion } from "motion/react";
 
 import { CardImage } from "@/design-system/components/cards/card-image";
 import {
@@ -44,6 +45,7 @@ export function ImageOptionCard({
 
   return (
     <BaseToggle
+      render={<motion.button whileTap={{ scale: 0.98 }} />}
       pressed={pressed}
       onPressedChange={onPressedChange}
       disabled={disabled}

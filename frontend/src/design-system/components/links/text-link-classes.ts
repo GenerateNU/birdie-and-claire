@@ -1,1 +1,2 @@
-export const textLinkClasses = "text-label-l text-primary hover:underline focus-ring";
+export const textLinkClasses =
+  "text-label-l text-primary hover:underline focus-ring motion-safe:transition-colors";

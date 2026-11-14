@@ -86,6 +86,8 @@ export { ProgressStepper } from "@/design-system/components/status/progress-step
 
 export { Spinner } from "@/design-system/components/status/spinner";
 
+export { Skeleton } from "@/design-system/components/status/skeleton";
+
 export { Toast } from "@/design-system/components/toast/toast";
 
 export { ToastProvider, useToast } from "@/design-system/components/toast/toast-manager";

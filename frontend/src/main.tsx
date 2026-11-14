@@ -1,5 +1,6 @@
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, ErrorComponent, RouterProvider } from "@tanstack/react-router";
+import { MotionConfig } from "motion/react";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
@@ -59,9 +60,11 @@ supabase.auth.onAuthStateChange((event, session) => {
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <ToastProvider>
-        <RouterProvider router={router} />
-      </ToastProvider>
+      <MotionConfig reducedMotion="user" transition={{ duration: 0.15, ease: "easeOut" }}>
+        <ToastProvider>
+          <RouterProvider router={router} />
+        </ToastProvider>
+      </MotionConfig>
     </QueryClientProvider>
   </StrictMode>,
 );

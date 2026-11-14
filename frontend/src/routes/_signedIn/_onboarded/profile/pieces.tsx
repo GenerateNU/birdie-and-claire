@@ -9,7 +9,7 @@ import {
   EmptyState,
   ErrorState,
   Link,
-  Spinner,
+  Skeleton,
   Text,
   TextLink,
 } from "@/design-system";
@@ -48,7 +48,22 @@ function PiecesPage() {
   }
 
   if (isPending) {
-    return <Spinner />;
+    return (
+      <>
+        <Text variant="heading" className="mb-lg">
+          Pieces I Own
+        </Text>
+        <Box
+          role="status"
+          aria-label="Loading your pieces"
+          className="grid grid-cols-2 gap-md md:grid-cols-3 lg:grid-cols-4"
+        >
+          {[0, 1, 2, 3].map((item) => (
+            <Skeleton key={item} className="aspect-portrait" />
+          ))}
+        </Box>
+      </>
+    );
   }
 
   if (!data) {

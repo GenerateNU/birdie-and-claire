@@ -49,12 +49,16 @@ export function Modal({
       }}
     >
       <ModalParts.Portal>
-        <ModalParts.Backdrop render={<Scrim className="fixed inset-0" />} />
+        <ModalParts.Backdrop
+          render={
+            <Scrim className="fixed inset-0 motion-safe:transition-opacity motion-safe:data-[starting-style]:opacity-0 motion-safe:data-[ending-style]:opacity-0" />
+          }
+        />
         <ModalParts.Popup
           aria-labelledby={titleId}
           aria-describedby={message ? messageId : undefined}
           // Keeps a modal larger than the screen inside it, scrolling instead of cutting off the actions.
-          className="fixed left-1/2 top-1/2 max-h-[calc(100vh-theme(spacing.md)*2)] max-w-[calc(100vw-theme(spacing.md)*2)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto"
+          className="fixed left-1/2 top-1/2 max-h-[calc(100vh-theme(spacing.md)*2)] max-w-[calc(100vw-theme(spacing.md)*2)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto motion-safe:transition-opacity motion-safe:data-[starting-style]:opacity-0 motion-safe:data-[ending-style]:opacity-0"
         >
           <ModalPanel
             title={title}
