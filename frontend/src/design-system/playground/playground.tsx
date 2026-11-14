@@ -900,8 +900,7 @@ function SidebarExample({ initiallyCollapsed, collectionsOpen }: SidebarExampleP
 
   return (
     <Sidebar
-      collapsed={collapsed}
-      onToggleCollapsed={() => setCollapsed(!collapsed)}
+      collapse={{ collapsed, onToggle: () => setCollapsed(!collapsed) }}
       logoTo="/playground"
       action={{ label: "New outfit", onClick: () => {} }}
       items={[

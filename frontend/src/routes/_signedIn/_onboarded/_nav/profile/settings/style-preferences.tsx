@@ -28,7 +28,9 @@ import {
   type PreferenceValue,
 } from "@/features/style-preferences/style-preferences";
 
-export const Route = createFileRoute("/_signedIn/_onboarded/profile/settings/style-preferences")({
+export const Route = createFileRoute(
+  "/_signedIn/_onboarded/_nav/profile/settings/style-preferences",
+)({
   component: StylePreferencesPage,
 });
 

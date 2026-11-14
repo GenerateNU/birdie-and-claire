@@ -17,20 +17,24 @@ import { Route as SignedInOnboardedRouteRouteImport } from './routes/_signedIn/_
 import { Route as SignedInCreateAccountRouteImport } from './routes/_signedIn/create-account'
 import { Route as SignedInOnboardingRouteImport } from './routes/_signedIn/onboarding'
 import { Route as OOutfitIdRouteImport } from './routes/o/$outfitId'
-import { Route as SignedInOnboardedCreateOutfitRouteImport } from './routes/_signedIn/_onboarded/create-outfit'
-import { Route as SignedInOnboardedProfileRouteRouteImport } from './routes/_signedIn/_onboarded/profile/route'
+import { Route as SignedInOnboardedNavRouteRouteImport } from './routes/_signedIn/_onboarded/_nav/route'
 import { Route as SignedInOnboardeddevDevRouteImport } from './routes/_signedIn/_onboarded/(dev)/dev'
 import { Route as SignedInOnboardeddevProfilePictureTestRouteImport } from './routes/_signedIn/_onboarded/(dev)/profile-picture-test'
+import { Route as SignedInOnboardedNavProfileRouteRouteImport } from './routes/_signedIn/_onboarded/_nav/profile/route'
+import { Route as SignedInOnboardedCreateOutfitIndexRouteImport } from './routes/_signedIn/_onboarded/create-outfit/index'
+import { Route as SignedInOnboardedCreateOutfitBaseRouteImport } from './routes/_signedIn/_onboarded/create-outfit/base'
+import { Route as SignedInOnboardedCreateOutfitBuildRouteImport } from './routes/_signedIn/_onboarded/create-outfit/build'
+import { Route as SignedInOnboardedCreateOutfitOccasionRouteImport } from './routes/_signedIn/_onboarded/create-outfit/occasion'
 import { Route as SignedInOnboardedPiecesAddRouteImport } from './routes/_signedIn/_onboarded/pieces/add'
-import { Route as SignedInOnboardedProfileIndexRouteImport } from './routes/_signedIn/_onboarded/profile/index'
-import { Route as SignedInOnboardedProfileOutfitsRouteImport } from './routes/_signedIn/_onboarded/profile/outfits'
-import { Route as SignedInOnboardedProfilePiecesRouteImport } from './routes/_signedIn/_onboarded/profile/pieces'
-import { Route as SignedInOnboardedOutfitsOutfitIdIndexRouteImport } from './routes/_signedIn/_onboarded/outfits/$outfitId/index'
+import { Route as SignedInOnboardedNavProfileIndexRouteImport } from './routes/_signedIn/_onboarded/_nav/profile/index'
+import { Route as SignedInOnboardedNavProfileOutfitsRouteImport } from './routes/_signedIn/_onboarded/_nav/profile/outfits'
+import { Route as SignedInOnboardedNavProfilePiecesRouteImport } from './routes/_signedIn/_onboarded/_nav/profile/pieces'
 import { Route as SignedInOnboardedOutfitsOutfitIdEditRouteImport } from './routes/_signedIn/_onboarded/outfits/$outfitId/edit'
-import { Route as SignedInOnboardedProfileCollectionsIndexRouteImport } from './routes/_signedIn/_onboarded/profile/collections/index'
-import { Route as SignedInOnboardedProfileCollectionsCollectionIdRouteImport } from './routes/_signedIn/_onboarded/profile/collections/$collectionId'
-import { Route as SignedInOnboardedProfileSettingsIndexRouteImport } from './routes/_signedIn/_onboarded/profile/settings/index'
-import { Route as SignedInOnboardedProfileSettingsStylePreferencesRouteImport } from './routes/_signedIn/_onboarded/profile/settings/style-preferences'
+import { Route as SignedInOnboardedNavOutfitsOutfitIdIndexRouteImport } from './routes/_signedIn/_onboarded/_nav/outfits/$outfitId/index'
+import { Route as SignedInOnboardedNavProfileCollectionsIndexRouteImport } from './routes/_signedIn/_onboarded/_nav/profile/collections/index'
+import { Route as SignedInOnboardedNavProfileCollectionsCollectionIdRouteImport } from './routes/_signedIn/_onboarded/_nav/profile/collections/$collectionId'
+import { Route as SignedInOnboardedNavProfileSettingsIndexRouteImport } from './routes/_signedIn/_onboarded/_nav/profile/settings/index'
+import { Route as SignedInOnboardedNavProfileSettingsStylePreferencesRouteImport } from './routes/_signedIn/_onboarded/_nav/profile/settings/style-preferences'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -70,16 +74,9 @@ const OOutfitIdRoute = OOutfitIdRouteImport.update({
   path: '/o/$outfitId',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SignedInOnboardedCreateOutfitRoute =
-  SignedInOnboardedCreateOutfitRouteImport.update({
-    id: '/create-outfit',
-    path: '/create-outfit',
-    getParentRoute: () => SignedInOnboardedRouteRoute,
-  } as any)
-const SignedInOnboardedProfileRouteRoute =
-  SignedInOnboardedProfileRouteRouteImport.update({
-    id: '/profile',
-    path: '/profile',
+const SignedInOnboardedNavRouteRoute =
+  SignedInOnboardedNavRouteRouteImport.update({
+    id: '/_nav',
     getParentRoute: () => SignedInOnboardedRouteRoute,
   } as any)
 const SignedInOnboardeddevDevRoute = SignedInOnboardeddevDevRouteImport.update({
@@ -93,35 +90,59 @@ const SignedInOnboardeddevProfilePictureTestRoute =
     path: '/profile-picture-test',
     getParentRoute: () => SignedInOnboardedRouteRoute,
   } as any)
+const SignedInOnboardedNavProfileRouteRoute =
+  SignedInOnboardedNavProfileRouteRouteImport.update({
+    id: '/profile',
+    path: '/profile',
+    getParentRoute: () => SignedInOnboardedNavRouteRoute,
+  } as any)
+const SignedInOnboardedCreateOutfitIndexRoute =
+  SignedInOnboardedCreateOutfitIndexRouteImport.update({
+    id: '/create-outfit/',
+    path: '/create-outfit/',
+    getParentRoute: () => SignedInOnboardedRouteRoute,
+  } as any)
+const SignedInOnboardedCreateOutfitBaseRoute =
+  SignedInOnboardedCreateOutfitBaseRouteImport.update({
+    id: '/create-outfit/base',
+    path: '/create-outfit/base',
+    getParentRoute: () => SignedInOnboardedRouteRoute,
+  } as any)
+const SignedInOnboardedCreateOutfitBuildRoute =
+  SignedInOnboardedCreateOutfitBuildRouteImport.update({
+    id: '/create-outfit/build',
+    path: '/create-outfit/build',
+    getParentRoute: () => SignedInOnboardedRouteRoute,
+  } as any)
+const SignedInOnboardedCreateOutfitOccasionRoute =
+  SignedInOnboardedCreateOutfitOccasionRouteImport.update({
+    id: '/create-outfit/occasion',
+    path: '/create-outfit/occasion',
+    getParentRoute: () => SignedInOnboardedRouteRoute,
+  } as any)
 const SignedInOnboardedPiecesAddRoute =
   SignedInOnboardedPiecesAddRouteImport.update({
     id: '/pieces/add',
     path: '/pieces/add',
     getParentRoute: () => SignedInOnboardedRouteRoute,
   } as any)
-const SignedInOnboardedProfileIndexRoute =
-  SignedInOnboardedProfileIndexRouteImport.update({
+const SignedInOnboardedNavProfileIndexRoute =
+  SignedInOnboardedNavProfileIndexRouteImport.update({
     id: '/',
     path: '/',
-    getParentRoute: () => SignedInOnboardedProfileRouteRoute,
+    getParentRoute: () => SignedInOnboardedNavProfileRouteRoute,
   } as any)
-const SignedInOnboardedProfileOutfitsRoute =
-  SignedInOnboardedProfileOutfitsRouteImport.update({
+const SignedInOnboardedNavProfileOutfitsRoute =
+  SignedInOnboardedNavProfileOutfitsRouteImport.update({
     id: '/outfits',
     path: '/outfits',
-    getParentRoute: () => SignedInOnboardedProfileRouteRoute,
+    getParentRoute: () => SignedInOnboardedNavProfileRouteRoute,
   } as any)
-const SignedInOnboardedProfilePiecesRoute =
-  SignedInOnboardedProfilePiecesRouteImport.update({
+const SignedInOnboardedNavProfilePiecesRoute =
+  SignedInOnboardedNavProfilePiecesRouteImport.update({
     id: '/pieces',
     path: '/pieces',
-    getParentRoute: () => SignedInOnboardedProfileRouteRoute,
-  } as any)
-const SignedInOnboardedOutfitsOutfitIdIndexRoute =
-  SignedInOnboardedOutfitsOutfitIdIndexRouteImport.update({
-    id: '/outfits/$outfitId/',
-    path: '/outfits/$outfitId/',
-    getParentRoute: () => SignedInOnboardedRouteRoute,
+    getParentRoute: () => SignedInOnboardedNavProfileRouteRoute,
   } as any)
 const SignedInOnboardedOutfitsOutfitIdEditRoute =
   SignedInOnboardedOutfitsOutfitIdEditRouteImport.update({
@@ -129,29 +150,35 @@ const SignedInOnboardedOutfitsOutfitIdEditRoute =
     path: '/outfits/$outfitId/edit',
     getParentRoute: () => SignedInOnboardedRouteRoute,
   } as any)
-const SignedInOnboardedProfileCollectionsIndexRoute =
-  SignedInOnboardedProfileCollectionsIndexRouteImport.update({
+const SignedInOnboardedNavOutfitsOutfitIdIndexRoute =
+  SignedInOnboardedNavOutfitsOutfitIdIndexRouteImport.update({
+    id: '/outfits/$outfitId/',
+    path: '/outfits/$outfitId/',
+    getParentRoute: () => SignedInOnboardedNavRouteRoute,
+  } as any)
+const SignedInOnboardedNavProfileCollectionsIndexRoute =
+  SignedInOnboardedNavProfileCollectionsIndexRouteImport.update({
     id: '/collections/',
     path: '/collections/',
-    getParentRoute: () => SignedInOnboardedProfileRouteRoute,
+    getParentRoute: () => SignedInOnboardedNavProfileRouteRoute,
   } as any)
-const SignedInOnboardedProfileCollectionsCollectionIdRoute =
-  SignedInOnboardedProfileCollectionsCollectionIdRouteImport.update({
+const SignedInOnboardedNavProfileCollectionsCollectionIdRoute =
+  SignedInOnboardedNavProfileCollectionsCollectionIdRouteImport.update({
     id: '/collections/$collectionId',
     path: '/collections/$collectionId',
-    getParentRoute: () => SignedInOnboardedProfileRouteRoute,
+    getParentRoute: () => SignedInOnboardedNavProfileRouteRoute,
   } as any)
-const SignedInOnboardedProfileSettingsIndexRoute =
-  SignedInOnboardedProfileSettingsIndexRouteImport.update({
+const SignedInOnboardedNavProfileSettingsIndexRoute =
+  SignedInOnboardedNavProfileSettingsIndexRouteImport.update({
     id: '/settings/',
     path: '/settings/',
-    getParentRoute: () => SignedInOnboardedProfileRouteRoute,
+    getParentRoute: () => SignedInOnboardedNavProfileRouteRoute,
   } as any)
-const SignedInOnboardedProfileSettingsStylePreferencesRoute =
-  SignedInOnboardedProfileSettingsStylePreferencesRouteImport.update({
+const SignedInOnboardedNavProfileSettingsStylePreferencesRoute =
+  SignedInOnboardedNavProfileSettingsStylePreferencesRouteImport.update({
     id: '/settings/style-preferences',
     path: '/settings/style-preferences',
-    getParentRoute: () => SignedInOnboardedProfileRouteRoute,
+    getParentRoute: () => SignedInOnboardedNavProfileRouteRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -161,20 +188,23 @@ export interface FileRoutesByFullPath {
   '/create-account': typeof SignedInCreateAccountRoute
   '/onboarding': typeof SignedInOnboardingRoute
   '/o/$outfitId': typeof OOutfitIdRoute
-  '/profile': typeof SignedInOnboardedProfileRouteRouteWithChildren
-  '/create-outfit': typeof SignedInOnboardedCreateOutfitRoute
+  '/profile': typeof SignedInOnboardedNavProfileRouteRouteWithChildren
   '/dev': typeof SignedInOnboardeddevDevRoute
   '/profile-picture-test': typeof SignedInOnboardeddevProfilePictureTestRoute
+  '/create-outfit/base': typeof SignedInOnboardedCreateOutfitBaseRoute
+  '/create-outfit/build': typeof SignedInOnboardedCreateOutfitBuildRoute
+  '/create-outfit/occasion': typeof SignedInOnboardedCreateOutfitOccasionRoute
   '/pieces/add': typeof SignedInOnboardedPiecesAddRoute
-  '/profile/outfits': typeof SignedInOnboardedProfileOutfitsRoute
-  '/profile/pieces': typeof SignedInOnboardedProfilePiecesRoute
-  '/profile/': typeof SignedInOnboardedProfileIndexRoute
+  '/create-outfit/': typeof SignedInOnboardedCreateOutfitIndexRoute
+  '/profile/outfits': typeof SignedInOnboardedNavProfileOutfitsRoute
+  '/profile/pieces': typeof SignedInOnboardedNavProfilePiecesRoute
   '/outfits/$outfitId/edit': typeof SignedInOnboardedOutfitsOutfitIdEditRoute
-  '/profile/collections/$collectionId': typeof SignedInOnboardedProfileCollectionsCollectionIdRoute
-  '/profile/settings/style-preferences': typeof SignedInOnboardedProfileSettingsStylePreferencesRoute
-  '/outfits/$outfitId/': typeof SignedInOnboardedOutfitsOutfitIdIndexRoute
-  '/profile/collections/': typeof SignedInOnboardedProfileCollectionsIndexRoute
-  '/profile/settings/': typeof SignedInOnboardedProfileSettingsIndexRoute
+  '/profile/': typeof SignedInOnboardedNavProfileIndexRoute
+  '/profile/collections/$collectionId': typeof SignedInOnboardedNavProfileCollectionsCollectionIdRoute
+  '/profile/settings/style-preferences': typeof SignedInOnboardedNavProfileSettingsStylePreferencesRoute
+  '/outfits/$outfitId/': typeof SignedInOnboardedNavOutfitsOutfitIdIndexRoute
+  '/profile/collections/': typeof SignedInOnboardedNavProfileCollectionsIndexRoute
+  '/profile/settings/': typeof SignedInOnboardedNavProfileSettingsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -183,19 +213,22 @@ export interface FileRoutesByTo {
   '/create-account': typeof SignedInCreateAccountRoute
   '/onboarding': typeof SignedInOnboardingRoute
   '/o/$outfitId': typeof OOutfitIdRoute
-  '/create-outfit': typeof SignedInOnboardedCreateOutfitRoute
   '/dev': typeof SignedInOnboardeddevDevRoute
   '/profile-picture-test': typeof SignedInOnboardeddevProfilePictureTestRoute
+  '/create-outfit/base': typeof SignedInOnboardedCreateOutfitBaseRoute
+  '/create-outfit/build': typeof SignedInOnboardedCreateOutfitBuildRoute
+  '/create-outfit/occasion': typeof SignedInOnboardedCreateOutfitOccasionRoute
   '/pieces/add': typeof SignedInOnboardedPiecesAddRoute
-  '/profile/outfits': typeof SignedInOnboardedProfileOutfitsRoute
-  '/profile/pieces': typeof SignedInOnboardedProfilePiecesRoute
-  '/profile': typeof SignedInOnboardedProfileIndexRoute
+  '/create-outfit': typeof SignedInOnboardedCreateOutfitIndexRoute
+  '/profile/outfits': typeof SignedInOnboardedNavProfileOutfitsRoute
+  '/profile/pieces': typeof SignedInOnboardedNavProfilePiecesRoute
   '/outfits/$outfitId/edit': typeof SignedInOnboardedOutfitsOutfitIdEditRoute
-  '/profile/collections/$collectionId': typeof SignedInOnboardedProfileCollectionsCollectionIdRoute
-  '/profile/settings/style-preferences': typeof SignedInOnboardedProfileSettingsStylePreferencesRoute
-  '/outfits/$outfitId': typeof SignedInOnboardedOutfitsOutfitIdIndexRoute
-  '/profile/collections': typeof SignedInOnboardedProfileCollectionsIndexRoute
-  '/profile/settings': typeof SignedInOnboardedProfileSettingsIndexRoute
+  '/profile': typeof SignedInOnboardedNavProfileIndexRoute
+  '/profile/collections/$collectionId': typeof SignedInOnboardedNavProfileCollectionsCollectionIdRoute
+  '/profile/settings/style-preferences': typeof SignedInOnboardedNavProfileSettingsStylePreferencesRoute
+  '/outfits/$outfitId': typeof SignedInOnboardedNavOutfitsOutfitIdIndexRoute
+  '/profile/collections': typeof SignedInOnboardedNavProfileCollectionsIndexRoute
+  '/profile/settings': typeof SignedInOnboardedNavProfileSettingsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -207,20 +240,24 @@ export interface FileRoutesById {
   '/_signedIn/create-account': typeof SignedInCreateAccountRoute
   '/_signedIn/onboarding': typeof SignedInOnboardingRoute
   '/o/$outfitId': typeof OOutfitIdRoute
-  '/_signedIn/_onboarded/profile': typeof SignedInOnboardedProfileRouteRouteWithChildren
-  '/_signedIn/_onboarded/create-outfit': typeof SignedInOnboardedCreateOutfitRoute
+  '/_signedIn/_onboarded/_nav': typeof SignedInOnboardedNavRouteRouteWithChildren
+  '/_signedIn/_onboarded/_nav/profile': typeof SignedInOnboardedNavProfileRouteRouteWithChildren
   '/_signedIn/_onboarded/(dev)/dev': typeof SignedInOnboardeddevDevRoute
   '/_signedIn/_onboarded/(dev)/profile-picture-test': typeof SignedInOnboardeddevProfilePictureTestRoute
+  '/_signedIn/_onboarded/create-outfit/base': typeof SignedInOnboardedCreateOutfitBaseRoute
+  '/_signedIn/_onboarded/create-outfit/build': typeof SignedInOnboardedCreateOutfitBuildRoute
+  '/_signedIn/_onboarded/create-outfit/occasion': typeof SignedInOnboardedCreateOutfitOccasionRoute
   '/_signedIn/_onboarded/pieces/add': typeof SignedInOnboardedPiecesAddRoute
-  '/_signedIn/_onboarded/profile/outfits': typeof SignedInOnboardedProfileOutfitsRoute
-  '/_signedIn/_onboarded/profile/pieces': typeof SignedInOnboardedProfilePiecesRoute
-  '/_signedIn/_onboarded/profile/': typeof SignedInOnboardedProfileIndexRoute
+  '/_signedIn/_onboarded/create-outfit/': typeof SignedInOnboardedCreateOutfitIndexRoute
+  '/_signedIn/_onboarded/_nav/profile/outfits': typeof SignedInOnboardedNavProfileOutfitsRoute
+  '/_signedIn/_onboarded/_nav/profile/pieces': typeof SignedInOnboardedNavProfilePiecesRoute
   '/_signedIn/_onboarded/outfits/$outfitId/edit': typeof SignedInOnboardedOutfitsOutfitIdEditRoute
-  '/_signedIn/_onboarded/profile/collections/$collectionId': typeof SignedInOnboardedProfileCollectionsCollectionIdRoute
-  '/_signedIn/_onboarded/profile/settings/style-preferences': typeof SignedInOnboardedProfileSettingsStylePreferencesRoute
-  '/_signedIn/_onboarded/outfits/$outfitId/': typeof SignedInOnboardedOutfitsOutfitIdIndexRoute
-  '/_signedIn/_onboarded/profile/collections/': typeof SignedInOnboardedProfileCollectionsIndexRoute
-  '/_signedIn/_onboarded/profile/settings/': typeof SignedInOnboardedProfileSettingsIndexRoute
+  '/_signedIn/_onboarded/_nav/profile/': typeof SignedInOnboardedNavProfileIndexRoute
+  '/_signedIn/_onboarded/_nav/profile/collections/$collectionId': typeof SignedInOnboardedNavProfileCollectionsCollectionIdRoute
+  '/_signedIn/_onboarded/_nav/profile/settings/style-preferences': typeof SignedInOnboardedNavProfileSettingsStylePreferencesRoute
+  '/_signedIn/_onboarded/_nav/outfits/$outfitId/': typeof SignedInOnboardedNavOutfitsOutfitIdIndexRoute
+  '/_signedIn/_onboarded/_nav/profile/collections/': typeof SignedInOnboardedNavProfileCollectionsIndexRoute
+  '/_signedIn/_onboarded/_nav/profile/settings/': typeof SignedInOnboardedNavProfileSettingsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -232,14 +269,17 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/o/$outfitId'
     | '/profile'
-    | '/create-outfit'
     | '/dev'
     | '/profile-picture-test'
+    | '/create-outfit/base'
+    | '/create-outfit/build'
+    | '/create-outfit/occasion'
     | '/pieces/add'
+    | '/create-outfit/'
     | '/profile/outfits'
     | '/profile/pieces'
-    | '/profile/'
     | '/outfits/$outfitId/edit'
+    | '/profile/'
     | '/profile/collections/$collectionId'
     | '/profile/settings/style-preferences'
     | '/outfits/$outfitId/'
@@ -253,14 +293,17 @@ export interface FileRouteTypes {
     | '/create-account'
     | '/onboarding'
     | '/o/$outfitId'
-    | '/create-outfit'
     | '/dev'
     | '/profile-picture-test'
+    | '/create-outfit/base'
+    | '/create-outfit/build'
+    | '/create-outfit/occasion'
     | '/pieces/add'
+    | '/create-outfit'
     | '/profile/outfits'
     | '/profile/pieces'
-    | '/profile'
     | '/outfits/$outfitId/edit'
+    | '/profile'
     | '/profile/collections/$collectionId'
     | '/profile/settings/style-preferences'
     | '/outfits/$outfitId'
@@ -276,20 +319,24 @@ export interface FileRouteTypes {
     | '/_signedIn/create-account'
     | '/_signedIn/onboarding'
     | '/o/$outfitId'
-    | '/_signedIn/_onboarded/profile'
-    | '/_signedIn/_onboarded/create-outfit'
+    | '/_signedIn/_onboarded/_nav'
+    | '/_signedIn/_onboarded/_nav/profile'
     | '/_signedIn/_onboarded/(dev)/dev'
     | '/_signedIn/_onboarded/(dev)/profile-picture-test'
+    | '/_signedIn/_onboarded/create-outfit/base'
+    | '/_signedIn/_onboarded/create-outfit/build'
+    | '/_signedIn/_onboarded/create-outfit/occasion'
     | '/_signedIn/_onboarded/pieces/add'
-    | '/_signedIn/_onboarded/profile/outfits'
-    | '/_signedIn/_onboarded/profile/pieces'
-    | '/_signedIn/_onboarded/profile/'
+    | '/_signedIn/_onboarded/create-outfit/'
+    | '/_signedIn/_onboarded/_nav/profile/outfits'
+    | '/_signedIn/_onboarded/_nav/profile/pieces'
     | '/_signedIn/_onboarded/outfits/$outfitId/edit'
-    | '/_signedIn/_onboarded/profile/collections/$collectionId'
-    | '/_signedIn/_onboarded/profile/settings/style-preferences'
-    | '/_signedIn/_onboarded/outfits/$outfitId/'
-    | '/_signedIn/_onboarded/profile/collections/'
-    | '/_signedIn/_onboarded/profile/settings/'
+    | '/_signedIn/_onboarded/_nav/profile/'
+    | '/_signedIn/_onboarded/_nav/profile/collections/$collectionId'
+    | '/_signedIn/_onboarded/_nav/profile/settings/style-preferences'
+    | '/_signedIn/_onboarded/_nav/outfits/$outfitId/'
+    | '/_signedIn/_onboarded/_nav/profile/collections/'
+    | '/_signedIn/_onboarded/_nav/profile/settings/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -358,18 +405,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OOutfitIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_signedIn/_onboarded/create-outfit': {
-      id: '/_signedIn/_onboarded/create-outfit'
-      path: '/create-outfit'
-      fullPath: '/create-outfit'
-      preLoaderRoute: typeof SignedInOnboardedCreateOutfitRouteImport
-      parentRoute: typeof SignedInOnboardedRouteRoute
-    }
-    '/_signedIn/_onboarded/profile': {
-      id: '/_signedIn/_onboarded/profile'
-      path: '/profile'
-      fullPath: '/profile'
-      preLoaderRoute: typeof SignedInOnboardedProfileRouteRouteImport
+    '/_signedIn/_onboarded/_nav': {
+      id: '/_signedIn/_onboarded/_nav'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof SignedInOnboardedNavRouteRouteImport
       parentRoute: typeof SignedInOnboardedRouteRoute
     }
     '/_signedIn/_onboarded/(dev)/dev': {
@@ -386,6 +426,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignedInOnboardeddevProfilePictureTestRouteImport
       parentRoute: typeof SignedInOnboardedRouteRoute
     }
+    '/_signedIn/_onboarded/_nav/profile': {
+      id: '/_signedIn/_onboarded/_nav/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof SignedInOnboardedNavProfileRouteRouteImport
+      parentRoute: typeof SignedInOnboardedNavRouteRoute
+    }
+    '/_signedIn/_onboarded/create-outfit/': {
+      id: '/_signedIn/_onboarded/create-outfit/'
+      path: '/create-outfit'
+      fullPath: '/create-outfit/'
+      preLoaderRoute: typeof SignedInOnboardedCreateOutfitIndexRouteImport
+      parentRoute: typeof SignedInOnboardedRouteRoute
+    }
+    '/_signedIn/_onboarded/create-outfit/base': {
+      id: '/_signedIn/_onboarded/create-outfit/base'
+      path: '/create-outfit/base'
+      fullPath: '/create-outfit/base'
+      preLoaderRoute: typeof SignedInOnboardedCreateOutfitBaseRouteImport
+      parentRoute: typeof SignedInOnboardedRouteRoute
+    }
+    '/_signedIn/_onboarded/create-outfit/build': {
+      id: '/_signedIn/_onboarded/create-outfit/build'
+      path: '/create-outfit/build'
+      fullPath: '/create-outfit/build'
+      preLoaderRoute: typeof SignedInOnboardedCreateOutfitBuildRouteImport
+      parentRoute: typeof SignedInOnboardedRouteRoute
+    }
+    '/_signedIn/_onboarded/create-outfit/occasion': {
+      id: '/_signedIn/_onboarded/create-outfit/occasion'
+      path: '/create-outfit/occasion'
+      fullPath: '/create-outfit/occasion'
+      preLoaderRoute: typeof SignedInOnboardedCreateOutfitOccasionRouteImport
+      parentRoute: typeof SignedInOnboardedRouteRoute
+    }
     '/_signedIn/_onboarded/pieces/add': {
       id: '/_signedIn/_onboarded/pieces/add'
       path: '/pieces/add'
@@ -393,33 +468,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignedInOnboardedPiecesAddRouteImport
       parentRoute: typeof SignedInOnboardedRouteRoute
     }
-    '/_signedIn/_onboarded/profile/': {
-      id: '/_signedIn/_onboarded/profile/'
+    '/_signedIn/_onboarded/_nav/profile/': {
+      id: '/_signedIn/_onboarded/_nav/profile/'
       path: '/'
       fullPath: '/profile/'
-      preLoaderRoute: typeof SignedInOnboardedProfileIndexRouteImport
-      parentRoute: typeof SignedInOnboardedProfileRouteRoute
+      preLoaderRoute: typeof SignedInOnboardedNavProfileIndexRouteImport
+      parentRoute: typeof SignedInOnboardedNavProfileRouteRoute
     }
-    '/_signedIn/_onboarded/profile/outfits': {
-      id: '/_signedIn/_onboarded/profile/outfits'
+    '/_signedIn/_onboarded/_nav/profile/outfits': {
+      id: '/_signedIn/_onboarded/_nav/profile/outfits'
       path: '/outfits'
       fullPath: '/profile/outfits'
-      preLoaderRoute: typeof SignedInOnboardedProfileOutfitsRouteImport
-      parentRoute: typeof SignedInOnboardedProfileRouteRoute
+      preLoaderRoute: typeof SignedInOnboardedNavProfileOutfitsRouteImport
+      parentRoute: typeof SignedInOnboardedNavProfileRouteRoute
     }
-    '/_signedIn/_onboarded/profile/pieces': {
-      id: '/_signedIn/_onboarded/profile/pieces'
+    '/_signedIn/_onboarded/_nav/profile/pieces': {
+      id: '/_signedIn/_onboarded/_nav/profile/pieces'
       path: '/pieces'
       fullPath: '/profile/pieces'
-      preLoaderRoute: typeof SignedInOnboardedProfilePiecesRouteImport
-      parentRoute: typeof SignedInOnboardedProfileRouteRoute
-    }
-    '/_signedIn/_onboarded/outfits/$outfitId/': {
-      id: '/_signedIn/_onboarded/outfits/$outfitId/'
-      path: '/outfits/$outfitId'
-      fullPath: '/outfits/$outfitId/'
-      preLoaderRoute: typeof SignedInOnboardedOutfitsOutfitIdIndexRouteImport
-      parentRoute: typeof SignedInOnboardedRouteRoute
+      preLoaderRoute: typeof SignedInOnboardedNavProfilePiecesRouteImport
+      parentRoute: typeof SignedInOnboardedNavProfileRouteRoute
     }
     '/_signedIn/_onboarded/outfits/$outfitId/edit': {
       id: '/_signedIn/_onboarded/outfits/$outfitId/edit'
@@ -428,90 +496,124 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignedInOnboardedOutfitsOutfitIdEditRouteImport
       parentRoute: typeof SignedInOnboardedRouteRoute
     }
-    '/_signedIn/_onboarded/profile/collections/': {
-      id: '/_signedIn/_onboarded/profile/collections/'
+    '/_signedIn/_onboarded/_nav/outfits/$outfitId/': {
+      id: '/_signedIn/_onboarded/_nav/outfits/$outfitId/'
+      path: '/outfits/$outfitId'
+      fullPath: '/outfits/$outfitId/'
+      preLoaderRoute: typeof SignedInOnboardedNavOutfitsOutfitIdIndexRouteImport
+      parentRoute: typeof SignedInOnboardedNavRouteRoute
+    }
+    '/_signedIn/_onboarded/_nav/profile/collections/': {
+      id: '/_signedIn/_onboarded/_nav/profile/collections/'
       path: '/collections'
       fullPath: '/profile/collections/'
-      preLoaderRoute: typeof SignedInOnboardedProfileCollectionsIndexRouteImport
-      parentRoute: typeof SignedInOnboardedProfileRouteRoute
+      preLoaderRoute: typeof SignedInOnboardedNavProfileCollectionsIndexRouteImport
+      parentRoute: typeof SignedInOnboardedNavProfileRouteRoute
     }
-    '/_signedIn/_onboarded/profile/collections/$collectionId': {
-      id: '/_signedIn/_onboarded/profile/collections/$collectionId'
+    '/_signedIn/_onboarded/_nav/profile/collections/$collectionId': {
+      id: '/_signedIn/_onboarded/_nav/profile/collections/$collectionId'
       path: '/collections/$collectionId'
       fullPath: '/profile/collections/$collectionId'
-      preLoaderRoute: typeof SignedInOnboardedProfileCollectionsCollectionIdRouteImport
-      parentRoute: typeof SignedInOnboardedProfileRouteRoute
+      preLoaderRoute: typeof SignedInOnboardedNavProfileCollectionsCollectionIdRouteImport
+      parentRoute: typeof SignedInOnboardedNavProfileRouteRoute
     }
-    '/_signedIn/_onboarded/profile/settings/': {
-      id: '/_signedIn/_onboarded/profile/settings/'
+    '/_signedIn/_onboarded/_nav/profile/settings/': {
+      id: '/_signedIn/_onboarded/_nav/profile/settings/'
       path: '/settings'
       fullPath: '/profile/settings/'
-      preLoaderRoute: typeof SignedInOnboardedProfileSettingsIndexRouteImport
-      parentRoute: typeof SignedInOnboardedProfileRouteRoute
+      preLoaderRoute: typeof SignedInOnboardedNavProfileSettingsIndexRouteImport
+      parentRoute: typeof SignedInOnboardedNavProfileRouteRoute
     }
-    '/_signedIn/_onboarded/profile/settings/style-preferences': {
-      id: '/_signedIn/_onboarded/profile/settings/style-preferences'
+    '/_signedIn/_onboarded/_nav/profile/settings/style-preferences': {
+      id: '/_signedIn/_onboarded/_nav/profile/settings/style-preferences'
       path: '/settings/style-preferences'
       fullPath: '/profile/settings/style-preferences'
-      preLoaderRoute: typeof SignedInOnboardedProfileSettingsStylePreferencesRouteImport
-      parentRoute: typeof SignedInOnboardedProfileRouteRoute
+      preLoaderRoute: typeof SignedInOnboardedNavProfileSettingsStylePreferencesRouteImport
+      parentRoute: typeof SignedInOnboardedNavProfileRouteRoute
     }
   }
 }
 
-interface SignedInOnboardedProfileRouteRouteChildren {
-  SignedInOnboardedProfileOutfitsRoute: typeof SignedInOnboardedProfileOutfitsRoute
-  SignedInOnboardedProfilePiecesRoute: typeof SignedInOnboardedProfilePiecesRoute
-  SignedInOnboardedProfileIndexRoute: typeof SignedInOnboardedProfileIndexRoute
-  SignedInOnboardedProfileCollectionsCollectionIdRoute: typeof SignedInOnboardedProfileCollectionsCollectionIdRoute
-  SignedInOnboardedProfileSettingsStylePreferencesRoute: typeof SignedInOnboardedProfileSettingsStylePreferencesRoute
-  SignedInOnboardedProfileCollectionsIndexRoute: typeof SignedInOnboardedProfileCollectionsIndexRoute
-  SignedInOnboardedProfileSettingsIndexRoute: typeof SignedInOnboardedProfileSettingsIndexRoute
+interface SignedInOnboardedNavProfileRouteRouteChildren {
+  SignedInOnboardedNavProfileOutfitsRoute: typeof SignedInOnboardedNavProfileOutfitsRoute
+  SignedInOnboardedNavProfilePiecesRoute: typeof SignedInOnboardedNavProfilePiecesRoute
+  SignedInOnboardedNavProfileIndexRoute: typeof SignedInOnboardedNavProfileIndexRoute
+  SignedInOnboardedNavProfileCollectionsCollectionIdRoute: typeof SignedInOnboardedNavProfileCollectionsCollectionIdRoute
+  SignedInOnboardedNavProfileSettingsStylePreferencesRoute: typeof SignedInOnboardedNavProfileSettingsStylePreferencesRoute
+  SignedInOnboardedNavProfileCollectionsIndexRoute: typeof SignedInOnboardedNavProfileCollectionsIndexRoute
+  SignedInOnboardedNavProfileSettingsIndexRoute: typeof SignedInOnboardedNavProfileSettingsIndexRoute
 }
 
-const SignedInOnboardedProfileRouteRouteChildren: SignedInOnboardedProfileRouteRouteChildren =
+const SignedInOnboardedNavProfileRouteRouteChildren: SignedInOnboardedNavProfileRouteRouteChildren =
   {
-    SignedInOnboardedProfileOutfitsRoute: SignedInOnboardedProfileOutfitsRoute,
-    SignedInOnboardedProfilePiecesRoute: SignedInOnboardedProfilePiecesRoute,
-    SignedInOnboardedProfileIndexRoute: SignedInOnboardedProfileIndexRoute,
-    SignedInOnboardedProfileCollectionsCollectionIdRoute:
-      SignedInOnboardedProfileCollectionsCollectionIdRoute,
-    SignedInOnboardedProfileSettingsStylePreferencesRoute:
-      SignedInOnboardedProfileSettingsStylePreferencesRoute,
-    SignedInOnboardedProfileCollectionsIndexRoute:
-      SignedInOnboardedProfileCollectionsIndexRoute,
-    SignedInOnboardedProfileSettingsIndexRoute:
-      SignedInOnboardedProfileSettingsIndexRoute,
+    SignedInOnboardedNavProfileOutfitsRoute:
+      SignedInOnboardedNavProfileOutfitsRoute,
+    SignedInOnboardedNavProfilePiecesRoute:
+      SignedInOnboardedNavProfilePiecesRoute,
+    SignedInOnboardedNavProfileIndexRoute:
+      SignedInOnboardedNavProfileIndexRoute,
+    SignedInOnboardedNavProfileCollectionsCollectionIdRoute:
+      SignedInOnboardedNavProfileCollectionsCollectionIdRoute,
+    SignedInOnboardedNavProfileSettingsStylePreferencesRoute:
+      SignedInOnboardedNavProfileSettingsStylePreferencesRoute,
+    SignedInOnboardedNavProfileCollectionsIndexRoute:
+      SignedInOnboardedNavProfileCollectionsIndexRoute,
+    SignedInOnboardedNavProfileSettingsIndexRoute:
+      SignedInOnboardedNavProfileSettingsIndexRoute,
   }
 
-const SignedInOnboardedProfileRouteRouteWithChildren =
-  SignedInOnboardedProfileRouteRoute._addFileChildren(
-    SignedInOnboardedProfileRouteRouteChildren,
+const SignedInOnboardedNavProfileRouteRouteWithChildren =
+  SignedInOnboardedNavProfileRouteRoute._addFileChildren(
+    SignedInOnboardedNavProfileRouteRouteChildren,
+  )
+
+interface SignedInOnboardedNavRouteRouteChildren {
+  SignedInOnboardedNavProfileRouteRoute: typeof SignedInOnboardedNavProfileRouteRouteWithChildren
+  SignedInOnboardedNavOutfitsOutfitIdIndexRoute: typeof SignedInOnboardedNavOutfitsOutfitIdIndexRoute
+}
+
+const SignedInOnboardedNavRouteRouteChildren: SignedInOnboardedNavRouteRouteChildren =
+  {
+    SignedInOnboardedNavProfileRouteRoute:
+      SignedInOnboardedNavProfileRouteRouteWithChildren,
+    SignedInOnboardedNavOutfitsOutfitIdIndexRoute:
+      SignedInOnboardedNavOutfitsOutfitIdIndexRoute,
+  }
+
+const SignedInOnboardedNavRouteRouteWithChildren =
+  SignedInOnboardedNavRouteRoute._addFileChildren(
+    SignedInOnboardedNavRouteRouteChildren,
   )
 
 interface SignedInOnboardedRouteRouteChildren {
-  SignedInOnboardedProfileRouteRoute: typeof SignedInOnboardedProfileRouteRouteWithChildren
-  SignedInOnboardedCreateOutfitRoute: typeof SignedInOnboardedCreateOutfitRoute
+  SignedInOnboardedNavRouteRoute: typeof SignedInOnboardedNavRouteRouteWithChildren
   SignedInOnboardeddevDevRoute: typeof SignedInOnboardeddevDevRoute
   SignedInOnboardeddevProfilePictureTestRoute: typeof SignedInOnboardeddevProfilePictureTestRoute
+  SignedInOnboardedCreateOutfitBaseRoute: typeof SignedInOnboardedCreateOutfitBaseRoute
+  SignedInOnboardedCreateOutfitBuildRoute: typeof SignedInOnboardedCreateOutfitBuildRoute
+  SignedInOnboardedCreateOutfitOccasionRoute: typeof SignedInOnboardedCreateOutfitOccasionRoute
   SignedInOnboardedPiecesAddRoute: typeof SignedInOnboardedPiecesAddRoute
+  SignedInOnboardedCreateOutfitIndexRoute: typeof SignedInOnboardedCreateOutfitIndexRoute
   SignedInOnboardedOutfitsOutfitIdEditRoute: typeof SignedInOnboardedOutfitsOutfitIdEditRoute
-  SignedInOnboardedOutfitsOutfitIdIndexRoute: typeof SignedInOnboardedOutfitsOutfitIdIndexRoute
 }
 
 const SignedInOnboardedRouteRouteChildren: SignedInOnboardedRouteRouteChildren =
   {
-    SignedInOnboardedProfileRouteRoute:
-      SignedInOnboardedProfileRouteRouteWithChildren,
-    SignedInOnboardedCreateOutfitRoute: SignedInOnboardedCreateOutfitRoute,
+    SignedInOnboardedNavRouteRoute: SignedInOnboardedNavRouteRouteWithChildren,
     SignedInOnboardeddevDevRoute: SignedInOnboardeddevDevRoute,
     SignedInOnboardeddevProfilePictureTestRoute:
       SignedInOnboardeddevProfilePictureTestRoute,
+    SignedInOnboardedCreateOutfitBaseRoute:
+      SignedInOnboardedCreateOutfitBaseRoute,
+    SignedInOnboardedCreateOutfitBuildRoute:
+      SignedInOnboardedCreateOutfitBuildRoute,
+    SignedInOnboardedCreateOutfitOccasionRoute:
+      SignedInOnboardedCreateOutfitOccasionRoute,
     SignedInOnboardedPiecesAddRoute: SignedInOnboardedPiecesAddRoute,
+    SignedInOnboardedCreateOutfitIndexRoute:
+      SignedInOnboardedCreateOutfitIndexRoute,
     SignedInOnboardedOutfitsOutfitIdEditRoute:
       SignedInOnboardedOutfitsOutfitIdEditRoute,
-    SignedInOnboardedOutfitsOutfitIdIndexRoute:
-      SignedInOnboardedOutfitsOutfitIdIndexRoute,
   }
 
 const SignedInOnboardedRouteRouteWithChildren =
