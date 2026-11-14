@@ -81,9 +81,7 @@ export const vibeCards = [
   { vibe: RecommendationVibe.CASUAL, label: "Casual", src: casualPhoto },
 ];
 
-export type SpecificsAnswer = "yes" | "no";
-
-export const specificsOptions: { label: string; value: SpecificsAnswer }[] = [
-  { label: "Yes", value: "yes" },
-  { label: "No", value: "no" },
+export const specificsOptions = [
+  { label: "Yes", subtitle: "Bring me to the Birdie & Claire catalog", value: "yes" },
+  { label: "No", subtitle: "Continue to styling", value: "no" },
 ];

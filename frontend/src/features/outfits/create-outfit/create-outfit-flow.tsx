@@ -11,7 +11,6 @@ import {
   Button,
   Chip,
   ChoiceGroup,
-  EmptyState,
   ImageOptionCard,
   Modal,
   OptionTileGroup,
@@ -27,7 +26,6 @@ import {
   vibeCards,
   weatherConditions,
   weatherTiles,
-  type SpecificsAnswer,
   type Step,
   type WeatherTile,
 } from "@/features/outfits/create-outfit/create-outfit-options";
@@ -49,8 +47,6 @@ export function CreateOutfitFlow() {
   // A detail's value is one string, so the chips go out as one comma-separated conditions detail.
   const [conditions, setConditions] = useState<RecommendationCondition[]>([]);
   const [vibe, setVibe] = useState<RecommendationVibe | null>(null);
-  // Held only to drive the screen: picking B&C items to style is out of scope, so it is never sent.
-  const [specificsAnswer, setSpecificsAnswer] = useState<SpecificsAnswer | null>(null);
   const [custom, setCustom] = useState("");
 
   const chosenOccasion = cardOccasion ?? customOccasion.trim();
@@ -132,9 +128,8 @@ export function CreateOutfitFlow() {
       <StepScreen
         step="weather"
         title="What’s the weather looking like?"
-        canContinue={weatherTile !== null}
+        next={{ onClick: () => advanceTo("vibe"), disabled: weatherTile === null }}
         onBack={() => goBackTo("questions-intro")}
-        onNext={() => advanceTo("vibe")}
       >
         <Box className="flex flex-col items-center gap-lg">
           <SegmentedControl
@@ -178,9 +173,8 @@ export function CreateOutfitFlow() {
       <StepScreen
         step="vibe"
         title="What vibe describes you best?"
-        canContinue={vibe !== null}
+        next={{ onClick: () => advanceTo("specifics"), disabled: vibe === null }}
         onBack={() => goBackTo("weather")}
-        onNext={() => advanceTo("specifics")}
       >
         <Box className="flex flex-wrap justify-center gap-lg">
           {vibeCards.map((card) => (
@@ -202,24 +196,16 @@ export function CreateOutfitFlow() {
     return (
       <StepScreen
         step="specifics"
-        title="Describe the occasion"
-        canContinue={specificsAnswer !== null}
+        title="Are there any specific Birdie & Claire items you would like to include?"
+        next={null}
         onBack={() => goBackTo("vibe")}
-        onNext={() => advanceTo("custom")}
       >
-        <Box className="mx-auto flex max-w-content-lg flex-col gap-lg">
+        <Box className="mx-auto max-w-content-sm">
           <ChoiceGroup
-            label="Are there any Birdie & Claire items you would like to style?"
             options={specificsOptions}
-            value={specificsAnswer}
-            onValueChange={setSpecificsAnswer}
+            value={null}
+            onValueChange={() => advanceTo("custom")}
           />
-          {specificsAnswer === "yes" && (
-            <EmptyState
-              title="Coming soon"
-              description="Styling your Birdie & Claire pieces is on its way. Tap Next to keep going."
-            />
-          )}
         </Box>
       </StepScreen>
     );
@@ -230,9 +216,8 @@ export function CreateOutfitFlow() {
       <StepScreen
         step="custom"
         title="Describe the occasion"
-        canContinue
+        next={{ onClick: () => advanceTo("review"), disabled: false }}
         onBack={() => goBackTo("specifics")}
-        onNext={() => advanceTo("review")}
       >
         <TextArea
           className="mx-auto max-w-content-lg"

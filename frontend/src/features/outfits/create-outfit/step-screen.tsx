@@ -7,20 +7,12 @@ import { barSteps, type BarStep } from "@/features/outfits/create-outfit/create-
 type StepScreenProps = {
   step: BarStep;
   title: string;
-  canContinue: boolean;
+  next: { onClick: () => void; disabled: boolean } | null;
   onBack: () => void;
-  onNext: () => void;
   children: ReactNode;
 };
 
-export function StepScreen({
-  step,
-  title,
-  canContinue,
-  onBack,
-  onNext,
-  children,
-}: StepScreenProps) {
+export function StepScreen({ step, title, next, onBack, children }: StepScreenProps) {
   return (
     <Page className="flex flex-col items-center gap-xxxl">
       <Box className="w-full max-w-content-lg">
@@ -30,11 +22,11 @@ export function StepScreen({
         />
       </Box>
       <Box className="flex w-full max-w-content-2xl flex-1 flex-col items-center justify-center gap-lg">
-        <Text variant="display-hifi" className="text-center">
+        <Text variant="display-hifi" className="max-w-content-xl text-center">
           {title}
         </Text>
         <Box className="w-full">{children}</Box>
-        <Button label="Next" disabled={!canContinue} onClick={onNext} />
+        {next && <Button label="Next" disabled={next.disabled} onClick={next.onClick} />}
         <Button
           label="Back"
           variant="ghost"
