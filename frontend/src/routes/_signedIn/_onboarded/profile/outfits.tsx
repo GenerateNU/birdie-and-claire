@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useCallback } from "react";
 
 import { listOutfitsInfiniteOptions } from "@/api/generated/@tanstack/react-query.gen";
-import { EmptyState, ErrorState, Spinner, Text } from "@/design-system";
+import { EmptyState, ErrorState, Spinner } from "@/design-system";
+import { SavedOutfitsLayout } from "@/features/collections/saved-outfits-layout";
 import { OutfitList } from "@/features/outfits/outfit-list";
 import { usePagination } from "@/lib/use-pagination";
 
@@ -11,6 +12,14 @@ export const Route = createFileRoute("/_signedIn/_onboarded/profile/outfits")({
 });
 
 function OutfitsPage() {
+  return (
+    <SavedOutfitsLayout active="all">
+      <AllOutfits />
+    </SavedOutfitsLayout>
+  );
+}
+
+function AllOutfits() {
   const {
     data,
     isPending,
@@ -43,13 +52,6 @@ function OutfitsPage() {
 
   return (
     <>
-      <Text variant="heading" className="mb-xs">
-        Saved Outfits
-      </Text>
-      {/* No count: GET /outfits doesn't return a total. */}
-      <Text variant="subheading" className="mb-lg">
-        All
-      </Text>
       {outfits.length === 0 ? (
         <EmptyState title="No outfits yet" />
       ) : (

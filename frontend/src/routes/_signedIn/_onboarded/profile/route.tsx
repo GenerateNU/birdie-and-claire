@@ -8,9 +8,19 @@ export const Route = createFileRoute("/_signedIn/_onboarded/profile")({
 });
 
 const TABS = [
-  { label: "Pieces I Own", to: "/profile/pieces", icon: CoatHangerIcon },
-  { label: "Saved Outfits", to: "/profile/outfits", icon: BookmarkSimpleIcon },
-  { label: "Settings", to: "/profile/settings", icon: UserIcon },
+  {
+    label: "Pieces I Own",
+    to: "/profile/pieces",
+    icon: CoatHangerIcon,
+    activeOn: ["/profile/pieces"],
+  },
+  {
+    label: "Saved Outfits",
+    to: "/profile/outfits",
+    icon: BookmarkSimpleIcon,
+    activeOn: ["/profile/outfits", "/profile/collections"],
+  },
+  { label: "Settings", to: "/profile/settings", icon: UserIcon, activeOn: ["/profile/settings"] },
 ] as const;
 
 function ProfileLayout() {
@@ -31,7 +41,7 @@ function ProfileLayout() {
                 icon={tab.icon}
                 to={tab.to}
                 // Fuzzy, so Style Preferences under Settings keeps Settings marked.
-                active={Boolean(matchRoute({ to: tab.to, fuzzy: true }))}
+                active={tab.activeOn.some((to) => Boolean(matchRoute({ to, fuzzy: true })))}
               />
             </li>
           ))}

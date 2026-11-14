@@ -31,6 +31,18 @@ function ModalImage({ image }: { image: string | null }) {
   return <CardImage src={image} className="w-modal-image shrink-0" />;
 }
 
+function ModalActionButton({ action }: { action: ModalAction }) {
+  return (
+    <Button
+      label={action.label}
+      variant={action.variant}
+      onClick={action.onClick}
+      disabled={action.disabled}
+      loading={action.loading}
+    />
+  );
+}
+
 type ModalPanelProps = {
   title: string;
   /** A line under the title, in the header. */
@@ -39,6 +51,8 @@ type ModalPanelProps = {
   /** Content between the message and the actions, for a modal that shows more than text. */
   children?: ReactNode;
   actions: ModalAction[];
+  /** Sits at the left of the action row, apart from `actions`, like a destructive Delete. */
+  leadingAction?: ModalAction;
   size?: ModalSize;
   /** Shows the close button. */
   onClose?: () => void;
@@ -56,6 +70,7 @@ export function ModalPanel({
   message,
   children,
   actions,
+  leadingAction,
   size = "sm",
   onClose,
   image,
@@ -87,18 +102,14 @@ export function ModalPanel({
           )}
           {children}
         </Box>
-        {actions.length > 0 && (
-          <Box className="flex items-center justify-end gap-sm px-xl pb-lg">
-            {actions.map((action) => (
-              <Button
-                key={action.label}
-                label={action.label}
-                variant={action.variant}
-                onClick={action.onClick}
-                disabled={action.disabled}
-                loading={action.loading}
-              />
-            ))}
+        {(actions.length > 0 || leadingAction) && (
+          <Box className="flex items-center gap-sm px-xl pb-lg">
+            {leadingAction && <ModalActionButton action={leadingAction} />}
+            <Box className="ml-auto flex items-center gap-sm">
+              {actions.map((action) => (
+                <ModalActionButton key={action.label} action={action} />
+              ))}
+            </Box>
           </Box>
         )}
       </Box>
