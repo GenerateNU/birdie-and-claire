@@ -119,6 +119,9 @@ func (s *catalogSyncService) Sync(ctx context.Context) error {
 			return err
 		}
 		syncedShopifyIDs = append(syncedShopifyIDs, product.ID)
+		if err := s.repo.ProductVariant.ReplaceShopifyVariants(ctx, synced.ID, product.Variants); err != nil {
+			return err
+		}
 		// Replacing images from an incomplete list would delete the ones still
 		// processing, so the images and embedding wait for a run that has them all.
 		if product.HasProcessingImages {
