@@ -165,7 +165,8 @@ function SaveAction({ outfit, viewer }: SaveActionProps) {
     );
   }
 
-  return <SaveSharedOutfit outfit={outfit} />;
+  // Keyed so moving to another share link starts with a fresh save, not the last outfit's copy.
+  return <SaveSharedOutfit key={outfit.id} outfit={outfit} />;
 }
 
 /** Copies the outfit into the viewer's own outfits and counts a save on the original. */
