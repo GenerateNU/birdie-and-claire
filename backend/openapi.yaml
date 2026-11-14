@@ -23,6 +23,52 @@ components:
       required:
         - keys_loaded
       type: object
+    CollectionDetailResponse:
+      additionalProperties: false
+      properties:
+        description:
+          description: Empty when the collection has no description
+          type: string
+        id:
+          type: string
+        name:
+          type: string
+        outfits:
+          description: Newest added first
+          items:
+            $ref: "#/components/schemas/OutfitResponse"
+          type: array
+      required:
+        - outfits
+        - id
+        - name
+        - description
+      type: object
+    CollectionResponse:
+      additionalProperties: false
+      properties:
+        description:
+          description: Empty when the collection has no description
+          type: string
+        id:
+          type: string
+        name:
+          type: string
+        outfit_count:
+          format: int64
+          type: integer
+        thumbnail_urls:
+          description: One image for each of the up to 4 most recently added outfits, newest first
+          items:
+            type: string
+          type: array
+      required:
+        - outfit_count
+        - thumbnail_urls
+        - id
+        - name
+        - description
+      type: object
     ConfirmProfilePictureInputBody:
       additionalProperties: false
       properties:
@@ -31,6 +77,21 @@ components:
           type: string
       required:
         - key
+      type: object
+    CreateCollectionInputBody:
+      additionalProperties: false
+      properties:
+        description:
+          description: Free-text description of the collection
+          maxLength: 250
+          type: string
+        name:
+          description: Display name for the collection
+          maxLength: 100
+          minLength: 1
+          type: string
+      required:
+        - name
       type: object
     CreateOutfitInputBody:
       additionalProperties: false
@@ -157,6 +218,16 @@ components:
             - https://example.com/errors/example
           format: uri
           type: string
+      type: object
+    ListCollectionsResponse:
+      additionalProperties: false
+      properties:
+        items:
+          items:
+            $ref: "#/components/schemas/CollectionResponse"
+          type: array
+      required:
+        - items
       type: object
     ListOutfitsResponse:
       additionalProperties: false
@@ -697,6 +768,19 @@ components:
         - bottoms
         - shoes
       type: object
+    UpdateCollectionInputBody:
+      additionalProperties: false
+      properties:
+        description:
+          description: New description; an empty string clears it
+          maxLength: 250
+          type: string
+        name:
+          description: New display name for the collection
+          maxLength: 100
+          minLength: 1
+          type: string
+      type: object
     UpdateOutfitInputBody:
       additionalProperties: false
       properties:
@@ -798,6 +882,143 @@ paths:
       summary: Get a shared outfit without signing in
       tags:
         - outfits
+  /api/v1/collections:
+    get:
+      description: Newest first, each with its outfit count and up to 4 thumbnails. The list is not paginated.
+      operationId: list-collections
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListCollectionsResponse"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: List the authenticated user's collections
+      tags:
+        - collections
+    post:
+      operationId: create-collection
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCollectionInputBody"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CollectionResponse"
+          description: Created
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Create a collection
+      tags:
+        - collections
+  /api/v1/collections/{id}:
+    delete:
+      description: The collection's outfits stay saved. Someone else's collection and a missing one both return 404, so a repeated call returns 404.
+      operationId: delete-collection
+      parameters:
+        - description: Collection ID
+          in: path
+          name: id
+          required: true
+          schema:
+            description: Collection ID
+            type: string
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Delete a collection
+      tags:
+        - collections
+    get:
+      description: Someone else's collection and a missing one both return 404.
+      operationId: get-collection
+      parameters:
+        - description: Collection ID
+          in: path
+          name: id
+          required: true
+          schema:
+            description: Collection ID
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CollectionDetailResponse"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Get one of the authenticated user's collections with its outfits
+      tags:
+        - collections
+    patch:
+      operationId: update-collection
+      parameters:
+        - description: Collection ID
+          in: path
+          name: id
+          required: true
+          schema:
+            description: Collection ID
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCollectionInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CollectionResponse"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Update a collection's name or description
+      tags:
+        - collections
   /api/v1/embedder/warm:
     post:
       description: "Boots a Modal container ahead of an embed call and reports how long it took: tens of seconds on a cold start, well under one when a container is already up. Modal keeps the container warm for about 60 seconds."
