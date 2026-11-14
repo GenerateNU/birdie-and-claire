@@ -866,7 +866,7 @@ paths:
         - outfits
   /api/v1/outfits/{id}:
     delete:
-      description: Also deletes the outfit's saved products and reactions, and its public link stops working. Someone else's outfit and a missing one both return 404, so a repeated call returns 404.
+      description: The outfit's products are unlinked from it and stay in the catalog. Its reactions are deleted, and its share link stops working. Someone else's outfit and a missing one both return 404, so a repeated call returns 404.
       operationId: delete-outfit
       parameters:
         - description: Outfit ID

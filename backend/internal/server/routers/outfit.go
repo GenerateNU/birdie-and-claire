@@ -46,7 +46,7 @@ func OutfitRoutes(api huma.API, params types.RouteParams) {
 		Path:          "/api/v1/outfits/{id}",
 		DefaultStatus: http.StatusNoContent,
 		Summary:       "Delete an outfit",
-		Description:   "Also deletes the outfit's saved products and reactions, and its public link stops working. Someone else's outfit and a missing one both return 404, so a repeated call returns 404.",
+		Description:   "The outfit's products are unlinked from it and stay in the catalog. Its reactions are deleted, and its share link stops working. Someone else's outfit and a missing one both return 404, so a repeated call returns 404.",
 		Tags:          []string{"outfits"},
 	}, controller.Delete)
 
