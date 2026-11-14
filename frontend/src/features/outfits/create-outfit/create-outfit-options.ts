@@ -16,6 +16,10 @@ import casualOutingPhoto from "@/design-system/assets/occasions/casual-outing.pn
 import nightOutPhoto from "@/design-system/assets/occasions/night-out.jpg";
 import weddingPhoto from "@/design-system/assets/occasions/wedding.jpg";
 import workDayPhoto from "@/design-system/assets/occasions/work-day.jpg";
+import casualPhoto from "@/design-system/assets/vibes/casual.jpg";
+import chicPhoto from "@/design-system/assets/vibes/chic.jpg";
+import colorfulPhoto from "@/design-system/assets/vibes/colorful.jpg";
+import professionalPhoto from "@/design-system/assets/vibes/professional.jpg";
 
 export type Step =
   | "intro"
@@ -70,11 +74,14 @@ export const weatherConditions = [
   { label: "Windy", value: RecommendationCondition.WINDY },
 ];
 
-export const vibes = Object.values(RecommendationVibe);
+export const vibeCards = [
+  { vibe: RecommendationVibe.COLORFUL, label: "Colorful", src: colorfulPhoto },
+  { vibe: RecommendationVibe.PROFESSIONAL, label: "Professional", src: professionalPhoto },
+  { vibe: RecommendationVibe.CHIC, label: "Chic", src: chicPhoto },
+  { vibe: RecommendationVibe.CASUAL, label: "Casual", src: casualPhoto },
+];
 
-export type SpecificsAnswer = "yes" | "no";
-
-export const specificsOptions: { label: string; value: SpecificsAnswer }[] = [
-  { label: "Yes", value: "yes" },
-  { label: "No", value: "no" },
+export const specificsOptions = [
+  { label: "Yes", subtitle: "Bring me to the Birdie & Claire catalog", value: "yes" },
+  { label: "No", subtitle: "Continue to styling", value: "no" },
 ];

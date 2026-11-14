@@ -1,3 +1,4 @@
+import { ArrowRightIcon, MagnifyingGlassIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 
 import {
@@ -11,11 +12,11 @@ import {
   Button,
   Chip,
   ChoiceGroup,
-  EmptyState,
   ImageOptionCard,
   Modal,
   OptionTileGroup,
   Page,
+  SearchField,
   SegmentedControl,
   Text,
   TextArea,
@@ -24,10 +25,9 @@ import {
   occasions,
   specificsOptions,
   tileToApiWeather,
-  vibes,
+  vibeCards,
   weatherConditions,
   weatherTiles,
-  type SpecificsAnswer,
   type Step,
   type WeatherTile,
 } from "@/features/outfits/create-outfit/create-outfit-options";
@@ -49,8 +49,6 @@ export function CreateOutfitFlow() {
   // A detail's value is one string, so the chips go out as one comma-separated conditions detail.
   const [conditions, setConditions] = useState<RecommendationCondition[]>([]);
   const [vibe, setVibe] = useState<RecommendationVibe | null>(null);
-  // Held only to drive the screen: picking B&C items to style is out of scope, so it is never sent.
-  const [specificsAnswer, setSpecificsAnswer] = useState<SpecificsAnswer | null>(null);
   const [custom, setCustom] = useState("");
 
   const chosenOccasion = cardOccasion ?? customOccasion.trim();
@@ -61,7 +59,16 @@ export function CreateOutfitFlow() {
   const answeredConditions =
     weatherTile === null || conditions.length === 0 ? null : conditions.join(",");
 
-  const weatherLabel = weatherTiles.find((tile) => tile.value === weatherTile)?.label ?? "None";
+  const weatherSummary =
+    weatherTile === null
+      ? "None"
+      : [
+          weatherTiles.find((tile) => tile.value === weatherTile)?.label,
+          ...weatherConditions
+            .filter(({ value }) => conditions.includes(value))
+            .map(({ label }) => label.toLowerCase()),
+        ].join(", ");
+
   const canContinue = chosenOccasion !== "";
 
   function selectCard(occasion: string, pressed: boolean) {
@@ -93,6 +100,14 @@ export function CreateOutfitFlow() {
     }
 
     setStep(next);
+  }
+
+  function skipCustom() {
+    if (!returnToReview) {
+      setCustom("");
+    }
+
+    advanceTo("review");
   }
 
   function goBackTo(previous: Step) {
@@ -132,9 +147,9 @@ export function CreateOutfitFlow() {
       <StepScreen
         step="weather"
         title="What’s the weather looking like?"
-        canContinue={weatherTile !== null}
+        description={null}
+        next={{ onClick: () => advanceTo("vibe"), disabled: weatherTile === null }}
         onBack={() => goBackTo("questions-intro")}
-        onNext={() => advanceTo("vibe")}
       >
         <Box className="flex flex-col items-center gap-lg">
           <SegmentedControl
@@ -177,18 +192,22 @@ export function CreateOutfitFlow() {
     return (
       <StepScreen
         step="vibe"
-        title="Describe the occasion"
-        canContinue={vibe !== null}
+        title="What vibe describes you best?"
+        description={null}
+        next={{ onClick: () => advanceTo("specifics"), disabled: vibe === null }}
         onBack={() => goBackTo("weather")}
-        onNext={() => advanceTo("specifics")}
       >
-        <Box className="capitalize">
-          <OptionTileGroup
-            label="Vibe"
-            options={vibes.map((option) => ({ label: option, value: option }))}
-            value={vibe}
-            onValueChange={setVibe}
-          />
+        <Box className="flex flex-wrap justify-center gap-lg">
+          {vibeCards.map((card) => (
+            <ImageOptionCard
+              key={card.vibe}
+              label={card.label.toUpperCase()}
+              src={card.src}
+              size="lg"
+              pressed={vibe === card.vibe}
+              onPressedChange={(pressed) => setVibe(pressed ? card.vibe : null)}
+            />
+          ))}
         </Box>
       </StepScreen>
     );
@@ -198,24 +217,18 @@ export function CreateOutfitFlow() {
     return (
       <StepScreen
         step="specifics"
-        title="Describe the occasion"
-        canContinue={specificsAnswer !== null}
+        title="Are there any specific Birdie & Claire items you would like to include?"
+        description={null}
+        next={null}
         onBack={() => goBackTo("vibe")}
-        onNext={() => advanceTo("custom")}
       >
-        <Box className="flex flex-col gap-lg">
+        <Box className="mx-auto max-w-content-sm">
+          {/* Yes and No both continue, and the answer isn't sent, until the catalog screen exists. */}
           <ChoiceGroup
-            label="Are there any Birdie & Claire items you would like to style?"
             options={specificsOptions}
-            value={specificsAnswer}
-            onValueChange={setSpecificsAnswer}
+            value={null}
+            onValueChange={() => advanceTo("custom")}
           />
-          {specificsAnswer === "yes" && (
-            <EmptyState
-              title="Coming soon"
-              description="Styling your Birdie & Claire pieces is on its way. Tap Next to keep going."
-            />
-          )}
         </Box>
       </StepScreen>
     );
@@ -225,19 +238,35 @@ export function CreateOutfitFlow() {
     return (
       <StepScreen
         step="custom"
-        title="Describe the occasion"
-        canContinue
+        title="Anything else you’d like to tell us?"
+        description={
+          "Fine tune your outfit with more specific instructions and descriptions you’d want included.\nTotally optional, just a way for us to get your taste."
+        }
+        next={null}
         onBack={() => goBackTo("specifics")}
-        onNext={() => advanceTo("review")}
       >
-        <TextArea
-          label="Enter any other details you would like considered."
-          placeholder="i.e. Outfit for a chill night out with long sleeves and rainy weather"
-          // The endpoint caps custom at 200 characters.
-          maxLength={200}
-          value={custom}
-          onValueChange={setCustom}
-        />
+        <Box className="flex flex-col items-center gap-xxl pt-md">
+          <SearchField
+            label="Anything else you’d like to tell us"
+            placeholder="Describe anything here (i.e. add gold ring, make vibe playful...)"
+            leadingIcon={MagnifyingGlassIcon}
+            size="sm"
+            // The endpoint caps custom at 200 characters.
+            maxLength={200}
+            value={custom}
+            onValueChange={setCustom}
+            onSubmit={() => advanceTo("review")}
+            className="w-full max-w-content-md"
+          />
+          <Box className="flex flex-col items-center gap-md">
+            <Button
+              label="Let’s go"
+              trailingIcon={ArrowRightIcon}
+              onClick={() => advanceTo("review")}
+            />
+            <Button label="Skip" variant="ghost" size="sm" onClick={skipCustom} />
+          </Box>
+        </Box>
       </StepScreen>
     );
   }
@@ -247,7 +276,7 @@ export function CreateOutfitFlow() {
       <Review
         occasion={chosenOccasion}
         weather={weather}
-        weatherLabel={weatherLabel}
+        weatherSummary={weatherSummary}
         setting={answeredSetting}
         conditions={answeredConditions}
         vibe={vibe}
