@@ -515,6 +515,14 @@ components:
         - dislike
         - save
       type: object
+    RecommendationCondition:
+      enum:
+        - humid
+        - rainy
+        - snowy
+        - stormy
+        - windy
+      type: string
     RecommendationDetail:
       additionalProperties: false
       properties:
@@ -522,6 +530,7 @@ components:
           enum:
             - weather
             - setting
+            - conditions
             - vibe
             - custom
           type: string
@@ -529,9 +538,10 @@ components:
           anyOf:
             - $ref: "#/components/schemas/RecommendationWeather"
             - $ref: "#/components/schemas/RecommendationSetting"
+            - $ref: "#/components/schemas/RecommendationCondition"
             - $ref: "#/components/schemas/RecommendationVibe"
             - type: string
-          description: For weather, one of RecommendationWeather; for setting, one of RecommendationSetting; for vibe, one of RecommendationVibe; free text for custom. The server checks the value against its key
+          description: For weather, one of RecommendationWeather; for setting, one of RecommendationSetting; for conditions, distinct RecommendationCondition values separated by commas, such as "humid,rainy"; for vibe, one of RecommendationVibe; free text for custom. The server checks the value against its key
           maxLength: 200
           minLength: 1
           type: string

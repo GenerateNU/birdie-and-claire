@@ -44,27 +44,49 @@ func (input *RecommendProductsInput) Resolve(huma.Context) []error {
 		}
 		seen[detail.Key] = true
 
-		switch detail.Key {
-		case models.DetailWeather:
-			if !slices.Contains(models.RecommendationWeathers, detail.Value) {
-				problems = append(problems, &huma.ErrorDetail{Location: location + ".value", Message: "value must be a listed weather", Value: detail.Value})
-			}
-		case models.DetailSetting:
-			if !slices.Contains(models.RecommendationSettings, detail.Value) {
-				problems = append(problems, &huma.ErrorDetail{Location: location + ".value", Message: "value must be a listed setting", Value: detail.Value})
-			}
-		case models.DetailVibe:
-			if !slices.Contains(models.RecommendationVibes, detail.Value) {
-				problems = append(problems, &huma.ErrorDetail{Location: location + ".value", Message: "value must be a listed vibe", Value: detail.Value})
-			}
-		case models.DetailCustom:
-			detail.Value = strings.TrimSpace(detail.Value)
-			if detail.Value == "" {
-				problems = append(problems, &huma.ErrorDetail{Location: location + ".value", Message: "value must not be blank"})
-			}
+		if problem := checkDetailValue(detail, location+".value"); problem != nil {
+			problems = append(problems, problem)
 		}
 	}
 	return problems
+}
+
+// checkDetailValue checks a detail's value against its key, trimming custom first. It returns nil when the value is valid.
+func checkDetailValue(detail *models.RecommendationDetail, location string) *huma.ErrorDetail {
+	switch detail.Key {
+	case models.DetailWeather:
+		if !slices.Contains(models.RecommendationWeathers, detail.Value) {
+			return &huma.ErrorDetail{Location: location, Message: "value must be a listed weather", Value: detail.Value}
+		}
+	case models.DetailSetting:
+		if !slices.Contains(models.RecommendationSettings, detail.Value) {
+			return &huma.ErrorDetail{Location: location, Message: "value must be a listed setting", Value: detail.Value}
+		}
+	case models.DetailConditions:
+		if !distinctListedConditions(detail.Value) {
+			return &huma.ErrorDetail{Location: location, Message: "value must be distinct listed conditions separated by commas", Value: detail.Value}
+		}
+	case models.DetailVibe:
+		if !slices.Contains(models.RecommendationVibes, detail.Value) {
+			return &huma.ErrorDetail{Location: location, Message: "value must be a listed vibe", Value: detail.Value}
+		}
+	case models.DetailCustom:
+		detail.Value = strings.TrimSpace(detail.Value)
+		if detail.Value == "" {
+			return &huma.ErrorDetail{Location: location, Message: "value must not be blank"}
+		}
+	}
+	return nil
+}
+
+func distinctListedConditions(value string) bool {
+	conditions := strings.Split(value, ",")
+	for i, condition := range conditions {
+		if !slices.Contains(models.RecommendationConditions, condition) || slices.Contains(conditions[:i], condition) {
+			return false
+		}
+	}
+	return true
 }
 
 type RecommendProductsOutput struct {

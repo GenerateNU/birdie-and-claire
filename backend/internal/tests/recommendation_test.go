@@ -479,9 +479,11 @@ func TestRecommendRouteValidatesTheRequest(t *testing.T) {
 		{name: "occasion only", body: map[string]any{"occasion": "Workday"}, wantStatus: http.StatusOK},
 		{name: "empty details", body: map[string]any{"occasion": "Workday", "details": []any{}}, wantStatus: http.StatusOK},
 		{name: "every key", body: map[string]any{"occasion": "Workday", "details": []any{
-			detail("weather", "chilly"), detail("setting", "indoors"), detail("vibe", "chic"), detail("custom", "no heels"),
+			detail("weather", "chilly"), detail("setting", "indoors"), detail("conditions", "rainy,windy"), detail("vibe", "chic"), detail("custom", "no heels"),
 		}}, wantStatus: http.StatusOK},
 		{name: "outdoors setting", body: map[string]any{"occasion": "Workday", "details": []any{detail("setting", "outdoors")}}, wantStatus: http.StatusOK},
+		{name: "one condition", body: map[string]any{"occasion": "Workday", "details": []any{detail("conditions", "humid")}}, wantStatus: http.StatusOK},
+		{name: "every condition", body: map[string]any{"occasion": "Workday", "details": []any{detail("conditions", "humid,rainy,snowy,stormy,windy")}}, wantStatus: http.StatusOK},
 		{name: "occasion of 100 characters", body: map[string]any{"occasion": strings.Repeat("o", 100)}, wantStatus: http.StatusOK},
 		{name: "custom of 200 characters", body: map[string]any{"occasion": "Workday", "details": []any{detail("custom", strings.Repeat("c", 200))}}, wantStatus: http.StatusOK},
 
@@ -495,6 +497,9 @@ func TestRecommendRouteValidatesTheRequest(t *testing.T) {
 		}}, wantStatus: http.StatusUnprocessableEntity},
 		{name: "unlisted weather", body: map[string]any{"occasion": "Workday", "details": []any{detail("weather", "sunny")}}, wantStatus: http.StatusUnprocessableEntity},
 		{name: "unlisted setting", body: map[string]any{"occasion": "Workday", "details": []any{detail("setting", "underwater")}}, wantStatus: http.StatusUnprocessableEntity},
+		{name: "unlisted condition", body: map[string]any{"occasion": "Workday", "details": []any{detail("conditions", "humid,foggy")}}, wantStatus: http.StatusUnprocessableEntity},
+		{name: "repeated condition", body: map[string]any{"occasion": "Workday", "details": []any{detail("conditions", "rainy,windy,rainy")}}, wantStatus: http.StatusUnprocessableEntity},
+		{name: "empty condition", body: map[string]any{"occasion": "Workday", "details": []any{detail("conditions", "humid,")}}, wantStatus: http.StatusUnprocessableEntity},
 		{name: "vibe in another case", body: map[string]any{"occasion": "Workday", "details": []any{detail("vibe", "Chic")}}, wantStatus: http.StatusUnprocessableEntity},
 		{name: "empty value", body: map[string]any{"occasion": "Workday", "details": []any{detail("custom", "")}}, wantStatus: http.StatusUnprocessableEntity},
 		{name: "blank custom", body: map[string]any{"occasion": "Workday", "details": []any{detail("custom", "   ")}}, wantStatus: http.StatusUnprocessableEntity},
@@ -535,13 +540,13 @@ func TestRecommendRouteSendsEachAnswerUnderItsLabel(t *testing.T) {
 
 	response := recommendationAPI(t, model, &fakeProducts{}, &fakeEmbedder{}).Post("/api/v1/recommend", map[string]any{
 		"occasion": "  Workday ",
-		"details":  []any{detail("weather", "chilly"), detail("setting", "indoors"), detail("vibe", "chic"), detail("custom", "  no heels  ")},
+		"details":  []any{detail("weather", "chilly"), detail("setting", "indoors"), detail("conditions", "rainy,windy"), detail("vibe", "chic"), detail("custom", "  no heels  ")},
 	})
 	if response.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200: %s", response.Code, response.Body)
 	}
 
-	answers, _ := json.Marshal(map[string]string{"occasion": "Workday", "weather": "chilly", "setting": "indoors", "vibe": "chic", "custom": "no heels"})
+	answers, _ := json.Marshal(map[string]string{"occasion": "Workday", "weather": "chilly", "setting": "indoors", "conditions": "rainy,windy", "vibe": "chic", "custom": "no heels"})
 	// the gateway body carries the prompt as a JSON string, so the answers appear there string-escaped
 	escaped, _ := json.Marshal(string(answers))
 	mu.Lock()

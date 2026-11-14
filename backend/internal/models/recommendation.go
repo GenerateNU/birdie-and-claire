@@ -8,18 +8,19 @@ type RecommendationRequest struct {
 }
 
 type RecommendationDetail struct {
-	Key RecommendationDetailKey `json:"key" enum:"weather,setting,vibe,custom"`
-	// 200 is the custom limit; weather, setting, and vibe values are checked against their lists
-	Value string `json:"value" minLength:"1" maxLength:"200" doc:"For weather, one of RecommendationWeather; for setting, one of RecommendationSetting; for vibe, one of RecommendationVibe; free text for custom. The server checks the value against its key"`
+	Key RecommendationDetailKey `json:"key" enum:"weather,setting,conditions,vibe,custom"`
+	// 200 is the custom limit; weather, setting, conditions, and vibe values are checked against their lists
+	Value string `json:"value" minLength:"1" maxLength:"200" doc:"For weather, one of RecommendationWeather; for setting, one of RecommendationSetting; for conditions, distinct RecommendationCondition values separated by commas, such as \"humid,rainy\"; for vibe, one of RecommendationVibe; free text for custom. The server checks the value against its key"`
 }
 
-// TransformSchema points value at the RecommendationWeather, RecommendationSetting, and RecommendationVibe schemas from
+// TransformSchema points value at the RecommendationWeather, RecommendationSetting, RecommendationCondition, and RecommendationVibe schemas from
 // RegisterRecommendationEnums. The free-text branch keeps validation as it was: the controller
 // checks a value against its key's list.
 func (RecommendationDetail) TransformSchema(_ huma.Registry, s *huma.Schema) *huma.Schema {
 	s.Properties["value"].AnyOf = []*huma.Schema{
 		{Ref: "#/components/schemas/RecommendationWeather"},
 		{Ref: "#/components/schemas/RecommendationSetting"},
+		{Ref: "#/components/schemas/RecommendationCondition"},
 		{Ref: "#/components/schemas/RecommendationVibe"},
 		{Type: huma.TypeString},
 	}
@@ -27,12 +28,13 @@ func (RecommendationDetail) TransformSchema(_ huma.Registry, s *huma.Schema) *hu
 	return s
 }
 
-// RegisterRecommendationEnums adds the weather, setting, and vibe lists to the spec as named schemas, so the
+// RegisterRecommendationEnums adds the weather, setting, condition, and vibe lists to the spec as named schemas, so the
 // frontend can generate its buttons from them.
 func RegisterRecommendationEnums(r huma.Registry) {
 	schemas := r.Map()
 	schemas["RecommendationWeather"] = &huma.Schema{Type: huma.TypeString, Enum: enumValues(RecommendationWeathers)}
 	schemas["RecommendationSetting"] = &huma.Schema{Type: huma.TypeString, Enum: enumValues(RecommendationSettings)}
+	schemas["RecommendationCondition"] = &huma.Schema{Type: huma.TypeString, Enum: enumValues(RecommendationConditions)}
 	schemas["RecommendationVibe"] = &huma.Schema{Type: huma.TypeString, Enum: enumValues(RecommendationVibes)}
 }
 
@@ -48,29 +50,33 @@ func enumValues(values []string) []any {
 type RecommendationDetailKey string
 
 const (
-	DetailWeather RecommendationDetailKey = "weather"
-	DetailSetting RecommendationDetailKey = "setting"
-	DetailVibe    RecommendationDetailKey = "vibe"
-	DetailCustom  RecommendationDetailKey = "custom"
+	DetailWeather    RecommendationDetailKey = "weather"
+	DetailSetting    RecommendationDetailKey = "setting"
+	DetailConditions RecommendationDetailKey = "conditions"
+	DetailVibe       RecommendationDetailKey = "vibe"
+	DetailCustom     RecommendationDetailKey = "custom"
 )
 
-// RecommendationWeathers, RecommendationSettings, and RecommendationVibes are the values the occasion
-// flow's buttons send. The spec publishes them as the RecommendationWeather, RecommendationSetting,
-// and RecommendationVibe schemas, which the frontend client is generated from.
+// RecommendationWeathers, RecommendationSettings, RecommendationConditions, and RecommendationVibes are
+// the values the occasion flow's buttons send. The spec publishes them as the RecommendationWeather,
+// RecommendationSetting, RecommendationCondition, and RecommendationVibe schemas, which the frontend
+// client is generated from.
 var (
-	RecommendationWeathers = []string{"hot", "warm", "chilly", "cold", "rainy", "windy", "snowy", "storm"}
-	RecommendationSettings = []string{"outdoors", "indoors"}
-	RecommendationVibes    = []string{"professional", "chic", "casual", "sophisticated", "colorful"}
+	RecommendationWeathers   = []string{"hot", "warm", "chilly", "cold", "rainy", "windy", "snowy", "storm"}
+	RecommendationSettings   = []string{"outdoors", "indoors"}
+	RecommendationConditions = []string{"humid", "rainy", "snowy", "stormy", "windy"}
+	RecommendationVibes      = []string{"professional", "chic", "casual", "sophisticated", "colorful"}
 )
 
 // OccasionPromptLabel and DetailPromptLabels name each answer in the prompt.
 const OccasionPromptLabel = "occasion"
 
 var DetailPromptLabels = map[RecommendationDetailKey]string{
-	DetailWeather: "weather",
-	DetailSetting: "setting",
-	DetailVibe:    "vibe",
-	DetailCustom:  "custom",
+	DetailWeather:    "weather",
+	DetailSetting:    "setting",
+	DetailConditions: "conditions",
+	DetailVibe:       "vibe",
+	DetailCustom:     "custom",
 }
 
 type RecommendationResponse struct {
