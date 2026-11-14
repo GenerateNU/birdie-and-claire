@@ -18,17 +18,20 @@ func insertTestOutfit(t *testing.T, db *sql.DB) (outfitID uuid.UUID, ownerID uui
 	t.Helper()
 
 	ownerID = insertTestUser(t, db)
+	return insertTestOutfitFor(t, db, ownerID), ownerID
+}
+
+// insertTestOutfitFor saves a private one-product outfit owned by ownerID and returns its ID.
+func insertTestOutfitFor(t *testing.T, db *sql.DB, ownerID uuid.UUID) uuid.UUID {
+	t.Helper()
+
 	params := models.CreateOutfitParams{Name: "fit", ProductIDs: []uuid.UUID{insertTestProduct(t, db)}}
 	outfit, _, err := repository.NewOutfitRepository(db).Create(context.Background(), params, ownerID)
 	if err != nil {
 		t.Fatalf("create outfit: %v", err)
 	}
-	// outfit_products.outfit_id has no ON DELETE CASCADE, so its rows go first.
-	t.Cleanup(func() {
-		_, _ = db.Exec(`DELETE FROM outfit_products WHERE outfit_id = $1`, outfit.ID)
-		_, _ = db.Exec(`DELETE FROM outfits WHERE id = $1`, outfit.ID)
-	})
-	return outfit.ID, ownerID
+	t.Cleanup(func() { _, _ = db.Exec(`DELETE FROM outfits WHERE id = $1`, outfit.ID) })
+	return outfit.ID
 }
 
 func wantNotFound(t *testing.T, err error) {

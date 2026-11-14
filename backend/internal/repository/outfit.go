@@ -30,7 +30,7 @@ type OutfitRepository interface {
 	Update(ctx context.Context, id uuid.UUID, params models.UpdateOutfitParams, userID uuid.UUID) (models.Outfit, []models.ProductResponse, error)
 	Share(ctx context.Context, id uuid.UUID, userID uuid.UUID) error
 	Unshare(ctx context.Context, id uuid.UUID, userID uuid.UUID) error
-	List(ctx context.Context, userID uuid.UUID, params pagination.CursorParams) ([]models.Outfit, error)
+	List(ctx context.Context, userID uuid.UUID, params pagination.CursorParams) (outfits []models.Outfit, total int, err error)
 }
 
 type outfitRepository struct {
@@ -264,44 +264,51 @@ func (r *outfitRepository) Unshare(ctx context.Context, id uuid.UUID, userID uui
 	return nil
 }
 
-// List returns up to params.Limit+1 of the user's outfits, newest first, so the caller can tell if more remain.
-func (r *outfitRepository) List(ctx context.Context, userID uuid.UUID, params pagination.CursorParams) ([]models.Outfit, error) {
+// List returns up to params.Limit+1 of the user's outfits, newest first, so the caller can tell if more remain,
+// and how many outfits the user has in all.
+func (r *outfitRepository) List(ctx context.Context, userID uuid.UUID, params pagination.CursorParams) ([]models.Outfit, int, error) {
 	afterCreatedAt, err := params.After().Time("created_at")
 	if err != nil {
-		return nil, fmt.Errorf("list outfits for user %s: after cursor created_at: %w", userID, err)
+		return nil, 0, fmt.Errorf("list outfits for user %s: after cursor created_at: %w", userID, err)
 	}
 	afterID, err := params.After().UUID("id")
 	if err != nil {
-		return nil, fmt.Errorf("list outfits for user %s: after cursor id: %w", userID, err)
+		return nil, 0, fmt.Errorf("list outfits for user %s: after cursor id: %w", userID, err)
 	}
 
 	// No products join: under LIMIT it would count joined rows, not outfits.
+	// An empty page reports total 0, which is only wrong past the last page, and callers stop at has_more = false.
 	rows, err := r.db.QueryContext(ctx, `
-		SELECT id, user_id, name, shared_at, created_at, updated_at
-		FROM outfits
-		WHERE user_id = $1
-			AND ($2::timestamptz IS NULL OR (created_at, id) < ($2::timestamptz, $3::uuid))
+		WITH user_outfits AS (
+			SELECT id, user_id, name, shared_at, created_at, updated_at, count(*) OVER () AS total
+			FROM outfits
+			WHERE user_id = $1
+		)
+		SELECT id, user_id, name, shared_at, created_at, updated_at, total
+		FROM user_outfits
+		WHERE $2::timestamptz IS NULL OR (created_at, id) < ($2::timestamptz, $3::uuid)
 		ORDER BY created_at DESC, id DESC
 		LIMIT $4
 	`, userID, afterCreatedAt, afterID, params.Limit+1)
 	if err != nil {
-		return nil, fmt.Errorf("list outfits for user %s: %w", userID, err)
+		return nil, 0, fmt.Errorf("list outfits for user %s: %w", userID, err)
 	}
 	defer func() { _ = rows.Close() }()
 
+	var total int
 	// Non-nil so an empty page encodes as [] rather than null.
 	outfits := make([]models.Outfit, 0, params.Limit+1)
 	for rows.Next() {
 		var outfit models.Outfit
-		if err := rows.Scan(&outfit.ID, &outfit.UserID, &outfit.Name, &outfit.SharedAt, &outfit.CreatedAt, &outfit.UpdatedAt); err != nil {
-			return nil, fmt.Errorf("list outfits for user %s: scan: %w", userID, err)
+		if err := rows.Scan(&outfit.ID, &outfit.UserID, &outfit.Name, &outfit.SharedAt, &outfit.CreatedAt, &outfit.UpdatedAt, &total); err != nil {
+			return nil, 0, fmt.Errorf("list outfits for user %s: scan: %w", userID, err)
 		}
 		outfits = append(outfits, outfit)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("list outfits for user %s: iterate: %w", userID, err)
+		return nil, 0, fmt.Errorf("list outfits for user %s: iterate: %w", userID, err)
 	}
-	return outfits, nil
+	return outfits, total, nil
 }
 
 // scanOutfitWithProducts reads the o.id through o.updated_at, then p.id through

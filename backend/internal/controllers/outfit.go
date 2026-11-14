@@ -148,7 +148,7 @@ type ListOutfitsInput struct {
 }
 
 type ListOutfitsOutput struct {
-	Body pagination.Page[models.Outfit]
+	Body models.ListOutfitsResponse
 }
 
 // List returns a page of the authenticated user's outfits, newest first.

@@ -145,6 +145,29 @@ components:
           format: uri
           type: string
       type: object
+    ListOutfitsResponse:
+      additionalProperties: false
+      properties:
+        has_more:
+          type: boolean
+        items:
+          items:
+            $ref: "#/components/schemas/Outfit"
+          type: array
+        next_cursor:
+          type:
+            - string
+            - "null"
+        total:
+          description: How many outfits the user has saved, counting every page
+          format: int64
+          type: integer
+      required:
+        - total
+        - items
+        - next_cursor
+        - has_more
+      type: object
     LivenessOutputBody:
       additionalProperties: false
       properties:
@@ -293,24 +316,6 @@ components:
         - tags
         - created_at
         - updated_at
-      type: object
-    PageOutfit:
-      additionalProperties: false
-      properties:
-        has_more:
-          type: boolean
-        items:
-          items:
-            $ref: "#/components/schemas/Outfit"
-          type: array
-        next_cursor:
-          type:
-            - string
-            - "null"
-      required:
-        - items
-        - next_cursor
-        - has_more
       type: object
     PageOwnedProductResponse:
       additionalProperties: false
@@ -819,7 +824,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PageOutfit"
+                $ref: "#/components/schemas/ListOutfitsResponse"
           description: OK
         default:
           content:

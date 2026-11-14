@@ -3,8 +3,15 @@ package models
 import (
 	"time"
 
+	"birdie-and-claire/internal/utils/pagination"
+
 	"github.com/google/uuid"
 )
+
+type ListOutfitsResponse struct {
+	pagination.Page[Outfit]
+	Total int `json:"total" doc:"How many outfits the user has saved, counting every page"`
+}
 
 type Outfit struct {
 	ID        uuid.UUID  `json:"id"`
