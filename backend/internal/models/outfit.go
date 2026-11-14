@@ -20,16 +20,18 @@ type OutfitResponse struct {
 	Products []ProductResponse `json:"products" nullable:"false"`
 }
 
-// SharedOutfitResponse is what anyone with a share link sees, so it leaves out
-// the owner and timestamps.
+// SharedOutfitResponse is what anyone with a share link sees: the owner's ID and
+// name so the page can credit them, but no timestamps.
 type SharedOutfitResponse struct {
-	ID       uuid.UUID         `json:"id"`
-	Name     string            `json:"name"`
-	Products []ProductResponse `json:"products" nullable:"false"`
+	ID        uuid.UUID         `json:"id"`
+	Name      string            `json:"name"`
+	OwnerID   uuid.UUID         `json:"owner_id"`
+	OwnerName string            `json:"owner_name"`
+	Products  []ProductResponse `json:"products" nullable:"false"`
 }
 
 type ShareOutfitResponse struct {
-	URL string `json:"url" doc:"Public link to the outfit; stays the same across re-shares"`
+	URL string `json:"url" doc:"Path of the outfit's public page, relative to the frontend origin; stays the same across re-shares"`
 }
 
 // OutfitSuggestionsResponse maps each requested product ID to the products that suit it, closest first.

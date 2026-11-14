@@ -2,8 +2,6 @@ package services
 
 import (
 	"context"
-	"fmt"
-	"net/url"
 	"slices"
 
 	"birdie-and-claire/internal/auth"
@@ -31,12 +29,11 @@ type OutfitService interface {
 }
 
 type outfitService struct {
-	repo         *repository.Repository
-	publicAPIURL string
+	repo *repository.Repository
 }
 
-func NewOutfitService(repo *repository.Repository, publicAPIURL string) OutfitService {
-	return &outfitService{repo: repo, publicAPIURL: publicAPIURL}
+func NewOutfitService(repo *repository.Repository) OutfitService {
+	return &outfitService{repo: repo}
 }
 
 func (s *outfitService) Create(ctx context.Context, params models.CreateOutfitParams) (models.OutfitResponse, error) {
@@ -89,11 +86,8 @@ func (s *outfitService) Share(ctx context.Context, id uuid.UUID) (models.ShareOu
 		return models.ShareOutfitResponse{}, err
 	}
 
-	shareURL, err := url.JoinPath(s.publicAPIURL, "api/public/outfits", id.String())
-	if err != nil {
-		return models.ShareOutfitResponse{}, fmt.Errorf("build share url for outfit %s: %w", id, err)
-	}
-	return models.ShareOutfitResponse{URL: shareURL}, nil
+	// A path, not a full URL: the frontend knows its own origin, and in a PR preview the backend can't.
+	return models.ShareOutfitResponse{URL: "/o/" + id.String()}, nil
 }
 
 func (s *outfitService) Unshare(ctx context.Context, id uuid.UUID) error {
@@ -101,11 +95,17 @@ func (s *outfitService) Unshare(ctx context.Context, id uuid.UUID) error {
 }
 
 func (s *outfitService) GetShared(ctx context.Context, id uuid.UUID) (models.SharedOutfitResponse, error) {
-	outfit, products, err := s.repo.Outfit.GetShared(ctx, id)
+	outfit, ownerName, products, err := s.repo.Outfit.GetShared(ctx, id)
 	if err != nil {
 		return models.SharedOutfitResponse{}, err
 	}
-	return models.SharedOutfitResponse{ID: outfit.ID, Name: outfit.Name, Products: products}, nil
+	return models.SharedOutfitResponse{
+		ID:        outfit.ID,
+		Name:      outfit.Name,
+		OwnerID:   outfit.UserID,
+		OwnerName: ownerName,
+		Products:  products,
+	}, nil
 }
 
 func (s *outfitService) Suggest(ctx context.Context, id uuid.UUID, productIDs []uuid.UUID, limit int) (models.OutfitSuggestionsResponse, error) {

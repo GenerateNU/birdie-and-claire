@@ -16,6 +16,7 @@ import { Route as devPlaygroundRouteImport } from './routes/(dev)/playground'
 import { Route as SignedInOnboardedRouteRouteImport } from './routes/_signedIn/_onboarded/route'
 import { Route as SignedInCreateAccountRouteImport } from './routes/_signedIn/create-account'
 import { Route as SignedInOnboardingRouteImport } from './routes/_signedIn/onboarding'
+import { Route as OOutfitIdRouteImport } from './routes/o/$outfitId'
 import { Route as SignedInOnboardedCreateOutfitRouteImport } from './routes/_signedIn/_onboarded/create-outfit'
 import { Route as SignedInOnboardedProfileRouteRouteImport } from './routes/_signedIn/_onboarded/profile/route'
 import { Route as SignedInOnboardeddevDevRouteImport } from './routes/_signedIn/_onboarded/(dev)/dev'
@@ -61,6 +62,11 @@ const SignedInOnboardingRoute = SignedInOnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
   getParentRoute: () => SignedInRouteRoute,
+} as any)
+const OOutfitIdRoute = OOutfitIdRouteImport.update({
+  id: '/o/$outfitId',
+  path: '/o/$outfitId',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const SignedInOnboardedCreateOutfitRoute =
   SignedInOnboardedCreateOutfitRouteImport.update({
@@ -140,6 +146,7 @@ export interface FileRoutesByFullPath {
   '/playground': typeof devPlaygroundRoute
   '/create-account': typeof SignedInCreateAccountRoute
   '/onboarding': typeof SignedInOnboardingRoute
+  '/o/$outfitId': typeof OOutfitIdRoute
   '/profile': typeof SignedInOnboardedProfileRouteRouteWithChildren
   '/create-outfit': typeof SignedInOnboardedCreateOutfitRoute
   '/dev': typeof SignedInOnboardeddevDevRoute
@@ -159,6 +166,7 @@ export interface FileRoutesByTo {
   '/playground': typeof devPlaygroundRoute
   '/create-account': typeof SignedInCreateAccountRoute
   '/onboarding': typeof SignedInOnboardingRoute
+  '/o/$outfitId': typeof OOutfitIdRoute
   '/create-outfit': typeof SignedInOnboardedCreateOutfitRoute
   '/dev': typeof SignedInOnboardeddevDevRoute
   '/profile-picture-test': typeof SignedInOnboardeddevProfilePictureTestRoute
@@ -180,6 +188,7 @@ export interface FileRoutesById {
   '/(dev)/playground': typeof devPlaygroundRoute
   '/_signedIn/create-account': typeof SignedInCreateAccountRoute
   '/_signedIn/onboarding': typeof SignedInOnboardingRoute
+  '/o/$outfitId': typeof OOutfitIdRoute
   '/_signedIn/_onboarded/profile': typeof SignedInOnboardedProfileRouteRouteWithChildren
   '/_signedIn/_onboarded/create-outfit': typeof SignedInOnboardedCreateOutfitRoute
   '/_signedIn/_onboarded/(dev)/dev': typeof SignedInOnboardeddevDevRoute
@@ -201,6 +210,7 @@ export interface FileRouteTypes {
     | '/playground'
     | '/create-account'
     | '/onboarding'
+    | '/o/$outfitId'
     | '/profile'
     | '/create-outfit'
     | '/dev'
@@ -220,6 +230,7 @@ export interface FileRouteTypes {
     | '/playground'
     | '/create-account'
     | '/onboarding'
+    | '/o/$outfitId'
     | '/create-outfit'
     | '/dev'
     | '/profile-picture-test'
@@ -240,6 +251,7 @@ export interface FileRouteTypes {
     | '/(dev)/playground'
     | '/_signedIn/create-account'
     | '/_signedIn/onboarding'
+    | '/o/$outfitId'
     | '/_signedIn/_onboarded/profile'
     | '/_signedIn/_onboarded/create-outfit'
     | '/_signedIn/_onboarded/(dev)/dev'
@@ -259,6 +271,7 @@ export interface RootRouteChildren {
   SignedInRouteRoute: typeof SignedInRouteRouteWithChildren
   LoginRoute: typeof LoginRoute
   devPlaygroundRoute: typeof devPlaygroundRoute
+  OOutfitIdRoute: typeof OOutfitIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -311,6 +324,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/onboarding'
       preLoaderRoute: typeof SignedInOnboardingRouteImport
       parentRoute: typeof SignedInRouteRoute
+    }
+    '/o/$outfitId': {
+      id: '/o/$outfitId'
+      path: '/o/$outfitId'
+      fullPath: '/o/$outfitId'
+      preLoaderRoute: typeof OOutfitIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_signedIn/_onboarded/create-outfit': {
       id: '/_signedIn/_onboarded/create-outfit'
@@ -474,6 +494,7 @@ const rootRouteChildren: RootRouteChildren = {
   SignedInRouteRoute: SignedInRouteRouteWithChildren,
   LoginRoute: LoginRoute,
   devPlaygroundRoute: devPlaygroundRoute,
+  OOutfitIdRoute: OOutfitIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

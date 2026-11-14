@@ -11,7 +11,7 @@ import (
 )
 
 func OutfitRoutes(api huma.API, params types.RouteParams) {
-	service := services.NewOutfitService(params.ServiceParams.Repository, params.ServiceParams.Config.App.PublicAPIURL)
+	service := services.NewOutfitService(params.ServiceParams.Repository)
 	controller := controllers.NewOutfitController(service)
 
 	huma.Register(api, huma.Operation{
@@ -84,4 +84,13 @@ func OutfitRoutes(api huma.API, params types.RouteParams) {
 		Description: "A private outfit and a missing one both return 404.",
 		Tags:        []string{"outfits"},
 	}, controller.GetShared)
+
+	// HTML for crawlers, reached only through vercel.json's rewrite, so it stays out of the spec
+	// and the generated client.
+	huma.Register(api, huma.Operation{
+		OperationID: "get-shared-outfit-link-preview",
+		Method:      http.MethodGet,
+		Path:        "/api/public/outfits/{id}/link-preview/{host}",
+		Hidden:      true,
+	}, controller.GetLinkPreview)
 }

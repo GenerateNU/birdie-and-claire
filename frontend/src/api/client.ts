@@ -21,7 +21,13 @@ class ApiError extends Error {
   }
 }
 
-client.interceptors.request.use(async (request) => {
+// The generated SDK sets `security` only on operations the spec marks as needing a token, so public
+// ones like the shared outfit go out without one, even signed in.
+client.interceptors.request.use(async (request, options) => {
+  if (!options.security) {
+    return request;
+  }
+
   const {
     data: { session },
   } = await supabase.auth.getSession();

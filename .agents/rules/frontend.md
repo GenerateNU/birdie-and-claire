@@ -68,7 +68,8 @@ as a review finding, not a preference.
 - Icons come from `@phosphor-icons/react`, marked `aria-hidden="true"` when a
   label sits next to them. No arrow or symbol characters as icons.
 - Every font, image, and SVG lives in `src/design-system/assets`, even one only
-  a single feature uses.
+  a single feature uses. The exception is `public/og-image.png`: link-preview
+  crawlers need it at a fixed URL, and Vite renames bundled assets.
 - SVGs are files, not inline `<svg>` or SVG data URIs in pages.
 - `src/index.css` holds only the `@tailwind` directives. Page-wide styles,
   `@font-face`, and shared classes like `.focus-ring` go in the plugin in
