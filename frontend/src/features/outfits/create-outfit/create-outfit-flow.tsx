@@ -1,6 +1,10 @@
 import { useState } from "react";
 
-import { RecommendationSetting, type RecommendationVibe } from "@/api/generated/types.gen";
+import {
+  RecommendationSetting,
+  type RecommendationCondition,
+  type RecommendationVibe,
+} from "@/api/generated/types.gen";
 import {
   AddTile,
   Box,
@@ -42,9 +46,8 @@ export function CreateOutfitFlow() {
   const [customOccasionDraft, setCustomOccasionDraft] = useState("");
   const [weatherTile, setWeatherTile] = useState<WeatherTile | null>(null);
   const [setting, setSetting] = useState<RecommendationSetting>(RecommendationSetting.OUTDOORS);
-  // A recommend request carries a single weather value, so the chips can't be sent alongside the
-  // temperature. They only drive the screen and are never sent.
-  const [conditions, setConditions] = useState<string[]>([]);
+  // A detail's value is one string, so the chips go out as one comma-separated conditions detail.
+  const [conditions, setConditions] = useState<RecommendationCondition[]>([]);
   const [vibe, setVibe] = useState<RecommendationVibe | null>(null);
   // Held only to drive the screen: picking B&C items to style is out of scope, so it is never sent.
   const [specificsAnswer, setSpecificsAnswer] = useState<SpecificsAnswer | null>(null);
@@ -54,6 +57,10 @@ export function CreateOutfitFlow() {
   const weather = weatherTile === null ? null : tileToApiWeather[weatherTile];
   // Outdoors is preselected, so the setting counts as answered only once a weather tile is picked.
   const answeredSetting = weatherTile === null ? null : setting;
+
+  const answeredConditions =
+    weatherTile === null || conditions.length === 0 ? null : conditions.join(",");
+
   const weatherLabel = weatherTiles.find((tile) => tile.value === weatherTile)?.label ?? "None";
   const canContinue = chosenOccasion !== "";
 
@@ -146,16 +153,16 @@ export function CreateOutfitFlow() {
           />
           <Text variant="body">Anything else?</Text>
           <Box className="flex flex-wrap justify-center gap-xs">
-            {weatherConditions.map((condition) => (
+            {weatherConditions.map(({ label, value }) => (
               <Chip
-                key={condition}
-                label={condition}
-                selected={conditions.includes(condition)}
+                key={value}
+                label={label}
+                selected={conditions.includes(value)}
                 onSelectedChange={(selected) =>
                   setConditions(
                     selected
-                      ? [...conditions, condition]
-                      : conditions.filter((picked) => picked !== condition),
+                      ? [...conditions, value]
+                      : conditions.filter((picked) => picked !== value),
                   )
                 }
               />
@@ -242,6 +249,7 @@ export function CreateOutfitFlow() {
         weather={weather}
         weatherLabel={weatherLabel}
         setting={answeredSetting}
+        conditions={answeredConditions}
         vibe={vibe}
         custom={custom.trim()}
         onEdit={editFromReview}

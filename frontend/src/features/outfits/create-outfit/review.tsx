@@ -19,6 +19,8 @@ type ReviewProps = {
   weatherLabel: string;
   // Null when the shopper didn't answer the weather question.
   setting: RecommendationSetting | null;
+  // Comma-separated, or null when no chip or no weather tile was picked.
+  conditions: string | null;
   vibe: RecommendationVibe | null;
   // Empty when the shopper skipped Custom.
   custom: string;
@@ -30,6 +32,7 @@ export function Review({
   weather,
   weatherLabel,
   setting,
+  conditions,
   vibe,
   custom,
   onEdit,
@@ -41,7 +44,15 @@ export function Review({
 
   const createMutation = useMutation({
     mutationFn: () =>
-      requestOutfit(occasion, weather, setting, vibe, custom, abortController.current.signal),
+      requestOutfit(
+        occasion,
+        weather,
+        setting,
+        conditions,
+        vibe,
+        custom,
+        abortController.current.signal,
+      ),
     onSuccess: async (outfitId) => {
       if (outfitId === null) {
         toast.show({

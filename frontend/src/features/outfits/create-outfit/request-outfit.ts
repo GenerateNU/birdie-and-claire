@@ -12,6 +12,7 @@ export async function requestOutfit(
   occasion: string,
   weather: RecommendationWeather | null,
   setting: RecommendationSetting | null,
+  conditions: string | null,
   vibe: RecommendationVibe | null,
   custom: string,
   signal: AbortSignal,
@@ -24,6 +25,10 @@ export async function requestOutfit(
 
   if (setting !== null) {
     details.push({ key: "setting", value: setting });
+  }
+
+  if (conditions !== null) {
+    details.push({ key: "conditions", value: conditions });
   }
 
   if (vibe !== null) {

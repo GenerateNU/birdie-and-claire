@@ -7,7 +7,11 @@ import {
   type Icon,
 } from "@phosphor-icons/react";
 
-import { RecommendationVibe, RecommendationWeather } from "@/api/generated/types.gen";
+import {
+  RecommendationCondition,
+  RecommendationVibe,
+  RecommendationWeather,
+} from "@/api/generated/types.gen";
 import casualOutingPhoto from "@/design-system/assets/occasions/casual-outing.png";
 import nightOutPhoto from "@/design-system/assets/occasions/night-out.jpg";
 import weddingPhoto from "@/design-system/assets/occasions/wedding.jpg";
@@ -58,7 +62,13 @@ export const tileToApiWeather: Record<WeatherTile, RecommendationWeather> = {
   freezing: RecommendationWeather.COLD,
 };
 
-export const weatherConditions = ["Humid", "Rainy", "Snowy", "Stormy", "Windy"];
+export const weatherConditions = [
+  { label: "Humid", value: RecommendationCondition.HUMID },
+  { label: "Rainy", value: RecommendationCondition.RAINY },
+  { label: "Snowy", value: RecommendationCondition.SNOWY },
+  { label: "Stormy", value: RecommendationCondition.STORMY },
+  { label: "Windy", value: RecommendationCondition.WINDY },
+];
 
 export const vibes = Object.values(RecommendationVibe);
 
