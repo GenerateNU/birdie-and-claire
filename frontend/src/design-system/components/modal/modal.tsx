@@ -7,8 +7,8 @@ import {
   type ModalAction,
   type ModalSize,
 } from "@/design-system/components/modal/modal-panel";
+import { ModalOverlayContext } from "@/design-system/components/modal/modal-overlay-context";
 import { Scrim } from "@/design-system/components/modal/scrim";
-import { ModalOverlayContext } from "@/design-system/components/modal/side-panel";
 import { Box } from "@/design-system/primitives/box";
 
 type ModalProps = {

@@ -1,14 +1,11 @@
 import { Dialog } from "@base-ui/react/dialog";
 import { XIcon } from "@phosphor-icons/react";
-import { createContext, useContext, type ReactNode } from "react";
+import { useContext, type ReactNode } from "react";
 
 import { IconButton } from "@/design-system/components/buttons/icon-button";
+import { ModalOverlayContext } from "@/design-system/components/modal/modal-overlay-context";
 import { Scrim } from "@/design-system/components/modal/scrim";
 import { Box } from "@/design-system/primitives/box";
-
-/** The element inside an open Modal that a SidePanel draws into, so it covers the modal rather
- * than the page. */
-export const ModalOverlayContext = createContext<HTMLElement | null>(null);
 
 type SidePanelProps = {
   open: boolean;

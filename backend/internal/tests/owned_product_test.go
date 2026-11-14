@@ -389,8 +389,9 @@ func insertCatalogProduct(t *testing.T, db *sql.DB, source models.ProductSource,
 	return id
 }
 
-// The test products sit far in the future, so each category's first page starts with them.
-func TestBirdieAndClaireProductsListByCategory(t *testing.T) {
+// The test products sit far in the future, so each filter's first page starts with them. Totals also count the
+// shared database's other products, so only the owned-only total is exact: the user is new.
+func TestBirdieAndClaireProductsListByFilter(t *testing.T) {
 	db := openTestDB(t)
 	userID := insertTestUser(t, db)
 	ctx := auth.WithUserID(context.Background(), userID)
@@ -408,38 +409,51 @@ func TestBirdieAndClaireProductsListByCategory(t *testing.T) {
 	sweater := insertCatalogProduct(t, db, birdieAndClaire, models.SlotTop, &sweaters, active, future.Add(7*time.Hour))
 	bottom := insertCatalogProduct(t, db, birdieAndClaire, models.SlotBottom, nil, active, future.Add(6*time.Hour))
 	onePiece := insertCatalogProduct(t, db, birdieAndClaire, models.SlotOnePiece, nil, active, future.Add(5*time.Hour))
-	accessory := insertCatalogProduct(t, db, birdieAndClaire, models.SlotAccessory, nil, active, future.Add(4*time.Hour))
+	ownedShoe := insertCatalogProduct(t, db, birdieAndClaire, models.SlotShoe, nil, active, future.Add(4*time.Hour))
 
-	if err := repository.New(db).OwnedProduct.AddOwnedProducts(context.Background(), userID, []uuid.UUID{ownedTop}); err != nil {
+	owned := []uuid.UUID{ownedTop, inactiveTop, demoTop, ownedShoe}
+	if err := repository.New(db).OwnedProduct.AddOwnedProducts(context.Background(), userID, owned); err != nil {
 		t.Fatalf("add owned: %v", err)
 	}
 	service := services.NewProductService(repository.New(db))
 
 	cases := []struct {
-		category models.ProductCategory
-		want     []uuid.UUID
+		name   string
+		filter models.BirdieAndClaireProductFilter
+		want   []uuid.UUID
 	}{
-		{"tops", []uuid.UUID{ownedTop, top, untypedTop}},
-		{"sweaters", []uuid.UUID{sweater}},
-		{"bottoms", []uuid.UUID{bottom}},
-		{"jumpsuits", []uuid.UUID{onePiece}},
-		{"accessories", []uuid.UUID{accessory}},
+		{"excluded type", models.BirdieAndClaireProductFilter{Slots: []models.ProductSlot{models.SlotTop}, ExcludeProductType: sweaters}, []uuid.UUID{ownedTop, top, untypedTop}},
+		{"one type", models.BirdieAndClaireProductFilter{Slots: []models.ProductSlot{models.SlotTop}, ProductType: sweaters}, []uuid.UUID{sweater}},
+		{"several slots", models.BirdieAndClaireProductFilter{Slots: []models.ProductSlot{models.SlotBottom, models.SlotOnePiece}}, []uuid.UUID{bottom, onePiece}},
+		{"owned only", models.BirdieAndClaireProductFilter{Slots: []models.ProductSlot{models.SlotTop, models.SlotBottom}, OwnedOnly: true}, []uuid.UUID{ownedTop}},
 	}
 	for _, tc := range cases {
-		page, err := service.ListBirdieAndClaireProducts(ctx, tc.category, cursorParams(t, len(tc.want), ""))
+		page, err := service.ListBirdieAndClaireProducts(ctx, tc.filter, cursorParams(t, len(tc.want), ""))
 		if err != nil {
-			t.Fatalf("list %s: %v", tc.category, err)
+			t.Fatalf("list %s: %v", tc.name, err)
 		}
 		got := make([]uuid.UUID, 0, len(page.Items))
 		for _, item := range page.Items {
 			got = append(got, item.ID)
-			if item.Owned != (item.ID == ownedTop) {
-				t.Errorf("%s: product %v owned = %v", tc.category, item.ID, item.Owned)
+			if item.Owned != slices.Contains(owned, item.ID) {
+				t.Errorf("%s: product %v owned = %v", tc.name, item.ID, item.Owned)
 			}
 		}
 		if !slices.Equal(got, tc.want) {
-			t.Errorf("%s = %v, want %v (demo %v and inactive %v left out)", tc.category, got, tc.want, demoTop, inactiveTop)
+			t.Errorf("%s = %v, want %v (demo %v and inactive %v left out)", tc.name, got, tc.want, demoTop, inactiveTop)
 		}
+		if page.Total < len(tc.want) {
+			t.Errorf("%s: total = %d, want at least %d", tc.name, page.Total, len(tc.want))
+		}
+	}
+
+	ownedOnly := models.BirdieAndClaireProductFilter{Slots: []models.ProductSlot{models.SlotTop, models.SlotBottom}, OwnedOnly: true}
+	page, err := service.ListBirdieAndClaireProducts(ctx, ownedOnly, cursorParams(t, 1, ""))
+	if err != nil {
+		t.Fatalf("list owned only: %v", err)
+	}
+	if page.Total != 1 {
+		t.Errorf("owned only total = %d, want 1 (shoe %v not in the slots)", page.Total, ownedShoe)
 	}
 }
 

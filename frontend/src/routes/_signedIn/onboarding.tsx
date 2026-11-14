@@ -76,7 +76,7 @@ function Onboarding() {
     onSuccess: () => window.location.assign(takeReturnPath() ?? "/"),
   });
 
-  const addingPieces = useIsMutating({ mutationKey: saveOwnedPiecesMutationKey }) > 0;
+  const savingPieces = useIsMutating({ mutationKey: saveOwnedPiecesMutationKey }) > 0;
 
   // Still saving while the reload starts, so the buttons don't come back on in between.
   const saving = saveMutation.isPending || saveMutation.isSuccess;
@@ -148,10 +148,10 @@ function Onboarding() {
         {step === "shop-login" && <Text variant="display">Log in with Shop</Text>}
         <Modal
           open={step === "pick-pieces"}
-          // Ignored mid-save rather than passing dismissible={!addingPieces}: Modal swaps Dialog for
-          // AlertDialog on that prop, which remounts the picker and drops the save's onAdded.
+          // Ignored mid-save rather than passing dismissible={!savingPieces}: Modal swaps Dialog for
+          // AlertDialog on that prop, which remounts the picker and drops the save's onSaved.
           onClose={() => {
-            if (!addingPieces) {
+            if (!savingPieces) {
               setStep("add-method");
             }
           }}
@@ -160,7 +160,7 @@ function Onboarding() {
           dismissible
           size="lg"
         >
-          <PiecePicker onAdded={() => setStep("style")} />
+          <PiecePicker onSaved={() => setStep("style")} />
         </Modal>
       </OwnedPiecesLayout>
     );
