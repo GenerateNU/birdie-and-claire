@@ -8,7 +8,6 @@ type PreferenceCardProps = {
   disabled: boolean;
 };
 
-/** Figma's onboarding card for a fit question: a framed photo with the checkbox under its label. */
 export function PreferenceCard({
   label,
   src,

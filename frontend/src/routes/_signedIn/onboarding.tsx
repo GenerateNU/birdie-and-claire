@@ -170,7 +170,6 @@ function Onboarding() {
     );
   }
 
-  // The style frame and the fit frames space their screens differently in Figma.
   const layout =
     step === "style"
       ? { cards: "mt-xl", buttons: "mt-xxxl" }

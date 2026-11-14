@@ -88,9 +88,8 @@ export function PiecePicker({ onAdded }: PiecePickerProps) {
   return (
     <Box className="flex flex-col gap-md">
       <Box className="relative">
-        {/* Scrolls inside part of the viewport so the buttons below stay in view, in the onboarding
-            modal and on /pieces/add alike. */}
-        <Box inert={showingSelectedItems} className="max-h-[60vh] overflow-y-auto pr-xs">
+        {/* Scrolls inside a fixed height so the buttons below stay in view. */}
+        <Box inert={showingSelectedItems} className="max-h-scroll-area overflow-y-auto pr-xs">
           <Catalog selected={selected} onToggle={toggle} disabled={saving} atLimit={atLimit} />
         </Box>
         {showingSelectedItems && (
