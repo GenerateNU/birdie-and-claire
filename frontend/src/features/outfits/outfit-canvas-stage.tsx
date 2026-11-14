@@ -25,13 +25,13 @@ type GarmentImageProps = {
   drawn: DrawnGarment;
 };
 
-/** `panel` is the editor's gray panel, with padding. `card` fills an outfit card, with none. */
+/** `panel` is the padded gray panel the canvas sits in on a page. `card` fills an outfit card, with no padding. */
 export type CanvasVariant = "panel" | "card";
 
 /**
  * On a card the canvas is this fraction of the card's height, centered by the stage, and the stage
- * crops its sides. cardCropRange assumes that centering, and a value above 1 would also cut the top
- * and bottom, which it doesn't measure.
+ * crops its sides. The `card` entry's `canvasSize` is the only CSS that reads it. cardCropRange
+ * assumes it is at most 1: above that the top and bottom are cut too, and it measures only the sides.
  */
 export const CARD_CANVAS_HEIGHT = 1;
 
@@ -46,12 +46,20 @@ export function cardCropRange(card: { width: number; height: number }) {
   };
 }
 
+type CanvasVariantStyle = {
+  /** Classes for the stage, which is the panel or the card's image area. */
+  stage: string;
+  /** Classes for the canvas inside it. */
+  canvas: string;
+  canvasSize: CSSProperties;
+};
+
 const canvasVariants = {
   panel: {
-    // Padding from Figma's Builder Space: 56px sides, 20px top and bottom. Neither has a token.
-    stage: "px-[56px] py-[20px]",
+    stage: "px-canvas-panel-x py-canvas-panel-y",
     canvas: "",
-    // Never larger than the Figma, and shrinks to fit whichever of the panel's width or height runs out first.
+    // Never larger than the Figma, and shrinks to fit whichever of the panel's width or
+    // height runs out first.
     canvasSize: {
       width: `min(${CANVAS_SIZE.width}px, 100cqw, 100cqh * ${CANVAS_SIZE.width} / ${CANVAS_SIZE.height})`,
     },
@@ -62,14 +70,14 @@ const canvasVariants = {
     canvas: "shrink-0",
     canvasSize: { height: `${CARD_CANVAS_HEIGHT * 100}cqh` },
   },
-};
+} satisfies Record<CanvasVariant, CanvasVariantStyle>;
 
 type CanvasStageProps = {
   /** Controls drawn over the panel, placed by the caller with absolute positioning. */
   controls: ReactNode;
   onClick?: MouseEventHandler<HTMLDivElement>;
   /** Which surface the canvas fills. */
-  variant?: CanvasVariant;
+  variant: CanvasVariant;
   children: ReactNode;
 };
 
@@ -163,8 +171,8 @@ export function GarmentImage({ drawn }: GarmentImageProps) {
   );
 }
 
-/** The stage, with the silhouette and the garments in a canvas that keeps the Figma's proportions. */
-export function CanvasStage({ controls, onClick, variant = "panel", children }: CanvasStageProps) {
+/** The panel or card, with the silhouette and the garments in a canvas that keeps the Figma's proportions. */
+export function CanvasStage({ controls, onClick, variant, children }: CanvasStageProps) {
   const { stage, canvas, canvasSize } = canvasVariants[variant];
 
   return (
@@ -175,7 +183,7 @@ export function CanvasStage({ controls, onClick, variant = "panel", children }: 
         stage,
       )}
     >
-      {/* The canvas, centered in the stage. isolate keeps the garments' z-indexes inside it, so
+      {/* The canvas, centered. isolate keeps the garments' z-indexes inside it, so
           controls drawn after it always land on top. */}
       <Box
         className={joinClasses("relative isolate", canvas)}

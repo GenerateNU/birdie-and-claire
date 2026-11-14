@@ -16,11 +16,11 @@ type OutfitCanvasProps =
       /** Controls drawn over the panel, placed by the caller with absolute positioning. */
       children: ReactNode;
     }
-  | { products: Product[]; editing?: undefined; variant?: CanvasVariant; children?: never };
+  | { products: Product[]; editing?: undefined; variant: CanvasVariant; children?: never };
 
 type ReadOnlyOutfitCanvasProps = {
   products: Product[];
-  variant?: CanvasVariant;
+  variant: CanvasVariant;
 };
 
 export function OutfitCanvas(props: OutfitCanvasProps) {

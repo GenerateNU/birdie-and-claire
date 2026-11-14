@@ -99,7 +99,7 @@ export function SharedOutfitPage({ outfitId, viewer }: SharedOutfitPageProps) {
     <SharedOutfitFrame title={outfit.name}>
       <main className="flex min-h-0 flex-1 flex-col gap-xl p-md lg:flex-row lg:gap-xxl lg:px-xxl">
         <Box className="h-1/2 min-w-0 lg:h-auto lg:flex-1">
-          <OutfitCanvas products={outfit.products} />
+          <OutfitCanvas products={outfit.products} variant="panel" />
         </Box>
         <section className="flex min-h-0 flex-1 flex-col gap-md lg:w-content-md lg:flex-none">
           <header className="flex shrink-0 flex-col gap-sm border-b pb-md">

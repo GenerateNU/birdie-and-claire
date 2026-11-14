@@ -17,10 +17,13 @@ type OutfitCardProps = {
   title: string;
   /** The pieces in the outfit, cut off after two lines. */
   pieces?: string;
-  /** The outfit as one image. With neither `src` nor `image`, the image area is empty. */
-  src?: string | null;
-  /** Drawn instead of `src`, such as the outfit canvas. The title names the card, so screen readers skip this. */
-  image?: ReactNode;
+  /** The outfit as one image, or null for none. */
+  src: string | null;
+  /**
+   * What to draw in place of `src`, such as the outfit canvas, or null for none. `null` is the only
+   * way to say none: undefined is a type error. Screen readers skip it, because the title names the card.
+   */
+  image: Exclude<ReactNode, undefined>;
 } & (
   | { mode: "browse"; onOpen: () => void; menu?: MenuProps }
   /** `single` picks one outfit and shows only the ring; `multi` also shows a checkbox. */
@@ -39,12 +42,12 @@ export function OutfitCard(props: OutfitCardProps) {
   return (
     <Box className="group relative flex w-outfit flex-col gap-sm text-primary">
       <Box className="relative h-outfit w-full shrink-0 bg-surface">
-        {image === undefined ? (
-          <CardImage src={src ?? null} fit="contain" className="size-full" />
-        ) : (
+        {image !== null ? (
           <Box aria-hidden="true" className="size-full">
             {image}
           </Box>
+        ) : (
+          <CardImage src={src} fit="contain" className="size-full" />
         )}
         <CardWash />
         {selected && <CardSelectedRing />}

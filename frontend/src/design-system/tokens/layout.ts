@@ -122,6 +122,11 @@ export const LogoSize = {
   onboarding: { width: "20.75rem", height: "6.5625rem" },
 } as const;
 
+// The padding around the canvas inside its gray panel (`px-canvas-panel-x`,
+// `py-canvas-panel-y`), from Figma's Builder Space: 56px at the sides, 20px above and below.
+// No spacing token has these values.
+export const CanvasPanelPadding = { x: "3.5rem", y: "1.25rem" } as const;
+
 export const AspectRatio = {
   portrait: "3 / 4",
   landscape: "3 / 2",
