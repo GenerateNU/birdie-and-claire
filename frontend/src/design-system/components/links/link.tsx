@@ -27,7 +27,7 @@ function linkClasses(variant: AnchorProps["variant"], size: ButtonSize) {
     return textClasses;
   }
 
-  return buttonClasses(variant, size, true);
+  return `${buttonClasses(variant, size, true)} motion-safe:transition-transform motion-safe:active:scale-95`;
 }
 
 function Anchor({
