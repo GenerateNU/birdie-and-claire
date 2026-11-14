@@ -24,6 +24,7 @@ type OutfitService interface {
 	List(ctx context.Context, params pagination.CursorParams) (pagination.Page[models.Outfit], error)
 	Share(ctx context.Context, id uuid.UUID) (models.ShareOutfitResponse, error)
 	Unshare(ctx context.Context, id uuid.UUID) error
+	Delete(ctx context.Context, id uuid.UUID) error
 	GetShared(ctx context.Context, id uuid.UUID) (models.SharedOutfitResponse, error)
 	// Suggest returns products like each requested product, leaving out the outfit's products and the requested ones.
 	// A product missing from the catalog fails the call with errs.ErrNotFound.
@@ -98,6 +99,10 @@ func (s *outfitService) Share(ctx context.Context, id uuid.UUID) (models.ShareOu
 
 func (s *outfitService) Unshare(ctx context.Context, id uuid.UUID) error {
 	return s.repo.Outfit.Unshare(ctx, id, auth.UserID(ctx))
+}
+
+func (s *outfitService) Delete(ctx context.Context, id uuid.UUID) error {
+	return s.repo.Outfit.Delete(ctx, id, auth.UserID(ctx))
 }
 
 func (s *outfitService) GetShared(ctx context.Context, id uuid.UUID) (models.SharedOutfitResponse, error) {
