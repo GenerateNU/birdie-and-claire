@@ -13,7 +13,7 @@ import {
   Box,
   Button,
   ChoiceGroup,
-  Empty,
+  EmptyState,
   ImageCard,
   ListCard,
   OptionTileGroup,
@@ -161,7 +161,7 @@ function CreateOutfit() {
             onValueChange={setSpecificsAnswer}
           />
           {specificsAnswer === "yes" && (
-            <Empty
+            <EmptyState
               title="Coming soon"
               description="Styling your Birdie & Claire pieces is on its way. Tap Next to keep going."
             />
@@ -310,6 +310,7 @@ function Review({ occasion, weather, vibe, custom, onEdit }: ReviewProps) {
         toast.show({
           message:
             "Couldn't build a full outfit for that, try changing the weather, vibe or custom details",
+          variant: "error",
         });
 
         return;
@@ -322,7 +323,10 @@ function Review({ occasion, weather, vibe, custom, onEdit }: ReviewProps) {
         return;
       }
 
-      toast.show({ message: "Couldn't create the outfit", subtitle: "Try again in a moment." });
+      toast.show({
+        message: "Couldn't create the outfit. Try again in a moment.",
+        variant: "error",
+      });
     },
   });
 

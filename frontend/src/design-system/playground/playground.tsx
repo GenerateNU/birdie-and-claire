@@ -25,9 +25,8 @@ import {
   Chip,
   ChoiceGroup,
   CodeInput,
-  Dialog,
   Divider,
-  Empty,
+  EmptyState,
   Form,
   Header,
   IconButton,
@@ -37,9 +36,16 @@ import {
   Link,
   ListCard,
   Logo,
+  Menu,
+  MenuItem,
+  MenuPanel,
+  Modal,
+  ModalPanel,
   OptionTileGroup,
   ProgressBar,
+  ProgressStepper,
   RadioGroup,
+  Scrim,
   SearchField,
   SegmentedControl,
   StatusColor,
@@ -51,6 +57,7 @@ import {
   TextButton,
   TextField,
   TextLink,
+  Toast,
   Toggle,
   TypeScale,
   useToast,
@@ -123,14 +130,17 @@ const sectionTitles = {
   "list-card": "List card",
   spinner: "Spinner",
   "progress-bar": "Progress bar",
-  empty: "Empty",
+  "progress-stepper": "Progress stepper",
+  "empty-state": "Empty state",
   "error-state": "Error state",
   tabs: "Tabs",
   divider: "Divider",
   logo: "Logo",
   "radio-group": "Radio group",
   avatar: "Avatar",
-  dialog: "Dialog",
+  scrim: "Scrim",
+  modal: "Modal",
+  menu: "Menu",
   toast: "Toast",
   text: "Text",
   "semantic-colors": "Semantic colors",
@@ -164,14 +174,17 @@ const navGroups = [
       "list-card",
       "spinner",
       "progress-bar",
-      "empty",
+      "progress-stepper",
+      "empty-state",
       "error-state",
       "tabs",
       "divider",
       "logo",
       "radio-group",
       "avatar",
-      "dialog",
+      "scrim",
+      "modal",
+      "menu",
       "toast",
       "text",
     ],
@@ -405,8 +418,16 @@ export function Playground() {
               <ProgressBarExamples />
             </Section>
 
-            <Section id="empty">
-              <Empty title="Nothing here yet" description="Items you add will show up here." />
+            <Section id="progress-stepper">
+              <Stage>
+                <ProgressStepperExamples />
+              </Stage>
+            </Section>
+
+            <Section id="empty-state">
+              <Stage>
+                <EmptyStateExamples />
+              </Stage>
             </Section>
 
             <Section id="error-state">
@@ -452,12 +473,26 @@ export function Playground() {
               <Label>photo sm · md · lg · initials sm · md · lg · failed load · no initials</Label>
             </Section>
 
-            <Section id="dialog">
-              <DialogExamples />
+            <Section id="scrim">
+              <ScrimExamples />
+            </Section>
+
+            <Section id="modal">
+              <Stage>
+                <ModalExamples />
+              </Stage>
+            </Section>
+
+            <Section id="menu">
+              <Stage>
+                <MenuExamples />
+              </Stage>
             </Section>
 
             <Section id="toast">
-              <ToastExamples />
+              <Stage>
+                <ToastExamples />
+              </Stage>
             </Section>
 
             <Section id="text">
@@ -507,6 +542,7 @@ export function Playground() {
               <Box className="flex gap-lg">
                 <Box className="bg-card p-lg text-body-m shadow-menu">shadow-menu</Box>
                 <Box className="bg-card p-lg text-body-m shadow-toast">shadow-toast</Box>
+                <Box className="bg-card p-lg text-body-m shadow-modal">shadow-modal</Box>
               </Box>
             </Section>
 
@@ -1229,55 +1265,309 @@ function RadioRow({ name, value }: RadioRowProps) {
   );
 }
 
-function DialogExamples() {
-  const [openDialog, setOpenDialog] = useState<"confirm" | "dismissible" | "content" | null>(null);
+const stepperLabels = ["Step 1", "Step 2", "Step 3", "Step 4", "Step 5"];
 
-  const [dialogName, setDialogName] = useState("Weekend look");
-  const close = () => setOpenDialog(null);
+function ProgressStepperExamples() {
+  return (
+    <Box className="flex flex-col gap-lg">
+      {[3, 4, 5].map((count) => (
+        <Box key={count} className="flex flex-col gap-xs">
+          <ProgressStepper steps={stepperLabels.slice(0, count)} currentStep={0} />
+          <Label>{count} steps · first in progress</Label>
+        </Box>
+      ))}
+      <Box className="flex flex-col gap-xs">
+        <ProgressStepper steps={stepperLabels.slice(0, 4)} currentStep={2} />
+        <Label>done · done · current · upcoming</Label>
+      </Box>
+    </Box>
+  );
+}
+
+function EmptyStateExamples() {
+  return (
+    <Box className="grid grid-cols-2 gap-lg">
+      <EmptyState
+        title="No collections yet"
+        description="Group pieces you love into a collection."
+        action={{ label: "New collection", icon: PlusIcon, onClick: () => {} }}
+      />
+      <EmptyState title="No pieces yet" description="Pieces you own will show up here." />
+      <EmptyState title="Nothing saved for this occasion" icon={ShareNetworkIcon} />
+      <EmptyState title="No outfits yet" action={{ label: "Create outfit", onClick: () => {} }} />
+    </Box>
+  );
+}
+
+const sampleModalActions = [
+  { label: "Cancel", variant: "ghost", onClick: () => {} },
+  { label: "Confirm", variant: "primary", onClick: () => {} },
+] as const;
+
+// Figma's "Modal Content" placeholder is 120px tall. Not a token: only this page draws it.
+function ModalPlaceholder() {
+  return (
+    <Box className="flex h-[120px] items-center justify-center border border-dashed text-body-s text-secondary">
+      Modal content
+    </Box>
+  );
+}
+
+const ownPiecesOptions = [
+  { label: "Yes, I'm an existing customer", value: "yes" },
+  { label: "No, I'm new", value: "no" },
+];
+
+function ModalExamples() {
+  const [openModal, setOpenModal] = useState<"confirm" | "dismissible" | "content" | null>(null);
+  const [name, setName] = useState("Weekend look");
+  const close = () => setOpenModal(null);
 
   return (
-    <Box className="flex gap-sm">
-      <Button label="Confirm dialog" onClick={() => setOpenDialog("confirm")} />
-      <Button
-        label="Dismissible dialog"
-        variant="secondary"
-        onClick={() => setOpenDialog("dismissible")}
-      />
-      <Button
-        label="Dialog with content"
-        variant="secondary"
-        onClick={() => setOpenDialog("content")}
-      />
+    <Box className="flex flex-col gap-xl">
+      <Box className="flex flex-col items-start gap-lg">
+        <ModalPanel
+          title="Modal title"
+          message="Description"
+          actions={[...sampleModalActions]}
+          onClose={() => {}}
+        >
+          <ModalPlaceholder />
+        </ModalPanel>
+        <ModalPanel
+          size="md"
+          title="Modal title"
+          message="Description"
+          actions={[...sampleModalActions]}
+          onClose={() => {}}
+        >
+          <ModalPlaceholder />
+        </ModalPanel>
+        <ModalPanel
+          size="lg"
+          title="Modal title"
+          message="Description"
+          actions={[...sampleModalActions]}
+          onClose={() => {}}
+        >
+          <ModalPlaceholder />
+        </ModalPanel>
+        <Label>small 480 · medium 640 · large 880</Label>
+      </Box>
 
-      <Dialog
-        open={openDialog === "confirm"}
+      <Box className="flex flex-col items-start gap-lg">
+        <ModalPanel
+          title="Delete outfit?"
+          message="This can't be undone."
+          actions={[
+            { label: "Cancel", variant: "ghost", onClick: () => {} },
+            { label: "Delete", variant: "destructive", onClick: () => {} },
+          ]}
+          onClose={() => {}}
+        />
+        <ModalPanel
+          title="No close button"
+          message="Without onClose, only the actions dismiss it."
+          actions={[{ label: "Got it", variant: "primary", onClick: () => {} }]}
+        />
+        <ModalPanel title="No description or actions" actions={[]} onClose={() => {}}>
+          <ModalPlaceholder />
+        </ModalPanel>
+        <Label>destructive · no close · bare</Label>
+      </Box>
+
+      <Box className="flex flex-col items-start gap-lg">
+        <ModalPanel
+          size="md"
+          title="New collection"
+          actions={[
+            { label: "Cancel", variant: "ghost", onClick: () => {} },
+            { label: "Create", variant: "primary", onClick: () => {} },
+          ]}
+          onClose={() => {}}
+        >
+          <Box className="flex flex-col gap-md">
+            <TextField label="Name" value="Winter weddings" onValueChange={() => {}} />
+            <TextArea
+              label="Description (optional)"
+              placeholder="What makes this collection yours?"
+              maxLength={250}
+              value=""
+              onValueChange={() => {}}
+            />
+          </Box>
+        </ModalPanel>
+        <ModalPanel
+          size="md"
+          title="Own B&C pieces"
+          message="Do you already own Birdie & Claire clothes?"
+          actions={[
+            { label: "Cancel", variant: "ghost", onClick: () => {} },
+            { label: "Continue", variant: "primary", onClick: () => {} },
+          ]}
+          onClose={() => {}}
+        >
+          <ChoiceGroup options={ownPiecesOptions} value="yes" onValueChange={() => {}} />
+        </ModalPanel>
+        <Label>content slot · collection form · own B&C pieces</Label>
+      </Box>
+
+      <Box className="flex flex-col items-start gap-lg">
+        <ModalPanel
+          image={null}
+          title="Modal title"
+          message="Description"
+          actions={[...sampleModalActions]}
+          onClose={() => {}}
+        >
+          <ModalPlaceholder />
+        </ModalPanel>
+        <ModalPanel
+          image={samplePhoto}
+          title="Saved!"
+          message="Your outfit is in your profile."
+          actions={[{ label: "Done", variant: "primary", onClick: () => {} }]}
+          onClose={() => {}}
+        />
+        <Label>split modal · surface color · photo</Label>
+      </Box>
+
+      <Box className="flex flex-col items-start gap-xs">
+        <Box className="flex gap-sm">
+          <Button label="Alert modal" onClick={() => setOpenModal("confirm")} />
+          <Button
+            label="Dismissible modal"
+            variant="secondary"
+            onClick={() => setOpenModal("dismissible")}
+          />
+          <Button
+            label="Modal with content"
+            variant="secondary"
+            onClick={() => setOpenModal("content")}
+          />
+        </Box>
+        <Label>Modal in its portal, over a scrim</Label>
+      </Box>
+
+      <Modal
+        open={openModal === "confirm"}
         onClose={close}
         title="Delete outfit?"
         message="Clicking outside won't close this one. Use a button or Esc."
         actions={[
-          { label: "Cancel", variant: "secondary", onClick: close },
-          { label: "Delete", variant: "primary", onClick: close },
+          { label: "Cancel", variant: "ghost", onClick: close },
+          { label: "Delete", variant: "destructive", onClick: close },
         ]}
       />
-      <Dialog
-        open={openDialog === "dismissible"}
+      <Modal
+        open={openModal === "dismissible"}
         onClose={close}
-        title="Dismissible dialog"
-        message="Clicking outside, Esc, the ×, or the button closes this one."
+        title="Dismissible modal"
+        message="Clicking outside, Esc, the close button, or the action closes this one."
         actions={[{ label: "Got it", variant: "primary", onClick: close }]}
         dismissible
       />
-      <Dialog
-        open={openDialog === "content"}
+      <Modal
+        open={openModal === "content"}
         onClose={close}
         title="Name your outfit"
+        size="md"
         actions={[
-          { label: "Cancel", variant: "secondary", onClick: close, disabled: true },
+          { label: "Cancel", variant: "ghost", onClick: close, disabled: true },
           { label: "Save", variant: "primary", onClick: close, loading: true },
         ]}
       >
-        <TextField label="Outfit name" value={dialogName} onValueChange={setDialogName} />
-      </Dialog>
+        <TextField label="Outfit name" value={name} onValueChange={setName} />
+      </Modal>
+    </Box>
+  );
+}
+
+function ScrimExamples() {
+  return (
+    <Box className="relative flex flex-col gap-md bg-background p-lg">
+      <Text variant="subheading">Page under the scrim</Text>
+      <Text variant="body">The scrim dims whatever sits behind a modal.</Text>
+      <Button label="Behind" className="self-start" />
+      <Scrim className="absolute inset-0" />
+    </Box>
+  );
+}
+
+const forcedMenuItemHover = "!bg-hover";
+
+const forcedDestructiveMenuItemHover = "!bg-error-subtle";
+
+function MenuExamples() {
+  return (
+    <Box className="flex flex-col gap-xl">
+      <Box className="grid grid-cols-[repeat(4,max-content)] items-center gap-x-xl gap-y-sm">
+        <Box />
+        <Label>default</Label>
+        <Label>hover</Label>
+        <Label>disabled</Label>
+        <Label>default</Label>
+        <Box className="w-menu">
+          <MenuItem label="Edit" />
+        </Box>
+        <Box className="w-menu">
+          <MenuItem label="Edit" className={forcedMenuItemHover} />
+        </Box>
+        <Box className="w-menu">
+          <MenuItem label="Edit" disabled />
+        </Box>
+        <Label>with icon</Label>
+        <Box className="w-menu">
+          <MenuItem label="Add" icon={PlusIcon} />
+        </Box>
+        <Box className="w-menu">
+          <MenuItem label="Add" icon={PlusIcon} className={forcedMenuItemHover} />
+        </Box>
+        <Box className="w-menu">
+          <MenuItem label="Add" icon={PlusIcon} disabled />
+        </Box>
+        <Label>destructive</Label>
+        <Box className="w-menu">
+          <MenuItem label="Edit" destructive />
+        </Box>
+        <Box className="w-menu">
+          <MenuItem label="Edit" destructive className={forcedDestructiveMenuItemHover} />
+        </Box>
+        <Box className="w-menu">
+          <MenuItem label="Edit" destructive disabled />
+        </Box>
+      </Box>
+
+      <Box className="flex items-start gap-xl">
+        <MenuPanel>
+          <MenuItem label="Edit" />
+          <MenuItem label="Add to collection" />
+          <MenuItem label="Share" />
+          <Box className="py-xxs">
+            <Divider />
+          </Box>
+          <MenuItem label="Delete" destructive />
+        </MenuPanel>
+        <MenuPanel>
+          <MenuItem label="Edit" />
+          <MenuItem label="Share" />
+        </MenuPanel>
+        <Box className="flex flex-col items-start gap-xs">
+          <Menu
+            label="Item actions"
+            actions={[
+              { label: "Edit", onSelect: () => {} },
+              { label: "Add to collection", onSelect: () => {} },
+              { label: "Share", onSelect: () => {} },
+              { label: "Delete", onSelect: () => {}, destructive: true },
+            ]}
+          />
+          <Label>Menu · click the ⋯</Label>
+        </Box>
+      </Box>
+      <Label>
+        item states · menu with a delete row · menu with two actions · the menu with its ⋯ button
+      </Label>
     </Box>
   );
 }
@@ -1286,29 +1576,67 @@ function ToastExamples() {
   const toast = useToast();
 
   return (
-    <Box className="flex flex-wrap gap-sm">
-      <Button label="Neutral" onClick={() => toast.show({ message: "Outfit saved" })} />
-      <Button
-        label="Success"
-        onClick={() => toast.show({ message: "Profile updated", variant: "success" })}
-      />
-      <Button
-        label="With subtitle"
-        variant="secondary"
-        onClick={() =>
-          toast.show({ message: "Outfit saved", subtitle: "You can find it under Outfits." })
-        }
-      />
-      <Button
-        label="With action"
-        variant="secondary"
-        onClick={() =>
-          toast.show({
-            message: "Outfit deleted",
-            action: { label: "Undo", onClick: () => toast.show({ message: "Restored" }) },
-          })
-        }
-      />
+    <Box className="flex flex-col gap-lg">
+      <Box className="flex flex-col items-start gap-md">
+        <Toast variant="neutral" message="Link copied" />
+        <Toast
+          variant="neutral"
+          message="Saved to Workday"
+          action={{ label: "View", onClick: () => {} }}
+        />
+        <Toast
+          variant="success"
+          message="Saved to Workday"
+          action={{ label: "View", onClick: () => {} }}
+        />
+        <Toast
+          variant="error"
+          message="Couldn't save"
+          action={{ label: "Retry", onClick: () => {} }}
+        />
+        <Toast
+          variant="success"
+          message="Saved to Workday"
+          action={{ label: "View", onClick: () => {} }}
+          onClose={() => {}}
+        />
+        <Toast variant="error" message="Couldn't save" onClose={() => {}} />
+        <Label>
+          neutral · neutral with action · success · error · success with action and close · error
+          with close
+        </Label>
+      </Box>
+      <Box className="flex flex-col items-start gap-xs">
+        <Box className="flex flex-wrap gap-sm">
+          <Button label="Neutral" onClick={() => toast.show({ message: "Link copied" })} />
+          <Button
+            label="Success"
+            variant="secondary"
+            onClick={() => toast.show({ message: "Profile updated", variant: "success" })}
+          />
+          <Button
+            label="Error"
+            variant="secondary"
+            onClick={() => toast.show({ message: "Couldn't save", variant: "error" })}
+          />
+          <Button
+            label="With action"
+            variant="secondary"
+            onClick={() =>
+              toast.show({
+                message: "Outfit deleted",
+                action: { label: "Undo", onClick: () => toast.show({ message: "Restored" }) },
+              })
+            }
+          />
+          <Button
+            label="With close"
+            variant="secondary"
+            onClick={() => toast.show({ message: "Outfit saved", closable: true })}
+          />
+        </Box>
+        <Label>At the bottom center of the screen, hides itself after about 4 seconds</Label>
+      </Box>
     </Box>
   );
 }

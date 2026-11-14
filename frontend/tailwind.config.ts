@@ -18,7 +18,11 @@ import {
   ChoiceRowHeight,
   ContentWidth,
   ControlSize,
-  PopupWidth,
+  EmptyStateIconSize,
+  EmptyStateWidth,
+  MenuWidth,
+  ModalImageWidth,
+  ModalWidth,
   ScrollAreaHeight,
   TextAreaHeight,
   ThumbnailSize,
@@ -50,7 +54,11 @@ export default {
     fontSize: TypeScale,
     extend: {
       width: {
-        popup: PopupWidth,
+        "modal-sm": ModalWidth.sm,
+        "modal-md": ModalWidth.md,
+        "modal-lg": ModalWidth.lg,
+        "modal-image": ModalImageWidth,
+        menu: MenuWidth,
         "card-sm": CardSize.sm.width,
         "card-lg": CardSize.lg.width,
         thumbnail: ThumbnailSize.width,
@@ -59,9 +67,12 @@ export default {
           Object.entries(ContentWidth).map(([key, value]) => [`content-${key}`, value]),
         ),
       },
-      maxWidth: Object.fromEntries(
-        Object.entries(ContentWidth).map(([key, value]) => [`content-${key}`, value]),
-      ),
+      maxWidth: {
+        "empty-state": EmptyStateWidth,
+        ...Object.fromEntries(
+          Object.entries(ContentWidth).map(([key, value]) => [`content-${key}`, value]),
+        ),
+      },
       height: { thumbnail: ThumbnailSize.height, textarea: TextAreaHeight, tile: TileSize.height },
       maxHeight: { "scroll-area": ScrollAreaHeight },
       minHeight: {
@@ -72,6 +83,7 @@ export default {
       aspectRatio: AspectRatio,
       size: {
         control: ControlSize,
+        "empty-state-icon": EmptyStateIconSize,
         "avatar-sm": AvatarSize.sm,
         "avatar-md": AvatarSize.md,
         "avatar-lg": AvatarSize.lg,
