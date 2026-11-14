@@ -8,12 +8,15 @@ export function isOutfitNotFound(error: ErrorModel | null): boolean {
   return error?.status === 404 || error?.status === 422;
 }
 
+/** A query `retry` for an outfit: asking again won't make a missing one appear. */
+export function retryUnlessOutfitNotFound(failureCount: number, error: ErrorModel): boolean {
+  return !isOutfitNotFound(error) && failureCount < MAX_RETRIES;
+}
+
 /** The outfit query both outfit pages share, so moving between them doesn't refetch. */
 export function outfitQueryOptions(outfitId: string) {
   return {
     ...getOutfitOptions({ path: { id: outfitId } }),
-    // Asking again won't make a missing outfit appear.
-    retry: (failureCount: number, error: ErrorModel) =>
-      !isOutfitNotFound(error) && failureCount < MAX_RETRIES,
+    retry: retryUnlessOutfitNotFound,
   };
 }

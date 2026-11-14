@@ -10,7 +10,7 @@ import { supabase } from "@/lib/supabase";
  * Where the signed-in user is in sign-up: no row in our users table yet, an account that
  * hasn't finished the onboarding preference steps, or done.
  */
-type AccountStatus = "none" | "needs-preferences" | "onboarded";
+export type AccountStatus = "none" | "needs-preferences" | "onboarded";
 
 /** The caller's user, or null when they haven't created an account yet. */
 async function fetchCurrentUser(): Promise<CurrentUserResponse | null> {
@@ -54,12 +54,20 @@ const statusRoutes = {
   onboarded: "/",
 } as const satisfies Record<AccountStatus, string>;
 
+/** The signed-in user's status, fetched once per page load. */
+export function getAccountStatus(context: {
+  queryClient: QueryClient;
+  userId: string;
+}): Promise<AccountStatus> {
+  return context.queryClient.query(accountStatusQuery(context.userId));
+}
+
 /** For a route's beforeLoad: sends the user to their status's route unless it is in `allowed`. */
 export async function requireAccountStatus(
   context: { queryClient: QueryClient; userId: string },
   allowed: AccountStatus[],
 ) {
-  const status = await context.queryClient.query(accountStatusQuery(context.userId));
+  const status = await getAccountStatus(context);
 
   if (!allowed.includes(status)) {
     throw redirect({ to: statusRoutes[status], replace: true });

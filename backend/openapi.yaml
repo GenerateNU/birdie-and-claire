@@ -613,7 +613,7 @@ components:
       additionalProperties: false
       properties:
         url:
-          description: Public link to the outfit; stays the same across re-shares
+          description: Path of the outfit's public page, relative to the frontend origin; stays the same across re-shares
           type: string
       required:
         - url
@@ -625,6 +625,10 @@ components:
           type: string
         name:
           type: string
+        owner_id:
+          type: string
+        owner_name:
+          type: string
         products:
           items:
             $ref: "#/components/schemas/ProductResponse"
@@ -632,6 +636,8 @@ components:
       required:
         - id
         - name
+        - owner_id
+        - owner_name
         - products
       type: object
     StylePreferences:

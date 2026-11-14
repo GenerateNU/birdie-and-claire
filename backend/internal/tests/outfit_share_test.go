@@ -6,9 +6,11 @@ import (
 	"net/http"
 	"testing"
 
+	"birdie-and-claire/internal/auth"
 	"birdie-and-claire/internal/errs"
 	"birdie-and-claire/internal/models"
 	"birdie-and-claire/internal/repository"
+	"birdie-and-claire/internal/services"
 
 	"github.com/google/uuid"
 )
@@ -102,6 +104,31 @@ func TestSharedOutfitIsReadableOnlyWhileShared(t *testing.T) {
 
 	_, _, err = repo.GetShared(ctx, uuid.New())
 	wantNotFound(t, err)
+}
+
+func TestShareLinksToFrontendPageAndCreditsOwner(t *testing.T) {
+	db := openTestDB(t)
+	outfitID, ownerID := insertTestOutfit(t, db)
+	if _, err := db.Exec(`UPDATE users SET name = 'Birdie' WHERE id = $1`, ownerID); err != nil {
+		t.Fatalf("name owner: %v", err)
+	}
+	service := services.NewOutfitService(repository.New(db))
+
+	shared, err := service.Share(auth.WithUserID(context.Background(), ownerID), outfitID)
+	if err != nil {
+		t.Fatalf("share: %v", err)
+	}
+	if want := "/o/" + outfitID.String(); shared.URL != want {
+		t.Fatalf("share url = %q, want %q", shared.URL, want)
+	}
+
+	outfit, err := service.GetShared(context.Background(), outfitID)
+	if err != nil {
+		t.Fatalf("get shared outfit: %v", err)
+	}
+	if outfit.OwnerID != ownerID || outfit.OwnerName != "Birdie" {
+		t.Fatalf("owner = %s %q, want %s %q", outfit.OwnerID, outfit.OwnerName, ownerID, "Birdie")
+	}
 }
 
 func TestReshareKeepsSharedAt(t *testing.T) {

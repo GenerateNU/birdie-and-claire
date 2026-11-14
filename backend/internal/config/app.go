@@ -2,10 +2,8 @@ package config
 
 import (
 	"fmt"
-	"net/url"
 	"os"
 	"strconv"
-	"strings"
 )
 
 // LogFormat selects the slog handler the process installs.
@@ -26,10 +24,6 @@ type AppConfig struct {
 	Name      string
 	Port      int
 	LogFormat LogFormat
-	// PublicAPIURL is the origin share links point at, as clients outside our
-	// network reach the API. It is never derived from the request Host header,
-	// which the client controls.
-	PublicAPIURL string
 }
 
 func (a AppConfig) Address() string {
@@ -47,12 +41,7 @@ func loadApp() (AppConfig, error) {
 		return AppConfig{}, err
 	}
 
-	publicAPIURL, err := loadPublicAPIURL()
-	if err != nil {
-		return AppConfig{}, err
-	}
-
-	return AppConfig{Name: defaultName, Port: port, LogFormat: logFormat, PublicAPIURL: publicAPIURL}, nil
+	return AppConfig{Name: defaultName, Port: port, LogFormat: logFormat}, nil
 }
 
 func loadPort() (int, error) {
@@ -79,19 +68,4 @@ func loadLogFormat() (LogFormat, error) {
 	default:
 		return "", fmt.Errorf("LOG_FORMAT must be %q or %q, got %q", LogFormatText, LogFormatJSON, format)
 	}
-}
-
-// loadPublicAPIURL rejects anything after the host because share links append
-// the route path to it.
-func loadPublicAPIURL() (string, error) {
-	raw := strings.TrimSuffix(os.Getenv("PUBLIC_API_URL"), "/")
-	if raw == "" {
-		return "", fmt.Errorf("PUBLIC_API_URL is required")
-	}
-
-	parsed, err := url.Parse(raw)
-	if err != nil || parsed.Host == "" || (parsed.Scheme != "http" && parsed.Scheme != "https") || raw != parsed.Scheme+"://"+parsed.Host {
-		return "", fmt.Errorf("PUBLIC_API_URL must be http(s)://<host> with nothing after the host, got %q", raw)
-	}
-	return raw, nil
 }
