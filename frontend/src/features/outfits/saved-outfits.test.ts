@@ -1,6 +1,16 @@
 import { describe, expect, test } from "bun:test";
 
-import { canFetchNextPage, isEmptyList, piecesLine } from "@/features/outfits/saved-outfits";
+import type { InfiniteData } from "@tanstack/react-query";
+
+import type { ListOutfitsResponse, OutfitResponse } from "@/api/generated/types.gen";
+import {
+  canFetchNextPage,
+  isAlreadyDeleted,
+  isEmptyList,
+  nextFocusAfterDelete,
+  piecesLine,
+  withoutOutfit,
+} from "@/features/outfits/saved-outfits";
 
 describe("piecesLine", () => {
   test("joins titles with a comma, in order, keeping their case", () => {
@@ -44,5 +54,113 @@ describe("canFetchNextPage", () => {
 
   test("waits for the retry button after a failed request", () => {
     expect(canFetchNextPage({ isFetchingNextPage: false, isFetchNextPageError: true })).toBe(false);
+  });
+});
+
+describe("isAlreadyDeleted", () => {
+  test("counts a 404 as already deleted", () => {
+    expect(isAlreadyDeleted({ status: 404, title: "Not Found" })).toBe(true);
+  });
+
+  test("does not count any other status", () => {
+    expect(isAlreadyDeleted({ status: 500 })).toBe(false);
+    expect(isAlreadyDeleted({ status: 401 })).toBe(false);
+    expect(isAlreadyDeleted({ status: 422 })).toBe(false);
+  });
+
+  test("does not count a failure that has no status, such as a dropped connection", () => {
+    expect(isAlreadyDeleted({ detail: "Failed to fetch" })).toBe(false);
+    expect(isAlreadyDeleted({})).toBe(false);
+    expect(isAlreadyDeleted(null)).toBe(false);
+    expect(isAlreadyDeleted(undefined)).toBe(false);
+  });
+});
+
+describe("nextFocusAfterDelete", () => {
+  const ids = ["a", "b", "c"];
+
+  test("focuses the next card when one in the middle is deleted", () => {
+    expect(nextFocusAfterDelete(ids, "b")).toBe("c");
+  });
+
+  test("focuses the second card when the first is deleted", () => {
+    expect(nextFocusAfterDelete(ids, "a")).toBe("b");
+  });
+
+  test("focuses the list when the last card is deleted", () => {
+    expect(nextFocusAfterDelete(ids, "c")).toBeNull();
+  });
+
+  test("focuses the list when the only card is deleted", () => {
+    expect(nextFocusAfterDelete(["a"], "a")).toBeNull();
+  });
+
+  test("focuses the list, not the first card, when the outfit isn't in the list", () => {
+    expect(nextFocusAfterDelete(ids, "gone")).toBeNull();
+  });
+});
+
+describe("withoutOutfit", () => {
+  function outfit(id: string): OutfitResponse {
+    return {
+      id,
+      user_id: "user",
+      name: id,
+      description: "",
+      tags: [],
+      shared_at: null,
+      created_at: "2026-11-14T10:00:00Z",
+      updated_at: "2026-11-14T10:00:00Z",
+      products: [],
+    };
+  }
+
+  function loaded(...pages: string[][]): InfiniteData<ListOutfitsResponse> {
+    const total = pages.flat().length;
+
+    return {
+      pages: pages.map((ids, index) => ({
+        items: ids.map(outfit),
+        total,
+        has_more: index < pages.length - 1,
+        next_cursor: index < pages.length - 1 ? `cursor-${index}` : null,
+      })),
+      pageParams: pages.map((_, index) => (index === 0 ? {} : `cursor-${index - 1}`)),
+    };
+  }
+
+  test("drops the outfit from the page it was on and lowers every page's total", () => {
+    const result = withoutOutfit(loaded(["a", "b"], ["c", "d"]), "c");
+
+    expect(result?.pages.map((page) => page.items.map((item) => item.id))).toEqual([
+      ["a", "b"],
+      ["d"],
+    ]);
+    expect(result?.pages.map((page) => page.total)).toEqual([3, 3]);
+  });
+
+  test("keeps the paging details, so the next page is still the next page", () => {
+    const data = loaded(["a"], ["b"]);
+    const result = withoutOutfit(data, "a");
+
+    expect(result?.pageParams).toEqual(data.pageParams);
+    expect(result?.pages.map((page) => page.next_cursor)).toEqual(["cursor-0", null]);
+  });
+
+  test("leaves a page that is left with no outfits in place, so its cursor still works", () => {
+    const result = withoutOutfit(loaded(["a"], ["b"]), "a");
+
+    expect(result?.pages).toHaveLength(2);
+    expect(result?.pages[0].items).toEqual([]);
+  });
+
+  test("returns the same data when the outfit isn't loaded", () => {
+    const data = loaded(["a", "b"]);
+
+    expect(withoutOutfit(data, "elsewhere")).toBe(data);
+  });
+
+  test("returns undefined when nothing is cached", () => {
+    expect(withoutOutfit(undefined, "a")).toBeUndefined();
   });
 });

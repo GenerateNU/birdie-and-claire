@@ -1,4 +1,6 @@
-import type { ProductResponse } from "@/api/generated/types.gen";
+import type { InfiniteData } from "@tanstack/react-query";
+
+import type { ErrorModel, ListOutfitsResponse, ProductResponse } from "@/api/generated/types.gen";
 
 /** An outfit's product titles for its card's subtitle, in the order the API lists them. */
 export function piecesLine(products: Pick<ProductResponse, "title">[]): string {
@@ -22,4 +24,48 @@ export function canFetchNextPage(request: {
   isFetchNextPageError: boolean;
 }): boolean {
   return !request.isFetchingNextPage && !request.isFetchNextPageError;
+}
+
+/**
+ * Whether a failed delete means the outfit is already gone: the API answers 404 for an outfit that
+ * is missing or isn't the user's. The user asked for it to be gone, so that counts as success.
+ */
+export function isAlreadyDeleted(error: ErrorModel | null | undefined): boolean {
+  return error?.status === 404;
+}
+
+/**
+ * The outfit whose card takes focus once `deletedId` leaves the list: the next one, or null when
+ * it was the last, which sends focus to the list itself.
+ */
+export function nextFocusAfterDelete(outfitIds: string[], deletedId: string): string | null {
+  const index = outfitIds.indexOf(deletedId);
+
+  if (index === -1) {
+    return null;
+  }
+
+  return outfitIds[index + 1] ?? null;
+}
+
+/**
+ * The loaded pages without `outfitId`, and every page's total one lower, so the list can drop a
+ * deleted outfit before the refreshed list arrives. Pages that never had it come back unchanged.
+ */
+export function withoutOutfit(
+  data: InfiniteData<ListOutfitsResponse> | undefined,
+  outfitId: string,
+): InfiniteData<ListOutfitsResponse> | undefined {
+  if (!data?.pages.some((page) => page.items.some((outfit) => outfit.id === outfitId))) {
+    return data;
+  }
+
+  return {
+    ...data,
+    pages: data.pages.map((page) => ({
+      ...page,
+      items: page.items.filter((outfit) => outfit.id !== outfitId),
+      total: Math.max(0, page.total - 1),
+    })),
+  };
 }
