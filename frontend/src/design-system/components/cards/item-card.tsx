@@ -73,7 +73,7 @@ export function ItemCard({
   } = sizeClasses[size];
 
   const selected = selection?.selected ?? false;
-  const showHover = selection !== undefined && !disabled;
+  const showHover = !disabled;
 
   return (
     <Box
