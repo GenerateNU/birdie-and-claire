@@ -27,8 +27,8 @@ func ProductRoutes(api huma.API, params types.RouteParams) {
 		OperationID: "list-birdie-and-claire-products",
 		Method:      http.MethodGet,
 		Path:        "/api/v1/products/birdie-and-claire",
-		Summary:     "List the Birdie & Claire products in one category, marking the ones the authenticated user owns",
-		Description: "Active store products only, newest first. Demo filler is left out.",
+		Summary:     "List the Birdie & Claire products that match a filter, marking the ones the authenticated user owns",
+		Description: "Active store products only, newest first. Demo filler is left out. The total counts every match, not just this page.",
 		Tags:        []string{"products"},
 	}, controller.ListBirdieAndClaireProducts)
 }

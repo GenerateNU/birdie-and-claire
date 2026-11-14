@@ -1,15 +1,16 @@
 import { MagnifyingGlassIcon } from "@phosphor-icons/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 
 import {
   listBirdieAndClaireProductsInfiniteOptions,
-  listCurrentUserPiecesInfiniteOptions,
   listCurrentUserPiecesInfiniteQueryKey,
   updateCurrentUserPiecesMutation,
 } from "@/api/generated/@tanstack/react-query.gen";
-import type { BirdieAndClaireProductResponse, ProductResponse } from "@/api/generated/types.gen";
-import { zUpdateOwnedProductsInputBody } from "@/api/generated/zod.gen";
+import type {
+  BirdieAndClaireProductResponse,
+  ListBirdieAndClaireProductsData,
+} from "@/api/generated/types.gen";
 import {
   Box,
   Button,
@@ -23,42 +24,42 @@ import {
   Text,
 } from "@/design-system";
 import {
-  catalogCategories,
+  catalogTabs,
   invalidateBirdieAndClaireCatalog,
-  type CatalogCategory,
+  ownedCatalogFilter,
 } from "@/features/pieces/birdie-and-claire-catalog";
 import { LoadMoreSentinel } from "@/features/pieces/load-more-sentinel";
+import {
+  hasChanges,
+  isAtAddLimit,
+  isPicked,
+  noChanges,
+  pickedCount,
+  pickedPieces,
+  withPicked,
+  type PieceSelection,
+} from "@/features/pieces/piece-selection";
 import { usePagination } from "@/lib/use-pagination";
 
 // The generated mutation options carry no key, so this names the picker's save for callers that
 // need to know it is in flight, through useIsMutating.
 export const saveOwnedPiecesMutationKey = ["save-owned-pieces"];
 
-const categoryLabels: Record<CatalogCategory, string> = {
-  tops: "Tops",
-  sweaters: "Sweaters",
-  bottoms: "Bottoms",
-  jumpsuits: "Jumpsuits",
-  accessories: "Accessories",
-};
-
-const categoryTabs = catalogCategories.map((category) => ({
-  label: categoryLabels[category],
-  value: category,
-}));
+// Three rows of the four-column grid, and twelve of the panel's two.
+const pageSize = 24;
 
 type PiecePickerProps = {
-  onAdded: () => void;
+  onSaved: () => void;
 };
 
 /** Picks the catalog pieces the shopper owns and saves the change. Pieces they already own start
  * selected, and unselecting one removes it. Onboarding and /pieces/add both use it. */
-export function PiecePicker({ onAdded }: PiecePickerProps) {
+export function PiecePicker({ onSaved }: PiecePickerProps) {
   const queryClient = useQueryClient();
-  const [added, setAdded] = useState<ProductResponse[]>([]);
-  const [removedIds, setRemovedIds] = useState<string[]>([]);
+  const [selection, setSelection] = useState<PieceSelection>(noChanges);
   const [showingSelectedItems, setShowingSelectedItems] = useState(false);
-  const [category, setCategory] = useState<CatalogCategory>(catalogCategories[0]);
+  const [tabValue, setTabValue] = useState(catalogTabs[0].value);
+  const tab = catalogTabs.find((catalogTab) => catalogTab.value === tabValue) ?? catalogTabs[0];
 
   const {
     data: ownedData,
@@ -66,16 +67,21 @@ export function PiecePicker({ onAdded }: PiecePickerProps) {
     isFetchingNextPage: isFetchingMoreOwned,
     isFetchNextPageError: isOwnedPageError,
     fetchNextPage: fetchMoreOwned,
-  } = usePagination(listCurrentUserPiecesInfiniteOptions({ query: { limit: 100 } }));
+  } = usePagination(
+    listBirdieAndClaireProductsInfiniteOptions({
+      query: { ...ownedCatalogFilter, limit: pageSize },
+    }),
+  );
 
-  // The count and the Selected Items panel cover every owned piece, not just the first page.
-  useEffect(() => {
-    if (hasMoreOwned && !isFetchingMoreOwned && !isOwnedPageError) {
+  const loadMoreOwned = useCallback(() => {
+    // The observer re-fires on rebuild, so fetching while errored would retry in a loop.
+    if (!isFetchingMoreOwned && !isOwnedPageError) {
       void fetchMoreOwned();
     }
-  }, [hasMoreOwned, isFetchingMoreOwned, isOwnedPageError, fetchMoreOwned]);
+  }, [fetchMoreOwned, isFetchingMoreOwned, isOwnedPageError]);
 
   const ownedPieces = ownedData?.pages.flatMap((page) => page.items) ?? [];
+  const ownedTotal = ownedData?.pages[0]?.total ?? 0;
 
   const saveMutation = useMutation({
     ...updateCurrentUserPiecesMutation(),
@@ -88,65 +94,20 @@ export function PiecePicker({ onAdded }: PiecePickerProps) {
       ]),
   });
 
-  function keptOwned(nextRemovedIds: string[]) {
-    return ownedPieces.filter((piece) => !nextRemovedIds.includes(piece.id));
-  }
-
   // A failed save's error is about the change that was sent, so it clears once that changes.
-  function changeSelection(nextAdded: ProductResponse[], nextRemovedIds: string[]) {
+  function changeSelection(nextSelection: PieceSelection) {
     saveMutation.reset();
-    setAdded(nextAdded);
-    setRemovedIds(nextRemovedIds);
+    setSelection(nextSelection);
 
-    if (keptOwned(nextRemovedIds).length + nextAdded.length === 0) {
+    if (pickedCount(nextSelection, ownedTotal) === 0) {
       setShowingSelectedItems(false);
     }
   }
 
-  function isSelected(product: BirdieAndClaireProductResponse) {
-    if (product.owned) {
-      return !removedIds.includes(product.id);
-    }
-
-    return added.some((picked) => picked.id === product.id);
-  }
-
-  function toggle(product: BirdieAndClaireProductResponse, pressed: boolean) {
-    if (product.owned) {
-      changeSelection(
-        added,
-        pressed ? removedIds.filter((id) => id !== product.id) : [...removedIds, product.id],
-      );
-
-      return;
-    }
-
-    changeSelection(
-      pressed ? [...added, product] : added.filter((picked) => picked.id !== product.id),
-      removedIds,
-    );
-  }
-
-  function unselect(product: ProductResponse) {
-    if (added.some((picked) => picked.id === product.id)) {
-      changeSelection(
-        added.filter((picked) => picked.id !== product.id),
-        removedIds,
-      );
-
-      return;
-    }
-
-    changeSelection(added, [...removedIds, product.id]);
-  }
-
-  const selected = [...keptOwned(removedIds), ...added];
-  const hasChanges = added.length > 0 || removedIds.length > 0;
-
   function save() {
     // Pieces already owned and left as they are need no request, only the move on.
-    if (!hasChanges) {
-      onAdded();
+    if (!hasChanges(selection)) {
+      onSaved();
 
       return;
     }
@@ -156,48 +117,27 @@ export function PiecePicker({ onAdded }: PiecePickerProps) {
     saveMutation.mutate(
       {
         body: {
-          add_product_ids: added.map((product) => product.id),
-          remove_product_ids: removedIds,
+          add_product_ids: selection.added.map((product) => product.id),
+          remove_product_ids: selection.removedIds,
         },
       },
-      { onSuccess: onAdded },
+      { onSuccess: onSaved },
     );
   }
 
   // Still saving while the caller moves on, so the button doesn't come back on in between.
   const saving = saveMutation.isPending || saveMutation.isSuccess;
-
-  // Asks the save endpoint's own schema whether one more new piece still fits in a request. The
-  // extra id's value doesn't matter: only the count can fail.
-  const atLimit = !zUpdateOwnedProductsInputBody.shape.add_product_ids.safeParse([
-    ...added.map((product) => product.id),
-    "",
-  ]).success;
-
-  const selectedCount = `${selected.length} ${selected.length === 1 ? "Item" : "Items"} Selected`;
-
-  const addButton = (
-    <Button
-      label="Add Items to Owned"
-      loading={saving}
-      loadingLabel="Adding…"
-      disabled={!hasChanges && selected.length === 0}
-      onClick={save}
-    />
-  );
-
-  const saveErrorMessage = saveMutation.isError && (
-    <Text variant="body" className="text-center text-error">
-      Couldn't save your pieces. Try again.
-    </Text>
-  );
+  const atLimit = isAtAddLimit(selection);
+  const selectedCount = pickedCount(selection, ownedTotal);
+  // Changes with no picks left still save: unpicking every owned piece removes them all.
+  const nothingToSave = !hasChanges(selection) && selectedCount === 0;
 
   return (
     <Box className="flex flex-col gap-lg">
       <TabBar
-        tabs={categoryTabs}
-        value={category}
-        onValueChange={setCategory}
+        tabs={catalogTabs}
+        value={tab.value}
+        onValueChange={setTabValue}
         disabled={saving}
         trailing={
           // Disabled until the API can search products (#194).
@@ -219,9 +159,11 @@ export function PiecePicker({ onAdded }: PiecePickerProps) {
             outside the cards, and the negative margin keeps the grid where Figma puts it. */}
         <Box className="scrollbar-thin -m-sm h-item-grid overflow-y-auto p-sm">
           <Catalog
-            category={category}
-            isSelected={isSelected}
-            onToggle={toggle}
+            filter={tab.filter}
+            isSelected={(product) => isPicked(selection, product)}
+            onToggle={(product, pressed) =>
+              changeSelection(withPicked(selection, product, pressed))
+            }
             disabled={saving}
             atLimit={atLimit}
           />
@@ -234,45 +176,73 @@ export function PiecePicker({ onAdded }: PiecePickerProps) {
       )}
       <Box className="flex justify-end gap-sm">
         <Button
-          label={selectedCount}
+          label={`${selectedCount} ${selectedCount === 1 ? "Item" : "Items"} Selected`}
           variant="secondary"
-          disabled={selected.length === 0 || saving}
+          disabled={selectedCount === 0 || saving}
           onClick={() => setShowingSelectedItems(true)}
         />
-        {addButton}
+        <AddItemsButton saving={saving} nothingToSave={nothingToSave} onClick={save} />
       </Box>
-      {!showingSelectedItems && saveErrorMessage}
+      {/* The panel covers this footer, so the error shows in the panel while it is open. */}
+      {saveMutation.isError && !showingSelectedItems && <SaveError />}
       <SidePanel
         open={showingSelectedItems}
         onClose={() => setShowingSelectedItems(false)}
         title="Selected Items"
         footer={
           <>
-            {addButton}
-            {saveErrorMessage}
+            <AddItemsButton saving={saving} nothingToSave={nothingToSave} onClick={save} />
+            {saveMutation.isError && <SaveError />}
           </>
         }
       >
-        <Box role="list" className="grid grid-cols-2 gap-lg">
-          {selected.map((product) => (
-            <Box key={product.id} role="listitem">
+        <ul className="grid grid-cols-2 gap-lg">
+          {pickedPieces(selection, ownedPieces).map((product) => (
+            <li key={product.id}>
               <ItemCard
                 name={product.title}
                 src={product.image_url}
                 size="sm"
-                onRemove={() => unselect(product)}
+                onRemove={() => changeSelection(withPicked(selection, product, false))}
                 disabled={saving}
               />
-            </Box>
+            </li>
           ))}
-        </Box>
+          {hasMoreOwned && <LoadMoreSentinel onVisible={loadMoreOwned} />}
+        </ul>
       </SidePanel>
     </Box>
   );
 }
 
+type AddItemsButtonProps = {
+  saving: boolean;
+  nothingToSave: boolean;
+  onClick: () => void;
+};
+
+function AddItemsButton({ saving, nothingToSave, onClick }: AddItemsButtonProps) {
+  return (
+    <Button
+      label="Add Items to Owned"
+      loading={saving}
+      loadingLabel="Saving…"
+      disabled={nothingToSave}
+      onClick={onClick}
+    />
+  );
+}
+
+function SaveError() {
+  return (
+    <Text variant="body" className="text-center text-error">
+      Couldn't save your pieces. Try again.
+    </Text>
+  );
+}
+
 type CatalogProps = {
-  category: CatalogCategory;
+  filter: Omit<ListBirdieAndClaireProductsData["query"], "limit" | "cursor">;
   isSelected: (product: BirdieAndClaireProductResponse) => boolean;
   onToggle: (product: BirdieAndClaireProductResponse, pressed: boolean) => void;
   disabled: boolean;
@@ -280,7 +250,7 @@ type CatalogProps = {
   atLimit: boolean;
 };
 
-function Catalog({ category, isSelected, onToggle, disabled, atLimit }: CatalogProps) {
+function Catalog({ filter, isSelected, onToggle, disabled, atLimit }: CatalogProps) {
   const {
     data,
     isPending,
@@ -289,7 +259,9 @@ function Catalog({ category, isSelected, onToggle, disabled, atLimit }: CatalogP
     isFetchingNextPage,
     isFetchNextPageError,
     refetch,
-  } = usePagination(listBirdieAndClaireProductsInfiniteOptions({ query: { category, limit: 24 } }));
+  } = usePagination(
+    listBirdieAndClaireProductsInfiniteOptions({ query: { ...filter, limit: pageSize } }),
+  );
 
   const loadMore = useCallback(() => {
     // The observer re-fires on rebuild, so fetching while errored would retry in a loop.

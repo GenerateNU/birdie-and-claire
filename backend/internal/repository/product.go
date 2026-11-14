@@ -33,8 +33,8 @@ type ProductRepository interface {
 	// keepShopifyIDs, and returns how many it marked. Demo products are left alone.
 	DeactivateShopifyProductsExcept(ctx context.Context, keepShopifyIDs []int64) (int64, error)
 	ListUnownedProducts(ctx context.Context, userID uuid.UUID, params pagination.CursorParams) (pagination.Page[models.ProductResponse], error)
-	// ListBirdieAndClaireProducts lists the active store products in category, marking the ones userID owns.
-	ListBirdieAndClaireProducts(ctx context.Context, userID uuid.UUID, category models.ProductCategory, params pagination.CursorParams) (pagination.Page[models.BirdieAndClaireProductResponse], error)
+	// ListBirdieAndClaireProducts lists the active store products that match filter, marking the ones userID owns.
+	ListBirdieAndClaireProducts(ctx context.Context, userID uuid.UUID, filter models.BirdieAndClaireProductFilter, params pagination.CursorParams) (models.BirdieAndClaireProductPage, error)
 	// FindPurchaseInfo maps each of productIDs that exists to what decides whether userID can buy it.
 	FindPurchaseInfo(ctx context.Context, userID uuid.UUID, productIDs []uuid.UUID) (map[uuid.UUID]models.ProductPurchaseInfo, error)
 }
@@ -295,44 +295,73 @@ func (r *productRepository) DeactivateShopifyProductsExcept(ctx context.Context,
 }
 
 func (r *productRepository) ListUnownedProducts(ctx context.Context, userID uuid.UUID, params pagination.CursorParams) (pagination.Page[models.ProductResponse], error) {
-	return listProductPage(ctx, r.db, `
-		SELECT p.id, p.created_at AS sorted_at
-		FROM products p
-		WHERE NOT EXISTS (SELECT 1 FROM owned_products op WHERE op.user_id = $1 AND op.product_id = p.id)
-	`, userID, params, func(product models.ProductResponse, _ time.Time, _ bool) models.ProductResponse {
+	return listProductPage(ctx, r.db, func([]string) string {
+		return `
+			SELECT p.id, p.created_at AS sorted_at
+			FROM products p
+			WHERE NOT EXISTS (SELECT 1 FROM owned_products op WHERE op.user_id = $1 AND op.product_id = p.id)
+		`
+	}, userID, params, func(product models.ProductResponse, _ time.Time, _ bool) models.ProductResponse {
 		return product
 	})
 }
 
-func (r *productRepository) ListBirdieAndClaireProducts(ctx context.Context, userID uuid.UUID, category models.ProductCategory, params pagination.CursorParams) (pagination.Page[models.BirdieAndClaireProductResponse], error) {
-	// The categories are the picker's tabs from Figma, so Sweaters is split out of the top slot and a dress counts
-	// as a jumpsuit. Shoes have no tab. product_type is NULL for some products, hence IS DISTINCT FROM.
-	return listProductPage(ctx, r.db, `
-		SELECT p.id, p.created_at AS sorted_at
-		FROM products p
-		WHERE p.source = 'birdie_and_claire'
-			AND p.active
-			AND CASE $5::text
-				WHEN 'tops' THEN p.slot = 'top' AND p.product_type IS DISTINCT FROM 'Sweaters'
-				WHEN 'sweaters' THEN p.slot = 'top' AND p.product_type = 'Sweaters'
-				WHEN 'bottoms' THEN p.slot = 'bottom'
-				WHEN 'jumpsuits' THEN p.slot = 'one_piece'
-				WHEN 'accessories' THEN p.slot = 'accessory'
-			END
-	`, userID, params, func(product models.ProductResponse, _ time.Time, owned bool) models.BirdieAndClaireProductResponse {
+func (r *productRepository) ListBirdieAndClaireProducts(ctx context.Context, userID uuid.UUID, filter models.BirdieAndClaireProductFilter, params pagination.CursorParams) (models.BirdieAndClaireProductPage, error) {
+	rowSource := func(sourceParams []string) string {
+		slots, productType, excludeProductType, ownedOnly := sourceParams[0], sourceParams[1], sourceParams[2], sourceParams[3]
+		// product_type is NULL for some products, and IS DISTINCT FROM keeps those when a type is excluded.
+		return `
+			SELECT p.id, p.created_at AS sorted_at
+			FROM products p
+			WHERE p.source = 'birdie_and_claire'
+				AND p.active
+				AND p.slot::text = ANY(` + slots + `::text[])
+				AND (` + productType + `::text = '' OR p.product_type = ` + productType + `::text)
+				AND (` + excludeProductType + `::text = '' OR p.product_type IS DISTINCT FROM ` + excludeProductType + `::text)
+				AND (NOT ` + ownedOnly + `::bool
+					OR EXISTS (SELECT 1 FROM owned_products op WHERE op.user_id = $1 AND op.product_id = p.id))
+		`
+	}
+	sourceArgs := []any{filter.Slots, filter.ProductType, filter.ExcludeProductType, filter.OwnedOnly}
+
+	page, err := listProductPage(ctx, r.db, rowSource, userID, params, func(product models.ProductResponse, _ time.Time, owned bool) models.BirdieAndClaireProductResponse {
 		return models.BirdieAndClaireProductResponse{ProductResponse: product, Owned: owned}
-	}, category)
+	}, sourceArgs...)
+	if err != nil {
+		return models.BirdieAndClaireProductPage{}, err
+	}
+
+	var total int
+	err = r.db.QueryRowContext(ctx, `
+		SELECT count(*) FROM (`+rowSource(numberedPlaceholders(2, len(sourceArgs)))+`) source
+	`, append([]any{userID}, sourceArgs...)...).Scan(&total)
+	if err != nil {
+		return models.BirdieAndClaireProductPage{}, fmt.Errorf("count birdie and claire products for user %s: %w", userID, err)
+	}
+	return models.BirdieAndClaireProductPage{Page: page, Total: total}, nil
 }
 
-// listProductPage is the paging query behind every product list. rowSource selects the list's rows as
-// (id, sorted_at) and may use $1, the user's ID, and $5 onward for sourceArgs; it is always a constant in this
-// package, never input.
-// Rows come newest sorted_at first, then by id, and toItem shapes each one for the response, given whether the user
-// owns the product.
+// productRowSource selects a product list's rows as (id, sorted_at). It may use $1, the user's ID, and gets one
+// placeholder per extra query arg, in order, so it never has to count the arguments that come before them. The SQL it
+// returns is always built from constants in this package, never from input.
+type productRowSource func(sourceParams []string) string
+
+// numberedPlaceholders returns count placeholders starting at $first.
+func numberedPlaceholders(first, count int) []string {
+	placeholders := make([]string, 0, count)
+	for position := first; position < first+count; position++ {
+		placeholders = append(placeholders, fmt.Sprintf("$%d", position))
+	}
+	return placeholders
+}
+
+// listProductPage is the paging query behind every product list. rowSource picks the rows and gets a placeholder for
+// each of sourceArgs. Rows come newest sorted_at first, then by id, and toItem shapes each one for the response, given
+// whether the user owns the product.
 func listProductPage[T any](
 	ctx context.Context,
 	db *sql.DB,
-	rowSource string,
+	rowSource productRowSource,
 	userID uuid.UUID,
 	params pagination.CursorParams,
 	toItem func(product models.ProductResponse, sortedAt time.Time, owned bool) T,
@@ -351,7 +380,7 @@ func listProductPage[T any](
 		-- Paged before the product and image joins, so only the returned rows look them up.
 		WITH page AS (
 			SELECT id, sorted_at
-			FROM (`+rowSource+`) source
+			FROM (`+rowSource(numberedPlaceholders(5, len(sourceArgs)))+`) source
 			WHERE ($2::timestamptz IS NULL OR (sorted_at, id) < ($2::timestamptz, $3::uuid))
 			ORDER BY sorted_at DESC, id DESC
 			LIMIT $4

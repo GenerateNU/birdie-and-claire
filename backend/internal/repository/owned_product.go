@@ -41,11 +41,13 @@ func NewOwnedProductRepository(database *sql.DB) OwnedProductRepository {
 }
 
 func (r *ownedProductRepository) ListOwnedProducts(ctx context.Context, userID uuid.UUID, params pagination.CursorParams) (pagination.Page[models.OwnedProductResponse], error) {
-	return listProductPage(ctx, r.db, `
-		SELECT product_id AS id, created_at AS sorted_at
-		FROM owned_products
-		WHERE user_id = $1
-	`, userID, params, func(product models.ProductResponse, addedAt time.Time, _ bool) models.OwnedProductResponse {
+	return listProductPage(ctx, r.db, func([]string) string {
+		return `
+			SELECT product_id AS id, created_at AS sorted_at
+			FROM owned_products
+			WHERE user_id = $1
+		`
+	}, userID, params, func(product models.ProductResponse, addedAt time.Time, _ bool) models.OwnedProductResponse {
 		return models.OwnedProductResponse{ProductResponse: product, AddedAt: addedAt}
 	})
 }

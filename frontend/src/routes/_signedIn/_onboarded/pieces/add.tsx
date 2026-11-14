@@ -22,7 +22,7 @@ function AddOwnedPiecesPage() {
       <Text variant="heading" className="mb-lg">
         Add B&C Clothes You Own
       </Text>
-      <PiecePicker onAdded={() => void navigate({ to: "/profile/pieces" })} />
+      <PiecePicker onSaved={() => void navigate({ to: "/profile/pieces" })} />
     </Page>
   );
 }
