@@ -4,6 +4,7 @@ import { useEffect, useState, type SyntheticEvent } from "react";
 
 import { createCurrentUserMutation } from "@/api/generated/@tanstack/react-query.gen";
 import { useToast } from "@/design-system";
+import { takeReturnPath } from "@/features/auth/return-path";
 import { supabase } from "@/lib/supabase";
 
 type Step = "choice" | "login-email" | "signup" | "verify" | "verified";
@@ -48,9 +49,9 @@ export function useAuthFlow() {
       return;
     }
 
-    // Lands on / so the _onboarded route decides where the user goes: home, /create-account if
-    // they have no account yet, or onboarding if they haven't finished it.
-    const timer = setTimeout(() => window.location.assign("/"), VERIFIED_REDIRECT_MS);
+    const timer = setTimeout(() => {
+      window.location.assign(takeReturnPath() ?? "/");
+    }, VERIFIED_REDIRECT_MS);
 
     return () => clearTimeout(timer);
   }, [step]);

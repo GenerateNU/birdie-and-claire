@@ -35,6 +35,10 @@ components:
     CreateOutfitInputBody:
       additionalProperties: false
       properties:
+        description:
+          description: Free-text description of the outfit
+          maxLength: 500
+          type: string
         name:
           description: Display name for the outfit
           maxLength: 100
@@ -45,6 +49,14 @@ components:
           items:
             type: string
           minItems: 1
+          type: array
+        tags:
+          description: Free-text labels such as weather or occasion; each is 1 to 30 characters and unique ignoring case
+          items:
+            maxLength: 30
+            minLength: 1
+            type: string
+          maxItems: 10
           type: array
       required:
         - name
@@ -161,6 +173,9 @@ components:
         created_at:
           format: date-time
           type: string
+        description:
+          description: Empty when the outfit has no description
+          type: string
         id:
           type: string
         name:
@@ -171,6 +186,11 @@ components:
           type:
             - string
             - "null"
+        tags:
+          description: Free-text labels such as weather or occasion
+          items:
+            type: string
+          type: array
         updated_at:
           format: date-time
           type: string
@@ -180,6 +200,8 @@ components:
         - id
         - user_id
         - name
+        - description
+        - tags
         - shared_at
         - created_at
         - updated_at
@@ -189,6 +211,9 @@ components:
       properties:
         created_at:
           format: date-time
+          type: string
+        description:
+          description: Empty when the outfit has no description
           type: string
         id:
           type: string
@@ -204,6 +229,11 @@ components:
           type:
             - string
             - "null"
+        tags:
+          description: Free-text labels such as weather or occasion
+          items:
+            type: string
+          type: array
         updated_at:
           format: date-time
           type: string
@@ -214,6 +244,8 @@ components:
         - id
         - user_id
         - name
+        - description
+        - tags
         - shared_at
         - created_at
         - updated_at
@@ -567,7 +599,7 @@ components:
         expanded_answers:
           $ref: "#/components/schemas/RecommendationExpandedAnswers"
         outfits:
-          description: Up to 3 outfits, best first; fewer when a slot has fewer matching products
+          description: Up to 3 outfits, best first; fewer only when every slot has fewer matching products
           items:
             $ref: "#/components/schemas/RecommendedOutfit"
           type: array
@@ -599,23 +631,22 @@ components:
       properties:
         accessory:
           $ref: "#/components/schemas/ProductResponse"
+          description: Missing when no accessory matched
         bottom:
           $ref: "#/components/schemas/ProductResponse"
+          description: Missing when no bottom matched
         shoe:
           $ref: "#/components/schemas/ProductResponse"
+          description: Missing when no shoe matched
         top:
           $ref: "#/components/schemas/ProductResponse"
-      required:
-        - top
-        - bottom
-        - accessory
-        - shoe
+          description: Missing when no top matched
       type: object
     ShareOutfitResponse:
       additionalProperties: false
       properties:
         url:
-          description: Public link to the outfit; stays the same across re-shares
+          description: Path of the outfit's public page, relative to the frontend origin; stays the same across re-shares
           type: string
       required:
         - url
@@ -623,17 +654,31 @@ components:
     SharedOutfitResponse:
       additionalProperties: false
       properties:
+        description:
+          type: string
         id:
           type: string
         name:
+          type: string
+        owner_id:
+          type: string
+        owner_name:
           type: string
         products:
           items:
             $ref: "#/components/schemas/ProductResponse"
           type: array
+        tags:
+          items:
+            type: string
+          type: array
       required:
         - id
         - name
+        - description
+        - tags
+        - owner_id
+        - owner_name
         - products
       type: object
     StylePreferences:
@@ -688,6 +733,10 @@ components:
     UpdateOutfitInputBody:
       additionalProperties: false
       properties:
+        description:
+          description: New description; an empty string clears it
+          maxLength: 500
+          type: string
         name:
           description: New display name for the outfit
           maxLength: 100
@@ -698,6 +747,16 @@ components:
           items:
             type: string
           minItems: 1
+          type:
+            - array
+            - "null"
+        tags:
+          description: Every tag on the outfit; replaces the current set, and an empty list clears it. Each is 1 to 30 characters and unique ignoring case
+          items:
+            maxLength: 30
+            minLength: 1
+            type: string
+          maxItems: 10
           type:
             - array
             - "null"

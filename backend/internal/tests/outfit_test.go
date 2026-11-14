@@ -16,6 +16,7 @@ import (
 	"birdie-and-claire/internal/models"
 	"birdie-and-claire/internal/repository"
 	"birdie-and-claire/internal/server"
+	"birdie-and-claire/internal/utils/pagination"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/humatest"
@@ -34,8 +35,10 @@ type outfitProbeInput struct {
 
 type outfitProbeOutput struct {
 	Body struct {
-		NameLength   int `json:"name_length"`
-		ProductCount int `json:"product_count"`
+		NameLength        int      `json:"name_length"`
+		DescriptionLength int      `json:"description_length"`
+		Tags              []string `json:"tags" nullable:"false"`
+		ProductCount      int      `json:"product_count"`
 	}
 }
 
@@ -53,6 +56,8 @@ func outfitProbe(t *testing.T) humatest.TestAPI {
 		output := &outfitProbeOutput{}
 
 		output.Body.NameLength = len(input.Body.Name)
+		output.Body.DescriptionLength = len(input.Body.Description)
+		output.Body.Tags = input.Body.Tags
 		output.Body.ProductCount = len(input.Body.ProductIDs)
 
 		return output, nil
@@ -118,6 +123,70 @@ func TestOutfitNameBounds(t *testing.T) {
 			response := outfitProbe(t).Post("/probe", createOutfitBody(test.outfitName, productIDLower))
 			if response.Code != test.want {
 				t.Fatalf("status = %d, want %d: %s", response.Code, test.want, response.Body)
+			}
+		})
+	}
+}
+
+func TestOutfitDescriptionBounds(t *testing.T) {
+	tests := []struct {
+		name        string
+		description string
+		want        int
+	}{
+		{name: "empty", description: "", want: http.StatusOK},
+		{name: "maximum 500 characters", description: strings.Repeat("d", 500), want: http.StatusOK},
+		{name: "maximum 500 multibyte characters", description: strings.Repeat("é", 500), want: http.StatusOK},
+		{name: "above maximum 501 characters", description: strings.Repeat("d", 501), want: http.StatusUnprocessableEntity},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			body := createOutfitBody("fit", productIDLower)
+			body["description"] = test.description
+			response := outfitProbe(t).Post("/probe", body)
+			if response.Code != test.want {
+				t.Fatalf("status = %d, want %d: %s", response.Code, test.want, response.Body)
+			}
+		})
+	}
+}
+
+func TestOutfitTagValidation(t *testing.T) {
+	tests := []struct {
+		name     string
+		tags     []string
+		want     int
+		wantBody string
+	}{
+		// Absent stays nil; the insert turns that into an empty array.
+		{name: "no tags", tags: nil, want: http.StatusOK, wantBody: `"tags":null`},
+		{name: "one character", tags: []string{"a"}, want: http.StatusOK},
+		{name: "thirty characters", tags: []string{strings.Repeat("t", 30)}, want: http.StatusOK},
+		{name: "thirty multibyte characters", tags: []string{strings.Repeat("é", 30)}, want: http.StatusOK},
+		{name: "ten tags", tags: []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j"}, want: http.StatusOK},
+		{name: "trimmed", tags: []string{"  rainy "}, want: http.StatusOK, wantBody: `"tags":["rainy"]`},
+		{name: "eleven tags", tags: []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"}, want: http.StatusUnprocessableEntity, wantBody: "expected array length <= 10"},
+		{name: "thirty-one characters", tags: []string{strings.Repeat("t", 31)}, want: http.StatusUnprocessableEntity, wantBody: "expected length <= 30"},
+		{name: "empty", tags: []string{""}, want: http.StatusBadRequest, wantBody: "body.tags[0]"},
+		{name: "only spaces", tags: []string{"   "}, want: http.StatusBadRequest, wantBody: "tag must not be blank"},
+		{name: "same tag twice", tags: []string{"rain", "rain"}, want: http.StatusBadRequest, wantBody: "duplicate tag"},
+		{name: "same tag in different case", tags: []string{"Rain", "rAIN"}, want: http.StatusBadRequest, wantBody: "duplicate tag"},
+		{name: "same tag after trimming", tags: []string{"rain", " rain "}, want: http.StatusBadRequest, wantBody: "duplicate tag"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			body := createOutfitBody("fit", productIDLower)
+			if test.tags != nil {
+				body["tags"] = test.tags
+			}
+			response := outfitProbe(t).Post("/probe", body)
+			if response.Code != test.want {
+				t.Fatalf("status = %d, want %d: %s", response.Code, test.want, response.Body)
+			}
+			if !strings.Contains(response.Body.String(), test.wantBody) {
+				t.Fatalf("body = %s, want it to contain %s", response.Body, test.wantBody)
 			}
 		})
 	}
@@ -252,6 +321,64 @@ func TestCreateOutfitForeignKeyViolations(t *testing.T) {
 				t.Fatalf("status = %d, want %d: %v", got, test.want, err)
 			}
 		})
+	}
+}
+
+func TestOutfitDescriptionAndTagsRoundTrip(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	outfits := repository.NewOutfitRepository(db)
+	productID := insertTestProduct(t, db)
+	userID := insertTestUser(t, db)
+
+	tests := []struct {
+		name            string
+		description     string
+		tags            []string
+		wantDescription string
+		wantTags        []string
+	}{
+		{name: "both set", description: "Rainy day brunch", tags: []string{"rain", "casual"}, wantDescription: "Rainy day brunch", wantTags: []string{"rain", "casual"}},
+		{name: "neither set", wantDescription: "", wantTags: []string{}},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			params := models.CreateOutfitParams{Name: "fit", Description: test.description, Tags: test.tags, ProductIDs: []uuid.UUID{productID}}
+			created, _, err := outfits.Create(ctx, params, userID)
+			if err != nil {
+				t.Fatalf("create outfit: %v", err)
+			}
+			t.Cleanup(func() {
+				_, _ = db.Exec(`DELETE FROM outfit_products WHERE outfit_id = $1`, created.ID)
+				_, _ = db.Exec(`DELETE FROM outfits WHERE id = $1`, created.ID)
+			})
+
+			got, _, err := outfits.GetByID(ctx, created.ID, userID)
+			if err != nil {
+				t.Fatalf("get outfit: %v", err)
+			}
+			wantDescriptionAndTags(t, "create", created, test.wantDescription, test.wantTags)
+			wantDescriptionAndTags(t, "get", got, test.wantDescription, test.wantTags)
+
+			listed, err := outfits.List(ctx, userID, pagination.CursorParams{Limit: 50})
+			if err != nil {
+				t.Fatalf("list outfits: %v", err)
+			}
+			listedIndex := slices.IndexFunc(listed, func(outfit models.Outfit) bool { return outfit.ID == created.ID })
+			if listedIndex < 0 {
+				t.Fatalf("list outfits: %s missing", created.ID)
+			}
+			wantDescriptionAndTags(t, "list", listed[listedIndex], test.wantDescription, test.wantTags)
+		})
+	}
+}
+
+// wantDescriptionAndTags also fails on nil tags, since the API promises an array.
+func wantDescriptionAndTags(t *testing.T, source string, outfit models.Outfit, description string, tags []string) {
+	t.Helper()
+
+	if outfit.Description != description || outfit.Tags == nil || !slices.Equal(outfit.Tags, tags) {
+		t.Fatalf("%s: description = %q, tags = %#v, want %q, %#v", source, outfit.Description, outfit.Tags, description, tags)
 	}
 }
 
