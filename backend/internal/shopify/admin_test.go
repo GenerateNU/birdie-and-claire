@@ -42,10 +42,12 @@ func decodeGraphQLRequest(t *testing.T, r *http.Request) graphQLRequest {
 	return req
 }
 
-// buildProductJSON is a product node with no category, tags, or images.
+const oneVariantJSON = `{"pageInfo":{"hasNextPage":false},"nodes":[{"id":"gid://shopify/ProductVariant/9","availableForSale":true,"position":1}]}`
+
+// buildProductJSON is a product node with one variant and no category, tags, or images.
 func buildProductJSON(id int64) string {
 	return fmt.Sprintf(`{"id":"gid://shopify/Product/%d","handle":"product-%d","title":"Product %d","productType":"",`+
-		`"category":null,"tags":[],"media":{"pageInfo":{"hasNextPage":false},"nodes":[]}}`, id, id, id)
+		`"category":null,"tags":[],"media":{"pageInfo":{"hasNextPage":false},"nodes":[]},"variants":%s}`, id, id, id, oneVariantJSON)
 }
 
 func buildProductWithImageJSON(imageURL string) string {
@@ -155,6 +157,13 @@ func TestListActiveProductsMapsProductFields(t *testing.T) {
 				{"id": "gid://shopify/MediaImage/222", "image": null},
 				{"id": "gid://shopify/MediaImage/333", "image": {"url": "https://cdn.shopify.com/back.jpg", "altText": null, "width": 1200, "height": 1600}}
 			]
+		},
+		"variants": {
+			"pageInfo": {"hasNextPage": false},
+			"nodes": [
+				{"id": "gid://shopify/ProductVariant/501", "availableForSale": false, "position": 1},
+				{"id": "gid://shopify/ProductVariant/502", "availableForSale": true, "position": 2}
+			]
 		}
 	}`
 	client := newTestClient(t, respondWith(http.StatusOK, grantedTokenJSON), respondWith(http.StatusOK, buildPageJSON(false, "", node)))
@@ -180,6 +189,10 @@ func TestListActiveProductsMapsProductFields(t *testing.T) {
 			{ID: 111, URL: "https://cdn.shopify.com/front.jpg", AltText: "Front", Width: 1200, Height: 1600, Position: 1},
 			{ID: 333, URL: "https://cdn.shopify.com/back.jpg", Width: 1200, Height: 1600, Position: 3},
 		},
+		Variants: []ShopifyVariant{
+			{ID: 501, Available: false, Position: 1},
+			{ID: 502, Available: true, Position: 2},
+		},
 		HasProcessingImages: true,
 	}}
 	if !reflect.DeepEqual(products, want) {
@@ -191,7 +204,8 @@ func TestListActiveProductsLeavesOutMaterialsThatAreNotAList(t *testing.T) {
 	const node = `{
 		"id": "gid://shopify/Product/1",
 		"materials": {"value": "Linen"},
-		"media": {"pageInfo": {"hasNextPage": false}, "nodes": []}
+		"media": {"pageInfo": {"hasNextPage": false}, "nodes": []},
+		"variants": ` + oneVariantJSON + `
 	}`
 	client := newTestClient(t, respondWith(http.StatusOK, grantedTokenJSON), respondWith(http.StatusOK, buildPageJSON(false, "", node)))
 
@@ -206,7 +220,7 @@ func TestListActiveProductsLeavesOutMaterialsThatAreNotAList(t *testing.T) {
 
 func TestListActiveProductsLeavesOutFailedImages(t *testing.T) {
 	const node = `{"id":"gid://shopify/Product/1","media":{"pageInfo":{"hasNextPage":false},"nodes":[` +
-		`{"id":"gid://shopify/MediaImage/2","status":"FAILED","image":null}]}}`
+		`{"id":"gid://shopify/MediaImage/2","status":"FAILED","image":null}]},"variants":` + oneVariantJSON + `}`
 	client := newTestClient(t, respondWith(http.StatusOK, grantedTokenJSON), respondWith(http.StatusOK, buildPageJSON(false, "", node)))
 
 	products, err := client.ListActiveProducts(context.Background())
@@ -308,6 +322,24 @@ func TestListActiveProductsErrors(t *testing.T) {
 			token:   respondWith(http.StatusOK, grantedTokenJSON),
 			graphQL: respondWith(http.StatusOK, buildPageJSON(false, "", `{"id":"gid://shopify/Product/1","media":{"pageInfo":{"hasNextPage":true},"nodes":[]}}`)),
 			wantErr: "has more than 50 images",
+		},
+		{
+			name:    "more variants than one page holds",
+			token:   respondWith(http.StatusOK, grantedTokenJSON),
+			graphQL: respondWith(http.StatusOK, buildPageJSON(false, "", `{"id":"gid://shopify/Product/1","media":{"nodes":[]},"variants":{"pageInfo":{"hasNextPage":true},"nodes":[]}}`)),
+			wantErr: "has more than 100 variants",
+		},
+		{
+			name:    "no variants",
+			token:   respondWith(http.StatusOK, grantedTokenJSON),
+			graphQL: respondWith(http.StatusOK, buildPageJSON(false, "", `{"id":"gid://shopify/Product/1","media":{"nodes":[]},"variants":{"pageInfo":{"hasNextPage":false},"nodes":[]}}`)),
+			wantErr: "has no variants",
+		},
+		{
+			name:    "variant id of another resource",
+			token:   respondWith(http.StatusOK, grantedTokenJSON),
+			graphQL: respondWith(http.StatusOK, buildPageJSON(false, "", `{"id":"gid://shopify/Product/1","media":{"nodes":[]},"variants":{"nodes":[{"id":"gid://shopify/Product/2"}]}}`)),
+			wantErr: "is not a ProductVariant ID",
 		},
 	}
 
