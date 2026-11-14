@@ -26,7 +26,7 @@ type HeaderProps = {
 
 export function Header({ onLogoClick, items }: HeaderProps) {
   return (
-    <header className="flex flex-col items-start gap-md border-b px-md py-lg lg:flex-row lg:px-xxl lg:items-center lg:justify-between">
+    <header className="flex flex-col items-start gap-md border-b px-md py-lg lg:flex-row lg:px-xxxl lg:items-center lg:justify-between">
       <BaseButton type="button" onClick={onLogoClick} className="w-full max-w-xs focus-ring">
         <Logo className="w-full" />
       </BaseButton>

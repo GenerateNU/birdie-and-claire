@@ -67,6 +67,7 @@ type findSimilarCall struct {
 	slot        models.ProductSlot
 	excludeTags []string
 	niceTags    []string
+	typePicks   []string
 	limit       int
 }
 
@@ -80,10 +81,10 @@ type fakeProducts struct {
 	calls []findSimilarCall
 }
 
-func (p *fakeProducts) FindSimilar(_ context.Context, embedding []float32, slot models.ProductSlot, excludeTags, niceTags []string, _ []uuid.UUID, limit int) ([]models.ProductResponse, error) {
+func (p *fakeProducts) FindSimilar(_ context.Context, embedding []float32, slot models.ProductSlot, excludeTags, niceTags, typePicks []string, _ []uuid.UUID, limit int) ([]models.ProductResponse, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	p.calls = append(p.calls, findSimilarCall{embedding: embedding, slot: slot, excludeTags: excludeTags, niceTags: niceTags, limit: limit})
+	p.calls = append(p.calls, findSimilarCall{embedding: embedding, slot: slot, excludeTags: excludeTags, niceTags: niceTags, typePicks: typePicks, limit: limit})
 	if p.err != nil {
 		return nil, p.err
 	}
@@ -427,6 +428,29 @@ func TestRecommendSendsTheShoppersStylePreferences(t *testing.T) {
 	defer mu.Unlock()
 	if !bytes.Contains(sentBody, escaped[1:len(escaped)-1]) {
 		t.Errorf("gateway body = %s, want the shopper's picks under the saved preferences key: %s", sentBody, answers)
+	}
+}
+
+func TestRecommendPassesEachSlotItsTypePicks(t *testing.T) {
+	preferences := &models.StylePreferences{Neckline: []string{"modest"}, Bottoms: []string{"skirt"}, Shoes: []string{"flats", "boots"}}
+	products := &fakeProducts{}
+	repo := &repository.Repository{Product: products, User: &fakeUsers{user: models.User{StylePreferences: preferences}}}
+	ctx := auth.WithUserID(context.Background(), uuid.New())
+
+	if _, err := services.NewRecommendationService(repo, &llmtest.Fake{Text: expandedAllSlots}, &fakeEmbedder{}).RecommendProducts(ctx, summerWedding); err != nil {
+		t.Fatalf("Recommend: %v", err)
+	}
+
+	want := map[models.ProductSlot][]string{
+		models.SlotTop:       preferences.Neckline,
+		models.SlotBottom:    preferences.Bottoms,
+		models.SlotAccessory: nil,
+		models.SlotShoe:      preferences.Shoes,
+	}
+	for slot, call := range products.callsBySlot() {
+		if !slices.Equal(call.typePicks, want[slot]) {
+			t.Errorf("%s searched with type picks %q, want %q", slot, call.typePicks, want[slot])
+		}
 	}
 }
 

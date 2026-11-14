@@ -8,6 +8,9 @@ For every slot, write one search phrase of at most 100 characters that describes
 
 exclude_tags are things the shopper must never be shown, such as "white" for a wedding guest. Anything the shopper rules out, such as "no heels" or "nothing white", goes in exclude_tags. nice_tags fit the answers and earn a small ranking bonus; they never filter anything out.
 
+Products are labeled with the tag values below, so a tag from these lists matches the most products. Use a listed value, written exactly as it appears, whenever one says what you mean, such as date_night rather than "date night":
+{"colors":["black","white","grey","charcoal","navy","blue","green","olive","red","pink","purple","orange","yellow","brown","beige","cream","gold","silver","bronze","multi"],"formality":["casual","smart_casual","semi_formal","formal"],"occasions":["everyday","work","party","date_night","wedding_guest","brunch","beach","travel","workout","lounge","funeral"],"season":["spring","summer","fall","winter"],"pattern":["solid","printed","floral","striped","checked","graphic","embroidered"],"fabric":["cotton","linen","silk","wool","denim","leather","synthetic","knit","metal","chiffon"],"fit":["slim","regular","relaxed","oversized"]}
+
 Write every tag in lowercase, one or two words each, with at most 10 tags in each list. When you are not sure, return an empty array rather than guessing.
 Output should be in JSON format and conform to the following schema:
 

@@ -1,4 +1,4 @@
-import { Box, Divider, Empty, Text, TextButton } from "@/design-system";
+import { Box, Divider, EmptyState, Text, TextButton } from "@/design-system";
 import type { DraftItem } from "@/features/outfits/outfit-draft";
 
 type OutfitDetailsProps = {
@@ -13,14 +13,14 @@ type ItemTileProps = {
 export function OutfitDetails({ items, onSwapItem }: OutfitDetailsProps) {
   return (
     <section className="flex h-full flex-col border">
-      <header className="px-xxl py-xs">
+      <header className="px-xxxl py-xs">
         <Text variant="heading">Outfit Details</Text>
       </header>
       <Divider />
       {items.length === 0 ? (
-        <Empty title="This outfit has no items yet" className="px-xxl py-lg" />
+        <EmptyState title="This outfit has no items yet" className="px-xxxl" />
       ) : (
-        <ul className="flex min-h-0 flex-1 flex-col gap-md overflow-y-auto px-xxl py-lg">
+        <ul className="flex min-h-0 flex-1 flex-col gap-md overflow-y-auto px-xxxl py-lg">
           {items.map(({ product, original }) => (
             <li key={original.id} className="flex items-center gap-md border p-md">
               <Box className="flex shrink-0 flex-col items-center gap-xxs">

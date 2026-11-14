@@ -2,7 +2,7 @@ import { useForm, useStore } from "@tanstack/react-form";
 import { z } from "zod";
 
 import { zUpdateOutfitInputBody } from "@/api/generated/zod.gen";
-import { Dialog, Form, TextField } from "@/design-system";
+import { Form, Modal, TextField } from "@/design-system";
 
 // The body's name is optional because a PATCH can leave it out; the field here always sends one.
 const nameSchema = z.object({
@@ -55,7 +55,7 @@ export function SaveOutfitDialog({
   }
 
   return (
-    <Dialog
+    <Modal
       open={open}
       onClose={cancel}
       title="Save outfit"
@@ -86,6 +86,6 @@ export function SaveOutfitDialog({
           )}
         </form.Field>
       </Form>
-    </Dialog>
+    </Modal>
   );
 }

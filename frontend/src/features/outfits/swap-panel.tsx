@@ -5,10 +5,10 @@ import { useState } from "react";
 import { suggestOutfitItemsOptions } from "@/api/generated/@tanstack/react-query.gen";
 import {
   Box,
-  Empty,
+  EmptyState,
   ErrorState,
   IconButton,
-  ImageCard,
+  ImageOptionCard,
   SearchField,
   Spinner,
   Tabs,
@@ -104,7 +104,7 @@ function SpotSwapPanel({ outfitId, items, originId, onSwap, onBack }: SpotSwapPa
         <IconButton
           icon={CaretLeftIcon}
           label="Back to outfit details"
-          variant="plain"
+          variant="ghost"
           onClick={onBack}
         />
         <Text variant="subheading">EDIT {SLOT_NAMES[slot].heading}</Text>
@@ -142,7 +142,7 @@ function SpotSwapPanel({ outfitId, items, originId, onSwap, onBack }: SpotSwapPa
             onSwap={onSwap}
           />
         ) : (
-          <Empty title="Coming soon" />
+          <EmptyState title="Coming soon" />
         )}
       </Tabs>
     </section>
@@ -189,13 +189,13 @@ function SuggestedTiles({
   );
 
   if (!tiles.some((product) => product.id !== original.id)) {
-    return <Empty title="No suggestions yet" />;
+    return <EmptyState title="No suggestions yet" />;
   }
 
   return (
     <Box className="grid grid-cols-3 gap-md">
       {tiles.map((product) => (
-        <ImageCard
+        <ImageOptionCard
           key={product.id}
           label={product.title}
           src={product.image_url}
