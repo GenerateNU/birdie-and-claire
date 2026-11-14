@@ -43,6 +43,7 @@ import {
   TextColor,
   TextButton,
   TextField,
+  TextLink,
   Toggle,
   TypeScale,
   useToast,
@@ -71,9 +72,20 @@ const hifiTypeSamples = [
   { scale: "overline", className: "text-overline uppercase" },
 ] as const;
 
-const buttonVariants = ["primary", "secondary"] as const;
+const buttonVariants = ["primary", "secondary", "ghost", "destructive"] as const;
 
-const buttonSizes = ["sm", "md", "lg"] as const;
+const buttonSizes = ["sm", "md"] as const;
+
+// Literal class names so Tailwind generates them. The important modifier makes a resting button
+// show its hover or pressed look, which the pointer can't hold still for a screenshot.
+const forcedButtonStates = {
+  primary: { hover: "!bg-primary-hover", pressed: "!bg-primary-pressed" },
+  secondary: { hover: "!bg-hover", pressed: "!bg-pressed" },
+  ghost: { hover: "!bg-hover", pressed: "!bg-pressed" },
+  destructive: { hover: "!bg-error-hover", pressed: "!bg-error-pressed" },
+} as const;
+
+const iconButtonVariants = ["primary", "secondary", "ghost"] as const;
 
 // The serif variants are named for their role, so their type-scale keys differ.
 const textSamples = [
@@ -201,9 +213,9 @@ export function Playground() {
 
         <main className="flex min-w-0 flex-1 flex-col gap-xl">
           <Box>
-            <Link variant="text" to="/dev" leadingIcon={CaretLeftIcon}>
+            <TextLink to="/dev" leadingIcon={CaretLeftIcon}>
               Dev
-            </Link>
+            </TextLink>
             <Text variant="heading" className="mt-md">
               Design system playground
             </Text>
@@ -218,11 +230,13 @@ export function Playground() {
             </Text>
 
             <Section id="buttons">
-              <Box className="grid grid-cols-[repeat(6,max-content)] items-center gap-x-md gap-y-sm">
+              <Box className="grid grid-cols-[repeat(7,max-content)] items-center gap-x-md gap-y-sm">
                 <Box />
                 {buttonSizes.map((size) => (
                   <Label key={size}>{size}</Label>
                 ))}
+                <Label>hover</Label>
+                <Label>pressed</Label>
                 <Label>disabled</Label>
                 <Label>loading</Label>
 
@@ -235,12 +249,28 @@ export function Playground() {
                 <Button label="Next" trailingIcon={CaretRightIcon} />
               </Box>
               <Label>leadingIcon · trailingIcon</Label>
-              <Box className="flex items-center gap-md">
-                <IconButton icon={PlusIcon} label="Add" variant="outlined" />
-                <IconButton icon={ShareNetworkIcon} label="Share" variant="plain" />
-                <IconButton icon={PlusIcon} label="Add" variant="outlined" disabled />
+              <Box className="grid grid-cols-[repeat(5,max-content)] items-center gap-x-md gap-y-sm">
+                <Box />
+                <Label>md</Label>
+                <Label>sm</Label>
+                <Label>hover</Label>
+                <Label>pressed</Label>
+                {iconButtonVariants.map((variant) => (
+                  <IconButtonRow key={variant} variant={variant} />
+                ))}
               </Box>
-              <Label>IconButton · outlined · plain · disabled</Label>
+              <Label>IconButton · disabled shown in the last row</Label>
+              <Box className="flex items-center gap-md">
+                {iconButtonVariants.map((variant) => (
+                  <IconButton
+                    key={variant}
+                    icon={ShareNetworkIcon}
+                    label="Share"
+                    variant={variant}
+                    disabled
+                  />
+                ))}
+              </Box>
               <TextButton label="swap item" onClick={() => {}} />
               <Label>TextButton</Label>
             </Section>
@@ -248,16 +278,18 @@ export function Playground() {
             <Section id="link">
               <Box className="flex items-center gap-md">
                 <Link to="/playground">Default (unstyled)</Link>
-                <Link variant="text" to="/playground">
-                  Text
-                </Link>
-                <Link variant="text" to="/playground" leadingIcon={CaretLeftIcon}>
+                <TextLink to="/playground">See all</TextLink>
+                <TextLink to="/playground" className="underline">
+                  Hover
+                </TextLink>
+                <TextLink to="/playground" leadingIcon={CaretLeftIcon}>
                   Leading icon
-                </Link>
-                <Link variant="text" to="/playground" trailingIcon={CaretRightIcon}>
+                </TextLink>
+                <TextLink to="/playground" trailingIcon={ArrowRightIcon}>
                   Trailing icon
-                </Link>
+                </TextLink>
               </Box>
+              <Label>TextLink · default · hover · leading icon · trailing icon</Label>
               <Box className="flex flex-wrap items-center gap-md">
                 {buttonVariants.map((variant) =>
                   buttonSizes.map((size) => (
@@ -270,7 +302,7 @@ export function Playground() {
                   Trailing icon
                 </Link>
               </Box>
-              <Label>primary sm · md · lg · secondary sm · md · lg · trailing icon</Label>
+              <Label>Link as a Button · every variant at sm and md · trailing icon</Label>
             </Section>
 
             <Section id="header">
@@ -489,8 +521,28 @@ function ButtonRow({ variant }: ButtonRowProps) {
       {buttonSizes.map((size) => (
         <Button key={size} label="Button" variant={variant} size={size} />
       ))}
+      <Button label="Button" variant={variant} className={forcedButtonStates[variant].hover} />
+      <Button label="Button" variant={variant} className={forcedButtonStates[variant].pressed} />
       <Button label="Button" variant={variant} disabled />
       <Button label="Button" variant={variant} loading />
+    </>
+  );
+}
+
+type IconButtonRowProps = {
+  variant: (typeof iconButtonVariants)[number];
+};
+
+function IconButtonRow({ variant }: IconButtonRowProps) {
+  const forced = forcedButtonStates[variant];
+
+  return (
+    <>
+      <Label>{variant}</Label>
+      <IconButton icon={PlusIcon} label="Add" variant={variant} />
+      <IconButton icon={PlusIcon} label="Add" variant={variant} size="sm" />
+      <IconButton icon={PlusIcon} label="Add" variant={variant} className={forced.hover} />
+      <IconButton icon={PlusIcon} label="Add" variant={variant} className={forced.pressed} />
     </>
   );
 }

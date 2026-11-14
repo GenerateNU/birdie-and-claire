@@ -12,7 +12,7 @@ import {
   createUserProfilePictureUploadUrl,
 } from "@/api/generated/sdk.gen";
 import { zCreateUserProfilePictureUploadUrlQuery } from "@/api/generated/zod.gen";
-import { Avatar, Box, Button, Link, Page, Text } from "@/design-system";
+import { Avatar, Box, Button, Page, Text, TextLink } from "@/design-system";
 
 export const Route = createFileRoute("/_signedIn/_onboarded/(dev)/profile-picture-test")({
   component: ProfilePictureTest,
@@ -81,9 +81,9 @@ function ProfilePictureTest() {
 
   return (
     <Page>
-      <Link variant="text" to="/dev" leadingIcon={CaretLeft}>
+      <TextLink to="/dev" leadingIcon={CaretLeft}>
         Dev
-      </Link>
+      </TextLink>
       <Text variant="heading" className="mt-md mb-xs">
         Profile picture test
       </Text>

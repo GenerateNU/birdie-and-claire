@@ -92,7 +92,7 @@ export function ShareOutfit({ outfitId }: ShareOutfitProps) {
               <IconButton
                 icon={Icon}
                 label={`Share to ${name}, coming soon`}
-                variant="plain"
+                variant="ghost"
                 disabled
                 title="Coming soon"
               />

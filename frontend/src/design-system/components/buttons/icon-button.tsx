@@ -1,22 +1,30 @@
 import { Button as BaseButton } from "@base-ui/react/button";
 import type { Icon } from "@phosphor-icons/react";
 import type { MouseEventHandler, Ref } from "react";
+import {
+  buttonVariantClasses,
+  type ButtonSize,
+  type ButtonVariant,
+} from "@/design-system/components/buttons/variant";
 import { joinClasses } from "@/design-system/utils/join-classes";
 
-const iconButtonBaseClasses =
-  "inline-flex items-center justify-center focus-ring data-[disabled]:opacity-disabled";
+const iconButtonBaseClasses = "inline-flex items-center justify-center rounded-none focus-ring";
 
-const iconButtonVariantClasses = {
-  outlined: "size-avatar-md rounded-full border bg-background text-subheading",
-  plain: "text-heading text-secondary",
+// Square like Figma's Icon Button: 40px and 32px, which are the xxl and xl spacing steps.
+const iconButtonSizeClasses = {
+  md: "size-xxl",
+  sm: "size-xl",
 } as const;
+
+const iconSize = { md: 20, sm: 16 } as const;
 
 type IconButtonProps = {
   ref?: Ref<HTMLButtonElement>;
   icon: Icon;
   /** The button's accessible name, since it shows no text. */
   label: string;
-  variant: keyof typeof iconButtonVariantClasses;
+  variant?: Exclude<ButtonVariant, "destructive">;
+  size?: ButtonSize;
   onClick?: MouseEventHandler<HTMLButtonElement>;
   disabled?: boolean;
   title?: string;
@@ -27,13 +35,14 @@ export function IconButton({
   ref,
   icon: ButtonIcon,
   label,
-  variant,
+  variant = "primary",
+  size = "md",
   onClick,
   disabled = false,
   title,
   className,
 }: IconButtonProps) {
-  const buttonClasses = `${iconButtonBaseClasses} ${iconButtonVariantClasses[variant]}`;
+  const buttonClasses = `${iconButtonBaseClasses} ${buttonVariantClasses[variant]} ${iconButtonSizeClasses[size]}`;
 
   return (
     <BaseButton
@@ -45,7 +54,7 @@ export function IconButton({
       title={title}
       className={joinClasses(buttonClasses, className)}
     >
-      <ButtonIcon aria-hidden="true" />
+      <ButtonIcon size={iconSize[size]} aria-hidden="true" />
     </BaseButton>
   );
 }
