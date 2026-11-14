@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import type { RecommendationVibe } from "@/api/generated/types.gen";
+import { RecommendationSetting, type RecommendationVibe } from "@/api/generated/types.gen";
 import {
   AddTile,
   Box,
@@ -41,9 +41,9 @@ export function CreateOutfitFlow() {
   const [customOccasionOpen, setCustomOccasionOpen] = useState(false);
   const [customOccasionDraft, setCustomOccasionDraft] = useState("");
   const [weatherTile, setWeatherTile] = useState<WeatherTile | null>(null);
+  const [setting, setSetting] = useState<RecommendationSetting>(RecommendationSetting.OUTDOORS);
   // A recommend request carries a single weather value, so the chips can't be sent alongside the
-  // temperature. Setting and chips only drive the screen and are never sent.
-  const [setting, setSetting] = useState<"outdoors" | "indoors">("outdoors");
+  // temperature. They only drive the screen and are never sent.
   const [conditions, setConditions] = useState<string[]>([]);
   const [vibe, setVibe] = useState<RecommendationVibe | null>(null);
   // Held only to drive the screen: picking B&C items to style is out of scope, so it is never sent.
@@ -52,6 +52,8 @@ export function CreateOutfitFlow() {
 
   const chosenOccasion = cardOccasion ?? customOccasion.trim();
   const weather = weatherTile === null ? null : tileToApiWeather[weatherTile];
+  // Outdoors is preselected, so the setting counts as answered only once a weather tile is picked.
+  const answeredSetting = weatherTile === null ? null : setting;
   const weatherLabel = weatherTiles.find((tile) => tile.value === weatherTile)?.label ?? "None";
   const canContinue = chosenOccasion !== "";
 
@@ -131,8 +133,8 @@ export function CreateOutfitFlow() {
           <SegmentedControl
             label="Setting"
             options={[
-              { label: "Outdoors", value: "outdoors" },
-              { label: "Indoors", value: "indoors" },
+              { label: "Outdoors", value: RecommendationSetting.OUTDOORS },
+              { label: "Indoors", value: RecommendationSetting.INDOORS },
             ]}
             value={setting}
             onValueChange={setSetting}
@@ -239,6 +241,7 @@ export function CreateOutfitFlow() {
         occasion={chosenOccasion}
         weather={weather}
         weatherLabel={weatherLabel}
+        setting={answeredSetting}
         vibe={vibe}
         custom={custom.trim()}
         onEdit={editFromReview}

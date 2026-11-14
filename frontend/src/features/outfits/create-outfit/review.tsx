@@ -3,7 +3,11 @@ import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 
 import { warmEmbedderMutation } from "@/api/generated/@tanstack/react-query.gen";
-import type { RecommendationVibe, RecommendationWeather } from "@/api/generated/types.gen";
+import type {
+  RecommendationSetting,
+  RecommendationVibe,
+  RecommendationWeather,
+} from "@/api/generated/types.gen";
 import { Box, Button, ListCard, Page, Text, useToast } from "@/design-system";
 import type { Step } from "@/features/outfits/create-outfit/create-outfit-options";
 import { requestOutfit } from "@/features/outfits/create-outfit/request-outfit";
@@ -13,13 +17,23 @@ type ReviewProps = {
   // Null when the shopper skipped the questions.
   weather: RecommendationWeather | null;
   weatherLabel: string;
+  // Null when the shopper didn't answer the weather question.
+  setting: RecommendationSetting | null;
   vibe: RecommendationVibe | null;
   // Empty when the shopper skipped Custom.
   custom: string;
   onEdit: (step: Step) => void;
 };
 
-export function Review({ occasion, weather, weatherLabel, vibe, custom, onEdit }: ReviewProps) {
+export function Review({
+  occasion,
+  weather,
+  weatherLabel,
+  setting,
+  vibe,
+  custom,
+  onEdit,
+}: ReviewProps) {
   const toast = useToast();
   const navigate = useNavigate();
   const abortController = useRef(new AbortController());
@@ -27,7 +41,7 @@ export function Review({ occasion, weather, weatherLabel, vibe, custom, onEdit }
 
   const createMutation = useMutation({
     mutationFn: () =>
-      requestOutfit(occasion, weather, vibe, custom, abortController.current.signal),
+      requestOutfit(occasion, weather, setting, vibe, custom, abortController.current.signal),
     onSuccess: async (outfitId) => {
       if (outfitId === null) {
         toast.show({

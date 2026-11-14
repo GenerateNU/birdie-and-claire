@@ -1,6 +1,7 @@
 import { createOutfit, recommendProducts } from "@/api/generated/sdk.gen";
 import type {
   RecommendationDetail,
+  RecommendationSetting,
   RecommendationVibe,
   RecommendationWeather,
 } from "@/api/generated/types.gen";
@@ -10,6 +11,7 @@ import type {
 export async function requestOutfit(
   occasion: string,
   weather: RecommendationWeather | null,
+  setting: RecommendationSetting | null,
   vibe: RecommendationVibe | null,
   custom: string,
   signal: AbortSignal,
@@ -18,6 +20,10 @@ export async function requestOutfit(
 
   if (weather !== null) {
     details.push({ key: "weather", value: weather });
+  }
+
+  if (setting !== null) {
+    details.push({ key: "setting", value: setting });
   }
 
   if (vibe !== null) {
