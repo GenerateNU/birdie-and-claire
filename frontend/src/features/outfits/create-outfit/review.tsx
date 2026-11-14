@@ -44,7 +44,7 @@ export function Review({
   const abortController = useRef(new AbortController());
   const { mutate: warmEmbedder } = useMutation(warmEmbedderMutation());
 
-  const createMutation = useMutation({
+  const recommendMutation = useMutation({
     mutationFn: () =>
       recommendOutfits(
         occasion,
@@ -74,13 +74,13 @@ export function Review({
       }
 
       toast.show({
-        message: "Couldn't create the outfit. Try again in a moment.",
+        message: "Couldn't get outfit recommendations. Try again in a moment.",
         variant: "error",
       });
     },
   });
 
-  const creating = createMutation.isPending;
+  const recommending = recommendMutation.isPending;
 
   useEffect(() => {
     // StrictMode mounts twice, and the first unmount aborts the controller, so make a fresh one.
@@ -101,16 +101,16 @@ export function Review({
           weatherSummary={weatherSummary}
           vibe={vibe}
           custom={custom}
-          disabled={creating}
+          disabled={recommending}
           onEdit={onEdit}
         />
       </Box>
       <Button
         className="mt-md"
         label="Create outfits"
-        loading={creating}
+        loading={recommending}
         loadingLabel="Styling your outfit…"
-        onClick={() => createMutation.mutate()}
+        onClick={() => recommendMutation.mutate()}
       />
     </Page>
   );

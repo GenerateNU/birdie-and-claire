@@ -46,7 +46,7 @@ export function SaveOutfitDialog({
         tags: value.tags,
       };
 
-      // Enter in a field submits the form even while the Save button is disabled.
+      // Enter in a field submits the form even while Confirm is disabled.
       if (!hasChanges(values)) {
         return;
       }

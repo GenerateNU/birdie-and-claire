@@ -105,7 +105,6 @@ export function ResultsScreen({
           weatherSummary={weatherSummary}
           vibe={vibe}
           custom={custom}
-          disabled={false}
           onEdit={onEdit}
         />
       </Modal>

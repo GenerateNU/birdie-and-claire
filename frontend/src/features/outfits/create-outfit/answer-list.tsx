@@ -17,7 +17,7 @@ type AnswerListProps = {
   weatherSummary: string;
   vibe: RecommendationVibe | null;
   custom: string;
-  disabled: boolean;
+  disabled?: boolean;
   onEdit: (step: Step) => void;
 };
 
@@ -26,7 +26,7 @@ export function AnswerList({
   weatherSummary,
   vibe,
   custom,
-  disabled,
+  disabled = false,
   onEdit,
 }: AnswerListProps) {
   const rows: { step: Step; icon: Icon; title: string; value: string; italic?: boolean }[] = [
