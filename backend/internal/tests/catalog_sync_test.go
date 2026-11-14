@@ -21,9 +21,8 @@ import (
 
 const (
 	// more than the dev database holds, so FindSimilar returns every match
-	everyProduct    = 1000
-	topsCategory    = "Apparel & Accessories > Clothing > Clothing Tops > Sweaters"
-	dressesCategory = "Apparel & Accessories > Clothing > Dresses"
+	everyProduct = 1000
+	topsCategory = "Apparel & Accessories > Clothing > Clothing Tops > Sweaters"
 )
 
 // a valid label with nothing on any list
@@ -476,11 +475,17 @@ func TestCatalogSyncMapsCategoryToSlot(t *testing.T) {
 	}{
 		{topsCategory, models.SlotTop},
 		{"Apparel & Accessories > Clothing > Swimwear > Cover Ups", models.SlotTop},
+		{"Apparel & Accessories > Clothing > Outerwear > Coats & Jackets > Blazers", models.SlotTop},
 		{"Apparel & Accessories > Clothing > Skirts", models.SlotBottom},
+		{"Apparel & Accessories > Clothing > Pants > Jeans", models.SlotBottom},
+		{"Apparel & Accessories > Clothing > Dresses", models.SlotOnePiece},
+		{"Apparel & Accessories > Clothing > One-Pieces", models.SlotOnePiece},
+		{"Apparel & Accessories > Shoes > Sneakers", models.SlotShoe},
 		{"Apparel & Accessories > Clothing Accessories > Hats > Beanies", models.SlotAccessory},
+		{"Apparel & Accessories > Jewelry > Necklaces", models.SlotAccessory},
 		{"Luggage & Bags > Tote Bags", models.SlotAccessory},
-		{dressesCategory, ""},
-		{"Apparel & Accessories > Clothing > One-Pieces", ""},
+		{"Apparel & Accessories > Shoe Accessories > Shoelaces", ""},
+		{"Apparel & Accessories > Clothing > Swimwear > Classic Bikinis", ""},
 		{"Gift Cards", ""},
 		{"", ""},
 	}

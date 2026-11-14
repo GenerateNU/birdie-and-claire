@@ -1,5 +1,6 @@
 -- +goose Up
-ALTER TYPE product_slot ADD VALUE 'one_piece';
+-- IF NOT EXISTS: dev DBs that ran this change as 20261114070352 already have the value.
+ALTER TYPE product_slot ADD VALUE IF NOT EXISTS 'one_piece';
 
 -- +goose Down
 -- Postgres can't drop an enum value, so the type is rebuilt without it. Fails while any product has

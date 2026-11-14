@@ -1,11 +1,4 @@
-import {
-  ArrowSquareOutIcon,
-  BookmarkSimpleIcon,
-  CaretLeftIcon,
-  CoatHangerIcon,
-  MagnifyingGlassIcon,
-  type Icon,
-} from "@phosphor-icons/react";
+import { CaretLeftIcon, DiamondsFourIcon, MagnifyingGlassIcon } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
@@ -49,15 +42,9 @@ type SwapTab = "suggested" | "owned" | "catalog";
 
 const TAB_ORDER: SwapTab[] = ["suggested", "owned", "catalog"];
 
-// The editor tabs in Figma's Tabs frame.
-const TAB_ICONS: Record<SwapTab, Icon> = {
-  suggested: BookmarkSimpleIcon,
-  owned: CoatHangerIcon,
-  catalog: ArrowSquareOutIcon,
-};
-
 const SLOT_NAMES: Record<Product["slot"], { heading: string; plural: string }> = {
   top: { heading: "TOP", plural: "Tops" },
+  one_piece: { heading: "ONE-PIECE", plural: "One-Pieces" },
   bottom: { heading: "BOTTOM", plural: "Bottoms" },
   shoe: { heading: "SHOE", plural: "Shoes" },
   accessory: { heading: "ACCESSORY", plural: "Accessories" },
@@ -104,6 +91,8 @@ function SpotSwapPanel({ outfitId, items, originId, onSwap, onBack }: SpotSwapPa
   const { original } = current;
 
   const { slot } = current.product;
+  // Swapping between a one-piece and a top and bottom isn't decided yet.
+  const swappable = slot !== "one_piece";
   const otherSpotProductIds = new Set<string>();
 
   for (const item of items) {
@@ -122,42 +111,51 @@ function SpotSwapPanel({ outfitId, items, originId, onSwap, onBack }: SpotSwapPa
           onClick={onBack}
         />
         <Text variant="subheading">EDIT {SLOT_NAMES[slot].heading}</Text>
-        <Text variant="body" className="ml-auto text-secondary">
-          Click on an item to swap
-        </Text>
-      </header>
-      <SearchField
-        label="Search items"
-        placeholder="Search items"
-        value=""
-        onValueChange={ignoreSearch}
-        onSubmit={ignoreSearch}
-        inactive
-        leadingIcon={MagnifyingGlassIcon}
-      />
-      <Tabs
-        tabs={TAB_ORDER.map((value) => ({
-          value,
-          label: tabLabel(value, slot),
-          icon: TAB_ICONS[value],
-        }))}
-        value={tab}
-        onValueChange={setTab}
-        disabled={false}
-      >
-        {tab === "suggested" ? (
-          <SuggestedTiles
-            outfitId={outfitId}
-            originId={originId}
-            original={original}
-            currentProductId={current.product.id}
-            otherSpotProductIds={otherSpotProductIds}
-            onSwap={onSwap}
-          />
-        ) : (
-          <EmptyState title="Coming soon" />
+        {swappable && (
+          <Text variant="body" className="ml-auto text-secondary">
+            Click on an item to swap
+          </Text>
         )}
-      </Tabs>
+      </header>
+      {swappable ? (
+        <>
+          <SearchField
+            label="Search items"
+            placeholder="Search items"
+            value=""
+            onValueChange={ignoreSearch}
+            onSubmit={ignoreSearch}
+            inactive
+            leadingIcon={MagnifyingGlassIcon}
+          />
+          <Tabs
+            tabs={TAB_ORDER.map((value) => ({
+              value,
+              label: tabLabel(value, slot),
+              icon: DiamondsFourIcon,
+            }))}
+            value={tab}
+            onValueChange={setTab}
+            disabled={false}
+            appearance="underline"
+          >
+            {tab === "suggested" ? (
+              <SuggestedTiles
+                outfitId={outfitId}
+                originId={originId}
+                original={original}
+                currentProductId={current.product.id}
+                otherSpotProductIds={otherSpotProductIds}
+                onSwap={onSwap}
+              />
+            ) : (
+              <EmptyState title="Coming soon" />
+            )}
+          </Tabs>
+        </>
+      ) : (
+        <EmptyState title="One-pieces can't be swapped yet" />
+      )}
     </section>
   );
 }

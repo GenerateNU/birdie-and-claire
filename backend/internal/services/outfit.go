@@ -20,9 +20,10 @@ type OutfitService interface {
 	Create(ctx context.Context, params models.CreateOutfitParams) (models.OutfitResponse, error)
 	Get(ctx context.Context, id uuid.UUID) (models.OutfitResponse, error)
 	Update(ctx context.Context, id uuid.UUID, params models.UpdateOutfitParams) (models.OutfitResponse, error)
-	List(ctx context.Context, params pagination.CursorParams) (pagination.Page[models.Outfit], error)
+	List(ctx context.Context, params pagination.CursorParams) (models.ListOutfitsResponse, error)
 	Share(ctx context.Context, id uuid.UUID) (models.ShareOutfitResponse, error)
 	Unshare(ctx context.Context, id uuid.UUID) error
+	Delete(ctx context.Context, id uuid.UUID) error
 	GetShared(ctx context.Context, id uuid.UUID) (models.SharedOutfitResponse, error)
 	// Suggest returns products like each requested product, leaving out the outfit's products and the requested ones.
 	// A product missing from the catalog fails the call with errs.ErrNotFound.
@@ -61,25 +62,28 @@ func (s *outfitService) Update(ctx context.Context, id uuid.UUID, params models.
 	return models.OutfitResponse{Outfit: outfit, Products: products}, nil
 }
 
-func (s *outfitService) List(ctx context.Context, params pagination.CursorParams) (pagination.Page[models.Outfit], error) {
-	rows, err := s.repo.Outfit.List(ctx, auth.UserID(ctx), params)
+func (s *outfitService) List(ctx context.Context, params pagination.CursorParams) (models.ListOutfitsResponse, error) {
+	rows, total, err := s.repo.Outfit.List(ctx, auth.UserID(ctx), params)
 	if err != nil {
-		return pagination.Page[models.Outfit]{}, err
+		return models.ListOutfitsResponse{}, err
 	}
 
 	outfits, hasMore := pagination.Split(rows, params.Limit)
-	page := pagination.Page[models.Outfit]{Items: outfits, HasMore: hasMore}
+	response := models.ListOutfitsResponse{
+		Page:  pagination.Page[models.Outfit]{Items: outfits, HasMore: hasMore},
+		Total: total,
+	}
 	if !hasMore {
-		return page, nil
+		return response, nil
 	}
 
 	last := outfits[len(outfits)-1]
 	nextCursor, err := pagination.CursorFields{"created_at": last.CreatedAt, "id": last.ID}.Encode()
 	if err != nil {
-		return pagination.Page[models.Outfit]{}, err
+		return models.ListOutfitsResponse{}, err
 	}
-	page.NextCursor = &nextCursor
-	return page, nil
+	response.NextCursor = &nextCursor
+	return response, nil
 }
 
 func (s *outfitService) Share(ctx context.Context, id uuid.UUID) (models.ShareOutfitResponse, error) {
@@ -95,17 +99,23 @@ func (s *outfitService) Unshare(ctx context.Context, id uuid.UUID) error {
 	return s.repo.Outfit.Unshare(ctx, id, auth.UserID(ctx))
 }
 
+func (s *outfitService) Delete(ctx context.Context, id uuid.UUID) error {
+	return s.repo.Outfit.Delete(ctx, id, auth.UserID(ctx))
+}
+
 func (s *outfitService) GetShared(ctx context.Context, id uuid.UUID) (models.SharedOutfitResponse, error) {
 	outfit, ownerName, products, err := s.repo.Outfit.GetShared(ctx, id)
 	if err != nil {
 		return models.SharedOutfitResponse{}, err
 	}
 	return models.SharedOutfitResponse{
-		ID:        outfit.ID,
-		Name:      outfit.Name,
-		OwnerID:   outfit.UserID,
-		OwnerName: ownerName,
-		Products:  products,
+		ID:          outfit.ID,
+		Name:        outfit.Name,
+		Description: outfit.Description,
+		Tags:        outfit.Tags,
+		OwnerID:     outfit.UserID,
+		OwnerName:   ownerName,
+		Products:    products,
 	}, nil
 }
 

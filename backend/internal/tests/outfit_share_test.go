@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"net/http"
+	"slices"
 	"testing"
 
 	"birdie-and-claire/internal/auth"
@@ -20,17 +21,20 @@ func insertTestOutfit(t *testing.T, db *sql.DB) (outfitID uuid.UUID, ownerID uui
 	t.Helper()
 
 	ownerID = insertTestUser(t, db)
+	return insertTestOutfitFor(t, db, ownerID), ownerID
+}
+
+// insertTestOutfitFor saves a private one-product outfit owned by ownerID and returns its ID.
+func insertTestOutfitFor(t *testing.T, db *sql.DB, ownerID uuid.UUID) uuid.UUID {
+	t.Helper()
+
 	params := models.CreateOutfitParams{Name: "fit", ProductIDs: []uuid.UUID{insertTestProduct(t, db)}}
 	outfit, _, err := repository.NewOutfitRepository(db).Create(context.Background(), params, ownerID)
 	if err != nil {
 		t.Fatalf("create outfit: %v", err)
 	}
-	// outfit_products.outfit_id has no ON DELETE CASCADE, so its rows go first.
-	t.Cleanup(func() {
-		_, _ = db.Exec(`DELETE FROM outfit_products WHERE outfit_id = $1`, outfit.ID)
-		_, _ = db.Exec(`DELETE FROM outfits WHERE id = $1`, outfit.ID)
-	})
-	return outfit.ID, ownerID
+	t.Cleanup(func() { _, _ = db.Exec(`DELETE FROM outfits WHERE id = $1`, outfit.ID) })
+	return outfit.ID
 }
 
 func wantNotFound(t *testing.T, err error) {
@@ -104,6 +108,28 @@ func TestSharedOutfitIsReadableOnlyWhileShared(t *testing.T) {
 
 	_, _, _, err = repo.GetShared(ctx, uuid.New())
 	wantNotFound(t, err)
+}
+
+func TestSharedOutfitShowsDescriptionAndTags(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	repo := repository.NewOutfitRepository(db)
+	outfitID, ownerID := insertTestOutfit(t, db)
+	description := "Rainy day brunch"
+	if _, _, err := repo.Update(ctx, outfitID, models.UpdateOutfitParams{Description: &description, Tags: []string{"rain", "casual"}}, ownerID); err != nil {
+		t.Fatalf("update: %v", err)
+	}
+	if err := repo.Share(ctx, outfitID, ownerID); err != nil {
+		t.Fatalf("share: %v", err)
+	}
+
+	shared, err := services.NewOutfitService(repository.New(db)).GetShared(ctx, outfitID)
+	if err != nil {
+		t.Fatalf("get shared outfit: %v", err)
+	}
+	if shared.Description != description || !slices.Equal(shared.Tags, []string{"rain", "casual"}) {
+		t.Fatalf("description = %q, tags = %v, want %q, [rain casual]", shared.Description, shared.Tags, description)
+	}
 }
 
 func TestShareLinksToFrontendPageAndCreditsOwner(t *testing.T) {
