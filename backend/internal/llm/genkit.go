@@ -140,11 +140,11 @@ func (c *genkitClient) options(ctx context.Context, req Request, usage *callUsag
 		ai.WithMaxTurns(maxToolTurns),
 	}
 	if req.promptName != "" {
-		messages, err := c.renderPrompt(ctx, req)
+		promptOpts, err := c.promptOptions(ctx, req)
 		if err != nil {
 			return nil, err
 		}
-		opts = append(opts, ai.WithMessages(messages...))
+		opts = append(opts, promptOpts...)
 	} else {
 		// %s so stray verbs in shopper text are never interpreted
 		opts = append(opts, ai.WithPrompt("%s", req.Prompt))
@@ -155,9 +155,6 @@ func (c *genkitClient) options(ctx context.Context, req Request, usage *callUsag
 	if req.outputType != nil {
 		opts = append(opts, ai.WithOutputType(req.outputType))
 	}
-	if config := chatConfig(req); config != nil {
-		opts = append(opts, ai.WithConfig(config))
-	}
 	for _, tool := range req.Tools {
 		if tool.call == nil {
 			return nil, fmt.Errorf("llm: tool %q was not built with NewTool", tool.name)
@@ -167,20 +164,9 @@ func (c *genkitClient) options(ctx context.Context, req Request, usage *callUsag
 	return opts, nil
 }
 
-// chatConfig is nil when the request sets nothing, so the gateway keeps its defaults.
-func chatConfig(req Request) *openrouter.ChatConfig {
-	if req.maxOutputTokens == 0 && !req.noReasoning {
-		return nil
-	}
-	config := &openrouter.ChatConfig{MaxOutputTokens: req.maxOutputTokens}
-	if req.noReasoning {
-		config.Reasoning = &openrouter.ReasoningConfig{Effort: openrouter.ReasoningEffortNone}
-	}
-	return config
-}
-
-// Execute takes no output type, so the prompt is only rendered and its messages go through Generate.
-func (c *genkitClient) renderPrompt(ctx context.Context, req Request) ([]*ai.Message, error) {
+// Execute takes no output type, so the prompt is only rendered, and its messages and frontmatter config go through
+// Generate.
+func (c *genkitClient) promptOptions(ctx context.Context, req Request) ([]ai.GenerateOption, error) {
 	if req.System != "" || req.Prompt != "" {
 		return nil, fmt.Errorf("llm: prompt %q cannot be combined with System or Prompt", req.promptName)
 	}
@@ -193,7 +179,11 @@ func (c *genkitClient) renderPrompt(ctx context.Context, req Request) ([]*ai.Mes
 		// the cause can quote the input, which is shopper text
 		return nil, fmt.Errorf("llm: render prompt %q failed", req.promptName)
 	}
-	return rendered.Messages, nil
+	opts := []ai.GenerateOption{ai.WithMessages(rendered.Messages...)}
+	if rendered.Config != nil {
+		opts = append(opts, ai.WithConfig(rendered.Config))
+	}
+	return opts, nil
 }
 
 // unregistered, so concurrent calls can use the same tool name without colliding

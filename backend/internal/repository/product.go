@@ -18,14 +18,15 @@ import (
 
 type ProductRepository interface {
 	Exists(ctx context.Context, productID uuid.UUID) (bool, error)
-	// FindSimilar ranks a slot's products by distance to embedding, less a bonus per matching niceTag; pass the tags lowercase.
-	// excludeProductIDs may be nil.
-	FindSimilar(ctx context.Context, embedding []float32, slot models.ProductSlot, excludeTags, niceTags []string, excludeProductIDs []uuid.UUID, limit int) ([]models.ProductResponse, error)
+	// FindSimilar ranks a slot's products by distance to embedding, less a bonus per matching niceTag and a bonus when the
+	// product's labeled type is one of typePicks. Tags match both the store's tags and the labeled tag lists; pass them
+	// lowercase. typePicks and excludeProductIDs may be nil.
+	FindSimilar(ctx context.Context, embedding []float32, slot models.ProductSlot, excludeTags, niceTags, typePicks []string, excludeProductIDs []uuid.UUID, limit int) ([]models.ProductResponse, error)
 	// GetEmbedding returns a nil embedding for a product that has none yet, and ErrNotFound for a missing product.
 	GetEmbedding(ctx context.Context, productID uuid.UUID) ([]float32, models.ProductSlot, error)
-	// UpsertShopifyProduct inserts or updates the product as a Birdie & Claire product and marks it active. It returns the product's id and the
-	// hash its stored embedding was built from, which is nil when the sync has not embedded it yet.
-	UpsertShopifyProduct(ctx context.Context, product shopify.ShopifyProduct, slot models.ProductSlot) (uuid.UUID, *string, error)
+	// UpsertShopifyProduct inserts or updates the product as a Birdie & Claire product and marks it active.
+	UpsertShopifyProduct(ctx context.Context, product shopify.ShopifyProduct, slot models.ProductSlot) (SyncedProduct, error)
+	SaveAttributes(ctx context.Context, productID uuid.UUID, attributes models.ProductAttributes, attributesHash string) error
 	SaveEmbedding(ctx context.Context, productID uuid.UUID, embedding []float32, embeddingHash string) error
 	ClearEmbedding(ctx context.Context, productID uuid.UUID) error
 	// DeactivateShopifyProductsExcept marks inactive every active Birdie & Claire product whose shopify_id is not in
@@ -34,8 +35,21 @@ type ProductRepository interface {
 	ListUnownedProducts(ctx context.Context, userID uuid.UUID, params pagination.CursorParams) (pagination.Page[models.ProductResponse], error)
 }
 
-// untuned: a guess at how much one matching nice tag is worth in cosine distance
-const bonusPerTag = 0.02
+const (
+	// untuned: a guess at how much one matching nice tag is worth in cosine distance
+	bonusPerTag = 0.02
+	// untuned: docs/Style_Preferences_Design.md's starting point for a product whose type the shopper picked
+	typePickBonus = 0.05
+)
+
+// SyncedProduct is what the catalog sync needs to know about a product it just upserted. Each hash is of what the stored
+// value was built from, and nil when the sync has not built it yet.
+type SyncedProduct struct {
+	ID             uuid.UUID
+	Attributes     *models.ProductAttributes
+	AttributesHash *string
+	EmbeddingHash  *string
+}
 
 type productRepository struct {
 	db *sql.DB
@@ -76,20 +90,32 @@ func (r *productRepository) GetEmbedding(ctx context.Context, productID uuid.UUI
 	return embedding.Slice(), slot, nil
 }
 
-func (r *productRepository) FindSimilar(ctx context.Context, embedding []float32, slot models.ProductSlot, excludeTags, niceTags []string, excludeProductIDs []uuid.UUID, limit int) ([]models.ProductResponse, error) {
+func (r *productRepository) FindSimilar(ctx context.Context, embedding []float32, slot models.ProductSlot, excludeTags, niceTags, typePicks []string, excludeProductIDs []uuid.UUID, limit int) ([]models.ProductResponse, error) {
 	rows, err := r.db.QueryContext(ctx, `
 		-- Ranked and limited before the image join, so only the returned products look up an image.
 		WITH ranked AS (
 			SELECT p.id, p.shopify_id, p.handle, p.title, p.product_type, p.slot, p.source, p.tags, p.created_at, p.updated_at,
 				-- <=> is pgvector's cosine distance, so smaller means more similar.
 				(p.embedding <=> $1)
-					- $4::float8 * (SELECT count(*) FROM unnest(p.tags) tag WHERE lower(tag) = ANY($5::text[])) AS score
+					- $4::float8 * (SELECT count(*) FROM unnest(all_tags.tags) tag WHERE tag = ANY($5::text[]))
+					-- only the slot's own type is ever set, so the first non-null one is the product's type
+					- $8::float8 * COALESCE(COALESCE(p.attributes->>'neckline_type', p.attributes->>'bottom_type', p.attributes->>'shoe_type')
+						= ANY($9::text[]), false)::int AS score
 			FROM products p
+			CROSS JOIN LATERAL (
+				-- stored tags keep the catalog's casing, so they are lowered; labeled tags are already lowercase
+				SELECT array_agg(DISTINCT tag) AS tags
+				FROM (
+					SELECT lower(store_tag) FROM unnest(p.tags) store_tag
+					UNION ALL
+					SELECT jsonb_array_elements_text(tag_list) FROM jsonb_each(p.attributes->'tags') labels(name, tag_list)
+				) every_tag(tag)
+			) all_tags
 			WHERE p.embedding IS NOT NULL
 				AND p.active
 				AND p.slot = $2
-				-- stored tags keep the catalog's casing, so only that side is lowered; a NULL list matches no tag
-				AND NOT EXISTS (SELECT 1 FROM unnest(p.tags) tag WHERE lower(tag) = ANY($3::text[]))
+				-- a NULL list matches no tag
+				AND NOT EXISTS (SELECT 1 FROM unnest(all_tags.tags) tag WHERE tag = ANY($3::text[]))
 				-- <> ALL over a NULL array is NULL and would drop every row, so a nil list becomes an empty one
 				AND p.id <> ALL(COALESCE($7::uuid[], '{}'))
 			ORDER BY score, p.id
@@ -106,7 +132,7 @@ func (r *productRepository) FindSimilar(ctx context.Context, embedding []float32
 			LIMIT 1
 		) first_image ON true
 		ORDER BY r.score, r.id
-	`, pgvector.NewVector(embedding), slot, excludeTags, bonusPerTag, niceTags, limit, excludeProductIDs)
+	`, pgvector.NewVector(embedding), slot, excludeTags, bonusPerTag, niceTags, limit, excludeProductIDs, typePickBonus, typePicks)
 	if err != nil {
 		return nil, fmt.Errorf("find similar products in slot %s: %w", slot, err)
 	}
@@ -138,9 +164,8 @@ func (r *productRepository) FindSimilar(ctx context.Context, embedding []float32
 	return products, nil
 }
 
-func (r *productRepository) UpsertShopifyProduct(ctx context.Context, product shopify.ShopifyProduct, slot models.ProductSlot) (uuid.UUID, *string, error) {
-	var id uuid.UUID
-	var embeddingHash *string
+func (r *productRepository) UpsertShopifyProduct(ctx context.Context, product shopify.ShopifyProduct, slot models.ProductSlot) (SyncedProduct, error) {
+	var synced SyncedProduct
 	err := r.db.QueryRowContext(ctx, `
 		WITH upserted AS (
 			INSERT INTO products (shopify_id, handle, title, product_type, tags, slot, source)
@@ -156,17 +181,30 @@ func (r *productRepository) UpsertShopifyProduct(ctx context.Context, product sh
 			-- an unchanged product keeps its updated_at, so a rerun changes nothing
 			WHERE (products.handle, products.title, products.product_type, products.tags, products.slot, products.active)
 				IS DISTINCT FROM (EXCLUDED.handle, EXCLUDED.title, EXCLUDED.product_type, EXCLUDED.tags, EXCLUDED.slot, true)
-			RETURNING id, embedding_hash
+			RETURNING id, attributes, attributes_hash, embedding_hash
 		)
-		SELECT id, embedding_hash FROM upserted
+		SELECT id, attributes, attributes_hash, embedding_hash FROM upserted
 		UNION ALL
 		-- the skipped update returns no row, and this select still sees the row as it was before the statement
-		SELECT id, embedding_hash FROM products WHERE shopify_id = $1 AND NOT EXISTS (SELECT 1 FROM upserted)
-	`, product.ID, product.Handle, product.Title, product.ProductType, product.Tags, slot).Scan(&id, &embeddingHash)
+		SELECT id, attributes, attributes_hash, embedding_hash FROM products WHERE shopify_id = $1 AND NOT EXISTS (SELECT 1 FROM upserted)
+	`, product.ID, product.Handle, product.Title, product.ProductType, product.Tags, slot).Scan(
+		&synced.ID, &synced.Attributes, &synced.AttributesHash, &synced.EmbeddingHash)
 	if err != nil {
-		return uuid.Nil, nil, fmt.Errorf("upsert shopify product %d: %w", product.ID, err)
+		return SyncedProduct{}, fmt.Errorf("upsert shopify product %d: %w", product.ID, err)
 	}
-	return id, embeddingHash, nil
+	return synced, nil
+}
+
+func (r *productRepository) SaveAttributes(ctx context.Context, productID uuid.UUID, attributes models.ProductAttributes, attributesHash string) error {
+	_, err := r.db.ExecContext(ctx, `
+		UPDATE products
+		SET attributes = $2, attributes_hash = $3
+		WHERE id = $1
+	`, productID, attributes, attributesHash)
+	if err != nil {
+		return fmt.Errorf("save attributes of product %s: %w", productID, err)
+	}
+	return nil
 }
 
 func (r *productRepository) SaveEmbedding(ctx context.Context, productID uuid.UUID, embedding []float32, embeddingHash string) error {

@@ -1,8 +1,22 @@
 ---
+config:
+  # the answer is four short phrases and two short tag lists; this bounds what a padded answer can bill
+  maxOutputTokens: 512
+  # a reasoning model spends maxOutputTokens on reasoning first, so a small cap alone can leave no room for the answer
+  reasoning:
+    effort: none
 input:
   schema:
     answers: string
     has_style_preferences: boolean
+    tag_vocabulary(object):
+      colors(array): string
+      formality(array): string
+      occasions(array): string
+      season(array): string
+      pattern(array): string
+      fabric(array): string
+      fit(array): string
 ---
 {{role "system"}}
 You turn a shopper's answers into product searches for an outfit with four slots: top, bottom, accessory, and shoe.
@@ -12,6 +26,9 @@ The answers arrive as one JSON object between the lines BEGIN SHOPPER INPUT and 
 For every slot, write one search phrase of at most 100 characters that describes a single product, such as "light pastel blouse, breathable fabric". Every slot must have a phrase; never leave one empty.
 
 exclude_tags are things the shopper must never be shown, such as "white" for a wedding guest. Anything the shopper rules out, such as "no heels" or "nothing white", goes in exclude_tags. nice_tags fit the answers and earn a small ranking bonus; they never filter anything out.
+
+Products are labeled with the tag values below, so a tag from these lists matches the most products. Use a listed value, written exactly as it appears, whenever one says what you mean, such as date_night rather than "date night":
+{{json tag_vocabulary}}
 
 Write every tag in lowercase, one or two words each, with at most 10 tags in each list. When you are not sure, return an empty array rather than guessing.
 {{role "user"}}
