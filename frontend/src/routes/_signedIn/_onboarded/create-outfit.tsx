@@ -1,4 +1,13 @@
-import { ArrowLeftIcon, ArrowRightIcon } from "@phosphor-icons/react";
+import {
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  CloudIcon,
+  SnowflakeIcon,
+  SunIcon,
+  ThermometerColdIcon,
+  ThermometerIcon,
+  type Icon,
+} from "@phosphor-icons/react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -22,6 +31,7 @@ import {
   AddTile,
   Box,
   Button,
+  Chip,
   ChoiceGroup,
   EmptyState,
   ErrorState,
@@ -31,6 +41,8 @@ import {
   Modal,
   OptionTileGroup,
   Page,
+  ProgressStepper,
+  SegmentedControl,
   Spinner,
   Text,
   TextArea,
@@ -51,9 +63,14 @@ type Step =
   | "custom"
   | "review";
 
-const barSteps = ["weather", "vibe", "specifics", "custom"] as const;
+const barSteps = [
+  { step: "weather", label: "Weather" },
+  { step: "vibe", label: "Vibe" },
+  { step: "specifics", label: "Specific items" },
+  { step: "custom", label: "Additional info" },
+] as const;
 
-type BarStep = (typeof barSteps)[number];
+type BarStep = (typeof barSteps)[number]["step"];
 
 const occasions = [
   { name: "Work Day", src: workDayPhoto },
@@ -62,7 +79,26 @@ const occasions = [
   { name: "Night Out", src: nightOutPhoto },
 ];
 
-const weathers = Object.values(RecommendationWeather);
+type WeatherTile = "hot" | "warm" | "cool" | "cold" | "freezing";
+
+const weatherTiles: { value: WeatherTile; label: string; subtitle: string; icon: Icon }[] = [
+  { value: "hot", label: "Hot", subtitle: "80° and up", icon: SunIcon },
+  { value: "warm", label: "Warm", subtitle: "65° - 80°", icon: ThermometerIcon },
+  { value: "cool", label: "Cool", subtitle: "50° - 65°", icon: CloudIcon },
+  { value: "cold", label: "Cold", subtitle: "35° - 50°", icon: ThermometerColdIcon },
+  { value: "freezing", label: "Freezing", subtitle: "Below 35°", icon: SnowflakeIcon },
+];
+
+// The API has no cool or freezing, so those send its nearest values.
+const tileWeathers: Record<WeatherTile, RecommendationWeather> = {
+  hot: RecommendationWeather.HOT,
+  warm: RecommendationWeather.WARM,
+  cool: RecommendationWeather.CHILLY,
+  cold: RecommendationWeather.COLD,
+  freezing: RecommendationWeather.COLD,
+};
+
+const weatherConditions = ["Humid", "Rainy", "Snowy", "Stormy", "Windy"];
 
 const vibes = Object.values(RecommendationVibe);
 
@@ -81,13 +117,17 @@ function CreateOutfit() {
   const [customOccasion, setCustomOccasion] = useState("");
   const [customOccasionOpen, setCustomOccasionOpen] = useState(false);
   const [customOccasionDraft, setCustomOccasionDraft] = useState("");
-  const [weather, setWeather] = useState<RecommendationWeather | null>(null);
+  const [weatherTile, setWeatherTile] = useState<WeatherTile | null>(null);
+  // The API has no field for these yet, so they only drive the screen and are never sent.
+  const [setting, setSetting] = useState<"outdoors" | "indoors">("outdoors");
+  const [conditions, setConditions] = useState<string[]>([]);
   const [vibe, setVibe] = useState<RecommendationVibe | null>(null);
   // Held only to drive the screen: picking B&C items to style is out of scope, so it is never sent.
   const [specificsAnswer, setSpecificsAnswer] = useState<SpecificsAnswer | null>(null);
   const [custom, setCustom] = useState("");
 
   const chosenOccasion = cardOccasion ?? customOccasion.trim();
+  const weather = weatherTile === null ? null : tileWeathers[weatherTile];
   const canContinue = chosenOccasion !== "";
 
   function selectCard(occasion: string, pressed: boolean) {
@@ -152,17 +192,43 @@ function CreateOutfit() {
     return (
       <StepScreen
         step="weather"
-        canContinue={weather !== null}
+        title="What’s the weather looking like?"
+        canContinue={weatherTile !== null}
         onBack={() => setStep("questions-intro")}
         onNext={() => advanceTo("vibe")}
       >
-        <Box className="capitalize">
-          <OptionTileGroup
-            label="Weather"
-            options={weathers.map((option) => ({ label: option, value: option }))}
-            value={weather}
-            onValueChange={setWeather}
+        <Box className="flex flex-col items-center gap-lg">
+          <SegmentedControl
+            label="Setting"
+            options={[
+              { label: "Outdoors", value: "outdoors" },
+              { label: "Indoors", value: "indoors" },
+            ]}
+            value={setting}
+            onValueChange={setSetting}
           />
+          <OptionTileGroup
+            options={weatherTiles}
+            value={weatherTile}
+            onValueChange={setWeatherTile}
+          />
+          <Text variant="body">Anything else?</Text>
+          <Box className="flex flex-wrap justify-center gap-xs">
+            {weatherConditions.map((condition) => (
+              <Chip
+                key={condition}
+                label={condition}
+                selected={conditions.includes(condition)}
+                onSelectedChange={(selected) =>
+                  setConditions(
+                    selected
+                      ? [...conditions, condition]
+                      : conditions.filter((picked) => picked !== condition),
+                  )
+                }
+              />
+            ))}
+          </Box>
         </Box>
       </StepScreen>
     );
@@ -172,6 +238,7 @@ function CreateOutfit() {
     return (
       <StepScreen
         step="vibe"
+        title="Describe the occasion"
         canContinue={vibe !== null}
         onBack={() => setStep("weather")}
         onNext={() => advanceTo("specifics")}
@@ -192,6 +259,7 @@ function CreateOutfit() {
     return (
       <StepScreen
         step="specifics"
+        title="Describe the occasion"
         canContinue={specificsAnswer !== null}
         onBack={() => setStep("vibe")}
         onNext={() => advanceTo("custom")}
@@ -218,6 +286,7 @@ function CreateOutfit() {
     return (
       <StepScreen
         step="custom"
+        title="Describe the occasion"
         canContinue
         onBack={() => setStep("specifics")}
         onNext={() => advanceTo("review")}
@@ -370,48 +439,35 @@ function QuestionsIntro({ onStart, onSkip, onBack }: QuestionsIntroProps) {
 
 type StepScreenProps = {
   step: BarStep;
+  title: string;
   canContinue: boolean;
   onBack: () => void;
   onNext: () => void;
   children: ReactNode;
 };
 
-function StepScreen({ step, canContinue, onBack, onNext, children }: StepScreenProps) {
+function StepScreen({ step, title, canContinue, onBack, onNext, children }: StepScreenProps) {
   return (
-    <Page className="flex flex-col items-center gap-lg">
-      <Text variant="heading">Describe the occasion</Text>
-      <StepBar current={step} />
-      <Box className="w-full max-w-content-lg">{children}</Box>
-      <Box className="mt-auto flex w-full max-w-content-lg justify-between">
-        <Button label="Back" variant="secondary" onClick={onBack} />
+    <Page className="flex flex-col items-center gap-xxxl">
+      <Box className="w-full max-w-content-lg">
+        <ProgressStepper
+          steps={barSteps.map((barStep) => barStep.label)}
+          currentStep={barSteps.findIndex((barStep) => barStep.step === step)}
+        />
+      </Box>
+      <Box className="flex w-full max-w-content-xl flex-1 flex-col items-center justify-center gap-lg">
+        <h1 className="text-center font-serif text-display">{title}</h1>
+        <Box className="w-full">{children}</Box>
         <Button label="Next" disabled={!canContinue} onClick={onNext} />
+        <Button
+          label="Back"
+          variant="ghost"
+          size="sm"
+          leadingIcon={ArrowLeftIcon}
+          onClick={onBack}
+        />
       </Box>
     </Page>
-  );
-}
-
-type StepBarProps = {
-  current: BarStep;
-};
-
-/** Display only: Back and Next are the way to move between steps. */
-function StepBar({ current }: StepBarProps) {
-  return (
-    <ol aria-label="Steps" className="flex rounded-full border">
-      {barSteps.map((barStep) => (
-        <li
-          key={barStep}
-          aria-current={barStep === current ? "step" : undefined}
-          className={
-            barStep === current
-              ? "rounded-full bg-primary px-md py-xxs text-caption uppercase text-inverse"
-              : "px-md py-xxs text-caption uppercase"
-          }
-        >
-          {barStep}
-        </li>
-      ))}
-    </ol>
   );
 }
 
