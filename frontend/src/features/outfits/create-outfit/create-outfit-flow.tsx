@@ -1,4 +1,5 @@
 import { ArrowRightIcon, MagnifyingGlassIcon } from "@phosphor-icons/react";
+import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
 import {
@@ -21,6 +22,7 @@ import {
   Text,
   TextArea,
 } from "@/design-system";
+import { ExitFlowButton } from "@/features/navigation/exit-flow-button";
 import {
   occasions,
   specificsOptions,
@@ -36,7 +38,24 @@ import { QuestionsIntro } from "@/features/outfits/create-outfit/questions-intro
 import { Review } from "@/features/outfits/create-outfit/review";
 import { StepScreen } from "@/features/outfits/create-outfit/step-screen";
 
+/** The occasion questions, with an X on every step that leaves the flow. */
 export function CreateOutfitFlow() {
+  const navigate = useNavigate();
+
+  return (
+    <>
+      <OccasionSteps />
+      {/* No z-index: it stacks after the steps but before the modals, which portal to the end of
+          the body and so still cover it. */}
+      <ExitFlowButton
+        onExit={() => void navigate({ to: "/profile/outfits" })}
+        className="fixed right-lg top-lg"
+      />
+    </>
+  );
+}
+
+function OccasionSteps() {
   const [step, setStep] = useState<Step>("intro");
   // Set by Review's Edit buttons, so Next or Back on the edited step goes back to Review.
   const [returnToReview, setReturnToReview] = useState(false);

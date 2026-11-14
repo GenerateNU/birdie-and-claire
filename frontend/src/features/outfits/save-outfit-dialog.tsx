@@ -2,7 +2,7 @@ import { useForm, useStore } from "@tanstack/react-form";
 import { z } from "zod";
 
 import { zUpdateOutfitInputBody } from "@/api/generated/zod.gen";
-import { Form, Modal, TextField } from "@/design-system";
+import { Form, Modal, TextArea, TextField } from "@/design-system";
 import { sameTags, TagsField, tagsSchema } from "@/features/outfits/tags-field";
 
 // The body's name and description are optional because a PATCH can leave them out; the fields here always send one.
@@ -13,6 +13,9 @@ const saveSchema = z.object({
 });
 
 export type SaveOutfitValues = z.infer<typeof saveSchema>;
+
+const descriptionMaxLength =
+  zUpdateOutfitInputBody.shape.description.unwrap().maxLength ?? undefined;
 
 type SaveOutfitDialogProps = {
   open: boolean;
@@ -85,10 +88,11 @@ export function SaveOutfitDialog({
     <Modal
       open={open}
       onClose={cancel}
-      title="Save outfit"
+      title="Save Outfit"
       actions={[
+        { label: "Cancel", variant: "ghost", onClick: cancel, disabled: saving },
         {
-          label: "Save",
+          label: "Confirm",
           variant: "primary",
           onClick: () => void form.handleSubmit(),
           disabled: nothingChanged,
@@ -101,7 +105,7 @@ export function SaveOutfitDialog({
         <form.Field name="name">
           {(field) => (
             <TextField
-              label="Name outfit"
+              label="Outfit name"
               required
               // Also stops Enter from submitting a second save.
               disabled={saving}
@@ -114,9 +118,10 @@ export function SaveOutfitDialog({
         </form.Field>
         <form.Field name="description">
           {(field) => (
-            <TextField
-              label="Description"
-              placeholder="Add outfit description"
+            <TextArea
+              label="Description (optional)"
+              placeholder="What is it for?"
+              maxLength={descriptionMaxLength}
               disabled={saving}
               value={field.state.value}
               onValueChange={field.handleChange}

@@ -15,9 +15,12 @@ type OutfitListProps = {
   outfits: OutfitResponse[];
   hasMore: boolean;
   onLoadMore: () => void;
+  onOpen: (outfitId: string) => void;
+  /** Ends the list with a tile that starts a new outfit. */
+  showAddTile: boolean;
 };
 
-export function OutfitList({ outfits, hasMore, onLoadMore }: OutfitListProps) {
+export function OutfitList({ outfits, hasMore, onLoadMore, onOpen, showAddTile }: OutfitListProps) {
   const navigate = useNavigate();
   const sentinelRef = useRef<HTMLLIElement>(null);
 
@@ -55,16 +58,14 @@ export function OutfitList({ outfits, hasMore, onLoadMore }: OutfitListProps) {
             pieces={piecesLine(outfit.products)}
             src={null}
             image={<OutfitCanvas products={outfit.products} variant="card" />}
-            onOpen={() =>
-              void navigate({ to: "/outfits/$outfitId", params: { outfitId: outfit.id } })
-            }
+            onOpen={() => onOpen(outfit.id)}
           />
         </li>
       ))}
       {/* Spans the grid, so it only comes into view after the last card. */}
       {hasMore && <li ref={sentinelRef} aria-hidden="true" className="col-span-full h-px" />}
       {/* Ends the list, so it waits for the last page rather than moving as pages load. */}
-      {!hasMore && (
+      {!hasMore && showAddTile && (
         <li className="flex">
           <AddTile
             size="outfit"
