@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"slices"
 
 	"birdie-and-claire/internal/errs"
 	"birdie-and-claire/internal/models"
@@ -53,6 +54,33 @@ func (input *AddOwnedProductsInput) Resolve(huma.Context) []error {
 
 func (c *OwnedProductController) AddOwnedProducts(ctx context.Context, input *AddOwnedProductsInput) (*struct{}, error) {
 	if err := c.service.AddOwnedProducts(ctx, input.Body.ProductIDs); err != nil {
+		return nil, errs.ToHuma(ctx, err)
+	}
+	return nil, nil
+}
+
+type UpdateOwnedProductsInput struct {
+	Body struct {
+		AddProductIDs    []uuid.UUID `json:"add_product_ids" required:"true" nullable:"false" maxItems:"50" doc:"Catalog products to add; ones already owned are skipped"`
+		RemoveProductIDs []uuid.UUID `json:"remove_product_ids" required:"true" nullable:"false" maxItems:"50" doc:"Products to remove; ones not owned are skipped"`
+	}
+}
+
+var _ huma.Resolver = (*UpdateOwnedProductsInput)(nil)
+
+// Resolve rejects an empty change and a product listed twice, including once in each list.
+func (input *UpdateOwnedProductsInput) Resolve(huma.Context) []error {
+	if len(input.Body.AddProductIDs) == 0 && len(input.Body.RemoveProductIDs) == 0 {
+		return []error{huma.Error400BadRequest("nothing to add or remove")}
+	}
+	if err := checkDuplicateProductIDs(append(slices.Clone(input.Body.AddProductIDs), input.Body.RemoveProductIDs...)); err != nil {
+		return []error{err}
+	}
+	return nil
+}
+
+func (c *OwnedProductController) UpdateOwnedProducts(ctx context.Context, input *UpdateOwnedProductsInput) (*struct{}, error) {
+	if err := c.service.UpdateOwnedProducts(ctx, input.Body.AddProductIDs, input.Body.RemoveProductIDs); err != nil {
 		return nil, errs.ToHuma(ctx, err)
 	}
 	return nil, nil

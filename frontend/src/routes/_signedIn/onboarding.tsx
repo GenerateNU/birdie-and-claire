@@ -15,7 +15,7 @@ import {
   Welcome,
 } from "@/features/onboarding/onboarding-screens";
 import { OnboardingStepper } from "@/features/onboarding/onboarding-stepper";
-import { addOwnedPiecesMutationKey, PiecePicker } from "@/features/pieces/piece-picker";
+import { saveOwnedPiecesMutationKey, PiecePicker } from "@/features/pieces/piece-picker";
 import {
   fitFields,
   includeOnePiecesLabel,
@@ -91,7 +91,7 @@ function OnboardingSteps() {
     onSuccess: () => window.location.assign(takeReturnPath() ?? "/"),
   });
 
-  const addingPieces = useIsMutating({ mutationKey: addOwnedPiecesMutationKey }) > 0;
+  const addingPieces = useIsMutating({ mutationKey: saveOwnedPiecesMutationKey }) > 0;
 
   // Still saving while the reload starts, so the buttons don't come back on in between.
   const saving = saveMutation.isPending || saveMutation.isSuccess;
@@ -163,17 +163,16 @@ function OnboardingSteps() {
         {step === "shop-login" && <Text variant="display">Log in with Shop</Text>}
         <Modal
           open={step === "pick-pieces"}
-          onClose={() => setStep("add-method")}
+          // Ignored mid-save rather than passing dismissible={!addingPieces}: Modal swaps Dialog for
+          // AlertDialog on that prop, which remounts the picker and drops the save's onAdded.
+          onClose={() => {
+            if (!addingPieces) {
+              setStep("add-method");
+            }
+          }}
           title="Add Items"
-          actions={[
-            {
-              label: "Skip for now",
-              variant: "ghost",
-              disabled: addingPieces,
-              onClick: () => setStep("style"),
-            },
-          ]}
-          dismissible={!addingPieces}
+          actions={[]}
+          dismissible
           size="lg"
         >
           <PiecePicker onAdded={() => setStep("style")} />

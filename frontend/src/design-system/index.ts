@@ -60,6 +60,8 @@ export { Logo } from "@/design-system/components/logo/logo";
 
 export { Tabs } from "@/design-system/components/tabs/tabs";
 
+export { TabBar } from "@/design-system/components/tabs/tab-bar";
+
 export { Form } from "@/design-system/components/form/form";
 
 export { Header } from "@/design-system/components/header/header";
@@ -83,6 +85,8 @@ export { Modal } from "@/design-system/components/modal/modal";
 export { ModalPanel } from "@/design-system/components/modal/modal-panel";
 
 export { Scrim } from "@/design-system/components/modal/scrim";
+
+export { SidePanel } from "@/design-system/components/modal/side-panel";
 
 export { EmptyState } from "@/design-system/components/status/empty-state";
 

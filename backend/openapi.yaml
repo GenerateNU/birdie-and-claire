@@ -23,6 +23,68 @@ components:
       required:
         - keys_loaded
       type: object
+    BirdieAndClaireProductResponse:
+      additionalProperties: false
+      properties:
+        created_at:
+          format: date-time
+          type: string
+        handle:
+          type: string
+        id:
+          type: string
+        image_url:
+          description: URL of the product's lowest-position image, or null when it has none
+          type:
+            - string
+            - "null"
+        owned:
+          description: Whether the authenticated user already owns the product
+          type: boolean
+        product_type:
+          type:
+            - string
+            - "null"
+        shopify_id:
+          format: int64
+          type: integer
+        slot:
+          enum:
+            - top
+            - bottom
+            - accessory
+            - shoe
+            - one_piece
+          type: string
+        source:
+          description: birdie_and_claire for a product sold in the store, demo for seeded filler that is not for sale
+          enum:
+            - birdie_and_claire
+            - demo
+          type: string
+        tags:
+          items:
+            type: string
+          type: array
+        title:
+          type: string
+        updated_at:
+          format: date-time
+          type: string
+      required:
+        - owned
+        - image_url
+        - id
+        - shopify_id
+        - handle
+        - title
+        - product_type
+        - slot
+        - source
+        - tags
+        - created_at
+        - updated_at
+      type: object
     Collection:
       additionalProperties: false
       properties:
@@ -506,6 +568,24 @@ components:
         - tags
         - created_at
         - updated_at
+      type: object
+    PageBirdieAndClaireProductResponse:
+      additionalProperties: false
+      properties:
+        has_more:
+          type: boolean
+        items:
+          items:
+            $ref: "#/components/schemas/BirdieAndClaireProductResponse"
+          type: array
+        next_cursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - next_cursor
+        - has_more
       type: object
     PageCollectionSummaryResponse:
       additionalProperties: false
@@ -1007,6 +1087,25 @@ components:
           type:
             - array
             - "null"
+      type: object
+    UpdateOwnedProductsInputBody:
+      additionalProperties: false
+      properties:
+        add_product_ids:
+          description: Catalog products to add; ones already owned are skipped
+          items:
+            type: string
+          maxItems: 50
+          type: array
+        remove_product_ids:
+          description: Products to remove; ones not owned are skipped
+          items:
+            type: string
+          maxItems: 50
+          type: array
+      required:
+        - add_product_ids
+        - remove_product_ids
       type: object
     UserResponse:
       additionalProperties: false
@@ -1668,6 +1767,61 @@ paths:
       summary: List catalog products the authenticated user can add to the pieces they own
       tags:
         - products
+  /api/v1/products/birdie-and-claire:
+    get:
+      description: Active store products only, newest first. Demo filler is left out.
+      operationId: list-birdie-and-claire-products
+      parameters:
+        - description: Max items to return
+          explode: false
+          in: query
+          name: limit
+          schema:
+            default: 20
+            description: Max items to return
+            format: int64
+            maximum: 100
+            minimum: 1
+            type: integer
+        - description: Opaque cursor from a previous page's next_cursor
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: Opaque cursor from a previous page's next_cursor
+            type: string
+        - description: The Add Items tab to list. Shoes have no tab.
+          explode: false
+          in: query
+          name: category
+          required: true
+          schema:
+            description: The Add Items tab to list. Shoes have no tab.
+            enum:
+              - tops
+              - sweaters
+              - bottoms
+              - jumpsuits
+              - accessories
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageBirdieAndClaireProductResponse"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: List the Birdie & Claire products in one category, marking the ones the authenticated user owns
+      tags:
+        - products
   /api/v1/products/{product_id}/images:
     get:
       operationId: list-product-images
@@ -1814,6 +1968,29 @@ paths:
       security:
         - bearer: []
       summary: List the catalog products the authenticated user owns
+      tags:
+        - pieces
+    patch:
+      description: Both lists apply together or not at all. Adding an owned product or removing one not owned is skipped. An added product not in the catalog fails the whole request with 409.
+      operationId: update-current-user-pieces
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateOwnedProductsInputBody"
+        required: true
+      responses:
+        "204":
+          description: No Content
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: Add and remove products the authenticated user owns in one change
       tags:
         - pieces
     post:

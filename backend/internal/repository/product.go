@@ -33,6 +33,8 @@ type ProductRepository interface {
 	// keepShopifyIDs, and returns how many it marked. Demo products are left alone.
 	DeactivateShopifyProductsExcept(ctx context.Context, keepShopifyIDs []int64) (int64, error)
 	ListUnownedProducts(ctx context.Context, userID uuid.UUID, params pagination.CursorParams) (pagination.Page[models.ProductResponse], error)
+	// ListBirdieAndClaireProducts lists the active store products in category, marking the ones userID owns.
+	ListBirdieAndClaireProducts(ctx context.Context, userID uuid.UUID, category models.ProductCategory, params pagination.CursorParams) (pagination.Page[models.BirdieAndClaireProductResponse], error)
 	// FindPurchaseInfo maps each of productIDs that exists to what decides whether userID can buy it.
 	FindPurchaseInfo(ctx context.Context, userID uuid.UUID, productIDs []uuid.UUID) (map[uuid.UUID]models.ProductPurchaseInfo, error)
 }
@@ -297,21 +299,44 @@ func (r *productRepository) ListUnownedProducts(ctx context.Context, userID uuid
 		SELECT p.id, p.created_at AS sorted_at
 		FROM products p
 		WHERE NOT EXISTS (SELECT 1 FROM owned_products op WHERE op.user_id = $1 AND op.product_id = p.id)
-	`, userID, params, func(product models.ProductResponse, _ time.Time) models.ProductResponse {
+	`, userID, params, func(product models.ProductResponse, _ time.Time, _ bool) models.ProductResponse {
 		return product
 	})
 }
 
+func (r *productRepository) ListBirdieAndClaireProducts(ctx context.Context, userID uuid.UUID, category models.ProductCategory, params pagination.CursorParams) (pagination.Page[models.BirdieAndClaireProductResponse], error) {
+	// The categories are the picker's tabs from Figma, so Sweaters is split out of the top slot and a dress counts
+	// as a jumpsuit. Shoes have no tab. product_type is NULL for some products, hence IS DISTINCT FROM.
+	return listProductPage(ctx, r.db, `
+		SELECT p.id, p.created_at AS sorted_at
+		FROM products p
+		WHERE p.source = 'birdie_and_claire'
+			AND p.active
+			AND CASE $5::text
+				WHEN 'tops' THEN p.slot = 'top' AND p.product_type IS DISTINCT FROM 'Sweaters'
+				WHEN 'sweaters' THEN p.slot = 'top' AND p.product_type = 'Sweaters'
+				WHEN 'bottoms' THEN p.slot = 'bottom'
+				WHEN 'jumpsuits' THEN p.slot = 'one_piece'
+				WHEN 'accessories' THEN p.slot = 'accessory'
+			END
+	`, userID, params, func(product models.ProductResponse, _ time.Time, owned bool) models.BirdieAndClaireProductResponse {
+		return models.BirdieAndClaireProductResponse{ProductResponse: product, Owned: owned}
+	}, category)
+}
+
 // listProductPage is the paging query behind every product list. rowSource selects the list's rows as
-// (id, sorted_at) and may use $1, the user's ID; it is always a constant in this package, never input.
-// Rows come newest sorted_at first, then by id, and toItem shapes each one for the response.
+// (id, sorted_at) and may use $1, the user's ID, and $5 onward for sourceArgs; it is always a constant in this
+// package, never input.
+// Rows come newest sorted_at first, then by id, and toItem shapes each one for the response, given whether the user
+// owns the product.
 func listProductPage[T any](
 	ctx context.Context,
 	db *sql.DB,
 	rowSource string,
 	userID uuid.UUID,
 	params pagination.CursorParams,
-	toItem func(product models.ProductResponse, sortedAt time.Time) T,
+	toItem func(product models.ProductResponse, sortedAt time.Time, owned bool) T,
+	sourceArgs ...any,
 ) (pagination.Page[T], error) {
 	afterSortedAt, err := params.After().Time("sorted_at")
 	if err != nil {
@@ -332,7 +357,8 @@ func listProductPage[T any](
 			LIMIT $4
 		)
 		SELECT p.id, p.shopify_id, p.handle, p.title, p.product_type, p.slot, p.source, p.tags, p.created_at, p.updated_at,
-			first_image.url, page.sorted_at
+			first_image.url, page.sorted_at,
+			EXISTS (SELECT 1 FROM owned_products op WHERE op.user_id = $1 AND op.product_id = p.id)
 		FROM page
 		JOIN products p ON p.id = page.id
 		LEFT JOIN LATERAL (
@@ -343,7 +369,7 @@ func listProductPage[T any](
 			LIMIT 1
 		) first_image ON true
 		ORDER BY page.sorted_at DESC, page.id DESC
-	`, userID, afterSortedAt, afterID, params.Limit+1)
+	`, append([]any{userID, afterSortedAt, afterID, params.Limit + 1}, sourceArgs...)...)
 	if err != nil {
 		return pagination.Page[T]{}, fmt.Errorf("list products for user %s: %w", userID, err)
 	}
@@ -352,11 +378,12 @@ func listProductPage[T any](
 	type row struct {
 		product  models.ProductResponse
 		sortedAt time.Time
+		owned    bool
 	}
 	fetched := make([]row, 0, params.Limit+1)
 	for rows.Next() {
 		var next row
-		if err := rows.Scan(append(productScanTargets(&next.product), &next.sortedAt)...); err != nil {
+		if err := rows.Scan(append(productScanTargets(&next.product), &next.sortedAt, &next.owned)...); err != nil {
 			return pagination.Page[T]{}, fmt.Errorf("list products for user %s: scan: %w", userID, err)
 		}
 		fetched = append(fetched, next)
@@ -369,7 +396,7 @@ func listProductPage[T any](
 	// Non-nil so an empty page encodes as [] rather than null.
 	items := make([]T, 0, len(pageRows))
 	for _, pageRow := range pageRows {
-		items = append(items, toItem(pageRow.product, pageRow.sortedAt))
+		items = append(items, toItem(pageRow.product, pageRow.sortedAt, pageRow.owned))
 	}
 	page := pagination.Page[T]{Items: items, HasMore: hasMore}
 	if !hasMore {

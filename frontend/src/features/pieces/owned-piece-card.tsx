@@ -2,11 +2,11 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import {
   listCurrentUserPiecesInfiniteQueryKey,
-  listProductsInfiniteQueryKey,
   removeCurrentUserPieceMutation,
 } from "@/api/generated/@tanstack/react-query.gen";
 import type { OwnedProductResponse } from "@/api/generated/types.gen";
 import { ItemCard, Text } from "@/design-system";
+import { invalidateBirdieAndClaireCatalog } from "@/features/pieces/birdie-and-claire-catalog";
 
 type OwnedPieceCardProps = {
   piece: OwnedProductResponse;
@@ -20,12 +20,12 @@ export function OwnedPieceCard({ piece, onRemoved }: OwnedPieceCardProps) {
   const removeMutation = useMutation({
     ...removeCurrentUserPieceMutation(),
     onSuccess: onRemoved,
-    // The catalog leaves owned pieces out, so a removed piece goes back into the picker. Refreshed
+    // The catalog marks owned pieces, so a removed piece shows unselected in the picker. Refreshed
     // on failure too: a 404 means the piece is already gone, and the list should stop showing it.
     onSettled: () =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: listCurrentUserPiecesInfiniteQueryKey() }),
-        queryClient.invalidateQueries({ queryKey: listProductsInfiniteQueryKey() }),
+        invalidateBirdieAndClaireCatalog(queryClient),
       ]),
   });
 

@@ -65,6 +65,7 @@ import {
   ProgressStepper,
   RadioGroup,
   Scrim,
+  SidePanel,
   SearchField,
   SectionHeader,
   SegmentedControl,
@@ -72,6 +73,7 @@ import {
   StatusColor,
   Spinner,
   Tabs,
+  TabBar,
   Text,
   TextArea,
   TextColor,
@@ -170,12 +172,14 @@ const sectionTitles = {
   "empty-state": "Empty state",
   "error-state": "Error state",
   tabs: "Tabs",
+  "tab-bar": "Tab bar",
   divider: "Divider",
   logo: "Logo",
   "radio-group": "Radio group",
   avatar: "Avatar",
   scrim: "Scrim",
   modal: "Modal",
+  "side-panel": "Side panel",
   menu: "Menu",
   toast: "Toast",
   text: "Text",
@@ -226,12 +230,14 @@ const navGroups = [
       "empty-state",
       "error-state",
       "tabs",
+      "tab-bar",
       "divider",
       "logo",
       "radio-group",
       "avatar",
       "scrim",
       "modal",
+      "side-panel",
       "menu",
       "toast",
       "text",
@@ -576,6 +582,10 @@ export function Playground() {
               <TabsExamples />
             </Section>
 
+            <Section id="tab-bar">
+              <TabBarExample />
+            </Section>
+
             <Section id="divider">
               <Box className="flex flex-col gap-xs">
                 <Text variant="body">Above</Text>
@@ -616,6 +626,10 @@ export function Playground() {
               <Stage>
                 <ModalExamples />
               </Stage>
+            </Section>
+
+            <Section id="side-panel">
+              <SidePanelExample />
             </Section>
 
             <Section id="menu">
@@ -1742,6 +1756,7 @@ function ItemCardExamples() {
         />
         <ItemCard name="No detail, no menu" src={samplePhoto} />
         <ItemCard name="No image" detail="Empty photo" src={null} menu={sampleMenu} />
+        <ItemCard name="Removable" src={samplePhoto} size="sm" onRemove={() => {}} />
         <ItemCard
           name="Interactive"
           detail="Click to select"
@@ -1750,7 +1765,7 @@ function ItemCardExamples() {
           menu={sampleMenu}
         />
       </Box>
-      <Label>B&C stamp md · sm · no detail or menu · no image · interactive</Label>
+      <Label>B&C stamp md · sm · no detail or menu · no image · removable · interactive</Label>
     </Box>
   );
 }
@@ -2203,6 +2218,63 @@ function ModalExamples() {
         <TextField label="Outfit name" value={name} onValueChange={setName} />
       </Modal>
     </Box>
+  );
+}
+
+const tabBarTabs = [
+  { label: "Tops", value: "tops" },
+  { label: "Sweaters", value: "sweaters" },
+  { label: "Bottoms", value: "bottoms" },
+] as const;
+
+function TabBarExample() {
+  const [tab, setTab] = useState<(typeof tabBarTabs)[number]["value"]>("tops");
+
+  return (
+    <TabBar
+      tabs={[...tabBarTabs]}
+      value={tab}
+      onValueChange={setTab}
+      disabled={false}
+      trailing={
+        <SearchField
+          variant="bare"
+          leadingIcon={MagnifyingGlassIcon}
+          label="Search items"
+          placeholder="Search items"
+          value=""
+          onValueChange={() => {}}
+          onSubmit={() => {}}
+          className="w-full"
+        />
+      }
+    >
+      <Text variant="body">Content for {tab}</Text>
+    </TabBar>
+  );
+}
+
+function SidePanelExample() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <Button label="Open side panel" variant="secondary" onClick={() => setOpen(true)} />
+      <SidePanel
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Selected Items"
+        footer={<Button label="Add Items to Owned" onClick={() => setOpen(false)} />}
+      >
+        <Box role="list" className="grid grid-cols-2 gap-lg">
+          {["Wrap midi dress", "Linen shirt", "Wide-leg trouser"].map((name) => (
+            <Box key={name} role="listitem">
+              <ItemCard name={name} src={samplePhoto} size="sm" onRemove={() => {}} />
+            </Box>
+          ))}
+        </Box>
+      </SidePanel>
+    </>
   );
 }
 

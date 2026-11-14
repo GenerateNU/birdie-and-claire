@@ -1,6 +1,6 @@
 import { AlertDialog } from "@base-ui/react/alert-dialog";
 import { Dialog } from "@base-ui/react/dialog";
-import { useId, type ReactNode } from "react";
+import { useId, useState, type ReactNode } from "react";
 
 import {
   ModalPanel,
@@ -8,6 +8,8 @@ import {
   type ModalSize,
 } from "@/design-system/components/modal/modal-panel";
 import { Scrim } from "@/design-system/components/modal/scrim";
+import { ModalOverlayContext } from "@/design-system/components/modal/side-panel";
+import { Box } from "@/design-system/primitives/box";
 
 type ModalProps = {
   open: boolean;
@@ -40,6 +42,7 @@ export function Modal({
 }: ModalProps) {
   const titleId = useId();
   const messageId = useId();
+  const [overlay, setOverlay] = useState<HTMLElement | null>(null);
   // AlertDialog ignores outside clicks and Esc, which is what a non-dismissible modal needs.
   const ModalParts = dismissible ? Dialog : AlertDialog;
 
@@ -76,8 +79,11 @@ export function Modal({
             titleId={titleId}
             messageId={messageId}
           >
-            {children}
+            <ModalOverlayContext.Provider value={overlay}>{children}</ModalOverlayContext.Provider>
           </ModalPanel>
+          {/* Lays out nothing itself, so what a SidePanel portals in is positioned against the
+              popup and covers the whole modal. */}
+          <Box ref={setOverlay} className="contents" />
         </ModalParts.Popup>
       </ModalParts.Portal>
     </ModalParts.Root>

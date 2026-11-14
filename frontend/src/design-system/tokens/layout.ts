@@ -14,6 +14,10 @@ export const OnboardingWidth = {
   next: "200px",
 } as const;
 
+// A side panel's fixed width (`w-side-panel`), from Figma: two small item cards, the gap between
+// them, and the padding.
+export const SidePanelWidth = "296px";
+
 // A menu's fixed width (`w-menu`), from Figma.
 export const MenuWidth = "200px";
 
@@ -35,6 +39,9 @@ export const ContentWidth = {
 
 export const ScrollAreaHeight = "384px";
 
+// The thin scroll track (`.scrollbar-thin`), from Figma.
+export const ScrollbarWidth = "4px";
+
 // Fixed width and photo height of an image option card (`w-card-*`, `h-card-*`), from Figma: sm is
 // for neckline, bottoms and shoes, lg for occasion and style vibe. A fixed width makes long labels
 // wrap instead of widening one card.
@@ -49,6 +56,10 @@ export const ItemCardSize = {
   sm: { width: "120px", photoHeight: "150px" },
   xs: { width: "80px", photoHeight: "80px" },
 } as const;
+
+// Two rows of medium item cards and the gap between them (`h-item-grid`), from Figma: each row is
+// the photo, the 8px gap, and a one-line name.
+export const ItemGridHeight = "518px";
 
 // The B&C stamp on an item card's photo (`size-stamp-*`), from Figma.
 export const StampSize = { md: "48px", sm: "36px" } as const;
