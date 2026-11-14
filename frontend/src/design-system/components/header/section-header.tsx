@@ -1,4 +1,3 @@
-import { ArrowRightIcon } from "@phosphor-icons/react";
 import type { LinkProps } from "@tanstack/react-router";
 
 import { TextLink } from "@/design-system/components/links/text-link";
@@ -11,7 +10,7 @@ const sizeClasses = {
 
 type SectionHeaderProps = {
   title: string;
-  /** A count at the right edge, such as "6 pieces". */
+  /** A count beside the title, such as "6 pieces". */
   count?: string;
   /** The "See all" link at the right edge. */
   link?: { label: string; to: LinkProps["to"] };
@@ -23,11 +22,13 @@ export function SectionHeader({ title, count, link, size = "md" }: SectionHeader
   const { row, title: titleClasses } = sizeClasses[size];
 
   return (
-    <Box className={`flex w-full items-center justify-between gap-sm ${row}`}>
-      <h2 className={`truncate text-primary ${titleClasses}`}>{title}</h2>
-      {count && <Box className={`shrink-0 text-primary ${titleClasses}`}>{count}</Box>}
+    <Box className={`flex w-full items-center gap-sm ${row}`}>
+      <Box className="flex min-w-0 flex-1 items-baseline gap-sm">
+        <h2 className={`truncate text-primary ${titleClasses}`}>{title}</h2>
+        {count && <Box className={`shrink-0 text-primary ${titleClasses}`}>{count}</Box>}
+      </Box>
       {link && (
-        <TextLink to={link.to} trailingIcon={ArrowRightIcon} className="shrink-0">
+        <TextLink to={link.to} className="shrink-0">
           {link.label}
         </TextLink>
       )}

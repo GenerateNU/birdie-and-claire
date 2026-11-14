@@ -70,7 +70,7 @@ export function RadioGroup<T extends string>({
             value={option.value}
             className={`${radioClasses} ${radioStateClasses[state]}`}
           >
-            <Radio.Indicator className={`size-xs rounded-full ${dotStateClasses[state]}`} />
+            <Radio.Indicator className={`size-radio-dot rounded-full ${dotStateClasses[state]}`} />
           </Radio.Root>
           {option.label}
         </label>

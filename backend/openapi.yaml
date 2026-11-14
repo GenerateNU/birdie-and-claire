@@ -158,6 +158,29 @@ components:
           format: uri
           type: string
       type: object
+    ListOutfitsResponse:
+      additionalProperties: false
+      properties:
+        has_more:
+          type: boolean
+        items:
+          items:
+            $ref: "#/components/schemas/OutfitResponse"
+          type: array
+        next_cursor:
+          type:
+            - string
+            - "null"
+        total:
+          description: How many outfits the user has saved, counting every page
+          format: int64
+          type: integer
+      required:
+        - total
+        - items
+        - next_cursor
+        - has_more
+      type: object
     LivenessOutputBody:
       additionalProperties: false
       properties:
@@ -167,45 +190,6 @@ components:
           type: string
       required:
         - status
-      type: object
-    Outfit:
-      additionalProperties: false
-      properties:
-        created_at:
-          format: date-time
-          type: string
-        description:
-          description: Empty when the outfit has no description
-          type: string
-        id:
-          type: string
-        name:
-          type: string
-        shared_at:
-          description: When the outfit was shared by link, or null while it is private
-          format: date-time
-          type:
-            - string
-            - "null"
-        tags:
-          description: Free-text labels such as weather or occasion
-          items:
-            type: string
-          type: array
-        updated_at:
-          format: date-time
-          type: string
-        user_id:
-          type: string
-      required:
-        - id
-        - user_id
-        - name
-        - description
-        - tags
-        - shared_at
-        - created_at
-        - updated_at
       type: object
     OutfitResponse:
       additionalProperties: false
@@ -327,24 +311,6 @@ components:
         - tags
         - created_at
         - updated_at
-      type: object
-    PageOutfit:
-      additionalProperties: false
-      properties:
-        has_more:
-          type: boolean
-        items:
-          items:
-            $ref: "#/components/schemas/Outfit"
-          type: array
-        next_cursor:
-          type:
-            - string
-            - "null"
-      required:
-        - items
-        - next_cursor
-        - has_more
       type: object
     PageOwnedProductResponse:
       additionalProperties: false
@@ -881,7 +847,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PageOutfit"
+                $ref: "#/components/schemas/ListOutfitsResponse"
           description: OK
         default:
           content:

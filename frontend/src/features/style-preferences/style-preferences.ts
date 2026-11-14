@@ -1,4 +1,20 @@
 import type { StylePreferences } from "@/api/generated/types.gen";
+import bootsImage from "@/design-system/assets/style-preferences/boots.png";
+import chicAvantGardeImage from "@/design-system/assets/style-preferences/chic-avant-garde.jpg";
+import colorfulEclecticImage from "@/design-system/assets/style-preferences/colorful-eclectic.jpg";
+import comfortableRelaxedImage from "@/design-system/assets/style-preferences/comfortable-relaxed.jpg";
+import dressImage from "@/design-system/assets/style-preferences/dress.png";
+import flatsImage from "@/design-system/assets/style-preferences/flats.png";
+import heelsImage from "@/design-system/assets/style-preferences/heels.png";
+import highImage from "@/design-system/assets/style-preferences/high.png";
+import lowImage from "@/design-system/assets/style-preferences/low.png";
+import modestImage from "@/design-system/assets/style-preferences/modest.png";
+import pantsImage from "@/design-system/assets/style-preferences/pants.png";
+import sandalsImage from "@/design-system/assets/style-preferences/sandals.png";
+import shortsImage from "@/design-system/assets/style-preferences/shorts.png";
+import skirtImage from "@/design-system/assets/style-preferences/skirt.png";
+import sneakersImage from "@/design-system/assets/style-preferences/sneakers.png";
+import timelessSophisticatedImage from "@/design-system/assets/style-preferences/timeless-sophisticated.jpg";
 
 export type PreferenceField = keyof StylePreferences;
 
@@ -12,7 +28,11 @@ export const noPreferences: StylePreferences = { style: [], neckline: [], bottom
 type Question = {
   readonly name: string;
   readonly prompt: string;
-  readonly options: readonly { readonly value: PreferenceValue; readonly label: string }[];
+  readonly options: readonly {
+    readonly value: PreferenceValue;
+    readonly label: string;
+    readonly image: string;
+  }[];
 };
 
 export const questions: Readonly<Record<PreferenceField, Question>> = {
@@ -20,40 +40,48 @@ export const questions: Readonly<Record<PreferenceField, Question>> = {
     name: "Style",
     prompt: "What describes your style best?",
     options: [
-      { value: "chic_avant_garde", label: "Chic & avant-garde" },
-      { value: "timeless_sophisticated", label: "Timeless & sophisticated" },
-      { value: "colorful_eclectic", label: "Colorful & eclectic" },
-      { value: "comfortable_relaxed", label: "Comfortable & relaxed" },
+      { value: "chic_avant_garde", image: chicAvantGardeImage, label: "Chic & avant-garde" },
+      {
+        value: "timeless_sophisticated",
+        image: timelessSophisticatedImage,
+        label: "Timeless & sophisticated",
+      },
+      { value: "colorful_eclectic", image: colorfulEclecticImage, label: "Colorful & eclectic" },
+      {
+        value: "comfortable_relaxed",
+        image: comfortableRelaxedImage,
+        label: "Comfortable & relaxed",
+      },
     ],
   },
   neckline: {
     name: "Neckline",
     prompt: "What neckline do you prefer?",
     options: [
-      { value: "modest", label: "Modest" },
-      { value: "high", label: "High" },
-      { value: "low", label: "Low" },
+      { value: "modest", image: modestImage, label: "Modest" },
+      { value: "high", image: highImage, label: "High" },
+      { value: "low", image: lowImage, label: "Low" },
     ],
   },
   bottoms: {
     name: "Bottoms",
     prompt: "What bottoms do you prefer?",
     options: [
-      { value: "pants", label: "Pants" },
-      { value: "dress", label: "Dress" },
-      { value: "skirt", label: "Skirt" },
-      { value: "shorts", label: "Shorts" },
+      { value: "pants", image: pantsImage, label: "Pants" },
+      { value: "dress", image: dressImage, label: "Dress" },
+      { value: "skirt", image: skirtImage, label: "Skirt" },
+      { value: "shorts", image: shortsImage, label: "Shorts" },
     ],
   },
   shoes: {
     name: "Shoes",
     prompt: "What shoes do you prefer?",
     options: [
-      { value: "sneakers", label: "Sneakers" },
-      { value: "boots", label: "Boots" },
-      { value: "sandals", label: "Sandals" },
-      { value: "heels", label: "Heels" },
-      { value: "flats", label: "Flats" },
+      { value: "sneakers", image: sneakersImage, label: "Sneakers" },
+      { value: "boots", image: bootsImage, label: "Boots" },
+      { value: "sandals", image: sandalsImage, label: "Sandals" },
+      { value: "heels", image: heelsImage, label: "Heels" },
+      { value: "flats", image: flatsImage, label: "Flats" },
     ],
   },
 };
