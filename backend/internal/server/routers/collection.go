@@ -28,18 +28,27 @@ func CollectionRoutes(api huma.API, params types.RouteParams) {
 		Method:      http.MethodGet,
 		Path:        "/api/v1/collections",
 		Summary:     "List the authenticated user's collections",
-		Description: "Newest first, each with its outfit count and up to 4 thumbnails. The list is not paginated.",
+		Description: "Newest first, each with its outfit count and up to 4 thumbnails.",
 		Tags:        []string{"collections"},
-	}, controller.List)
+	}, controller.ListUserCollections)
 
 	huma.Register(api, huma.Operation{
 		OperationID: "get-collection",
 		Method:      http.MethodGet,
 		Path:        "/api/v1/collections/{id}",
-		Summary:     "Get one of the authenticated user's collections with its outfits",
+		Summary:     "Get one of the authenticated user's collections",
 		Description: "Someone else's collection and a missing one both return 404.",
 		Tags:        []string{"collections"},
 	}, controller.Get)
+
+	huma.Register(api, huma.Operation{
+		OperationID: "list-collection-outfits",
+		Method:      http.MethodGet,
+		Path:        "/api/v1/collections/{id}/outfits",
+		Summary:     "List the outfits in one of the authenticated user's collections",
+		Description: "Newest added first. Someone else's collection and a missing one both return 404.",
+		Tags:        []string{"collections"},
+	}, controller.ListCollectionOutfits)
 
 	huma.Register(api, huma.Operation{
 		OperationID: "update-collection",
