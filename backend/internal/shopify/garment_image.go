@@ -51,7 +51,7 @@ func (c *adminClient) putGarmentShotFirst(ctx context.Context, product ShopifyPr
 }
 
 func (c *adminClient) scoreBorderFlatness(ctx context.Context, imageURL string) (float64, error) {
-	thumbnail, err := thumbnailURL(imageURL)
+	thumbnail, err := ResizedImageURL(imageURL, thumbnailWidth)
 	if err != nil {
 		return 0, err
 	}
@@ -77,15 +77,15 @@ func (c *adminClient) scoreBorderFlatness(ctx context.Context, imageURL string) 
 	return borderFlatness(decoded), nil
 }
 
-// thumbnailURL keeps the URL's existing query, which on Shopify's CDN holds the
-// image version.
-func thumbnailURL(imageURL string) (string, error) {
+// ResizedImageURL asks Shopify's CDN for the image scaled to width pixels. It
+// keeps the URL's existing query, which on Shopify's CDN holds the image version.
+func ResizedImageURL(imageURL, width string) (string, error) {
 	parsed, err := url.Parse(imageURL)
 	if err != nil {
 		return "", fmt.Errorf("parse image url: %w", err)
 	}
 	query := parsed.Query()
-	query.Set("width", thumbnailWidth)
+	query.Set("width", width)
 	parsed.RawQuery = query.Encode()
 	return parsed.String(), nil
 }

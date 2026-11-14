@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"net/url"
 	"slices"
 	"strings"
 
@@ -130,7 +129,7 @@ func (s *catalogSyncService) refreshEmbedding(ctx context.Context, product shopi
 	}
 
 	text := strings.Join(append([]string{product.Title}, product.Tags...), ", ")
-	imageURL, err := resizedImageURL(product.Images[0].URL)
+	imageURL, err := shopify.ResizedImageURL(product.Images[0].URL, embeddingImageWidth)
 	if err != nil {
 		return err
 	}
@@ -174,19 +173,6 @@ func isMarketingTag(tag string) bool {
 		}
 	}
 	return false
-}
-
-// resizedImageURL keeps the URL's existing query, which on Shopify's CDN holds the
-// image version.
-func resizedImageURL(imageURL string) (string, error) {
-	parsed, err := url.Parse(imageURL)
-	if err != nil {
-		return "", fmt.Errorf("parse image url: %w", err)
-	}
-	query := parsed.Query()
-	query.Set("width", embeddingImageWidth)
-	parsed.RawQuery = query.Encode()
-	return parsed.String(), nil
 }
 
 func hashEmbeddingInputs(text, imageURL string) string {

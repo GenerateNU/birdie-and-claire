@@ -2,20 +2,24 @@ package shopify
 
 import (
 	"context"
+	"fmt"
 	"image"
 	"image/color"
 	"image/jpeg"
 	"image/png"
+	"io"
 	"math/rand/v2"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
 	"testing"
+
+	"birdie-and-claire/internal/config"
 )
 
-// newThumbnailServer serves a flat-backdrop JPEG at /garment.jpg and a noisy PNG
+// serveThumbnails serves a flat-backdrop JPEG at /garment.jpg and a noisy PNG
 // at /model.png, and 404s anything else.
-func newThumbnailServer(t *testing.T) (*adminClient, string) {
+func serveThumbnails(t *testing.T) http.HandlerFunc {
 	t.Helper()
 	flat := image.NewRGBA(image.Rect(0, 0, 20, 30))
 	noisy := image.NewRGBA(image.Rect(0, 0, 20, 30))
@@ -27,7 +31,7 @@ func newThumbnailServer(t *testing.T) (*adminClient, string) {
 		}
 	}
 
-	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
 		if got := r.URL.Query(); got.Get("width") != thumbnailWidth || got.Get("v") != "1" {
 			t.Errorf("thumbnail query = %q, want the image version kept with width=%s", r.URL.RawQuery, thumbnailWidth)
 		}
@@ -43,13 +47,43 @@ func newThumbnailServer(t *testing.T) (*adminClient, string) {
 		if err != nil {
 			t.Errorf("encode thumbnail: %v", err)
 		}
-	}))
+	}
+}
+
+// newTLSTestClient serves handler over https, since parseProduct only accepts
+// https image URLs.
+func newTLSTestClient(t *testing.T, handler http.Handler) (*adminClient, string) {
+	t.Helper()
+	srv := httptest.NewTLSServer(handler)
 	t.Cleanup(srv.Close)
-	return &adminClient{http: srv.Client()}, srv.URL
+	return &adminClient{ShopifyConfig: config.ShopifyConfig{URL: srv.URL}, http: srv.Client()}, srv.URL
+}
+
+func TestListActiveProductsPutsTheGarmentShotFirst(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("POST /admin/oauth/access_token", respondWith(http.StatusOK, grantedTokenJSON))
+	mux.HandleFunc("POST /admin/api/2026-10/graphql.json", func(w http.ResponseWriter, r *http.Request) {
+		baseURL := "https://" + r.Host
+		node := fmt.Sprintf(`{"id":"gid://shopify/Product/1","media":{"pageInfo":{"hasNextPage":false},"nodes":[`+
+			`{"id":"gid://shopify/MediaImage/10","image":{"url":"%[1]s/model.png?v=1"}},`+
+			`{"id":"gid://shopify/MediaImage/20","image":{"url":"%[1]s/garment.jpg?v=1"}}]}}`, baseURL)
+		_, _ = io.WriteString(w, buildPageJSON(false, "", node))
+	})
+	mux.HandleFunc("GET /", serveThumbnails(t))
+	client, _ := newTLSTestClient(t, mux)
+
+	products, err := client.ListActiveProducts(context.Background())
+	if err != nil {
+		t.Fatalf("ListActiveProducts: %v", err)
+	}
+
+	if len(products) != 1 || len(products[0].Images) != 2 || products[0].Images[0].ID != 20 || products[0].Images[0].Position != 0 {
+		t.Errorf("products = %+v, want image 20 first with position 0", products)
+	}
 }
 
 func TestPutGarmentShotFirstMovesTheFlattestImageToTheFront(t *testing.T) {
-	client, baseURL := newThumbnailServer(t)
+	client, baseURL := newTLSTestClient(t, serveThumbnails(t))
 	product := ShopifyProduct{ID: 1, Images: []ShopifyImage{
 		{ID: 10, URL: baseURL + "/model.png?v=1", Position: 1},
 		{ID: 20, URL: baseURL + "/garment.jpg?v=1", Position: 2},
@@ -71,7 +105,7 @@ func TestPutGarmentShotFirstMovesTheFlattestImageToTheFront(t *testing.T) {
 }
 
 func TestPutGarmentShotFirstKeepsStoreOrderWhenAThumbnailFails(t *testing.T) {
-	client, baseURL := newThumbnailServer(t)
+	client, baseURL := newTLSTestClient(t, serveThumbnails(t))
 	images := []ShopifyImage{
 		{ID: 10, URL: baseURL + "/model.png?v=1", Position: 1},
 		{ID: 20, URL: baseURL + "/missing.png?v=1", Position: 2},
