@@ -127,7 +127,7 @@ function Onboarding() {
           <ChoiceQuestion
             heading={
               <>
-                <Text variant="display-hifi">Welcome back!</Text>
+                <Text variant="display">Welcome back!</Text>
                 <Text variant="heading-m">Add your Birdie & Claire items</Text>
               </>
             }
@@ -146,7 +146,7 @@ function Onboarding() {
             onSelect={setStep}
           />
         )}
-        {step === "shop-login" && <Text variant="display-hifi">Log in with Shop</Text>}
+        {step === "shop-login" && <Text variant="display">Log in with Shop</Text>}
         <Modal
           open={step === "pick-pieces"}
           onClose={() => setStep("add-method")}

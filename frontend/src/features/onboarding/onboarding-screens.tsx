@@ -21,7 +21,7 @@ export function Welcome({ onStart }: WelcomeProps) {
         </Box>
         <Box className="flex w-onboarding-card flex-col items-center gap-md bg-card p-xxl text-center">
           <Box className="flex flex-col items-center gap-xs">
-            <Text variant="display-hifi">Let's Get To Know You!</Text>
+            <Text variant="display">Let's Get To Know You!</Text>
             <Text variant="body-l">
               Tell us about your preferences and style so we can personalize your recommendations!
             </Text>
@@ -79,7 +79,7 @@ export function ChoiceQuestion<T extends string>({
     <Box className="flex flex-col items-center gap-xl">
       <Box className="flex flex-col items-center gap-xs text-center">{heading}</Box>
       <Box className="w-onboarding-choices">
-        <ChoiceGroup options={options} value={null} onValueChange={onSelect} showRadio={false} />
+        <ChoiceGroup options={options} value={null} onValueChange={onSelect} hideRadio />
       </Box>
     </Box>
   );

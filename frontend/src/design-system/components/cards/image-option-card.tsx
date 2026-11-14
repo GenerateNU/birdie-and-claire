@@ -25,6 +25,7 @@ type ImageOptionCardProps = {
   size?: keyof typeof sizeClasses;
   /** `multi` marks the card with a checkbox in its top-right corner. */
   selection?: "single" | "multi";
+  fit?: "cover" | "contain";
   disabled?: boolean;
 };
 
@@ -37,6 +38,7 @@ export function ImageOptionCard({
   onPressedChange,
   size = "fill",
   selection = "single",
+  fit = "cover",
   disabled = false,
 }: ImageOptionCardProps) {
   const { card, photo, title } = sizeClasses[size];
@@ -49,8 +51,12 @@ export function ImageOptionCard({
       disabled={disabled}
       className={`group relative flex flex-col gap-sm text-left focus-ring ${stateClasses} ${card}`}
     >
-      <Box className={`relative w-full shrink-0 ${photo}`}>
-        <CardImage src={src} className={`size-full ${disabled ? "opacity-disabled" : ""}`} />
+      <Box className={`relative w-full shrink-0 ${photo} ${fit === "contain" ? "bg-surface" : ""}`}>
+        <CardImage
+          src={src}
+          fit={fit}
+          className={`size-full ${disabled ? "opacity-disabled" : ""}`}
+        />
         {!disabled && <CardWash />}
         {pressed && <CardSelectedRing />}
         {selection === "multi" && (pressed || !disabled) && (

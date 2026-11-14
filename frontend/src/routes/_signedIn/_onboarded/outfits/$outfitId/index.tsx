@@ -1,4 +1,4 @@
-import { BookmarkSimpleIcon, PenNibIcon } from "@phosphor-icons/react";
+import { BookmarkSimpleIcon, NotePencilIcon } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import type { CSSProperties } from "react";
@@ -72,7 +72,7 @@ function OutfitDetailsPage() {
               params={{ outfitId }}
               variant="secondary"
               size="sm"
-              leadingIcon={PenNibIcon}
+              leadingIcon={NotePencilIcon}
             >
               Customize
             </Link>
@@ -88,7 +88,7 @@ function OutfitDetailsPage() {
             </Box>
             <ShareOutfit outfitId={outfitId} />
           </Box>
-          <Text variant="display-hifi" className="break-words">
+          <Text variant="display" className="break-words">
             {name}
           </Text>
           {description && <Text variant="body-l">{description}</Text>}

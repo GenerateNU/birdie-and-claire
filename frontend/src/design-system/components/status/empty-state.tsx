@@ -9,9 +9,13 @@ type EmptyStateProps = {
   description?: string;
   /** Shown on the square above the title. */
   icon?: Icon;
-  action?: { label: string; onClick: () => void; icon?: Icon };
+  action?: EmptyStateAction;
+  /** Ignored without `action`. */
+  secondaryAction?: EmptyStateAction;
   className?: string;
 };
+
+type EmptyStateAction = { label: string; onClick: () => void; icon?: Icon };
 
 /** A centered message for a page or panel that has nothing in it yet. */
 export function EmptyState({
@@ -19,6 +23,7 @@ export function EmptyState({
   description,
   icon: StateIcon = BookmarkSimpleIcon,
   action,
+  secondaryAction,
   className,
 }: EmptyStateProps) {
   return (
@@ -36,7 +41,20 @@ export function EmptyState({
         <h2 className="text-heading-s">{title}</h2>
         {description && <p className="text-body-m text-secondary">{description}</p>}
       </Box>
-      {action && <Button label={action.label} leadingIcon={action.icon} onClick={action.onClick} />}
+      {action && (
+        <Box className="flex flex-col items-center gap-xs">
+          <Button label={action.label} leadingIcon={action.icon} onClick={action.onClick} />
+          {secondaryAction && (
+            <Button
+              label={secondaryAction.label}
+              leadingIcon={secondaryAction.icon}
+              onClick={secondaryAction.onClick}
+              variant="secondary"
+              className="w-full"
+            />
+          )}
+        </Box>
+      )}
     </Box>
   );
 }
