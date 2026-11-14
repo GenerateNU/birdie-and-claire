@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { AccountError, requireAccountStatus } from "@/features/account/account";
+import { AccountError, getAccountStatus, requireAccountStatus } from "@/features/account/account";
 import { Home } from "@/features/home/home";
 import { Landing } from "@/features/landing/landing";
 import { supabase } from "@/lib/supabase";
@@ -13,7 +13,7 @@ export const Route = createFileRoute("/")({
     } = await supabase.auth.getSession();
 
     if (!session) {
-      return { signedIn: false };
+      return { signedIn: false, onboarded: false };
     }
 
     // Someone partway through onboarding can land here from its X. The landing's links lead to
@@ -23,14 +23,20 @@ export const Route = createFileRoute("/")({
       "needs-preferences",
     ]);
 
-    return { signedIn: true };
+    // Cached by the guard above, so this is no new request.
+    const status = await getAccountStatus({
+      queryClient: context.queryClient,
+      userId: session.user.id,
+    });
+
+    return { signedIn: true, onboarded: status === "onboarded" };
   },
   errorComponent: AccountError,
   component: IndexPage,
 });
 
 function IndexPage() {
-  const { signedIn } = Route.useRouteContext();
+  const { signedIn, onboarded } = Route.useRouteContext();
 
-  return signedIn ? <Home /> : <Landing signedIn={false} />;
+  return onboarded ? <Home /> : <Landing signedIn={signedIn} />;
 }
