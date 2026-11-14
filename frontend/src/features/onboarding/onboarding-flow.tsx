@@ -8,7 +8,6 @@ import { Box, Button, ImageOptionCard, Logo, Modal, Page, Tabs, Text } from "@/d
 import {
   ChoiceQuestion,
   OwnedPiecesLayout,
-  ShopLoginPlaceholder,
   Welcome,
 } from "@/features/onboarding/onboarding-screens";
 import { takeReturnPath } from "@/features/auth/return-path";
@@ -111,7 +110,7 @@ export function OnboardingFlow() {
       >
         {step === "owns-pieces" && (
           <ChoiceQuestion
-            question="Do you own any Birdie & Claire clothes?"
+            heading={<Text variant="title">Do you own any Birdie & Claire clothes?</Text>}
             options={[
               { value: "add-method", label: "Yes, I'm an existing customer!" },
               { value: "style", label: "No, I'm new!" },
@@ -121,16 +120,29 @@ export function OnboardingFlow() {
         )}
         {(step === "add-method" || step === "pick-pieces") && (
           <ChoiceQuestion
-            question="Welcome back!"
-            subtitle="Add your Birdie & Claire items"
+            heading={
+              <>
+                <Text variant="largeTitle">Welcome back!</Text>
+                <Text variant="subtitle">Add your Birdie & Claire items</Text>
+              </>
+            }
             options={[
-              { value: "pick-pieces", label: "Add owned items manually" },
-              { value: "shop-login", label: "Connect with Shop" },
+              {
+                value: "pick-pieces",
+                label: "Add owned items manually",
+                subtitle: "Bring me to the Birdie & Claire catalog",
+              },
+              {
+                value: "shop-login",
+                label: "Connect with Shop",
+                subtitle: "Sync owned items from your Shop account",
+              },
             ]}
             onSelect={setStep}
           />
         )}
-        {step === "shop-login" && <ShopLoginPlaceholder />}
+        {/* Stands in for connecting a Shopify account, which doesn't exist yet. */}
+        {step === "shop-login" && <Text variant="largeTitle">Log in with Shop</Text>}
         <Modal
           open={step === "pick-pieces"}
           onClose={() => setStep("add-method")}

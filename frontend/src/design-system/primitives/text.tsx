@@ -4,6 +4,7 @@ import { joinClasses } from "@/design-system/utils/join-classes";
 const variants = {
   display: { tag: "h1", className: "font-serif text-display-sm lg:text-display-lg" },
   headline: { tag: "h2", className: "font-serif text-display-sm lg:text-display-md" },
+  largeTitle: { tag: "h1", className: "font-serif text-display" },
   title: { tag: "h1", className: "font-serif text-heading-l" },
   subtitle: { tag: "p", className: "font-serif text-heading-m" },
   heading: { tag: "h1", className: "text-heading uppercase" },

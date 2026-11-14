@@ -16,7 +16,6 @@ import {
   EmptyState,
   ErrorState,
   IconButton,
-  ImageOptionCard,
   ItemCard,
   Spinner,
   Text,
@@ -109,7 +108,7 @@ export function PiecePicker({ onAdded }: PiecePickerProps) {
           That's the most you can add at once.
         </Text>
       )}
-      <Box className="flex justify-center gap-xl">
+      <Box className="flex justify-end gap-sm">
         <Button
           label={selectedCount}
           accessibleLabel={showingSelectedItems ? "Back to the catalog" : undefined}
@@ -211,18 +210,19 @@ function Catalog({ selected, onToggle, disabled, atLimit }: CatalogProps) {
 
   return (
     <>
-      <ul className="grid grid-cols-3 gap-lg">
+      <ul className="grid grid-cols-4 gap-lg">
         {products.map((product) => {
           const pressed = selected.some((picked) => picked.id === product.id);
 
           return (
             <li key={product.id}>
-              <ImageOptionCard
-                label={product.title}
+              <ItemCard
+                name={product.title}
                 src={product.image_url}
-                pressed={pressed}
-                selection="multi"
-                onPressedChange={(nextPressed) => onToggle(product, nextPressed)}
+                selection={{
+                  selected: pressed,
+                  onSelectedChange: (nextPressed) => onToggle(product, nextPressed),
+                }}
                 disabled={disabled || (atLimit && !pressed)}
               />
             </li>
