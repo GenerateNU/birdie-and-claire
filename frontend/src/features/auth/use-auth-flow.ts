@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect, useState, type SyntheticEvent } from "react";
+import { useEffect, useState } from "react";
 
 import { createCurrentUserMutation } from "@/api/generated/@tanstack/react-query.gen";
 import { useToast } from "@/design-system";
@@ -10,6 +10,12 @@ type Step = "choice" | "login-email" | "signup" | "verify" | "verified";
 
 type AuthPath = "login" | "signup";
 
+/** What a login or sign-up screen submits; only sign-up has a name. */
+export type SendCodeValues = { email: string; name?: string };
+
+/** What happened to a submitted code, so the verify screen knows whether to clear its field. */
+export type VerifyOutcome = "verified" | "wrong-code" | "failed";
+
 // Supabase's default minimum time between codes sent to one address; an earlier resend is refused.
 const RESEND_COUNTDOWN_SECONDS = 60;
 
@@ -18,7 +24,11 @@ const VERIFIED_REDIRECT_MS = 2000;
 // The error codes Supabase answers with when a code was requested too soon after the last one.
 const RATE_LIMIT_CODES = ["over_email_send_rate_limit", "over_request_rate_limit"];
 
-/** The login and sign-up flow: which step is showing, its fields, and what each action does. */
+/**
+ * The login and sign-up flow: which step is showing and what each action does. The screens own
+ * their fields in TanStack forms; the flow keeps the email and name once a code is sent, because
+ * the verify step and account creation need them after those screens are gone.
+ */
 export function useAuthFlow() {
   const toast = useToast();
   const navigate = useNavigate();
@@ -27,7 +37,6 @@ export function useAuthFlow() {
   const [path, setPath] = useState<AuthPath>("login");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [codeError, setCodeError] = useState<string | null>(null);
   const [resendError, setResendError] = useState<string | null>(null);
@@ -65,16 +74,20 @@ export function useAuthFlow() {
   }
 
   function resetVerifyStep() {
-    setCode("");
     setCodeError(null);
     setResendError(null);
   }
 
-  async function sendCode(e: SyntheticEvent<HTMLFormElement>) {
-    e.preventDefault();
+  async function sendCode(values: SendCodeValues) {
+    setEmail(values.email);
+
+    if (values.name !== undefined) {
+      setName(values.name);
+    }
+
     setBusy(true);
 
-    const { error } = await supabase.auth.signInWithOtp({ email });
+    const { error } = await supabase.auth.signInWithOtp({ email: values.email });
 
     setBusy(false);
 
@@ -89,7 +102,8 @@ export function useAuthFlow() {
     setStep("verify");
   }
 
-  async function resendCode() {
+  /** Resolves true when a new code was sent, so the screen can clear the digits already typed. */
+  async function resendCode(): Promise<boolean> {
     setResendError(null);
     setBusy(true);
 
@@ -104,13 +118,14 @@ export function useAuthFlow() {
           : "Couldn't send a new code. Try again.",
       );
 
-      return;
+      return false;
     }
 
-    // The new code replaces the old one, so digits already typed can only fail.
     resetVerifyStep();
     setResendSecondsLeft(RESEND_COUNTDOWN_SECONDS);
     toast.show({ message: "New code sent" });
+
+    return true;
   }
 
   function changeEmail() {
@@ -118,13 +133,11 @@ export function useAuthFlow() {
     setStep(path === "login" ? "login-email" : "signup");
   }
 
-  function changeCode(next: string) {
-    setCode(next);
+  function clearCodeError() {
     setCodeError(null);
   }
 
-  async function verifyCode(e: SyntheticEvent<HTMLFormElement>) {
-    e.preventDefault();
+  async function verifyCode(code: string): Promise<VerifyOutcome> {
     setBusy(true);
 
     const { error } = await supabase.auth.verifyOtp({ email, token: code, type: "email" });
@@ -133,25 +146,24 @@ export function useAuthFlow() {
 
     // Supabase answers a wrong code and an expired one the same way.
     if (error?.code === "otp_expired") {
-      setCode("");
       setCodeError("Incorrect code entered. Please try again.");
 
-      return;
+      return "wrong-code";
     }
 
     if (error) {
       toast.show({ message: "Couldn't verify the code. Try again." });
 
-      return;
+      return "failed";
     }
 
     if (path === "signup") {
       createAccount();
-
-      return;
+    } else {
+      setStep("verified");
     }
 
-    setStep("verified");
+    return "verified";
   }
 
   // Runs after the code is verified, so the request carries the new session.
@@ -181,10 +193,7 @@ export function useAuthFlow() {
   return {
     step,
     name,
-    setName,
     email,
-    setEmail,
-    code,
     busy,
     codeError,
     resendError,
@@ -194,7 +203,7 @@ export function useAuthFlow() {
     sendCode,
     resendCode,
     changeEmail,
-    changeCode,
+    clearCodeError,
     verifyCode,
   };
 }

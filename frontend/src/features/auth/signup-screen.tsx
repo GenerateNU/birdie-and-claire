@@ -1,53 +1,76 @@
-import type { SyntheticEvent } from "react";
+import { useForm, useStore } from "@tanstack/react-form";
+import { z } from "zod";
 
-import { Button, TextField } from "@/design-system";
+import { zCreateUserInputBody } from "@/api/generated/zod.gen";
+import { Button, Form, TextField } from "@/design-system";
 import { AuthScreen } from "@/features/auth/auth-screen";
+import type { SendCodeValues } from "@/features/auth/use-auth-flow";
+
+const signupSchema = zCreateUserInputBody.extend({
+  email: z.email("Enter a valid email address"),
+});
 
 type SignupScreenProps = {
-  name: string;
-  onNameChange: (name: string) => void;
-  email: string;
-  onEmailChange: (email: string) => void;
+  /** The name and email from an earlier visit, so "change the email address" brings them back. */
+  defaultName: string;
+  defaultEmail: string;
   busy: boolean;
-  onSubmit: (e: SyntheticEvent<HTMLFormElement>) => void;
+  onSubmit: (values: SendCodeValues) => Promise<void>;
   onBack: () => void;
 };
 
 export function SignupScreen({
-  name,
-  onNameChange,
-  email,
-  onEmailChange,
+  defaultName,
+  defaultEmail,
   busy,
   onSubmit,
   onBack,
 }: SignupScreenProps) {
+  const form = useForm({
+    defaultValues: { name: defaultName, email: defaultEmail },
+    validators: { onSubmit: signupSchema },
+    onSubmit: ({ value }) => onSubmit(value),
+  });
+
+  const name = useStore(form.store, (state) => state.values.name);
+  const email = useStore(form.store, (state) => state.values.email);
+
   return (
     <AuthScreen title="Create an Account">
-      <form onSubmit={onSubmit} className="flex flex-col gap-sm">
-        <TextField
-          label="Name"
-          hideLabel
-          placeholder="Enter Your Name"
-          autoComplete="name"
-          // The endpoint caps name at 100 characters.
-          maxLength={100}
-          required
-          value={name}
-          onValueChange={onNameChange}
-          disabled={busy}
-        />
-        <TextField
-          label="Email"
-          hideLabel
-          type="email"
-          placeholder="Enter your email address"
-          autoComplete="email"
-          required
-          value={email}
-          onValueChange={onEmailChange}
-          disabled={busy}
-        />
+      <Form form={form} className="flex flex-col gap-sm">
+        <form.Field name="name">
+          {(field) => (
+            <TextField
+              label="Name"
+              hideLabel
+              placeholder="Enter Your Name"
+              autoComplete="name"
+              required
+              value={field.state.value}
+              onValueChange={field.handleChange}
+              onBlur={field.handleBlur}
+              error={field.state.meta.errors.at(0)?.message}
+              disabled={busy}
+            />
+          )}
+        </form.Field>
+        <form.Field name="email">
+          {(field) => (
+            <TextField
+              label="Email"
+              hideLabel
+              inputMode="email"
+              placeholder="Enter your email address"
+              autoComplete="email"
+              required
+              value={field.state.value}
+              onValueChange={field.handleChange}
+              onBlur={field.handleBlur}
+              error={field.state.meta.errors.at(0)?.message}
+              disabled={busy}
+            />
+          )}
+        </form.Field>
         <Button
           label="Sign up"
           type="submit"
@@ -55,7 +78,7 @@ export function SignupScreen({
           disabled={name.trim() === "" || email === "" || busy}
         />
         <Button label="Back" variant="secondary" size="sm" onClick={onBack} disabled={busy} />
-      </form>
+      </Form>
     </AuthScreen>
   );
 }
