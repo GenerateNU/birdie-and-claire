@@ -44,7 +44,7 @@ export { TextArea } from "@/design-system/components/inputs/text-area";
 
 export { TextField } from "@/design-system/components/inputs/text-field";
 
-export { Link } from "@/design-system/components/links/link";
+export { ExternalLink, Link } from "@/design-system/components/links/link";
 
 export { TextLink } from "@/design-system/components/links/text-link";
 

@@ -37,6 +37,7 @@ export const CardSize = {
 export const ItemCardSize = {
   md: { width: "180px", photoHeight: "225px" },
   sm: { width: "120px", photoHeight: "150px" },
+  xs: { width: "80px", photoHeight: "80px" },
 } as const;
 
 // The B&C stamp on an item card's photo (`size-stamp-*`), from Figma.
