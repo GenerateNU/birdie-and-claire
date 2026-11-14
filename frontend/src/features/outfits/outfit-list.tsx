@@ -1,10 +1,10 @@
 import { useEffect, useRef } from "react";
 
-import type { Outfit } from "@/api/generated/types.gen";
+import type { OutfitResponse } from "@/api/generated/types.gen";
 import { Box, Link, Text } from "@/design-system";
 
 type OutfitListProps = {
-  outfits: Outfit[];
+  outfits: OutfitResponse[];
   nextCursor: string | null;
   onLoadMore: (cursor: string) => void;
 };
