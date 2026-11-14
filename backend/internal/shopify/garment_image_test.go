@@ -107,7 +107,7 @@ func TestPutGarmentShotFirstMovesTheFlattestImageToTheFront(t *testing.T) {
 	}
 }
 
-func TestPutGarmentShotFirstKeepsStoreOrderWhenAThumbnailFails(t *testing.T) {
+func TestPutGarmentShotFirstReportsFailureWhenAThumbnailFails(t *testing.T) {
 	client, baseURL := newTLSTestClient(t, serveThumbnails(t))
 	for _, failingPath := range []string{"/missing.png", "/oversized.png"} {
 		t.Run(failingPath, func(t *testing.T) {
@@ -119,8 +119,8 @@ func TestPutGarmentShotFirstKeepsStoreOrderWhenAThumbnailFails(t *testing.T) {
 
 			got := client.putGarmentShotFirst(context.Background(), ShopifyProduct{ID: 1, Images: images})
 
-			if !reflect.DeepEqual(got, images) {
-				t.Errorf("got  %+v\nwant the store order %+v", got, images)
+			if got != nil {
+				t.Errorf("got %+v, want nil so the stored image order can be kept", got)
 			}
 		})
 	}

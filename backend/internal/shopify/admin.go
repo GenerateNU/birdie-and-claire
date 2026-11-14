@@ -160,18 +160,11 @@ func (c *adminClient) ListActiveProducts(ctx context.Context) ([]ShopifyProduct,
 		if err != nil {
 			return nil, err
 		}
-		for _, node := range page.Nodes {
-			product, err := parseProduct(ctx, node)
-			if err != nil {
-				return nil, err
-			}
-			// The sync keeps the stored images while one is processing, so
-			// scoring them would be wasted.
-			if !product.HasProcessingImages {
-				product.Images = c.putGarmentShotFirst(ctx, product)
-			}
-			products = append(products, product)
+		pageProducts, err := c.parseProducts(ctx, page.Nodes)
+		if err != nil {
+			return nil, err
 		}
+		products = append(products, pageProducts...)
 		if !page.PageInfo.HasNextPage {
 			return products, nil
 		}
@@ -182,6 +175,25 @@ func (c *adminClient) ListActiveProducts(ctx context.Context) ([]ShopifyProduct,
 		seenCursors[page.PageInfo.EndCursor] = true
 		cursor = &page.PageInfo.EndCursor
 	}
+}
+
+func (c *adminClient) parseProducts(ctx context.Context, nodes []productNode) ([]ShopifyProduct, error) {
+	products := make([]ShopifyProduct, 0, len(nodes))
+	for _, node := range nodes {
+		product, err := parseProduct(ctx, node)
+		if err != nil {
+			return nil, err
+		}
+		// The sync keeps the stored images while one is processing, so scoring
+		// them would be wasted.
+		if !product.HasProcessingImages {
+			if scored := c.putGarmentShotFirst(ctx, product); scored != nil {
+				product.Images = scored
+			}
+		}
+		products = append(products, product)
+	}
+	return products, nil
 }
 
 func (c *adminClient) requestAccessToken(ctx context.Context) (string, error) {

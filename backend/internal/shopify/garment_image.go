@@ -28,7 +28,7 @@ const (
 // the front with position 0, since the first image is the one the app displays
 // and embeds. Garment shots sit on a flat studio backdrop and model photos do
 // not, so the image whose border is flattest wins, and a tie goes to the
-// earlier image. When a thumbnail cannot be scored, the store order is kept.
+// earlier image. It returns nil if a thumbnail cannot be scored.
 func (c *adminClient) putGarmentShotFirst(ctx context.Context, product ShopifyProduct) []ShopifyImage {
 	images := product.Images
 	if len(images) < 2 {
@@ -39,7 +39,7 @@ func (c *adminClient) putGarmentShotFirst(ctx context.Context, product ShopifyPr
 		score, err := c.scoreBorderFlatness(ctx, img.URL)
 		if err != nil {
 			log.Warn(ctx, "catalog sync: kept the store's image order, could not score an image", "shopify_id", product.ID, "image_id", img.ID, "error", err)
-			return images
+			return nil
 		}
 		if score > bestScore {
 			bestIndex, bestScore = i, score
