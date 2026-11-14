@@ -1,7 +1,8 @@
 import { CoatHangerIcon, PlusIcon } from "@phosphor-icons/react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 
-import { Box, EmptyState, ErrorState, Skeleton, Text } from "@/design-system";
+import { Box, EmptyState, ErrorState, Skeleton } from "@/design-system";
+import { SavedOutfitsLayout } from "@/features/collections/saved-outfits-layout";
 import { OutfitList } from "@/features/outfits/outfit-list";
 import { isEmptyList } from "@/features/outfits/saved-outfits";
 import { useSavedOutfits } from "@/features/outfits/use-saved-outfits";
@@ -12,16 +13,9 @@ export const Route = createFileRoute("/_signedIn/_onboarded/profile/outfits")({
 
 function OutfitsPage() {
   return (
-    <>
-      <Text variant="heading" className="mb-xs">
-        Saved Outfits
-      </Text>
-      {/* No count: GET /outfits doesn't return a total. */}
-      <Text variant="subheading" className="mb-lg">
-        All
-      </Text>
+    <SavedOutfitsLayout active="all">
       <AllOutfits />
-    </>
+    </SavedOutfitsLayout>
   );
 }
 
@@ -61,7 +55,12 @@ function AllOutfits() {
           }}
         />
       ) : (
-        <OutfitList outfits={saved.outfits} hasMore={saved.hasMore} onLoadMore={saved.loadMore} />
+        <OutfitList
+          outfits={saved.outfits}
+          hasMore={saved.hasMore}
+          onLoadMore={saved.loadMore}
+          addTile
+        />
       )}
       {saved.loadMoreError && (
         <ErrorState
