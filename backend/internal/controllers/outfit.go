@@ -95,13 +95,17 @@ type OutfitIDInput struct {
 	ID uuid.UUID `path:"id" doc:"Outfit ID"`
 }
 
-// Get returns one of the authenticated user's outfits with its products.
-func (c *OutfitController) Get(ctx context.Context, input *OutfitIDInput) (*OutfitOutput, error) {
+// Get returns one of the authenticated user's outfits with its products and their cart links.
+func (c *OutfitController) Get(ctx context.Context, input *OutfitIDInput) (*OutfitDetailOutput, error) {
 	outfit, err := c.service.Get(ctx, input.ID)
 	if err != nil {
 		return nil, errs.ToHuma(ctx, err)
 	}
-	return &OutfitOutput{Body: outfit}, nil
+	return &OutfitDetailOutput{Body: outfit}, nil
+}
+
+type OutfitDetailOutput struct {
+	Body models.OutfitDetailResponse
 }
 
 type UpdateOutfitInput struct {

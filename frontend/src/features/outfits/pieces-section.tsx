@@ -10,7 +10,7 @@ import {
   SectionHeader,
   TextButton,
 } from "@/design-system";
-import type { ProductResponse } from "@/api/generated/types.gen";
+import type { OutfitDetailProductResponse, ProductResponse } from "@/api/generated/types.gen";
 
 const STORE_BRAND = "Birdie & Claire";
 
@@ -19,16 +19,22 @@ const STORE_PRODUCT_URL = "https://birdieandclaire.com/products";
 // The Figma shows two pieces, then "+ N more".
 const COLLAPSED_PIECE_COUNT = 2;
 
+/** A shared outfit's pieces come without ownership or cart links, since its viewer may not be signed in. */
+type OutfitPiece = ProductResponse &
+  Partial<Pick<OutfitDetailProductResponse, "owned" | "cart_url">>;
+
 type PiecesSectionProps = {
-  products: ProductResponse[];
+  products: OutfitPiece[];
+  /** Shopify cart link for every piece that can be bought, absent when none can. */
+  addAllToCartUrl?: string;
 };
 
 type OutfitPieceRowProps = {
-  product: ProductResponse;
+  product: OutfitPiece;
 };
 
-/** The outfit's pieces, the first two until expanded, with Add all under them. */
-export function PiecesSection({ products }: PiecesSectionProps) {
+/** The outfit's pieces, the first two until expanded, with Add all to cart under them. */
+export function PiecesSection({ products, addAllToCartUrl }: PiecesSectionProps) {
   const [expanded, setExpanded] = useState(false);
 
   const hiddenCount = products.length - COLLAPSED_PIECE_COUNT;
@@ -63,15 +69,18 @@ export function PiecesSection({ products }: PiecesSectionProps) {
                 />
               </Box>
             )}
-            <Box title="Coming soon" className="flex flex-col">
-              <Button
-                label="Add all to cart"
-                accessibleLabel="Add all to cart, coming soon"
+            {addAllToCartUrl === undefined ? (
+              <Button label="Add all to cart" size="sm" leadingIcon={ArrowSquareOutIcon} disabled />
+            ) : (
+              <ExternalLink
+                href={addAllToCartUrl}
+                variant="primary"
                 size="sm"
                 leadingIcon={ArrowSquareOutIcon}
-                disabled
-              />
-            </Box>
+              >
+                Add all to cart
+              </ExternalLink>
+            )}
           </Box>
         </>
       )}
@@ -79,9 +88,37 @@ export function PiecesSection({ products }: PiecesSectionProps) {
   );
 }
 
-/** A Birdie & Claire piece links to its store page. A demo piece is filler with no page there. */
+/**
+ * A Birdie & Claire piece links to its store page, and to its cart when it can be bought. A demo
+ * piece is filler with no page there. A piece the user owns has no cart button.
+ */
 function OutfitPieceRow({ product }: OutfitPieceRowProps) {
-  if (product.source !== "birdie_and_claire") {
+  const isStoreProduct = product.source === "birdie_and_claire";
+
+  const viewProductLink = (
+    <ExternalLink
+      href={`${STORE_PRODUCT_URL}/${encodeURIComponent(product.handle)}`}
+      variant="secondary"
+      size="sm"
+      trailingIcon={ArrowSquareOutIcon}
+    >
+      View product
+    </ExternalLink>
+  );
+
+  if (product.owned) {
+    return (
+      <PieceRow
+        type="owned"
+        name={product.title}
+        detail="You own this"
+        src={product.image_url}
+        action={isStoreProduct ? viewProductLink : undefined}
+      />
+    );
+  }
+
+  if (!isStoreProduct) {
     return (
       <PieceRow
         type="owned"
@@ -100,26 +137,18 @@ function OutfitPieceRow({ product }: OutfitPieceRowProps) {
       detail={STORE_BRAND}
       src={product.image_url}
       action={
-        <Box title="Coming soon" className="flex flex-col">
-          <Button
-            label="Add to cart"
-            accessibleLabel="Add to cart, coming soon"
+        product.cart_url === undefined ? undefined : (
+          <ExternalLink
+            href={product.cart_url}
             variant="secondary"
             size="sm"
-            disabled
-          />
-        </Box>
+            trailingIcon={ArrowSquareOutIcon}
+          >
+            Add to cart
+          </ExternalLink>
+        )
       }
-      secondaryAction={
-        <ExternalLink
-          href={`${STORE_PRODUCT_URL}/${encodeURIComponent(product.handle)}`}
-          variant="secondary"
-          size="sm"
-          trailingIcon={ArrowSquareOutIcon}
-        >
-          View product
-        </ExternalLink>
-      }
+      secondaryAction={viewProductLink}
     />
   );
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"strings"
 
 	"birdie-and-claire/internal/auth"
 	"birdie-and-claire/internal/log"
@@ -18,7 +19,9 @@ import (
 // shares them by public link.
 type OutfitService interface {
 	Create(ctx context.Context, params models.CreateOutfitParams) (models.OutfitResponse, error)
-	Get(ctx context.Context, id uuid.UUID) (models.OutfitResponse, error)
+	// Get returns the outfit with a cart link on each product the user can buy: a Birdie & Claire product that is
+	// active, not owned by the user, and has an available variant.
+	Get(ctx context.Context, id uuid.UUID) (models.OutfitDetailResponse, error)
 	Update(ctx context.Context, id uuid.UUID, params models.UpdateOutfitParams) (models.OutfitResponse, error)
 	List(ctx context.Context, params pagination.CursorParams) (pagination.Page[models.Outfit], error)
 	Share(ctx context.Context, id uuid.UUID) (models.ShareOutfitResponse, error)
@@ -30,11 +33,12 @@ type OutfitService interface {
 }
 
 type outfitService struct {
-	repo *repository.Repository
+	repo    *repository.Repository
+	shopURL string
 }
 
-func NewOutfitService(repo *repository.Repository) OutfitService {
-	return &outfitService{repo: repo}
+func NewOutfitService(repo *repository.Repository, shopURL string) OutfitService {
+	return &outfitService{repo: repo, shopURL: shopURL}
 }
 
 func (s *outfitService) Create(ctx context.Context, params models.CreateOutfitParams) (models.OutfitResponse, error) {
@@ -45,12 +49,57 @@ func (s *outfitService) Create(ctx context.Context, params models.CreateOutfitPa
 	return models.OutfitResponse{Outfit: outfit, Products: products}, nil
 }
 
-func (s *outfitService) Get(ctx context.Context, id uuid.UUID) (models.OutfitResponse, error) {
-	outfit, products, err := s.repo.Outfit.GetByID(ctx, id, auth.UserID(ctx))
+func (s *outfitService) Get(ctx context.Context, id uuid.UUID) (models.OutfitDetailResponse, error) {
+	userID := auth.UserID(ctx)
+	outfit, products, err := s.repo.Outfit.GetByID(ctx, id, userID)
 	if err != nil {
-		return models.OutfitResponse{}, err
+		return models.OutfitDetailResponse{}, err
 	}
-	return models.OutfitResponse{Outfit: outfit, Products: products}, nil
+
+	productIDs := make([]uuid.UUID, 0, len(products))
+	for _, product := range products {
+		productIDs = append(productIDs, product.ID)
+	}
+	owned, err := s.repo.OwnedProduct.FindOwnedProductIDs(ctx, userID, productIDs)
+	if err != nil {
+		return models.OutfitDetailResponse{}, err
+	}
+	active, err := s.repo.Product.FindActiveProductIDs(ctx, productIDs)
+	if err != nil {
+		return models.OutfitDetailResponse{}, err
+	}
+	variants, err := s.repo.ProductVariant.FirstAvailableByProductIDs(ctx, productIDs)
+	if err != nil {
+		return models.OutfitDetailResponse{}, err
+	}
+
+	detailProducts := make([]models.OutfitDetailProductResponse, 0, len(products))
+	var cartItems []string
+	for _, product := range products {
+		detail := models.OutfitDetailProductResponse{ProductResponse: product, Owned: owned[product.ID]}
+		variant, hasVariant := variants[product.ID]
+		if product.Source == models.SourceBirdieAndClaire && active[product.ID] && !detail.Owned && hasVariant {
+			item := cartItem(variant)
+			detail.CartURL = s.cartURL(item)
+			cartItems = append(cartItems, item)
+		}
+		detailProducts = append(detailProducts, detail)
+	}
+
+	response := models.OutfitDetailResponse{Outfit: outfit, Products: detailProducts}
+	if len(cartItems) > 0 {
+		response.AddAllToCartURL = s.cartURL(cartItems...)
+	}
+	return response, nil
+}
+
+// cartItem is one line of a Shopify cart link, the variant and its quantity.
+func cartItem(variant models.ProductVariant) string {
+	return fmt.Sprintf("%d:1", variant.ShopifyID)
+}
+
+func (s *outfitService) cartURL(cartItems ...string) string {
+	return s.shopURL + "/cart/" + strings.Join(cartItems, ",")
 }
 
 func (s *outfitService) Update(ctx context.Context, id uuid.UUID, params models.UpdateOutfitParams) (models.OutfitResponse, error) {

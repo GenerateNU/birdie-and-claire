@@ -22,6 +22,20 @@ type OutfitResponse struct {
 	Products []ProductResponse `json:"products" nullable:"false"`
 }
 
+// OutfitDetailProductResponse is an outfit's product with what the detail screen needs to offer it for sale.
+type OutfitDetailProductResponse struct {
+	ProductResponse
+	Owned   bool   `json:"owned" doc:"Whether the signed-in user owns the product"`
+	CartURL string `json:"cart_url,omitempty" doc:"Shopify cart link adding this product, left out when it cannot be bought"`
+}
+
+// OutfitDetailResponse is an outfit as its detail screen shows it, with cart links for the pieces that can be bought.
+type OutfitDetailResponse struct {
+	Outfit
+	Products        []OutfitDetailProductResponse `json:"products" nullable:"false"`
+	AddAllToCartURL string                        `json:"add_all_to_cart_url,omitempty" doc:"Shopify cart link adding every buyable product, left out when none can be bought"`
+}
+
 // SharedOutfitResponse is what anyone with a share link sees: the owner's ID and
 // name so the page can credit them, but no timestamps.
 type SharedOutfitResponse struct {

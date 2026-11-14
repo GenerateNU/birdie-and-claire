@@ -120,7 +120,7 @@ func TestSharedOutfitShowsDescriptionAndTags(t *testing.T) {
 		t.Fatalf("share: %v", err)
 	}
 
-	shared, err := services.NewOutfitService(repository.New(db)).GetShared(ctx, outfitID)
+	shared, err := services.NewOutfitService(repository.New(db), "").GetShared(ctx, outfitID)
 	if err != nil {
 		t.Fatalf("get shared outfit: %v", err)
 	}
@@ -135,7 +135,7 @@ func TestShareLinksToFrontendPageAndCreditsOwner(t *testing.T) {
 	if _, err := db.Exec(`UPDATE users SET name = 'Birdie' WHERE id = $1`, ownerID); err != nil {
 		t.Fatalf("name owner: %v", err)
 	}
-	service := services.NewOutfitService(repository.New(db))
+	service := services.NewOutfitService(repository.New(db), "")
 
 	shared, err := service.Share(auth.WithUserID(context.Background(), ownerID), outfitID)
 	if err != nil {

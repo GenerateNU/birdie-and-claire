@@ -33,6 +33,8 @@ type ProductRepository interface {
 	// keepShopifyIDs, and returns how many it marked. Demo products are left alone.
 	DeactivateShopifyProductsExcept(ctx context.Context, keepShopifyIDs []int64) (int64, error)
 	ListUnownedProducts(ctx context.Context, userID uuid.UUID, params pagination.CursorParams) (pagination.Page[models.ProductResponse], error)
+	// FindActiveProductIDs returns the ones among productIDs whose product is active.
+	FindActiveProductIDs(ctx context.Context, productIDs []uuid.UUID) (map[uuid.UUID]bool, error)
 }
 
 const (
@@ -87,6 +89,27 @@ func (r *productRepository) GetEmbedding(ctx context.Context, productID uuid.UUI
 		return nil, slot, nil
 	}
 	return embedding.Slice(), slot, nil
+}
+
+func (r *productRepository) FindActiveProductIDs(ctx context.Context, productIDs []uuid.UUID) (map[uuid.UUID]bool, error) {
+	rows, err := r.db.QueryContext(ctx, `SELECT id FROM products WHERE id = ANY($1) AND active`, productIDs)
+	if err != nil {
+		return nil, fmt.Errorf("query active product ids: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	active := make(map[uuid.UUID]bool)
+	for rows.Next() {
+		var productID uuid.UUID
+		if err := rows.Scan(&productID); err != nil {
+			return nil, fmt.Errorf("scan active product id: %w", err)
+		}
+		active[productID] = true
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate active product ids: %w", err)
+	}
+	return active, nil
 }
 
 func (r *productRepository) FindSimilar(ctx context.Context, embedding []float32, slot models.ProductSlot, excludeTags, niceTags, typePicks []string, excludeProductIDs []uuid.UUID, limit int) ([]models.ProductResponse, error) {
