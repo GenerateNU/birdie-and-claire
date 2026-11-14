@@ -4,10 +4,11 @@ import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { createOutfitMutation } from "@/api/generated/@tanstack/react-query.gen";
-import type { RecommendedOutfit } from "@/api/generated/types.gen";
+import type { RecommendationVibe, RecommendedOutfit } from "@/api/generated/types.gen";
 import {
   Box,
   Button,
+  Modal,
   OutfitCard,
   OutfitSlot,
   PageHeader,
@@ -15,6 +16,8 @@ import {
   Text,
   useToast,
 } from "@/design-system";
+import { AnswerList } from "@/features/outfits/create-outfit/answer-list";
+import type { Step } from "@/features/outfits/create-outfit/create-outfit-options";
 import { OutfitCollage } from "@/features/outfits/outfit-collage";
 import { piecesLine } from "@/features/outfits/saved-outfits";
 import { SaveOutfitDialog } from "@/features/outfits/save-outfit-dialog";
@@ -22,13 +25,26 @@ import { SaveOutfitDialog } from "@/features/outfits/save-outfit-dialog";
 type ResultsScreenProps = {
   occasion: string;
   weatherLabel: string | null;
+  weatherSummary: string;
+  vibe: RecommendationVibe | null;
+  custom: string;
   outfits: RecommendedOutfit[];
+  onEdit: (step: Step) => void;
 };
 
-export function ResultsScreen({ occasion, weatherLabel, outfits }: ResultsScreenProps) {
+export function ResultsScreen({
+  occasion,
+  weatherLabel,
+  weatherSummary,
+  vibe,
+  custom,
+  outfits,
+  onEdit,
+}: ResultsScreenProps) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const selected = selectedIndex === null ? undefined : outfits[selectedIndex];
   const [saveOpen, setSaveOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const navigate = useNavigate();
   const toast = useToast();
 
@@ -51,8 +67,34 @@ export function ResultsScreen({ occasion, weatherLabel, outfits }: ResultsScreen
       <PageHeader
         title={occasion}
         logoTo="/"
-        actions={<Button label="Event details" variant="secondary" size="sm" />}
+        actions={
+          <Button
+            label="Occasion details"
+            variant="secondary"
+            size="sm"
+            onClick={() => setDetailsOpen(true)}
+          />
+        }
       />
+      <Modal
+        open={detailsOpen}
+        onClose={() => setDetailsOpen(false)}
+        title="Occasion Details"
+        dismissible
+        actions={[
+          { label: "Cancel", variant: "ghost", onClick: () => setDetailsOpen(false) },
+          { label: "Confirm", variant: "primary", onClick: () => setDetailsOpen(false) },
+        ]}
+      >
+        <AnswerList
+          occasion={occasion}
+          weatherSummary={weatherSummary}
+          vibe={vibe}
+          custom={custom}
+          disabled={false}
+          onEdit={onEdit}
+        />
+      </Modal>
       {selected ? (
         <Box className="flex flex-1">
           <Box className="flex flex-1 flex-col items-center justify-center gap-md p-xxxl">

@@ -300,7 +300,11 @@ export function CreateOutfitFlow() {
       <ResultsScreen
         occasion={chosenOccasion}
         weatherLabel={weatherTiles.find((tile) => tile.value === weatherTile)?.label ?? null}
+        weatherSummary={weatherSummary}
+        vibe={vibe}
+        custom={custom.trim()}
         outfits={outfits}
+        onEdit={editFromReview}
       />
     );
   }
