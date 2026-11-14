@@ -25,7 +25,7 @@ export const TypeScale = {
   "label-m": ["14px", { lineHeight: "1.2", fontWeight: "400", letterSpacing: "0.05em" }],
   "label-s": ["13px", { lineHeight: "1", fontWeight: "500", letterSpacing: "0.05em" }],
   overline: ["12px", { lineHeight: "1.3", fontWeight: "400", letterSpacing: "0.14em" }],
-  // Lofi styles, still used by `Text` until its components move to the hi-fi styles.
+  // Lofi styles, still used by `Text`. Remove this block once its components move to the hi-fi styles.
   "display-lg": ["105px", { lineHeight: "116px", fontWeight: "400" }],
   "display-md": ["86px", { lineHeight: "96px", fontWeight: "400" }],
   "display-sm": ["44px", { lineHeight: "52px", fontWeight: "400" }],

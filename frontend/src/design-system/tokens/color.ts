@@ -6,9 +6,9 @@ const Palette = {
   paper: "#FDFDFD",
   white: "#FFFFFF",
   tan: "#F0EFE9",
-  slateLight: "#E3E5E9",
-  slateMid: "#808798",
-  slateDark: "#5F6677",
+  slateSubtle: "#E3E5E9",
+  slate: "#808798",
+  slateStrong: "#5F6677",
   red: "#B3261E",
   redHover: "#8F1E18",
   redPressed: "#721813",
@@ -17,7 +17,8 @@ const Palette = {
   greenSubtle: "#E4EEE8",
 } as const;
 
-// warning and info have no hi-fi counterpart yet.
+// warning and info stay raw because Figma has no counterpart for them yet. They are the only
+// values outside Palette.
 export const StatusColor = {
   success: Palette.green,
   error: Palette.red,
@@ -27,8 +28,8 @@ export const StatusColor = {
 
 export const TextColor = {
   primary: Palette.ink,
-  secondary: Palette.slateDark,
-  disabled: Palette.slateMid,
+  secondary: Palette.slateStrong,
+  disabled: Palette.slate,
   inverse: Palette.paper,
 } as const;
 
@@ -36,15 +37,16 @@ export const BackgroundColor = {
   background: Palette.paper,
   surface: Palette.tan,
   card: Palette.white,
-  placeholder: Palette.slateLight,
-  hover: Palette.slateLight,
+  placeholder: Palette.slateSubtle,
+  // Hover on neutral surfaces such as rows and secondary controls.
+  hover: Palette.slateSubtle,
   primary: Palette.ink,
   "primary-hover": Palette.inkHover,
   "error-hover": Palette.redHover,
   "error-pressed": Palette.redPressed,
   "error-subtle": Palette.redSubtle,
   "success-subtle": Palette.greenSubtle,
-  "control-off": Palette.slateMid,
+  "control-off": Palette.slate,
   overlay: "rgba(0, 0, 0, 0.4)",
   // Darkens a photo enough for inverse text to read on it. The opacity is the lofi homescreen's.
   "photo-overlay": "rgba(0, 0, 0, 0.69)",
@@ -52,7 +54,7 @@ export const BackgroundColor = {
 
 // DEFAULT is the color the plain `border` class uses.
 export const BorderColor = {
-  DEFAULT: Palette.slateLight,
+  DEFAULT: Palette.slateSubtle,
   primary: Palette.ink,
 } as const;
 

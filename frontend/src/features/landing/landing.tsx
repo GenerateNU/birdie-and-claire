@@ -55,7 +55,7 @@ type HeroProps = {
 
 function Hero({ signedIn, onExploreFeatures }: HeroProps) {
   return (
-    <Box className="relative flex flex-1 flex-col items-center justify-center gap-lg px-md py-xxl text-inverse lg:px-xxl">
+    <Box className="relative flex flex-1 flex-col items-center justify-center gap-lg px-md py-xxxl text-inverse lg:px-xxxl">
       <img src={heroPhoto} alt="" className="absolute inset-0 size-full object-cover" />
       <Box className="absolute inset-0 bg-photo-overlay" />
       <Box className="relative flex w-full flex-col items-center gap-lg">

@@ -54,7 +54,8 @@ const samplePhoto = `data:image/svg+xml,${encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><defs><linearGradient id="g"><stop stop-color="#000000"/><stop offset="1" stop-color="#FFFFFF"/></linearGradient></defs><rect width="1" height="1" fill="url(#g)"/></svg>',
 )}`;
 
-// Literal class names, so Tailwind generates them. Serif and uppercase aren't part of a type style.
+// Literal class names, so Tailwind generates them. See TypeScale for which styles need font-serif
+// and uppercase.
 const hifiTypeSamples = [
   { scale: "display", className: "text-display font-serif" },
   { scale: "heading-l", className: "text-heading-l font-serif" },
@@ -385,7 +386,7 @@ export function Playground() {
                 <Box key={variant} className="flex flex-col gap-xxs">
                   <Text variant={variant}>The quick brown fox</Text>
                   <Label>
-                    {variant} · {scales.map(scaleLabel).join(" · lg:")}
+                    {variant} · {scales.map((scale) => scaleLabel(scale)).join(" · lg:")}
                   </Label>
                 </Box>
               ))}
@@ -418,7 +419,7 @@ export function Playground() {
               {hifiTypeSamples.map(({ scale, className }) => (
                 <Box key={scale} className="flex flex-col gap-xxs">
                   <Box className={className}>The quick brown fox</Box>
-                  <Label>{scaleLabel(scale)}</Label>
+                  <Label>{scaleLabel(scale, className)}</Label>
                 </Box>
               ))}
             </Section>
@@ -452,10 +453,11 @@ export function Playground() {
   );
 }
 
-function scaleLabel(scale: keyof typeof TypeScale) {
-  const [fontSize, { lineHeight, fontWeight }] = TypeScale[scale];
+function scaleLabel(scale: keyof typeof TypeScale, className = `text-${scale}`) {
+  const [fontSize, config] = TypeScale[scale];
+  const letterSpacing = "letterSpacing" in config ? ` · ${config.letterSpacing}` : "";
 
-  return `text-${scale} · ${fontSize}/${lineHeight} · ${fontWeight}`;
+  return `${className} · ${fontSize}/${config.lineHeight} · ${config.fontWeight}${letterSpacing}`;
 }
 
 type SectionProps = {
@@ -846,7 +848,7 @@ type SwatchProps = {
 function Swatch({ name, value }: SwatchProps) {
   return (
     <Box className="flex w-[96px] flex-col gap-xxs">
-      <Box className="h-xxl rounded-sm border" style={{ backgroundColor: value }} />
+      <Box className="h-xxxl rounded-sm border" style={{ backgroundColor: value }} />
       <Label>{name}</Label>
       <Label>{value}</Label>
     </Box>
