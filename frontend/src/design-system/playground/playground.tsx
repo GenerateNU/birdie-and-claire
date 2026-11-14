@@ -3,10 +3,13 @@ import {
   CaretLeftIcon,
   CaretRightIcon,
   DiamondsFourIcon,
+  EnvelopeSimpleIcon,
   MagnifyingGlassIcon,
   PlusIcon,
   ShareNetworkIcon,
+  SunIcon,
   UserIcon,
+  XIcon,
 } from "@phosphor-icons/react";
 import { useForm } from "@tanstack/react-form";
 import { useState, type ReactNode } from "react";
@@ -19,6 +22,8 @@ import {
   Box,
   Button,
   Checkbox,
+  Chip,
+  ChoiceGroup,
   CodeInput,
   Dialog,
   Divider,
@@ -32,14 +37,16 @@ import {
   Link,
   ListCard,
   Logo,
-  OptionCardGroup,
+  OptionTileGroup,
   ProgressBar,
   RadioGroup,
   SearchField,
+  SegmentedControl,
   StatusColor,
   Spinner,
   Tabs,
   Text,
+  TextArea,
   TextColor,
   TextButton,
   TextField,
@@ -104,6 +111,11 @@ const sectionTitles = {
   checkbox: "Checkbox",
   toggle: "Toggle",
   "text-field": "Text field",
+  "text-area": "Text area",
+  chip: "Chip",
+  "segmented-control": "Segmented control",
+  "choice-group": "Choice group",
+  "option-tile-group": "Option tile group",
   form: "Form",
   "search-field": "Search field",
   "code-input": "Code input",
@@ -117,7 +129,6 @@ const sectionTitles = {
   divider: "Divider",
   logo: "Logo",
   "radio-group": "Radio group",
-  "option-card-group": "Option card group",
   avatar: "Avatar",
   dialog: "Dialog",
   toast: "Toast",
@@ -141,6 +152,11 @@ const navGroups = [
       "checkbox",
       "toggle",
       "text-field",
+      "text-area",
+      "chip",
+      "segmented-control",
+      "choice-group",
+      "option-tile-group",
       "form",
       "search-field",
       "code-input",
@@ -154,7 +170,6 @@ const navGroups = [
       "divider",
       "logo",
       "radio-group",
-      "option-card-group",
       "avatar",
       "dialog",
       "toast",
@@ -310,7 +325,9 @@ export function Playground() {
             </Section>
 
             <Section id="checkbox">
-              <CheckboxExamples />
+              <Stage>
+                <CheckboxExamples />
+              </Stage>
             </Section>
 
             <Section id="toggle">
@@ -318,7 +335,39 @@ export function Playground() {
             </Section>
 
             <Section id="text-field">
-              <TextFieldExamples />
+              <Stage>
+                <TextFieldExamples />
+              </Stage>
+            </Section>
+
+            <Section id="text-area">
+              <Stage>
+                <TextAreaExamples />
+              </Stage>
+            </Section>
+
+            <Section id="chip">
+              <Stage>
+                <ChipExamples />
+              </Stage>
+            </Section>
+
+            <Section id="segmented-control">
+              <Stage>
+                <SegmentedControlExamples />
+              </Stage>
+            </Section>
+
+            <Section id="choice-group">
+              <Stage>
+                <ChoiceGroupExamples />
+              </Stage>
+            </Section>
+
+            <Section id="option-tile-group">
+              <Stage>
+                <OptionTileGroupExamples />
+              </Stage>
             </Section>
 
             <Section id="form">
@@ -384,11 +433,9 @@ export function Playground() {
             </Section>
 
             <Section id="radio-group">
-              <RadioExamples />
-            </Section>
-
-            <Section id="option-card-group">
-              <OptionCardExamples />
+              <Stage>
+                <RadioExamples />
+              </Stage>
             </Section>
 
             <Section id="avatar">
@@ -638,14 +685,70 @@ function FormExamples() {
   );
 }
 
+// Literal class names so Tailwind generates them. A checkbox or radio shows its hover look when
+// its label is hovered, so the box is forced directly.
+const checkboxRows = [
+  { name: "Off", checked: false, indeterminate: false, hover: "[&_[role=checkbox]]:!bg-hover" },
+  {
+    name: "On",
+    checked: true,
+    indeterminate: false,
+    hover: "[&_[role=checkbox]]:!bg-primary-hover",
+  },
+  {
+    name: "Indeterminate",
+    checked: false,
+    indeterminate: true,
+    hover: "[&_[role=checkbox]]:!bg-primary-hover",
+  },
+] as const;
+
 function CheckboxExamples() {
   const [checked, setChecked] = useState(false);
 
   return (
-    <Box className="flex flex-col gap-sm">
-      <Checkbox label="Checkbox" checked={checked} onCheckedChange={setChecked} />
-      <Checkbox label="Disabled" checked onCheckedChange={() => {}} disabled />
+    <Box className="flex flex-col gap-md">
+      <Box className="grid grid-cols-[repeat(4,max-content)] items-center gap-x-xl gap-y-sm">
+        <Box />
+        <Label>default</Label>
+        <Label>hover</Label>
+        <Label>disabled</Label>
+        {checkboxRows.map((row) => (
+          <CheckboxRow key={row.name} {...row} />
+        ))}
+      </Box>
+      <Checkbox label="Interactive" checked={checked} onCheckedChange={setChecked} />
     </Box>
+  );
+}
+
+type CheckboxRowProps = (typeof checkboxRows)[number];
+
+function CheckboxRow({ name, checked, indeterminate, hover }: CheckboxRowProps) {
+  return (
+    <>
+      <Label>{name}</Label>
+      <Checkbox
+        label="Label"
+        checked={checked}
+        indeterminate={indeterminate}
+        onCheckedChange={() => {}}
+      />
+      <Checkbox
+        label="Label"
+        checked={checked}
+        indeterminate={indeterminate}
+        onCheckedChange={() => {}}
+        className={hover}
+      />
+      <Checkbox
+        label="Label"
+        checked={checked}
+        indeterminate={indeterminate}
+        onCheckedChange={() => {}}
+        disabled
+      />
+    </>
   );
 }
 
@@ -660,24 +763,339 @@ function ToggleExamples() {
   );
 }
 
+// Forces the focused look onto the box around the input, which a screenshot can't focus.
+const forcedFocusedField = "[&_div:has(>input)]:!border-medium [&_div:has(>input)]:!border-primary";
+
 function TextFieldExamples() {
   const [value, setValue] = useState("");
 
   return (
-    <Box className="flex max-w-content-sm flex-col gap-sm">
-      <TextField
-        label="Text field"
-        placeholder="Type here"
-        value={value}
-        onValueChange={setValue}
+    <Box className="flex flex-col gap-lg">
+      <Box className="grid max-w-content-lg grid-cols-3 items-start gap-md">
+        <TextField label="Empty" placeholder="Placeholder" value="" onValueChange={() => {}} />
+        <TextField
+          label="Helper text"
+          helper="We never share your email."
+          placeholder="Placeholder"
+          value=""
+          onValueChange={() => {}}
+        />
+        <TextField
+          label="Focused"
+          value="Placeholder"
+          onValueChange={() => {}}
+          className={forcedFocusedField}
+        />
+        <TextField label="Filled" value="Placeholder" onValueChange={() => {}} />
+        <TextField label="Error" value="Placeholder" onValueChange={() => {}} error="Error text" />
+        <TextField label="Disabled" value="Placeholder" onValueChange={() => {}} disabled />
+        <TextField
+          label="Leading icon"
+          placeholder="Placeholder"
+          value=""
+          onValueChange={() => {}}
+          leadingIcon={EnvelopeSimpleIcon}
+        />
+        <TextField
+          label="Trailing icon"
+          value="Placeholder"
+          onValueChange={() => {}}
+          trailingIcon={XIcon}
+        />
+        <TextField
+          label="Both icons, disabled"
+          value="Placeholder"
+          onValueChange={() => {}}
+          leadingIcon={EnvelopeSimpleIcon}
+          trailingIcon={XIcon}
+          disabled
+        />
+      </Box>
+      <Box className="flex max-w-content-sm flex-col gap-sm">
+        <TextField
+          label="Interactive"
+          placeholder="Type here"
+          value={value}
+          onValueChange={setValue}
+        />
+        <TextField
+          label="Hidden label"
+          hideLabel
+          placeholder="Label is read by screen readers only"
+          value={value}
+          onValueChange={setValue}
+        />
+      </Box>
+    </Box>
+  );
+}
+
+const forcedFocusedTextArea = "[&_textarea]:!border-medium [&_textarea]:!border-primary";
+
+function TextAreaExamples() {
+  const [value, setValue] = useState("");
+
+  return (
+    <Box className="flex flex-col gap-lg">
+      <Box className="grid max-w-content-lg grid-cols-3 items-start gap-md">
+        <TextArea
+          label="Empty"
+          placeholder="Placeholder"
+          maxLength={250}
+          value=""
+          onValueChange={() => {}}
+        />
+        <TextArea
+          label="Focused"
+          maxLength={250}
+          value="Placeholder"
+          onValueChange={() => {}}
+          className={forcedFocusedTextArea}
+        />
+        <TextArea
+          label="Filled, with helper"
+          helper="Helper text"
+          maxLength={250}
+          value="Placeholder"
+          onValueChange={() => {}}
+        />
+        <TextArea
+          label="Error"
+          maxLength={250}
+          value="Placeholder"
+          onValueChange={() => {}}
+          error="Error message"
+        />
+        <TextArea
+          label="Disabled"
+          maxLength={250}
+          value="Placeholder"
+          onValueChange={() => {}}
+          disabled
+        />
+        <TextArea label="No count" value="Placeholder" onValueChange={() => {}} />
+      </Box>
+      <Box className="max-w-content-sm">
+        <TextArea
+          label="Interactive"
+          placeholder="Type here"
+          maxLength={250}
+          value={value}
+          onValueChange={setValue}
+        />
+      </Box>
+    </Box>
+  );
+}
+
+const chipSizes = ["md", "sm"] as const;
+
+function ChipExamples() {
+  const [selected, setSelected] = useState(false);
+
+  return (
+    <Box className="flex flex-col gap-md">
+      <Box className="grid grid-cols-[repeat(5,max-content)] items-center gap-x-xl gap-y-sm">
+        <Box />
+        <Label>default</Label>
+        <Label>hover</Label>
+        <Label>selected</Label>
+        <Label>disabled</Label>
+        {chipSizes.map((size) => (
+          <ChipRow key={size} size={size} />
+        ))}
+      </Box>
+      <Box className="flex items-center gap-md">
+        <Chip label="Add" selected={false} onSelectedChange={() => {}} leadingIcon={PlusIcon} />
+        <Chip label="Removable" selected={false} onSelectedChange={() => {}} trailingIcon={XIcon} />
+        <Chip
+          label="Both"
+          selected
+          onSelectedChange={() => {}}
+          leadingIcon={PlusIcon}
+          trailingIcon={XIcon}
+        />
+        <Chip
+          label="Disabled"
+          selected={false}
+          onSelectedChange={() => {}}
+          leadingIcon={PlusIcon}
+          trailingIcon={XIcon}
+          disabled
+        />
+        <Chip label="Interactive" selected={selected} onSelectedChange={setSelected} />
+      </Box>
+      <Label>leading icon · trailing icon · both · disabled with icons · interactive</Label>
+    </Box>
+  );
+}
+
+type ChipRowProps = {
+  size: (typeof chipSizes)[number];
+};
+
+function ChipRow({ size }: ChipRowProps) {
+  return (
+    <>
+      <Label>{size}</Label>
+      <Chip label="Chip" selected={false} onSelectedChange={() => {}} size={size} />
+      <Chip
+        label="Chip"
+        selected={false}
+        onSelectedChange={() => {}}
+        size={size}
+        className="!bg-pressed"
       />
-      <TextField label="Disabled" value="Can't edit" onValueChange={() => {}} disabled />
-      <TextField
-        label="Hidden label"
-        hideLabel
-        placeholder="Label is read by screen readers only"
-        value={value}
-        onValueChange={setValue}
+      <Chip label="Chip" selected onSelectedChange={() => {}} size={size} />
+      <Chip label="Chip" selected={false} onSelectedChange={() => {}} size={size} disabled />
+    </>
+  );
+}
+
+const segmentOptions = [
+  { label: "Option 1", value: "one" },
+  { label: "Option 2", value: "two" },
+  { label: "Option 3", value: "three" },
+  { label: "Option 4", value: "four" },
+];
+
+function SegmentedControlExamples() {
+  const [value, setValue] = useState("one");
+
+  return (
+    <Box className="flex flex-col items-start gap-md">
+      {[2, 3, 4].map((count) => (
+        <SegmentedControl
+          key={count}
+          label={`${count} options`}
+          options={segmentOptions.slice(0, count)}
+          value={value}
+          onValueChange={setValue}
+        />
+      ))}
+      <Label>2 · 3 · 4 options. Click to change the selection.</Label>
+      <Box className="flex items-center gap-xl">
+        <Box className="flex flex-col gap-xs">
+          <SegmentedControl
+            label="Hover"
+            options={segmentOptions.slice(0, 3)}
+            value="one"
+            onValueChange={() => {}}
+            className="[&_[role=radio]:not([data-checked])]:!bg-hover"
+          />
+          <Label>hover on unselected segments</Label>
+        </Box>
+        <Box className="flex flex-col gap-xs">
+          <SegmentedControl
+            label="Disabled"
+            options={segmentOptions.slice(0, 3)}
+            value="one"
+            onValueChange={() => {}}
+            disabled
+          />
+          <Label>disabled</Label>
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
+const choiceRowStates = [
+  { name: "default", selected: false, disabled: false, forced: "" },
+  {
+    name: "hover",
+    selected: false,
+    disabled: false,
+    forced: "[&_[role=radio]]:!border-primary [&_[role=radio]>div:last-child]:!bg-hover",
+  },
+  { name: "selected", selected: true, disabled: false, forced: "" },
+  { name: "disabled", selected: false, disabled: true, forced: "" },
+] as const;
+
+const choiceOptions = [
+  { label: "Option 1", value: "one" },
+  { label: "Option 2", value: "two" },
+  { label: "Option 3", value: "three" },
+  { label: "Option 4", value: "four" },
+];
+
+function ChoiceGroupExamples() {
+  const [choice, setChoice] = useState<string | null>("one");
+
+  return (
+    <Box className="flex flex-col gap-lg">
+      <Box className="grid grid-cols-2 gap-md">
+        {choiceRowStates.map((state) => (
+          <Box key={state.name} className="flex flex-col gap-xs">
+            <Label>{state.name}</Label>
+            <Box className={state.forced}>
+              <ChoiceGroup
+                options={[
+                  {
+                    label: "Yes",
+                    subtitle: "Bring me to the Birdie & Claire catalog",
+                    value: "yes",
+                    disabled: state.disabled,
+                  },
+                ]}
+                value={state.selected ? "yes" : null}
+                onValueChange={() => {}}
+              />
+            </Box>
+          </Box>
+        ))}
+      </Box>
+      <Box className="max-w-content-sm">
+        <ChoiceGroup
+          label="Four options, no subtitles"
+          options={choiceOptions}
+          value={choice}
+          onValueChange={setChoice}
+        />
+      </Box>
+    </Box>
+  );
+}
+
+const tileStates = [
+  { name: "default", selected: false, disabled: false, forced: "" },
+  { name: "hover", selected: false, disabled: false, forced: "[&_[role=radio]]:!border-primary" },
+  { name: "selected", selected: true, disabled: false, forced: "" },
+  { name: "disabled", selected: false, disabled: true, forced: "" },
+] as const;
+
+function OptionTileGroupExamples() {
+  const [weather, setWeather] = useState<string | null>(null);
+
+  return (
+    <Box className="flex flex-col gap-lg">
+      <Box className="flex flex-wrap gap-md">
+        {tileStates.map((state) => (
+          <Box key={state.name} className="flex flex-col gap-xs">
+            <Label>{state.name}</Label>
+            <Box className={state.forced}>
+              <OptionTileGroup
+                options={[
+                  {
+                    label: "Hot",
+                    subtitle: "80° and up",
+                    icon: SunIcon,
+                    value: "hot",
+                    disabled: state.disabled,
+                  },
+                ]}
+                value={state.selected ? "hot" : null}
+                onValueChange={() => {}}
+              />
+            </Box>
+          </Box>
+        ))}
+      </Box>
+      <OptionTileGroup
+        label="No icon or subtitle"
+        options={radioOptions}
+        value={weather}
+        onValueChange={setWeather}
       />
     </Box>
   );
@@ -758,41 +1176,56 @@ function ImageCardExamples() {
   );
 }
 
-function OptionCardExamples() {
-  const [size, setSize] = useState<string | null>(null);
-  const [answer, setAnswer] = useState<string | null>(null);
+const singleRadio = [{ label: "Label", value: "label" }];
 
-  return (
-    <Box className="flex max-w-content-lg flex-col gap-xl">
-      <OptionCardGroup label="Size" options={radioOptions} value={size} onValueChange={setSize} />
-      <OptionCardGroup
-        label="One column"
-        options={[
-          { label: "Yes", value: "yes" },
-          { label: "No", value: "no" },
-        ]}
-        value={answer}
-        onValueChange={setAnswer}
-        className="grid grid-cols-1 gap-md"
-      />
-    </Box>
-  );
-}
+const radioRows = [
+  { name: "Off", value: null },
+  { name: "On", value: "label" },
+] as const;
 
 function RadioExamples() {
   const [size, setSize] = useState<string | null>(null);
 
   return (
-    <Box className="flex gap-xl">
-      <RadioGroup label="Size" options={radioOptions} value={size} onValueChange={setSize} />
-      <RadioGroup
-        label="Disabled"
-        options={radioOptions}
-        value="md"
-        onValueChange={() => {}}
-        disabled
-      />
+    <Box className="flex flex-col gap-lg">
+      <Box className="grid grid-cols-[repeat(4,max-content)] items-center gap-x-xl gap-y-sm">
+        <Box />
+        <Label>default</Label>
+        <Label>hover</Label>
+        <Label>disabled</Label>
+        {radioRows.map((row) => (
+          <RadioRow key={row.name} {...row} />
+        ))}
+      </Box>
+      <Box className="flex gap-xl">
+        <RadioGroup label="Size" options={radioOptions} value={size} onValueChange={setSize} />
+        <RadioGroup
+          label="Disabled"
+          options={radioOptions}
+          value="md"
+          onValueChange={() => {}}
+          disabled
+        />
+      </Box>
     </Box>
+  );
+}
+
+type RadioRowProps = (typeof radioRows)[number];
+
+function RadioRow({ name, value }: RadioRowProps) {
+  return (
+    <>
+      <Label>{name}</Label>
+      <RadioGroup options={singleRadio} value={value} onValueChange={() => {}} />
+      <RadioGroup
+        options={singleRadio}
+        value={value}
+        onValueChange={() => {}}
+        className="[&_[role=radio]]:!bg-hover"
+      />
+      <RadioGroup options={singleRadio} value={value} onValueChange={() => {}} disabled />
+    </>
   );
 }
 
@@ -878,6 +1311,12 @@ function ToastExamples() {
       />
     </Box>
   );
+}
+
+// Hi-fi inputs are drawn for the page background. The section's own fill would hide a disabled
+// checkbox, whose fill is the same slate.
+function Stage({ children }: { children: ReactNode }) {
+  return <Box className="bg-background p-md">{children}</Box>;
 }
 
 type LabelProps = {
