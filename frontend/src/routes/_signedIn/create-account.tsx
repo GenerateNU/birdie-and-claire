@@ -6,7 +6,7 @@ import { createCurrentUserMutation } from "@/api/generated/@tanstack/react-query
 import type { ErrorModel } from "@/api/generated/types.gen";
 import { zCreateUserInputBody } from "@/api/generated/zod.gen";
 import { Button, Form, Page, Text, TextField } from "@/design-system";
-import { AccountError, requireAccountStatus } from "@/features/account/account";
+import { AccountError, NAME_ERROR, requireAccountStatus } from "@/features/account/account";
 
 export const Route = createFileRoute("/_signedIn/create-account")({
   beforeLoad: ({ context }) => requireAccountStatus(context, ["none"]),
@@ -60,11 +60,11 @@ function CreateAccount() {
           {(field) => (
             <TextField
               label="Name"
-              required
+              aria-required
               value={field.state.value}
               onValueChange={field.handleChange}
               onBlur={field.handleBlur}
-              error={field.state.meta.errors.at(0)?.message}
+              error={field.state.meta.isValid ? undefined : NAME_ERROR}
             />
           )}
         </form.Field>
