@@ -112,20 +112,22 @@ export function OnboardingFlow() {
         {step === "owns-pieces" && (
           <ChoiceQuestion
             question="Do you own any Birdie & Claire clothes?"
-            choices={[
-              { label: "Yes, I'm an existing customer!", onSelect: () => setStep("add-method") },
-              { label: "No, I'm new!", onSelect: () => setStep("style") },
+            options={[
+              { value: "add-method", label: "Yes, I'm an existing customer!" },
+              { value: "style", label: "No, I'm new!" },
             ]}
+            onContinue={setStep}
           />
         )}
         {(step === "add-method" || step === "pick-pieces") && (
           <ChoiceQuestion
             question="Welcome back!"
             subtitle="Add your Birdie & Claire items"
-            choices={[
-              { label: "Add owned items manually", onSelect: () => setStep("pick-pieces") },
-              { label: "Connect with Shop", onSelect: () => setStep("shop-login") },
+            options={[
+              { value: "pick-pieces", label: "Add owned items manually" },
+              { value: "shop-login", label: "Connect with Shop" },
             ]}
+            onContinue={setStep}
           />
         )}
         {step === "shop-login" && <ShopLoginPlaceholder />}

@@ -1,8 +1,8 @@
 import { ArrowLeftIcon } from "@phosphor-icons/react";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 import hero from "@/design-system/assets/landing/hero.jpg";
-import { Box, Button, CardImage, Logo, Page, Text } from "@/design-system";
+import { Box, Button, CardImage, ChoiceGroup, Logo, Page, Text } from "@/design-system";
 import { OnboardingStepper, type OnboardingStage } from "@/features/onboarding/onboarding-stepper";
 
 // Every screen reuses the landing hero until design exports the onboarding photos.
@@ -66,20 +66,23 @@ export function OwnedPiecesLayout({ onBack, stage, children }: OwnedPiecesLayout
   );
 }
 
-type Choice = {
-  label: string;
-  onSelect: () => void;
-};
-
-type ChoiceQuestionProps = {
+type ChoiceQuestionProps<T extends string> = {
   question: string;
   subtitle?: string;
-  choices: Choice[];
+  options: { value: T; label: string }[];
+  onContinue: (value: T) => void;
 };
 
-// Buttons, not a radio group: picking an answer moves on at once, and a radio group would also
-// pick one as the arrow keys move focus through it.
-export function ChoiceQuestion({ question, subtitle, choices }: ChoiceQuestionProps) {
+// Continue moves on, not picking a row: a radio group also picks a row as the arrow keys move
+// focus through it, which would skip the screen for keyboard users.
+export function ChoiceQuestion<T extends string>({
+  question,
+  subtitle,
+  options,
+  onContinue,
+}: ChoiceQuestionProps<T>) {
+  const [answer, setAnswer] = useState<T | null>(null);
+
   return (
     <Box className="flex flex-col items-center gap-lg">
       <Box className="flex flex-col items-center gap-xs text-center">
@@ -87,16 +90,17 @@ export function ChoiceQuestion({ question, subtitle, choices }: ChoiceQuestionPr
         {subtitle && <Text variant="subtitle">{subtitle}</Text>}
       </Box>
       {/* 564px is the answer rows' width in Figma's Own Any B&C Items 1. */}
-      <Box className="flex w-[564px] flex-col gap-sm">
-        {choices.map((choice) => (
-          <Button
-            key={choice.label}
-            label={choice.label}
-            variant="secondary"
-            className="w-full"
-            onClick={choice.onSelect}
-          />
-        ))}
+      <Box className="flex w-[564px] flex-col gap-lg">
+        <ChoiceGroup options={options} value={answer} onValueChange={setAnswer} />
+        <Button
+          label="Continue"
+          disabled={answer === null}
+          onClick={() => {
+            if (answer !== null) {
+              onContinue(answer);
+            }
+          }}
+        />
       </Box>
     </Box>
   );
