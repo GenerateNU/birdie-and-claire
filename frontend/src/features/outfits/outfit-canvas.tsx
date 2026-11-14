@@ -8,14 +8,18 @@ import {
 } from "@/features/outfits/outfit-canvas-stage";
 import type { Product } from "@/features/outfits/outfit-items";
 
-type OutfitCanvasProps = {
-  products: Product[];
-  editing?: CanvasEditing;
-  /** Controls drawn over the panel, placed by the caller with absolute positioning. */
-  children: ReactNode;
-};
+type OutfitCanvasProps =
+  | {
+      products: Product[];
+      editing: CanvasEditing;
+      /** Controls drawn over the panel, placed by the caller with absolute positioning. */
+      children: ReactNode;
+    }
+  | { products: Product[]; editing?: undefined; children?: never };
 
-type ReadOnlyOutfitCanvasProps = Omit<OutfitCanvasProps, "editing">;
+type ReadOnlyOutfitCanvasProps = {
+  products: Product[];
+};
 
 export function OutfitCanvas({ products, editing, children }: OutfitCanvasProps) {
   if (editing !== undefined) {
@@ -26,14 +30,14 @@ export function OutfitCanvas({ products, editing, children }: OutfitCanvasProps)
     );
   }
 
-  return <ReadOnlyOutfitCanvas products={products}>{children}</ReadOnlyOutfitCanvas>;
+  return <ReadOnlyOutfitCanvas products={products} />;
 }
 
-function ReadOnlyOutfitCanvas({ products, children }: ReadOnlyOutfitCanvasProps) {
+function ReadOnlyOutfitCanvas({ products }: ReadOnlyOutfitCanvasProps) {
   const drawnGarments = useDrawnGarments(products);
 
   return (
-    <CanvasStage controls={children}>
+    <CanvasStage controls={null}>
       {drawnGarments.map((drawn) => (
         <GarmentImage key={drawn.product.id} drawn={drawn} />
       ))}
