@@ -5,7 +5,7 @@ import { useState } from "react";
 
 import { replaceCurrentUserStylePreferencesMutation } from "@/api/generated/@tanstack/react-query.gen";
 import type { StylePreferences } from "@/api/generated/types.gen";
-import { Box, Button, ImageOptionCard, Logo, Modal, Page, Tabs, Text } from "@/design-system";
+import { Box, Button, ImageOptionCard, Logo, Modal, Page, Text } from "@/design-system";
 import { AccountError, requireAccountStatus } from "@/features/account/account";
 import { takeReturnPath } from "@/features/auth/return-path";
 import {
@@ -36,8 +36,6 @@ type IntroStep = (typeof introSteps)[number];
 
 type OnboardingStep = IntroStep | PreferenceField;
 
-const fitTabs = fitFields.map((field) => ({ value: field, label: questions[field].name }));
-
 const fieldOrder: PreferenceField[] = ["style", ...fitFields];
 
 function isPreferenceField(step: OnboardingStep): step is PreferenceField {
@@ -56,7 +54,7 @@ function previousStep(step: OnboardingStep): OnboardingStep | null {
     case "pick-pieces":
       return "add-method";
     default:
-      return "style";
+      return fieldOrder[fieldOrder.indexOf(step) - 1];
   }
 }
 
@@ -172,39 +170,27 @@ function Onboarding() {
     <Page className="flex flex-col pb-xxxl">
       <OnboardingStepper stage={step === "style" ? "style" : "fit"} />
 
-      <Box className="flex flex-1 flex-col items-center gap-lg">
+      <Box className="flex flex-1 flex-col items-center gap-md">
+        <Logo className="w-logo-onboarding" />
+        <Text variant="heading-l">{questions[step].prompt}</Text>
+        <Text variant="body">{preferences[step].length} selected</Text>
+        <Cards field={step} preferences={preferences} onToggle={toggle} disabled={saving} />
         <Box className="flex flex-col items-center gap-xs">
-          <Logo className="w-full max-w-xs" />
-          <Text variant="heading">{questions[step].prompt}</Text>
-        </Box>
-        {/* Tabs<PreferenceField> because the style check can't narrow step to a fit field. */}
-        {step === "style" ? (
-          <Cards field={step} preferences={preferences} onToggle={toggle} disabled={saving} />
-        ) : (
-          <Tabs<PreferenceField>
-            tabs={fitTabs}
-            value={step}
-            onValueChange={setStep}
-            disabled={saving}
-          >
-            <Cards field={step} preferences={preferences} onToggle={toggle} disabled={saving} />
-          </Tabs>
-        )}
-        <Button
-          label={nextButtonLabel(step)}
-          loading={saving}
-          onClick={() => nextFieldOrFinish(step)}
-        />
-        {back !== null && (
           <Button
-            label="Back"
-            leadingIcon={ArrowLeftIcon}
-            variant="ghost"
-            size="sm"
-            disabled={saving}
-            onClick={() => setStep(back)}
+            label={nextButtonLabel(step)}
+            loading={saving}
+            onClick={() => nextFieldOrFinish(step)}
           />
-        )}
+          {back !== null && (
+            <Button
+              label="Back"
+              leadingIcon={ArrowLeftIcon}
+              variant="ghost"
+              disabled={saving}
+              onClick={() => setStep(back)}
+            />
+          )}
+        </Box>
         {saveMutation.isError && (
           <Text variant="body" className="text-error">
             Couldn't save your preferences. Try again.
@@ -227,7 +213,7 @@ function Cards({ field, preferences, onToggle, disabled }: CardsProps) {
   const picked: readonly PreferenceValue[] = preferences[field];
 
   return (
-    <Box className="flex flex-wrap justify-center gap-md">
+    <Box className="flex flex-wrap justify-center gap-xxl py-md">
       {options.map((option) => (
         <ImageOptionCard
           key={option.value}
@@ -235,7 +221,7 @@ function Cards({ field, preferences, onToggle, disabled }: CardsProps) {
           src={option.image}
           pressed={picked.includes(option.value)}
           onPressedChange={(pressed) => onToggle(field, option.value, pressed)}
-          size="lg"
+          size={field === "style" ? "lg" : "sm"}
           selection="multi"
           disabled={disabled}
         />
