@@ -17,7 +17,10 @@ export function PreferenceCard({
 }: PreferenceCardProps) {
   return (
     <Box className="relative flex w-onboarding-preference-card flex-col gap-xs border border-control bg-background p-xs">
-      <CardImage src={src} className="w-full bg-placeholder" />
+      {/* The cutouts are transparent, so the grey comes from here and can change with the token. */}
+      <Box className="h-card-lg bg-placeholder p-lg">
+        <CardImage src={src} fit="contain" className="size-full" />
+      </Box>
       {/* The label's overlay stretches over the whole card, so clicking the photo toggles it too. */}
       <Checkbox
         label={label}
