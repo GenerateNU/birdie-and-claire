@@ -1,8 +1,12 @@
 import {
   ArrowRightIcon,
+  ArrowSquareOutIcon,
+  BookmarkSimpleIcon,
   CaretLeftIcon,
   CaretRightIcon,
+  CoatHangerIcon,
   DiamondsFourIcon,
+  HouseIcon,
   EnvelopeSimpleIcon,
   MagnifyingGlassIcon,
   PlusIcon,
@@ -44,15 +48,19 @@ import {
   MenuPanel,
   Modal,
   ModalPanel,
+  NavItem,
   OptionTileGroup,
   OutfitCard,
+  PageHeader,
   PieceRow,
   ProgressBar,
   ProgressStepper,
   RadioGroup,
   Scrim,
   SearchField,
+  SectionHeader,
   SegmentedControl,
+  Sidebar,
   StatusColor,
   Spinner,
   Tabs,
@@ -121,6 +129,10 @@ const sectionTitles = {
   buttons: "Buttons",
   link: "Link",
   header: "Header",
+  "page-header": "Page header",
+  "section-header": "Section header",
+  "nav-item": "Nav item",
+  sidebar: "Sidebar",
   checkbox: "Checkbox",
   toggle: "Toggle",
   "text-field": "Text field",
@@ -170,6 +182,10 @@ const navGroups = [
       "buttons",
       "link",
       "header",
+      "page-header",
+      "section-header",
+      "nav-item",
+      "sidebar",
       "checkbox",
       "toggle",
       "text-field",
@@ -351,6 +367,26 @@ export function Playground() {
 
             <Section id="header">
               <HeaderExamples />
+            </Section>
+
+            <Section id="page-header">
+              <PageHeaderExamples />
+            </Section>
+
+            <Section id="section-header">
+              <Stage>
+                <SectionHeaderExamples />
+              </Stage>
+            </Section>
+
+            <Section id="nav-item">
+              <Stage>
+                <NavItemExamples />
+              </Stage>
+            </Section>
+
+            <Section id="sidebar">
+              <SidebarExamples />
             </Section>
 
             <Section id="checkbox">
@@ -697,6 +733,153 @@ function HeaderExamples() {
         ]}
       />
       <Label>Features is a view button and underlines when active. The logo resets it.</Label>
+    </Box>
+  );
+}
+
+function PageHeaderExamples() {
+  return (
+    <Box className="flex flex-col gap-md">
+      <PageHeader title="Name" logoTo="/playground" actions={<Button label="Save" />} />
+      <PageHeader
+        title="Name"
+        logoTo="/playground"
+        actions={
+          <>
+            <Button label="Event details" variant="secondary" />
+            <Button label="Save outfit" />
+          </>
+        }
+      />
+      <Label>Editor with one action · Results with two</Label>
+    </Box>
+  );
+}
+
+function SectionHeaderExamples() {
+  return (
+    <Box className="flex flex-col gap-md">
+      <SectionHeader title="Recently saved" link={{ label: "See all", to: "/playground" }} />
+      <SectionHeader title="Recently saved" />
+      <Label>with link · without link</Label>
+    </Box>
+  );
+}
+
+const navItemLevels = ["main", "sub", "collapsed"] as const;
+
+// Literal class names so Tailwind generates them. The important modifier shows the hover look,
+// which the pointer can't hold still for a screenshot.
+const forcedNavItemHover = {
+  main: "!bg-hover !text-primary",
+  sub: "!bg-hover",
+  collapsed: "!bg-hover !text-primary",
+} as const;
+
+type NavItemRowProps = {
+  level: (typeof navItemLevels)[number];
+};
+
+function NavItemRow({ level }: NavItemRowProps) {
+  const item = (state: { active?: boolean; className?: string }) =>
+    level === "sub" ? (
+      <NavItem level="sub" label="Home" to="/playground" {...state} />
+    ) : (
+      <NavItem level={level} icon={HouseIcon} label="Home" to="/playground" {...state} />
+    );
+
+  return (
+    <>
+      <Label>{level}</Label>
+      {item({})}
+      {item({ className: forcedNavItemHover[level] })}
+      {item({ active: true })}
+    </>
+  );
+}
+
+function NavItemExamples() {
+  return (
+    <Box className="flex flex-col gap-md">
+      {/* The columns are Figma's 208px nav item width. */}
+      <Box className="grid grid-cols-[max-content_repeat(3,13rem)] items-center gap-x-lg gap-y-md">
+        <Box />
+        <Label>default</Label>
+        <Label>hover</Label>
+        <Label>active</Label>
+        {navItemLevels.map((level) => (
+          <NavItemRow key={level} level={level} />
+        ))}
+      </Box>
+      <Label>Collapsed shows its label as a native tooltip on hover</Label>
+    </Box>
+  );
+}
+
+const homeItem = { label: "Home", icon: HouseIcon, to: "/playground" } as const;
+
+const savedOutfitsItem = {
+  label: "Saved outfits",
+  icon: BookmarkSimpleIcon,
+  to: "/playground",
+  active: true,
+} as const;
+
+const sidebarSecondaryItems = [
+  { label: "My pieces", icon: CoatHangerIcon, to: "/playground" },
+  { label: "Shop Birdie & Claire", icon: ArrowSquareOutIcon, to: "/playground" },
+] as const;
+
+const sidebarCollections = [
+  { label: "All outfits", to: "/playground", active: true },
+  { label: "Work looks", to: "/playground" },
+  { label: "Winter looks", to: "/playground" },
+  { label: "Drafts (1)", to: "/playground" },
+  { label: "+ New collection", onClick: () => {} },
+] as const;
+
+type SidebarExampleProps = {
+  initiallyCollapsed: boolean;
+  collectionsOpen: boolean;
+};
+
+function SidebarExample({ initiallyCollapsed, collectionsOpen }: SidebarExampleProps) {
+  const [collapsed, setCollapsed] = useState(initiallyCollapsed);
+
+  return (
+    <Sidebar
+      collapsed={collapsed}
+      onToggleCollapsed={() => setCollapsed(!collapsed)}
+      logoTo="/playground"
+      action={{ label: "New outfit", onClick: () => {} }}
+      items={[
+        homeItem,
+        collectionsOpen
+          ? { ...savedOutfitsItem, subItems: [...sidebarCollections] }
+          : savedOutfitsItem,
+      ]}
+      secondaryItems={[...sidebarSecondaryItems]}
+      account={{ name: "Agnes", detail: "My account", to: "/playground" }}
+    />
+  );
+}
+
+function SidebarExamples() {
+  return (
+    <Box className="flex flex-col gap-md">
+      {/* A sidebar fills its parent's height, so each gets a bounded stage. Not a design measurement. */}
+      <Box className="flex items-start gap-md bg-background p-md">
+        <Box className="h-[46rem]">
+          <SidebarExample initiallyCollapsed={false} collectionsOpen />
+        </Box>
+        <Box className="h-[46rem]">
+          <SidebarExample initiallyCollapsed={false} collectionsOpen={false} />
+        </Box>
+        <Box className="h-[46rem]">
+          <SidebarExample initiallyCollapsed collectionsOpen={false} />
+        </Box>
+      </Box>
+      <Label>Expanded with collections open · expanded closed · collapsed. The toggle works.</Label>
     </Box>
   );
 }
