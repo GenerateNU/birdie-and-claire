@@ -1,6 +1,9 @@
 import { ArrowLeftIcon } from "@phosphor-icons/react";
+import { useMutation } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
+import { createOutfitMutation } from "@/api/generated/@tanstack/react-query.gen";
 import type { RecommendedOutfit } from "@/api/generated/types.gen";
 import {
   Box,
@@ -10,18 +13,38 @@ import {
   PageHeader,
   SectionHeader,
   Text,
+  useToast,
 } from "@/design-system";
 import { OutfitCollage } from "@/features/outfits/outfit-collage";
 import { piecesLine } from "@/features/outfits/saved-outfits";
+import { SaveOutfitDialog } from "@/features/outfits/save-outfit-dialog";
 
 type ResultsScreenProps = {
   occasion: string;
+  weatherLabel: string | null;
   outfits: RecommendedOutfit[];
 };
 
-export function ResultsScreen({ occasion, outfits }: ResultsScreenProps) {
+export function ResultsScreen({ occasion, weatherLabel, outfits }: ResultsScreenProps) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const selected = selectedIndex === null ? undefined : outfits[selectedIndex];
+  const [saveOpen, setSaveOpen] = useState(false);
+  const navigate = useNavigate();
+  const toast = useToast();
+
+  const saveMutation = useMutation({
+    ...createOutfitMutation(),
+    onSuccess: (outfit) =>
+      void navigate({ to: "/outfits/$outfitId", params: { outfitId: outfit.id } }),
+    onError: () =>
+      toast.show({ message: "Couldn't save the outfit. Try again.", variant: "error" }),
+  });
+
+  const suggestedTags = [occasion, ...(weatherLabel ? [`${weatherLabel} Weather`] : [])].filter(
+    (tag, index, tags) =>
+      tag.length <= 30 &&
+      tags.findIndex((other) => other.toLowerCase() === tag.toLowerCase()) === index,
+  );
 
   return (
     <Box className="flex min-h-screen flex-col">
@@ -43,7 +66,7 @@ export function ResultsScreen({ occasion, outfits }: ResultsScreenProps) {
             <Box className="flex h-outfit w-outfit items-center bg-surface">
               <OutfitCollage products={outfitPieces(selected)} />
             </Box>
-            <Button label="Save outfit" className="w-outfit" />
+            <Button label="Save outfit" className="w-outfit" onClick={() => setSaveOpen(true)} />
             <Button label="Customize" variant="secondary" className="w-outfit" />
           </Box>
           <Box className="flex flex-col gap-md border-l px-xl py-lg">
@@ -58,6 +81,20 @@ export function ResultsScreen({ occasion, outfits }: ResultsScreenProps) {
               ))}
             </Box>
           </Box>
+          <SaveOutfitDialog
+            open={saveOpen}
+            savedName={`${occasion} outfit ${outfits.indexOf(selected) + 1}`.slice(0, 100)}
+            savedDescription=""
+            savedTags={suggestedTags}
+            productsChanged
+            saving={saveMutation.isPending}
+            onCancel={() => setSaveOpen(false)}
+            onSave={(values) =>
+              saveMutation.mutate({
+                body: { ...values, product_ids: outfitPieces(selected).map((piece) => piece.id) },
+              })
+            }
+          />
         </Box>
       ) : (
         <Box className="flex flex-col items-center gap-xxxl p-xxxl">

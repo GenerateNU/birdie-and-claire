@@ -296,7 +296,13 @@ export function CreateOutfitFlow() {
   }
 
   if (step === "results") {
-    return <ResultsScreen occasion={chosenOccasion} outfits={outfits} />;
+    return (
+      <ResultsScreen
+        occasion={chosenOccasion}
+        weatherLabel={weatherTiles.find((tile) => tile.value === weatherTile)?.label ?? null}
+        outfits={outfits}
+      />
+    );
   }
 
   if (step === "occasion") {
