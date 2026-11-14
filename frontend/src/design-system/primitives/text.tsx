@@ -6,6 +6,8 @@ const variants = {
   headline: { tag: "h2", className: "font-serif text-heading-l" },
   heading: { tag: "h1", className: "font-serif text-heading-m" },
   subheading: { tag: "h2", className: "text-heading-s" },
+  "heading-l": { tag: "h1", className: "font-serif text-heading-l" },
+  "heading-m": { tag: "p", className: "font-serif text-heading-m" },
   "body-l": { tag: "p", className: "text-body-l" },
   body: { tag: "p", className: "text-body-m" },
   caption: { tag: "span", className: "text-body-s" },
