@@ -12,7 +12,7 @@ import type { SharedOutfitResponse } from "@/api/generated/types.gen";
 import {
   Box,
   Button,
-  Empty,
+  EmptyState,
   ErrorState,
   Link,
   Logo,
@@ -68,7 +68,7 @@ export function SharedOutfitPage({ outfitId, viewer }: SharedOutfitPageProps) {
   if (isOutfitNotFound(outfitQuery.error)) {
     return (
       <SharedOutfitFrame>
-        <Empty
+        <EmptyState
           title="This outfit isn't available"
           description="Its owner may have stopped sharing it, or deleted it."
           className="p-lg"
