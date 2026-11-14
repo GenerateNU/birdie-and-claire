@@ -5,7 +5,7 @@ import { useState } from "react";
 
 import { replaceCurrentUserStylePreferencesMutation } from "@/api/generated/@tanstack/react-query.gen";
 import type { StylePreferences } from "@/api/generated/types.gen";
-import { Box, Button, ImageOptionCard, Modal, Page, Text } from "@/design-system";
+import { Box, Button, Checkbox, ImageOptionCard, Modal, Page, Text } from "@/design-system";
 import { AccountError, requireAccountStatus } from "@/features/account/account";
 import { takeReturnPath } from "@/features/auth/return-path";
 import {
@@ -17,6 +17,7 @@ import { OnboardingStepper } from "@/features/onboarding/onboarding-stepper";
 import { addOwnedPiecesMutationKey, PiecePicker } from "@/features/pieces/piece-picker";
 import {
   fitFields,
+  includeOnePiecesLabel,
   noPreferences,
   questions,
   togglePreference,
@@ -175,6 +176,17 @@ function Onboarding() {
         <Box className="flex flex-col items-center gap-lg">
           <Text variant="body-l">{preferences[step].length} selected</Text>
           <Cards field={step} preferences={preferences} onToggle={toggle} disabled={saving} />
+          {/* Dresses and jumpsuits replace a top and bottom, so the choice sits with the bottoms. */}
+          {step === "bottoms" && (
+            <Checkbox
+              label={includeOnePiecesLabel}
+              checked={preferences.include_one_pieces}
+              onCheckedChange={(checked) =>
+                setPreferences((current) => ({ ...current, include_one_pieces: checked }))
+              }
+              disabled={saving}
+            />
+          )}
         </Box>
         <Box className="flex flex-col items-center gap-sm">
           {/* Keyed by step so a repeated Enter doesn't land on the next screen's button. Clicks past the

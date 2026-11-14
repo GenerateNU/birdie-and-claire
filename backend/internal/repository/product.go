@@ -21,7 +21,7 @@ type ProductRepository interface {
 	// FindSimilar ranks a slot's products by distance to embedding, less a bonus per matching niceTag and a bonus when the
 	// product's labeled type is one of typePicks. Tags match both the store's tags and the labeled tag lists, except
 	// that a labeled color never excludes; pass them lowercase. typePicks and excludeProductIDs may be nil.
-	FindSimilar(ctx context.Context, embedding []float32, slot models.ProductSlot, excludeTags, niceTags, typePicks []string, excludeProductIDs []uuid.UUID, limit int) ([]models.ProductResponse, error)
+	FindSimilar(ctx context.Context, embedding []float32, slot models.ProductSlot, excludeTags, niceTags, typePicks []string, excludeProductIDs []uuid.UUID, limit int) ([]ScoredProduct, error)
 	// GetEmbedding returns a nil embedding for a product that has none yet, and ErrNotFound for a missing product.
 	GetEmbedding(ctx context.Context, productID uuid.UUID) ([]float32, models.ProductSlot, error)
 	// UpsertShopifyProduct inserts or updates the product as a Birdie & Claire product and marks it active.
@@ -43,6 +43,12 @@ const (
 	// untuned: docs/Style_Preferences_Design.md's starting point for a product whose type the shopper picked
 	typePickBonus = 0.05
 )
+
+// ScoredProduct is a FindSimilar result. A lower score is a better match.
+type ScoredProduct struct {
+	Product models.ProductResponse
+	Score   float64
+}
 
 // SyncedProduct is what the catalog sync needs to know about a product it just upserted. Each hash is of what the stored
 // value was built from, and nil when the sync has not built it yet.
@@ -126,7 +132,7 @@ func (r *productRepository) FindPurchaseInfo(ctx context.Context, userID uuid.UU
 	return infos, nil
 }
 
-func (r *productRepository) FindSimilar(ctx context.Context, embedding []float32, slot models.ProductSlot, excludeTags, niceTags, typePicks []string, excludeProductIDs []uuid.UUID, limit int) ([]models.ProductResponse, error) {
+func (r *productRepository) FindSimilar(ctx context.Context, embedding []float32, slot models.ProductSlot, excludeTags, niceTags, typePicks []string, excludeProductIDs []uuid.UUID, limit int) ([]ScoredProduct, error) {
 	rows, err := r.db.QueryContext(ctx, `
 		-- Ranked and limited before the image join, so only the returned products look up an image.
 		WITH ranked AS (
@@ -160,7 +166,7 @@ func (r *productRepository) FindSimilar(ctx context.Context, embedding []float32
 			LIMIT $6
 		)
 		SELECT r.id, r.shopify_id, r.handle, r.title, r.product_type, r.slot, r.source, r.tags, r.created_at, r.updated_at,
-			first_image.url
+			first_image.url, r.score
 		FROM ranked r
 		LEFT JOIN LATERAL (
 			SELECT pi.url
@@ -176,25 +182,26 @@ func (r *productRepository) FindSimilar(ctx context.Context, embedding []float32
 	}
 	defer func() { _ = rows.Close() }()
 
-	products := make([]models.ProductResponse, 0)
+	products := make([]ScoredProduct, 0)
 	for rows.Next() {
-		var product models.ProductResponse
+		var scored ScoredProduct
 		if err := rows.Scan(
-			&product.ID,
-			&product.ShopifyID,
-			&product.Handle,
-			&product.Title,
-			&product.ProductType,
-			&product.Slot,
-			&product.Source,
-			&product.Tags,
-			&product.CreatedAt,
-			&product.UpdatedAt,
-			&product.ImageURL,
+			&scored.Product.ID,
+			&scored.Product.ShopifyID,
+			&scored.Product.Handle,
+			&scored.Product.Title,
+			&scored.Product.ProductType,
+			&scored.Product.Slot,
+			&scored.Product.Source,
+			&scored.Product.Tags,
+			&scored.Product.CreatedAt,
+			&scored.Product.UpdatedAt,
+			&scored.Product.ImageURL,
+			&scored.Score,
 		); err != nil {
 			return nil, fmt.Errorf("scan similar product in slot %s: %w", slot, err)
 		}
-		products = append(products, product)
+		products = append(products, scored)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("iterate similar products in slot %s: %w", slot, err)

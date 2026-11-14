@@ -254,6 +254,26 @@ components:
       required:
         - status
       type: object
+    OnePieceOutfit:
+      additionalProperties: false
+      properties:
+        accessory:
+          $ref: "#/components/schemas/ProductResponse"
+          description: Missing when no accessory matched
+        kind:
+          enum:
+            - one_piece
+          type: string
+        one_piece:
+          $ref: "#/components/schemas/ProductResponse"
+          description: A dress or jumpsuit in place of the top and bottom
+        shoe:
+          $ref: "#/components/schemas/ProductResponse"
+          description: Missing when no shoe matched
+      required:
+        - kind
+        - one_piece
+      type: object
     OutfitDetailProductResponse:
       additionalProperties: false
       properties:
@@ -755,6 +775,9 @@ components:
           type: string
         bottom:
           type: string
+        one_piece:
+          description: Searched only when the shopper includes one-pieces
+          type: string
         shoe:
           type: string
         top:
@@ -762,6 +785,7 @@ components:
       required:
         - top
         - bottom
+        - one_piece
         - accessory
         - shoe
       type: object
@@ -791,7 +815,14 @@ components:
         outfits:
           description: Up to 3 outfits, best first; fewer only when every slot has fewer matching products
           items:
-            $ref: "#/components/schemas/RecommendedOutfit"
+            discriminator:
+              mapping:
+                one_piece: "#/components/schemas/OnePieceOutfit"
+                separates: "#/components/schemas/SeparatesOutfit"
+              propertyName: kind
+            oneOf:
+              - $ref: "#/components/schemas/SeparatesOutfit"
+              - $ref: "#/components/schemas/OnePieceOutfit"
           type: array
       required:
         - expanded_answers
@@ -821,7 +852,7 @@ components:
         - snowy
         - storm
       type: string
-    RecommendedOutfit:
+    SeparatesOutfit:
       additionalProperties: false
       properties:
         accessory:
@@ -830,12 +861,18 @@ components:
         bottom:
           $ref: "#/components/schemas/ProductResponse"
           description: Missing when no bottom matched
+        kind:
+          enum:
+            - separates
+          type: string
         shoe:
           $ref: "#/components/schemas/ProductResponse"
           description: Missing when no shoe matched
         top:
           $ref: "#/components/schemas/ProductResponse"
           description: Missing when no top matched
+      required:
+        - kind
       type: object
     ShareOutfitResponse:
       additionalProperties: false
@@ -883,12 +920,13 @@ components:
           items:
             enum:
               - pants
-              - dress
               - skirt
               - shorts
             type: string
           type: array
           uniqueItems: true
+        include_one_pieces:
+          type: boolean
         neckline:
           items:
             enum:
@@ -924,6 +962,7 @@ components:
         - neckline
         - bottoms
         - shoes
+        - include_one_pieces
       type: object
     UpdateCollectionInputBody:
       additionalProperties: false

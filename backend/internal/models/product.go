@@ -78,7 +78,7 @@ type ProductTags struct {
 var (
 	ProductTargets   = []string{"women", "men", "girls", "boys", "unisex"}
 	NecklineTypes    = []string{"high", "modest", "low"}
-	BottomTypes      = []string{"pants", "skirt", "shorts", "dress"}
+	BottomTypes      = []string{"pants", "skirt", "shorts"}
 	ShoeTypes        = []string{"sneakers", "boots", "sandals", "heels", "flats"}
 	ProductTagValues = ProductTags{
 		Colors: []string{"black", "white", "grey", "charcoal", "navy", "blue", "green", "olive", "red", "pink", "purple",

@@ -31,8 +31,10 @@ type CurrentUserResponse struct {
 type StylePreferences struct {
 	Style    []string `json:"style" enum:"chic_avant_garde,timeless_sophisticated,colorful_eclectic,comfortable_relaxed" uniqueItems:"true" nullable:"false"`
 	Neckline []string `json:"neckline" enum:"modest,high,low" uniqueItems:"true" nullable:"false"`
-	Bottoms  []string `json:"bottoms" enum:"pants,dress,skirt,shorts" uniqueItems:"true" nullable:"false"`
+	Bottoms  []string `json:"bottoms" enum:"pants,skirt,shorts" uniqueItems:"true" nullable:"false"`
 	Shoes    []string `json:"shoes" enum:"sneakers,boots,sandals,heels,flats" uniqueItems:"true" nullable:"false"`
+	// IncludeOnePieces lets recommendations offer a dress or jumpsuit in place of a top and a bottom.
+	IncludeOnePieces bool `json:"include_one_pieces"`
 }
 
 func (p StylePreferences) Value() (driver.Value, error) {

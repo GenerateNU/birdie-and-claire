@@ -198,7 +198,11 @@ func (s *outfitService) Suggest(ctx context.Context, id uuid.UUID, productIDs []
 		if err != nil {
 			return models.OutfitSuggestionsResponse{}, err
 		}
-		suggestions[productID] = similar
+		products := make([]models.ProductResponse, 0, len(similar))
+		for _, scored := range similar {
+			products = append(products, scored.Product)
+		}
+		suggestions[productID] = products
 	}
 	return models.OutfitSuggestionsResponse{Suggestions: suggestions}, nil
 }
