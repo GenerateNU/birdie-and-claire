@@ -173,12 +173,16 @@ function Onboarding() {
     <Page className="flex flex-col pb-xxxl">
       <OnboardingStepper stage={step === "style" ? "style" : "fit"} />
 
-      <Box className="flex flex-1 flex-col items-center gap-md">
-        <Logo className="w-logo-onboarding" />
-        <Text variant="heading-l">{questions[step].prompt}</Text>
-        <Text variant="body">{preferences[step].length} selected</Text>
-        <Cards field={step} preferences={preferences} onToggle={toggle} disabled={saving} />
-        <Box className="flex flex-col items-center gap-xs">
+      <Box className="mt-lg flex flex-1 flex-col items-center">
+        <Box className="flex flex-col items-center gap-lg">
+          <Logo className="w-logo-onboarding" />
+          <Text variant="heading-l">{questions[step].prompt}</Text>
+          <Text variant="body">{preferences[step].length} selected</Text>
+        </Box>
+        <Box className="mt-xl">
+          <Cards field={step} preferences={preferences} onToggle={toggle} disabled={saving} />
+        </Box>
+        <Box className="mt-xxxl flex flex-col items-center gap-xs">
           <Button
             label={nextButtonLabel(step)}
             loading={saving}
@@ -216,7 +220,7 @@ function Cards({ field, preferences, onToggle, disabled }: CardsProps) {
   const picked: readonly PreferenceValue[] = preferences[field];
 
   return (
-    <Box className="flex flex-wrap justify-center gap-xxl py-md">
+    <Box className="flex flex-wrap justify-center gap-xxl">
       {options.map((option) => (
         <ImageOptionCard
           key={option.value}
@@ -224,7 +228,7 @@ function Cards({ field, preferences, onToggle, disabled }: CardsProps) {
           src={option.image}
           pressed={picked.includes(option.value)}
           onPressedChange={(pressed) => onToggle(field, option.value, pressed)}
-          size={field === "style" ? "lg" : "sm"}
+          size="lg"
           selection="multi"
           disabled={disabled}
         />
