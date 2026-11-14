@@ -26,10 +26,13 @@ const (
 	maxErrorBodyBytes = 4 << 10
 	// The product with the most images had 22 when this was set.
 	imagesPerProduct = 50
+	// Set above the variant count of any product when this was set.
+	variantsPerProduct = 100
 )
 
-// productsQuery requests about 135 of the 1000 points Shopify allows one query.
-const productsQuery = `query ActiveProducts($cursor: String, $imagesPerProduct: Int!) {
+// productsQuery has to stay under the 1000 points Shopify allows one query, so
+// check its cost when raising imagesPerProduct or variantsPerProduct.
+const productsQuery = `query ActiveProducts($cursor: String, $imagesPerProduct: Int!, $variantsPerProduct: Int!) {
   products(first: 25, after: $cursor, query: "status:active") {
     pageInfo { hasNextPage endCursor }
     nodes {
@@ -50,6 +53,10 @@ const productsQuery = `query ActiveProducts($cursor: String, $imagesPerProduct: 
           id
           ... on MediaImage { status image { url altText width height } }
         }
+      }
+      variants(first: $variantsPerProduct) {
+        pageInfo { hasNextPage }
+        nodes { id availableForSale position }
       }
     }
   }
@@ -79,8 +86,9 @@ type graphQLRequest struct {
 
 type productsVariables struct {
 	// nil asks for the first page
-	Cursor           *string `json:"cursor"`
-	ImagesPerProduct int     `json:"imagesPerProduct"`
+	Cursor             *string `json:"cursor"`
+	ImagesPerProduct   int     `json:"imagesPerProduct"`
+	VariantsPerProduct int     `json:"variantsPerProduct"`
 }
 
 type graphQLError struct {
@@ -126,6 +134,20 @@ type productNode struct {
 		} `json:"pageInfo"`
 		Nodes []mediaNode `json:"nodes"`
 	} `json:"media"`
+	Variants variantPage `json:"variants"`
+}
+
+type variantPage struct {
+	PageInfo struct {
+		HasNextPage bool `json:"hasNextPage"`
+	} `json:"pageInfo"`
+	Nodes []variantNode `json:"nodes"`
+}
+
+type variantNode struct {
+	ID               string `json:"id"`
+	AvailableForSale bool   `json:"availableForSale"`
+	Position         int    `json:"position"`
 }
 
 type metafieldNode struct {
@@ -218,7 +240,7 @@ func (c *adminClient) requestAccessToken(ctx context.Context) (string, error) {
 func (c *adminClient) queryProducts(ctx context.Context, token string, cursor *string) (productPage, error) {
 	body, err := json.Marshal(graphQLRequest{
 		Query:     productsQuery,
-		Variables: productsVariables{Cursor: cursor, ImagesPerProduct: imagesPerProduct},
+		Variables: productsVariables{Cursor: cursor, ImagesPerProduct: imagesPerProduct, VariantsPerProduct: variantsPerProduct},
 	})
 	if err != nil {
 		return productPage{}, fmt.Errorf("shopify: encode products query: %w", err)
@@ -318,6 +340,11 @@ func parseProduct(ctx context.Context, node productNode) (ShopifyProduct, error)
 		})
 	}
 
+	variants, err := parseVariants(id, node.Variants)
+	if err != nil {
+		return ShopifyProduct{}, err
+	}
+
 	options := make([]ShopifyOption, len(node.Options))
 	for i, option := range node.Options {
 		options[i] = ShopifyOption{Name: option.Name, Values: option.Values}
@@ -343,8 +370,30 @@ func parseProduct(ctx context.Context, node productNode) (ShopifyProduct, error)
 		Materials:           materials,
 		ModelInfo:           metafieldValue(node.ModelInfo),
 		Images:              images,
+		Variants:            variants,
 		HasProcessingImages: hasProcessingImages,
 	}, nil
+}
+
+func parseVariants(productID int64, page variantPage) ([]ShopifyVariant, error) {
+	// A partial list would make the sync delete the variants left off it.
+	if page.PageInfo.HasNextPage {
+		return nil, fmt.Errorf("shopify: product %d has more than %d variants, the most the client fetches per product", productID, variantsPerProduct)
+	}
+	// Shopify gives every product a variant, so none means the response is wrong.
+	if len(page.Nodes) == 0 {
+		return nil, fmt.Errorf("shopify: product %d has no variants", productID)
+	}
+
+	variants := make([]ShopifyVariant, 0, len(page.Nodes))
+	for _, variant := range page.Nodes {
+		variantID, err := parseGID(variant.ID, "ProductVariant")
+		if err != nil {
+			return nil, err
+		}
+		variants = append(variants, ShopifyVariant{ID: variantID, Available: variant.AvailableForSale, Position: variant.Position})
+	}
+	return variants, nil
 }
 
 func metafieldValue(metafield *metafieldNode) string {

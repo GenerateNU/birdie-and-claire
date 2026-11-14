@@ -11,7 +11,7 @@ import (
 )
 
 func OutfitRoutes(api huma.API, params types.RouteParams) {
-	service := services.NewOutfitService(params.ServiceParams.Repository)
+	service := services.NewOutfitService(params.ServiceParams.Repository, params.ServiceParams.Config.Shopify.URL)
 	controller := controllers.NewOutfitController(service)
 
 	huma.Register(api, huma.Operation{
