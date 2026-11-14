@@ -177,7 +177,7 @@ function PreferenceRow({ field, preferences, editing, saving, onToggle }: Prefer
           <ImageOptionCard
             key={option.value}
             label={option.label}
-            src={null}
+            src={option.image}
             pressed={picked.includes(option.value)}
             onPressedChange={(pressed) => onToggle(field, option.value, pressed)}
             size="sm"

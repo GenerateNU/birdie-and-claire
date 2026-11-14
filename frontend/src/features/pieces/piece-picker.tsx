@@ -1,3 +1,4 @@
+import { TrashIcon } from "@phosphor-icons/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
 
@@ -14,12 +15,18 @@ import {
   Button,
   EmptyState,
   ErrorState,
+  IconButton,
   ImageOptionCard,
+  ItemCard,
   Spinner,
   Text,
 } from "@/design-system";
 import { LoadMoreSentinel } from "@/features/pieces/load-more-sentinel";
 import { usePagination } from "@/lib/use-pagination";
+
+// The generated mutation options carry no key, so this names the picker's save for callers that
+// need to know it is in flight, through useIsMutating.
+export const addOwnedPiecesMutationKey = ["add-owned-pieces"];
 
 type PiecePickerProps = {
   onAdded: () => void;
@@ -29,9 +36,11 @@ type PiecePickerProps = {
 export function PiecePicker({ onAdded }: PiecePickerProps) {
   const queryClient = useQueryClient();
   const [selected, setSelected] = useState<ProductResponse[]>([]);
+  const [showingSelectedItems, setShowingSelectedItems] = useState(false);
 
   const addMutation = useMutation({
     ...addCurrentUserPiecesMutation(),
+    mutationKey: addOwnedPiecesMutationKey,
     // The catalog leaves owned pieces out, so both lists change.
     onSuccess: () =>
       Promise.all([
@@ -40,9 +49,19 @@ export function PiecePicker({ onAdded }: PiecePickerProps) {
       ]),
   });
 
+  // A failed save's error is about the selection that was sent, so it clears once that changes.
+  function changeSelection(next: ProductResponse[]) {
+    addMutation.reset();
+    setSelected(next);
+
+    if (next.length === 0) {
+      setShowingSelectedItems(false);
+    }
+  }
+
   function toggle(product: ProductResponse, pressed: boolean) {
-    setSelected((current) =>
-      pressed ? [...current, product] : current.filter((picked) => picked.id !== product.id),
+    changeSelection(
+      pressed ? [...selected, product] : selected.filter((picked) => picked.id !== product.id),
     );
   }
 
@@ -65,47 +84,71 @@ export function PiecePicker({ onAdded }: PiecePickerProps) {
     "",
   ]).success;
 
-  return (
-    <Box className="flex flex-col gap-lg">
-      <Text variant="heading">Add B&C Clothes You Own</Text>
+  const selectedCount = `${selected.length} ${selected.length === 1 ? "Item" : "Items"} Selected`;
 
-      <Box className="flex flex-col gap-lg lg:flex-row lg:items-start">
-        <Box className="min-w-0 flex-1">
+  return (
+    <Box className="flex flex-col gap-md">
+      <Box className="relative">
+        {/* Scrolls inside part of the viewport so the buttons below stay in view, in the onboarding
+            modal and on /pieces/add alike. */}
+        <Box inert={showingSelectedItems} className="max-h-[60vh] overflow-y-auto pr-xs">
           <Catalog selected={selected} onToggle={toggle} disabled={saving} atLimit={atLimit} />
         </Box>
-
-        <Box className="flex flex-col gap-sm border p-md lg:sticky lg:top-md lg:w-1/4">
-          <Text variant="body">
-            {selected.length} {selected.length === 1 ? "item" : "items"} selected
-          </Text>
-          {atLimit && (
-            <Text variant="caption" className="text-secondary">
-              That's the most you can add at once.
-            </Text>
-          )}
-          {selected.length > 0 && (
-            <ul className="grid grid-cols-2 gap-xs">
+        {showingSelectedItems && (
+          <Box className="absolute inset-y-0 right-0 flex w-3/5 flex-col gap-md overflow-y-auto border-l bg-card p-md shadow-modal">
+            <Box className="flex flex-col items-center text-center">
+              <Box className="text-label-l-strong">Selected Items</Box>
+              <Text variant="body" className="text-secondary">
+                You can always add more in your profile later!
+              </Text>
+            </Box>
+            <ul className="grid grid-cols-2 gap-md">
               {selected.map((product) => (
-                <li key={product.id}>
-                  <Text variant="caption">{product.title}</Text>
+                <li key={product.id} className="relative">
+                  <ItemCard name={product.title} src={product.image_url} size="sm" />
+                  <IconButton
+                    icon={TrashIcon}
+                    label={`Remove ${product.title}`}
+                    variant="secondary"
+                    size="sm"
+                    disabled={saving}
+                    className="absolute right-xs top-xs"
+                    onClick={() =>
+                      changeSelection(selected.filter((picked) => picked.id !== product.id))
+                    }
+                  />
                 </li>
               ))}
             </ul>
-          )}
-          <Button
-            label="Add Items to Owned"
-            loading={saving}
-            loadingLabel="Adding…"
-            disabled={selected.length === 0}
-            onClick={addSelected}
-          />
-          {addMutation.isError && (
-            <Text variant="body" className="text-error">
-              Couldn't add your pieces. Try again.
-            </Text>
-          )}
-        </Box>
+          </Box>
+        )}
       </Box>
+      {atLimit && (
+        <Text variant="caption" className="text-center text-secondary">
+          That's the most you can add at once.
+        </Text>
+      )}
+      <Box className="flex justify-center gap-xl">
+        <Button
+          label={selectedCount}
+          accessibleLabel={showingSelectedItems ? "Back to the catalog" : undefined}
+          variant="secondary"
+          disabled={selected.length === 0 || saving}
+          onClick={() => setShowingSelectedItems(!showingSelectedItems)}
+        />
+        <Button
+          label="Add Items to Owned"
+          loading={saving}
+          loadingLabel="Adding…"
+          disabled={selected.length === 0}
+          onClick={addSelected}
+        />
+      </Box>
+      {addMutation.isError && (
+        <Text variant="body" className="text-center text-error">
+          Couldn't add your pieces. Try again.
+        </Text>
+      )}
     </Box>
   );
 }
@@ -152,7 +195,7 @@ function Catalog({ selected, onToggle, disabled, atLimit }: CatalogProps) {
 
   return (
     <>
-      <ul className="grid grid-cols-2 gap-md md:grid-cols-3">
+      <ul className="grid grid-cols-3 gap-lg">
         {products.map((product) => {
           const pressed = selected.some((picked) => picked.id === product.id);
 
