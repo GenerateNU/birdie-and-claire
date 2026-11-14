@@ -17,6 +17,7 @@ type ShopifyProduct struct {
 	Materials  []string
 	ModelInfo  string
 	Images     []ShopifyImage
+	Variants   []ShopifyVariant
 	// Shopify has no URL yet for an image it is still processing, so Images
 	// leaves it out and is incomplete.
 	HasProcessingImages bool
@@ -35,6 +36,12 @@ type ShopifyImage struct {
 	Width    int
 	Height   int
 	Position int
+}
+
+type ShopifyVariant struct {
+	ID        int64
+	Available bool
+	Position  int
 }
 
 type CatalogSource interface {

@@ -54,7 +54,13 @@ function OutfitDetailsPage() {
     );
   }
 
-  const { name, description, tags, products } = outfitQuery.data;
+  const {
+    name,
+    description,
+    tags,
+    products,
+    add_all_to_cart_url: addAllToCartUrl,
+  } = outfitQuery.data;
 
   return (
     <main className="flex flex-col gap-xl p-md lg:h-screen lg:flex-row lg:gap-xxxl lg:p-xxl">
@@ -105,7 +111,7 @@ function OutfitDetailsPage() {
           </ul>
         </header>
         <Box className="order-3 flex flex-col gap-xl">
-          <PiecesSection products={products} />
+          <PiecesSection products={products} addAllToCartUrl={addAllToCartUrl} />
           <ExternalPiecesSection />
         </Box>
       </section>
