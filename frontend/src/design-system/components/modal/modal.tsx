@@ -13,6 +13,7 @@ type ModalProps = {
   open: boolean;
   onClose: () => void;
   title: string;
+  subtitle?: string;
   message?: string;
   actions: ModalAction[];
   /** Lets a click outside, Esc, and a close button dismiss it. Without it, only an action closes. */
@@ -27,6 +28,7 @@ export function Modal({
   open,
   onClose,
   title,
+  subtitle,
   message,
   actions,
   dismissible = false,
@@ -62,6 +64,7 @@ export function Modal({
         >
           <ModalPanel
             title={title}
+            subtitle={subtitle}
             message={message}
             actions={actions}
             size={size}

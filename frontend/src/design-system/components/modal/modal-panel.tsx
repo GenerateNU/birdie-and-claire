@@ -33,6 +33,8 @@ function ModalImage({ image }: { image: string | null }) {
 
 type ModalPanelProps = {
   title: string;
+  /** A line under the title, in the header. */
+  subtitle?: string;
   message?: string;
   /** Content between the message and the actions, for a modal that shows more than text. */
   children?: ReactNode;
@@ -50,6 +52,7 @@ type ModalPanelProps = {
 /** The modal itself, without the scrim or the portal, so it can also sit in the page. */
 export function ModalPanel({
   title,
+  subtitle,
   message,
   children,
   actions,
@@ -66,9 +69,12 @@ export function ModalPanel({
       {image !== undefined && <ModalImage image={image} />}
       <Box className="flex min-w-0 flex-1 flex-col">
         <Box className="flex items-center gap-md border-b px-xl py-lg">
-          <h2 id={titleId} className="flex-1 break-words font-serif text-heading-m">
-            {title}
-          </h2>
+          <Box className="flex min-w-0 flex-1 flex-col gap-xxs break-words">
+            <h2 id={titleId} className="font-serif text-heading-m">
+              {title}
+            </h2>
+            {subtitle && <p className="text-body-m text-secondary">{subtitle}</p>}
+          </Box>
           {onClose && (
             <IconButton icon={XIcon} label="Close" variant="ghost" size="sm" onClick={onClose} />
           )}

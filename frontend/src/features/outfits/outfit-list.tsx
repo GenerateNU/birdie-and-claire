@@ -1,15 +1,17 @@
+import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 
-import type { Outfit } from "@/api/generated/types.gen";
-import { Box, Link, Text } from "@/design-system";
+import type { OutfitResponse } from "@/api/generated/types.gen";
+import { OutfitCard } from "@/design-system";
 
 type OutfitListProps = {
-  outfits: Outfit[];
+  outfits: OutfitResponse[];
   nextCursor: string | null;
   onLoadMore: (cursor: string) => void;
 };
 
 export function OutfitList({ outfits, nextCursor, onLoadMore }: OutfitListProps) {
+  const navigate = useNavigate();
   const sentinelRef = useRef<HTMLLIElement>(null);
 
   useEffect(() => {
@@ -31,29 +33,22 @@ export function OutfitList({ outfits, nextCursor, onLoadMore }: OutfitListProps)
   }, [nextCursor, onLoadMore]);
 
   return (
-    <ul className="grid grid-cols-1 gap-lg sm:grid-cols-2 lg:grid-cols-3">
+    <ul className="flex flex-wrap gap-lg">
       {outfits.map((outfit) => (
         <li key={outfit.id}>
-          <Link
-            className="block border p-xs"
-            to="/outfits/$outfitId"
-            params={{ outfitId: outfit.id }}
-          >
-            {/* Outfits have no image yet. */}
-            <Box aria-hidden="true" className="aspect-[3/1] bg-placeholder" />
-            <Text variant="body" className="mt-xs font-semibold">
-              {outfit.name}
-            </Text>
-            <Text variant="caption" className="text-secondary">
-              {new Date(outfit.created_at).toLocaleDateString(undefined, { dateStyle: "medium" })}
-            </Text>
-          </Link>
+          {/* Outfits have no image yet. */}
+          <OutfitCard
+            mode="browse"
+            title={outfit.name}
+            src={null}
+            onOpen={() =>
+              void navigate({ to: "/outfits/$outfitId", params: { outfitId: outfit.id } })
+            }
+          />
         </li>
       ))}
       {/* A full row of its own, so it only comes into view after the last card. */}
-      {nextCursor !== null && (
-        <li ref={sentinelRef} aria-hidden="true" className="col-span-full h-px" />
-      )}
+      {nextCursor !== null && <li ref={sentinelRef} aria-hidden="true" className="h-px w-full" />}
     </ul>
   );
 }

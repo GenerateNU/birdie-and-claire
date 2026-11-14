@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"net/url"
 	"slices"
 	"strings"
 
@@ -20,22 +19,42 @@ import (
 )
 
 // Shopify's taxonomy category, matched on the prefix of its full name. The first
-// match wins.
+// match wins. Categories that don't fill exactly one slot, such as swimwear,
+// sleepwear, underwear, suits, and outfit sets, have no rule, so the sync skips them.
 var slotsByCategory = []struct {
 	prefix string
 	slot   models.ProductSlot
 }{
 	{"Apparel & Accessories > Clothing > Clothing Tops", models.SlotTop},
 	{"Apparel & Accessories > Clothing > Swimwear > Cover Ups", models.SlotTop},
-	{"Apparel & Accessories > Clothing > Skirts", models.SlotBottom},
-	{"Apparel & Accessories > Clothing Accessories", models.SlotAccessory},
-	{"Luggage & Bags", models.SlotAccessory},
-}
+	{"Apparel & Accessories > Clothing > Outerwear > Coats & Jackets", models.SlotTop},
+	{"Apparel & Accessories > Clothing > Outerwear > Vests", models.SlotTop},
+	{"Apparel & Accessories > Clothing > Activewear > Activewear Tops", models.SlotTop},
+	{"Apparel & Accessories > Clothing > Activewear > Activewear Sweatshirts & Hoodies", models.SlotTop},
+	{"Apparel & Accessories > Clothing > Activewear > Activewear Vests & Jackets", models.SlotTop},
+	{"Apparel & Accessories > Clothing > Maternity Clothing > Maternity Tops", models.SlotTop},
+	{"Apparel & Accessories > Clothing > Maternity Clothing > Maternity Outerwear", models.SlotTop},
 
-// A one-piece takes the place of a top and a bottom, which no slot can hold yet (#117).
-var onePieceCategories = []string{
-	"Apparel & Accessories > Clothing > Dresses",
-	"Apparel & Accessories > Clothing > One-Pieces",
+	{"Apparel & Accessories > Clothing > Skirts", models.SlotBottom},
+	{"Apparel & Accessories > Clothing > Skorts", models.SlotBottom},
+	{"Apparel & Accessories > Clothing > Pants", models.SlotBottom},
+	{"Apparel & Accessories > Clothing > Shorts", models.SlotBottom},
+	{"Apparel & Accessories > Clothing > Activewear > Activewear Pants", models.SlotBottom},
+	{"Apparel & Accessories > Clothing > Maternity Clothing > Maternity Pants", models.SlotBottom},
+	{"Apparel & Accessories > Clothing > Maternity Clothing > Maternity Skirts", models.SlotBottom},
+
+	{"Apparel & Accessories > Clothing > Dresses", models.SlotOnePiece},
+	{"Apparel & Accessories > Clothing > One-Pieces", models.SlotOnePiece},
+	{"Apparel & Accessories > Clothing > Wedding & Bridal Party Dresses", models.SlotOnePiece},
+	{"Apparel & Accessories > Clothing > Maternity Clothing > Maternity Dresses", models.SlotOnePiece},
+	{"Apparel & Accessories > Clothing > Maternity Clothing > Maternity One-Pieces", models.SlotOnePiece},
+
+	{"Apparel & Accessories > Shoes", models.SlotShoe},
+
+	{"Apparel & Accessories > Clothing Accessories", models.SlotAccessory},
+	{"Apparel & Accessories > Jewelry", models.SlotAccessory},
+	{"Apparel & Accessories > Handbags, Wallets & Cases", models.SlotAccessory},
+	{"Luggage & Bags", models.SlotAccessory},
 }
 
 // Store merchandising tags, lowercase. They describe a campaign or a price band,
@@ -88,9 +107,7 @@ func (s *catalogSyncService) Sync(ctx context.Context) error {
 	for _, product := range products {
 		slot, found := slotForCategory(product.Category)
 		if !found {
-			if !isOnePiece(product.Category) {
-				log.Warn(ctx, "catalog sync: skipped a product no slot rule matches", "shopify_id", product.ID, "category", product.Category)
-			}
+			log.Warn(ctx, "catalog sync: skipped a product no slot rule matches", "shopify_id", product.ID, "category", product.Category)
 			continue
 		}
 
@@ -169,7 +186,7 @@ func (s *catalogSyncService) refreshAttributes(ctx context.Context, product shop
 // better than the title and store tags alone, and the embedder reads only the first 77 tokens.
 func (s *catalogSyncService) refreshEmbedding(ctx context.Context, product shopify.ShopifyProduct, synced repository.SyncedProduct) error {
 	text := strings.Join(append([]string{product.Title}, product.Tags...), ", ")
-	imageURL, err := resizedImageURL(product.Images[0].URL)
+	imageURL, err := shopify.ResizedImageURL(product.Images[0].URL, imageWidth)
 	if err != nil {
 		return err
 	}
@@ -201,7 +218,7 @@ func labelInput(product shopify.ShopifyProduct, slot models.ProductSlot) (llm.Pr
 
 	imageURLs := make([]string, 0, labeledImagesPerProduct)
 	for _, image := range product.Images[:min(len(product.Images), labeledImagesPerProduct)] {
-		imageURL, err := resizedImageURL(image.URL)
+		imageURL, err := shopify.ResizedImageURL(image.URL, imageWidth)
 		if err != nil {
 			return llm.ProductLabelInput{}, err
 		}
@@ -227,15 +244,6 @@ func slotForCategory(category string) (models.ProductSlot, bool) {
 	return "", false
 }
 
-func isOnePiece(category string) bool {
-	for _, prefix := range onePieceCategories {
-		if strings.HasPrefix(category, prefix) {
-			return true
-		}
-	}
-	return false
-}
-
 func isMarketingTag(tag string) bool {
 	lowerTag := strings.ToLower(tag)
 	if slices.Contains(marketingTags, lowerTag) {
@@ -247,19 +255,6 @@ func isMarketingTag(tag string) bool {
 		}
 	}
 	return false
-}
-
-// resizedImageURL keeps the URL's existing query, which on Shopify's CDN holds the
-// image version.
-func resizedImageURL(imageURL string) (string, error) {
-	parsed, err := url.Parse(imageURL)
-	if err != nil {
-		return "", fmt.Errorf("parse image url: %w", err)
-	}
-	query := parsed.Query()
-	query.Set("width", imageWidth)
-	parsed.RawQuery = query.Encode()
-	return parsed.String(), nil
 }
 
 func hashInputs(inputs ...string) string {

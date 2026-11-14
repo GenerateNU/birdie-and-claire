@@ -17,46 +17,53 @@ const boxClasses = {
   },
 };
 
-type CheckboxProps = {
-  label: string;
+type CheckboxBoxProps = {
   checked: boolean;
   /** Shows a dash instead of a check, for a parent whose children are only partly checked. */
   indeterminate?: boolean;
   onCheckedChange: (checked: boolean) => void;
   disabled?: boolean;
-  className?: string;
 };
 
-export function Checkbox({
-  label,
+export function CheckboxBox({
   checked,
   indeterminate = false,
   onCheckedChange,
   disabled = false,
-  className,
-}: CheckboxProps) {
-  const labelClasses = disabled
-    ? "group inline-flex items-center gap-xs text-body-m text-disabled"
-    : "group inline-flex items-center gap-xs text-body-m text-primary";
-
+}: CheckboxBoxProps) {
   const boxState =
     boxClasses[checked || indeterminate ? "filled" : "empty"][disabled ? "disabled" : "enabled"];
 
   const StateIcon = indeterminate ? MinusIcon : CheckIcon;
 
   return (
+    <BaseCheckbox.Root
+      checked={checked}
+      indeterminate={indeterminate}
+      onCheckedChange={onCheckedChange}
+      disabled={disabled}
+      className={`flex size-control shrink-0 items-center justify-center border focus-ring motion-safe:transition-colors ${boxState}`}
+    >
+      <BaseCheckbox.Indicator aria-hidden="true" className="flex">
+        <StateIcon size={iconSize} />
+      </BaseCheckbox.Indicator>
+    </BaseCheckbox.Root>
+  );
+}
+
+type CheckboxProps = CheckboxBoxProps & {
+  label: string;
+  className?: string;
+};
+
+export function Checkbox({ label, className, ...boxProps }: CheckboxProps) {
+  const labelClasses = boxProps.disabled
+    ? "group inline-flex items-center gap-xs text-body-m text-disabled"
+    : "group inline-flex items-center gap-xs text-body-m text-primary";
+
+  return (
     <label className={joinClasses(labelClasses, className)}>
-      <BaseCheckbox.Root
-        checked={checked}
-        indeterminate={indeterminate}
-        onCheckedChange={onCheckedChange}
-        disabled={disabled}
-        className={`flex size-control shrink-0 items-center justify-center border focus-ring motion-safe:transition-colors ${boxState}`}
-      >
-        <BaseCheckbox.Indicator aria-hidden="true" className="flex">
-          <StateIcon size={iconSize} />
-        </BaseCheckbox.Indicator>
-      </BaseCheckbox.Root>
+      <CheckboxBox {...boxProps} />
       {label}
     </label>
   );

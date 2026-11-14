@@ -1,11 +1,13 @@
 import { Input as BaseInput } from "@base-ui/react/input";
-import type { Icon } from "@phosphor-icons/react";
+import { XIcon, type Icon } from "@phosphor-icons/react";
 import type { KeyboardEvent } from "react";
 
+import { IconButton } from "@/design-system/components/buttons/icon-button";
+import { fieldBoxClasses, fieldTextClasses } from "@/design-system/components/inputs/field-classes";
 import { Box } from "@/design-system/primitives/box";
 import { joinClasses } from "@/design-system/utils/join-classes";
 
-const inputClasses = "w-full rounded-sm border bg-background px-sm py-xs text-body focus-ring";
+const iconSize = 16;
 
 type SearchFieldProps = {
   label: string;
@@ -16,6 +18,7 @@ type SearchFieldProps = {
   onClick?: () => void;
   maxLength?: number;
   inactive?: boolean;
+  disabled?: boolean;
   leadingIcon?: Icon;
   className?: string;
 };
@@ -29,11 +32,10 @@ export function SearchField({
   onClick,
   maxLength,
   inactive = false,
+  disabled = false,
   leadingIcon: LeadingIcon,
   className,
 }: SearchFieldProps) {
-  const stateClasses = inactive ? `${inputClasses} text-secondary` : inputClasses;
-
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
     // Enter while an IME is composing confirms the character, not the field.
     if (e.key !== "Enter" || e.nativeEvent.isComposing) {
@@ -43,31 +45,37 @@ export function SearchField({
     onSubmit();
   }
 
-  const input = (
-    <BaseInput
-      aria-label={label}
-      placeholder={placeholder}
-      value={value}
-      onValueChange={onValueChange}
-      onKeyDown={handleKeyDown}
-      onClick={onClick}
-      maxLength={maxLength}
-      enterKeyHint="go"
-      className={LeadingIcon ? `${stateClasses} pl-xxxl` : joinClasses(stateClasses, className)}
-    />
-  );
-
-  if (!LeadingIcon) {
-    return input;
-  }
+  const boxClasses = fieldBoxClasses({ disabled, invalid: false });
+  const textClasses = inactive ? `${fieldTextClasses} text-secondary` : fieldTextClasses;
 
   return (
-    <Box className={joinClasses("relative", className)}>
-      <LeadingIcon
-        aria-hidden="true"
-        className="pointer-events-none absolute left-sm top-1/2 size-lg -translate-y-1/2 text-secondary"
+    <Box className={joinClasses(`flex h-xxl items-center gap-xs px-sm ${boxClasses}`, className)}>
+      {LeadingIcon && (
+        <LeadingIcon size={iconSize} aria-hidden="true" className="shrink-0 text-secondary" />
+      )}
+      <BaseInput
+        aria-label={label}
+        placeholder={placeholder}
+        value={value}
+        onValueChange={onValueChange}
+        onKeyDown={handleKeyDown}
+        onClick={onClick}
+        maxLength={maxLength}
+        disabled={disabled}
+        enterKeyHint="go"
+        className={`min-w-0 flex-1 bg-transparent ${textClasses}`}
       />
-      {input}
+      {value !== "" && !disabled && !inactive && (
+        <IconButton
+          icon={XIcon}
+          label={`Clear ${label}`}
+          variant="ghost"
+          size="sm"
+          onClick={() => onValueChange("")}
+          // Pulls the 32px button into the padding so the x sits where Figma's 16px icon does.
+          className="-mr-xs"
+        />
+      )}
     </Box>
   );
 }

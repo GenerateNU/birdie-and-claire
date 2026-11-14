@@ -1,10 +1,10 @@
-import { CaretLeft } from "@phosphor-icons/react";
+import { ArrowLeftIcon } from "@phosphor-icons/react";
 import type { QueryClient } from "@tanstack/react-query";
 import { createRootRouteWithContext, Outlet, useRouterState } from "@tanstack/react-router";
 import { useAnimate, useReducedMotion } from "motion/react";
 import { useEffect, useRef } from "react";
 
-import { Box, Page, Text, TextLink } from "@/design-system";
+import { Box, Link, Page, Text } from "@/design-system";
 
 type RouterContext = { queryClient: QueryClient };
 
@@ -49,9 +49,9 @@ function NotFound() {
       <Text variant="heading" className="mb-xs">
         Page not found
       </Text>
-      <TextLink to="/" leadingIcon={CaretLeft}>
+      <Link to="/" variant="ghost" size="sm" leadingIcon={ArrowLeftIcon}>
         Home
-      </TextLink>
+      </Link>
     </Page>
   );
 }

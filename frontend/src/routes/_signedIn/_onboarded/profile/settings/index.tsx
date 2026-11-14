@@ -1,4 +1,4 @@
-import { CaretRight } from "@phosphor-icons/react";
+import { ArrowRightIcon } from "@phosphor-icons/react";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { Box, Button, Link, Text } from "@/design-system";
@@ -22,10 +22,10 @@ function SettingsPage() {
       </Box>
       <Link
         to="/profile/settings/style-preferences"
-        className="mb-xl flex items-center justify-between border border-primary px-md py-sm text-body hover:bg-surface focus-ring"
+        className="mb-xl flex items-center justify-between border border-primary px-md py-sm text-body-m hover:bg-surface focus-ring"
       >
         Style Preferences
-        <CaretRight aria-hidden="true" className="text-heading" />
+        <ArrowRightIcon size={16} aria-hidden="true" />
       </Link>
       <Button label="Sign out" variant="secondary" onClick={signOut} />
     </>

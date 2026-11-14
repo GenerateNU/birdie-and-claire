@@ -102,7 +102,7 @@ func TestSuggestOutfitItemsRequiresProductID(t *testing.T) {
 }
 
 func newSuggestionService(db *sql.DB) services.OutfitService {
-	return services.NewOutfitService(repository.New(db), "")
+	return services.NewOutfitService(repository.New(db))
 }
 
 // insertSuggestionOutfit saves an outfit of the given products for a new user.
@@ -114,11 +114,7 @@ func insertSuggestionOutfit(t *testing.T, db *sql.DB, productIDs ...uuid.UUID) (
 	if err != nil {
 		t.Fatalf("create outfit: %v", err)
 	}
-	// outfit_products.outfit_id has no ON DELETE CASCADE, so its rows go first.
-	t.Cleanup(func() {
-		_, _ = db.Exec(`DELETE FROM outfit_products WHERE outfit_id = $1`, outfit.ID)
-		_, _ = db.Exec(`DELETE FROM outfits WHERE id = $1`, outfit.ID)
-	})
+	t.Cleanup(func() { _, _ = db.Exec(`DELETE FROM outfits WHERE id = $1`, outfit.ID) })
 	return outfit.ID, ownerID
 }
 
