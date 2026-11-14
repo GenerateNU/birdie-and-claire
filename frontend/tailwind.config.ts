@@ -93,7 +93,6 @@ export default {
         "logo-sidebar": LogoSize.sidebar.width,
         "logo-header": LogoSize.header.width,
         "logo-onboarding": LogoSize.onboarding.width,
-        "logo-onboarding-fit": LogoSize["onboarding-fit"].width,
         ...Object.fromEntries(
           Object.entries(OnboardingWidth).map(([key, value]) => [`onboarding-${key}`, value]),
         ),
@@ -128,7 +127,6 @@ export default {
         "logo-sidebar": LogoSize.sidebar.height,
         "logo-header": LogoSize.header.height,
         "logo-onboarding": LogoSize.onboarding.height,
-        "logo-onboarding-fit": LogoSize["onboarding-fit"].height,
       },
       maxHeight: { "scroll-area": ScrollAreaHeight },
       minHeight: { "choice-row": ChoiceRowHeight },

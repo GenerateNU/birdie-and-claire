@@ -121,7 +121,6 @@ export const LogoSize = {
   sidebar: { width: "9.375rem", height: "2.9375rem" },
   header: { width: "11.25rem", height: "3.5625rem" },
   onboarding: { width: "20.75rem", height: "6.5625rem" },
-  "onboarding-fit": { width: "15.625rem", height: "4.9375rem" },
 } as const;
 
 export const AspectRatio = {
