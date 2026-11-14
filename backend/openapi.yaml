@@ -567,7 +567,7 @@ components:
         expanded_answers:
           $ref: "#/components/schemas/RecommendationExpandedAnswers"
         outfits:
-          description: Up to 3 outfits, best first; fewer when a slot has fewer matching products
+          description: Up to 3 outfits, best first; fewer only when every slot has fewer matching products
           items:
             $ref: "#/components/schemas/RecommendedOutfit"
           type: array
@@ -599,23 +599,22 @@ components:
       properties:
         accessory:
           $ref: "#/components/schemas/ProductResponse"
+          description: Missing when no accessory matched
         bottom:
           $ref: "#/components/schemas/ProductResponse"
+          description: Missing when no bottom matched
         shoe:
           $ref: "#/components/schemas/ProductResponse"
+          description: Missing when no shoe matched
         top:
           $ref: "#/components/schemas/ProductResponse"
-      required:
-        - top
-        - bottom
-        - accessory
-        - shoe
+          description: Missing when no top matched
       type: object
     ShareOutfitResponse:
       additionalProperties: false
       properties:
         url:
-          description: Public link to the outfit; stays the same across re-shares
+          description: Path of the outfit's public page, relative to the frontend origin; stays the same across re-shares
           type: string
       required:
         - url
@@ -627,6 +626,10 @@ components:
           type: string
         name:
           type: string
+        owner_id:
+          type: string
+        owner_name:
+          type: string
         products:
           items:
             $ref: "#/components/schemas/ProductResponse"
@@ -634,6 +637,8 @@ components:
       required:
         - id
         - name
+        - owner_id
+        - owner_name
         - products
       type: object
     StylePreferences:

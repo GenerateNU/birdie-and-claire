@@ -41,3 +41,10 @@ function Anchor({
 
 /** A type-checked route link, unstyled unless `variant` styles it like a Button. */
 export const Link = createLink(Anchor);
+
+type ExternalLinkProps = AnchorProps & { href: string };
+
+/** A link out of the app, opened in a new tab. Styled like `Link`. */
+export function ExternalLink(props: ExternalLinkProps) {
+  return <Anchor {...props} target="_blank" rel="noopener noreferrer" />;
+}
