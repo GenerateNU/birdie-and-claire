@@ -42,19 +42,24 @@ function isPreferenceField(step: OnboardingStep): step is PreferenceField {
   return !introSteps.some((introStep) => introStep === step);
 }
 
+const lastField = fieldOrder[fieldOrder.length - 1];
+
 function previousStep(step: OnboardingStep): OnboardingStep | null {
+  if (isPreferenceField(step)) {
+    const index = fieldOrder.indexOf(step);
+
+    return index === 0 ? "owns-pieces" : fieldOrder[index - 1];
+  }
+
   switch (step) {
     case "welcome":
     case "owns-pieces":
       return null;
     case "add-method":
-    case "style":
       return "owns-pieces";
     case "shop-login":
     case "pick-pieces":
       return "add-method";
-    default:
-      return fieldOrder[fieldOrder.indexOf(step) - 1];
   }
 }
 
@@ -82,23 +87,21 @@ function Onboarding() {
   }
 
   function nextFieldOrFinish(field: PreferenceField) {
-    const next = fieldOrder[fieldOrder.indexOf(field) + 1];
-
-    if (next === undefined) {
+    if (field === lastField) {
       saveMutation.mutate({ body: preferences });
 
       return;
     }
 
-    setStep(next);
+    setStep(fieldOrder[fieldOrder.indexOf(field) + 1]);
   }
 
   function nextButtonLabel(field: PreferenceField) {
     if (preferences[field].length === 0) {
-      return "No Preference";
+      return "No preference";
     }
 
-    return field === fieldOrder[fieldOrder.length - 1] ? "Finish" : "Next";
+    return field === lastField ? "Finish" : "Next";
   }
 
   if (step === "welcome") {
@@ -191,7 +194,7 @@ function Onboarding() {
             />
           )}
         </Box>
-        {saveMutation.isError && (
+        {step === lastField && saveMutation.isError && (
           <Text variant="body" className="text-error">
             Couldn't save your preferences. Try again.
           </Text>
