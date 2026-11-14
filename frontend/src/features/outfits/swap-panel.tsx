@@ -44,6 +44,7 @@ const TAB_ORDER: SwapTab[] = ["suggested", "owned", "catalog"];
 
 const SLOT_NAMES: Record<Product["slot"], { heading: string; plural: string }> = {
   top: { heading: "TOP", plural: "Tops" },
+  one_piece: { heading: "ONE-PIECE", plural: "One-Pieces" },
   bottom: { heading: "BOTTOM", plural: "Bottoms" },
   shoe: { heading: "SHOE", plural: "Shoes" },
   accessory: { heading: "ACCESSORY", plural: "Accessories" },
