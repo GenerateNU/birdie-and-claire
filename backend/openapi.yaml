@@ -985,7 +985,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/OutfitResponse"
+                $ref: "#/components/schemas/OutfitDetailResponse"
           description: Created
         default:
           content:
@@ -1074,7 +1074,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/OutfitResponse"
+                $ref: "#/components/schemas/OutfitDetailResponse"
           description: OK
         default:
           content:

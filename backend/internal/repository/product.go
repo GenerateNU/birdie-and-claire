@@ -33,8 +33,8 @@ type ProductRepository interface {
 	// keepShopifyIDs, and returns how many it marked. Demo products are left alone.
 	DeactivateShopifyProductsExcept(ctx context.Context, keepShopifyIDs []int64) (int64, error)
 	ListUnownedProducts(ctx context.Context, userID uuid.UUID, params pagination.CursorParams) (pagination.Page[models.ProductResponse], error)
-	// FindActiveProductIDs returns the ones among productIDs whose product is active.
-	FindActiveProductIDs(ctx context.Context, productIDs []uuid.UUID) (map[uuid.UUID]bool, error)
+	// FindPurchaseInfo maps each of productIDs that exists to what decides whether userID can buy it.
+	FindPurchaseInfo(ctx context.Context, userID uuid.UUID, productIDs []uuid.UUID) (map[uuid.UUID]models.ProductPurchaseInfo, error)
 }
 
 const (
@@ -91,25 +91,39 @@ func (r *productRepository) GetEmbedding(ctx context.Context, productID uuid.UUI
 	return embedding.Slice(), slot, nil
 }
 
-func (r *productRepository) FindActiveProductIDs(ctx context.Context, productIDs []uuid.UUID) (map[uuid.UUID]bool, error) {
-	rows, err := r.db.QueryContext(ctx, `SELECT id FROM products WHERE id = ANY($1) AND active`, productIDs)
+func (r *productRepository) FindPurchaseInfo(ctx context.Context, userID uuid.UUID, productIDs []uuid.UUID) (map[uuid.UUID]models.ProductPurchaseInfo, error) {
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT
+			p.id,
+			EXISTS (SELECT 1 FROM owned_products o WHERE o.user_id = $1 AND o.product_id = p.id),
+			p.active,
+			(
+				SELECT v.shopify_id FROM product_variants v
+				WHERE v.product_id = p.id AND v.available
+				ORDER BY v.position, v.id
+				LIMIT 1
+			)
+		FROM products p
+		WHERE p.id = ANY($2)
+	`, userID, productIDs)
 	if err != nil {
-		return nil, fmt.Errorf("query active product ids: %w", err)
+		return nil, fmt.Errorf("query purchase info for user %s: %w", userID, err)
 	}
 	defer func() { _ = rows.Close() }()
 
-	active := make(map[uuid.UUID]bool)
+	infos := make(map[uuid.UUID]models.ProductPurchaseInfo)
 	for rows.Next() {
 		var productID uuid.UUID
-		if err := rows.Scan(&productID); err != nil {
-			return nil, fmt.Errorf("scan active product id: %w", err)
+		var info models.ProductPurchaseInfo
+		if err := rows.Scan(&productID, &info.Owned, &info.Active, &info.VariantShopifyID); err != nil {
+			return nil, fmt.Errorf("scan purchase info: %w", err)
 		}
-		active[productID] = true
+		infos[productID] = info
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate active product ids: %w", err)
+		return nil, fmt.Errorf("iterate purchase info for user %s: %w", userID, err)
 	}
-	return active, nil
+	return infos, nil
 }
 
 func (r *productRepository) FindSimilar(ctx context.Context, embedding []float32, slot models.ProductSlot, excludeTags, niceTags, typePicks []string, excludeProductIDs []uuid.UUID, limit int) ([]models.ProductResponse, error) {

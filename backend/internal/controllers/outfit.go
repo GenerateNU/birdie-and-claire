@@ -73,12 +73,8 @@ func (input *CreateOutfitInput) Resolve(huma.Context) []error {
 	return nil
 }
 
-type OutfitOutput struct {
-	Body models.OutfitResponse
-}
-
-// Create saves an outfit for the authenticated user and returns it with its products.
-func (c *OutfitController) Create(ctx context.Context, input *CreateOutfitInput) (*OutfitOutput, error) {
+// Create saves an outfit for the authenticated user and returns it with its products and their cart links.
+func (c *OutfitController) Create(ctx context.Context, input *CreateOutfitInput) (*OutfitDetailOutput, error) {
 	outfit, err := c.service.Create(ctx, models.CreateOutfitParams{
 		Name:        input.Body.Name,
 		Description: input.Body.Description,
@@ -88,7 +84,7 @@ func (c *OutfitController) Create(ctx context.Context, input *CreateOutfitInput)
 	if err != nil {
 		return nil, errs.ToHuma(ctx, err)
 	}
-	return &OutfitOutput{Body: outfit}, nil
+	return &OutfitDetailOutput{Body: outfit}, nil
 }
 
 type OutfitIDInput struct {
@@ -136,7 +132,7 @@ func (input *UpdateOutfitInput) Resolve(huma.Context) []error {
 	return nil
 }
 
-func (c *OutfitController) Update(ctx context.Context, input *UpdateOutfitInput) (*OutfitOutput, error) {
+func (c *OutfitController) Update(ctx context.Context, input *UpdateOutfitInput) (*OutfitDetailOutput, error) {
 	outfit, err := c.service.Update(ctx, input.ID, models.UpdateOutfitParams{
 		Name:        input.Body.Name,
 		Description: input.Body.Description,
@@ -146,7 +142,7 @@ func (c *OutfitController) Update(ctx context.Context, input *UpdateOutfitInput)
 	if err != nil {
 		return nil, errs.ToHuma(ctx, err)
 	}
-	return &OutfitOutput{Body: outfit}, nil
+	return &OutfitDetailOutput{Body: outfit}, nil
 }
 
 type ShareOutfitOutput struct {

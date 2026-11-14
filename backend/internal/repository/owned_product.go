@@ -25,8 +25,6 @@ type OwnedProductRepository interface {
 	ListOwnedProducts(ctx context.Context, userID uuid.UUID, params pagination.CursorParams) (pagination.Page[models.OwnedProductResponse], error)
 	// AddOwnedProducts skips products userID already owns, so adding one twice changes nothing.
 	AddOwnedProducts(ctx context.Context, userID uuid.UUID, productIDs []uuid.UUID) error
-	// FindOwnedProductIDs returns the ones among productIDs that userID owns.
-	FindOwnedProductIDs(ctx context.Context, userID uuid.UUID, productIDs []uuid.UUID) (map[uuid.UUID]bool, error)
 	// RemoveOwnedProduct returns ErrNotFound when userID doesn't own the product.
 	RemoveOwnedProduct(ctx context.Context, userID uuid.UUID, productID uuid.UUID) error
 }
@@ -66,31 +64,6 @@ func (r *ownedProductRepository) AddOwnedProducts(ctx context.Context, userID uu
 		return fmt.Errorf("add owned products for user %s: %w", userID, err)
 	}
 	return nil
-}
-
-func (r *ownedProductRepository) FindOwnedProductIDs(ctx context.Context, userID uuid.UUID, productIDs []uuid.UUID) (map[uuid.UUID]bool, error) {
-	rows, err := r.db.QueryContext(ctx, `
-		SELECT product_id
-		FROM owned_products
-		WHERE user_id = $1 AND product_id = ANY($2)
-	`, userID, productIDs)
-	if err != nil {
-		return nil, fmt.Errorf("query owned product ids for user %s: %w", userID, err)
-	}
-	defer func() { _ = rows.Close() }()
-
-	owned := make(map[uuid.UUID]bool)
-	for rows.Next() {
-		var productID uuid.UUID
-		if err := rows.Scan(&productID); err != nil {
-			return nil, fmt.Errorf("scan owned product id: %w", err)
-		}
-		owned[productID] = true
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate owned product ids for user %s: %w", userID, err)
-	}
-	return owned, nil
 }
 
 func (r *ownedProductRepository) RemoveOwnedProduct(ctx context.Context, userID uuid.UUID, productID uuid.UUID) error {

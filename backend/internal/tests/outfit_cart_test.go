@@ -53,7 +53,7 @@ func insertCartProduct(t *testing.T, db *sql.DB, source models.ProductSource, ac
 	return productID, shopifyIDs
 }
 
-func TestFirstAvailableVariantTakesLowestPositionAmongAvailable(t *testing.T) {
+func TestFindPurchaseInfoTakesLowestPositionAmongAvailableVariants(t *testing.T) {
 	db := openTestDB(t)
 	productID, shopifyIDs := insertCartProduct(t, db, models.SourceBirdieAndClaire, true,
 		cartTestVariant{available: true, position: 3},
@@ -62,14 +62,18 @@ func TestFirstAvailableVariantTakesLowestPositionAmongAvailable(t *testing.T) {
 	)
 	soldOutID, _ := insertCartProduct(t, db, models.SourceBirdieAndClaire, true, cartTestVariant{available: false, position: 1})
 	noVariantsID, _ := insertCartProduct(t, db, models.SourceBirdieAndClaire, true)
+	_, userID := insertSuggestionOutfit(t, db, productID)
 
-	got, err := repository.NewProductVariantRepository(db).FirstAvailableByProductIDs(context.Background(), []uuid.UUID{productID, soldOutID, noVariantsID})
+	got, err := repository.NewProductRepository(db).FindPurchaseInfo(context.Background(), userID, []uuid.UUID{productID, soldOutID, noVariantsID})
 	if err != nil {
-		t.Fatalf("FirstAvailableByProductIDs: %v", err)
+		t.Fatalf("FindPurchaseInfo: %v", err)
 	}
 
-	if len(got) != 1 || got[productID].ShopifyID != shopifyIDs[2] {
-		t.Fatalf("got %+v, want only product %s with variant %d", got, productID, shopifyIDs[2])
+	if got[productID].VariantShopifyID == nil || *got[productID].VariantShopifyID != shopifyIDs[2] {
+		t.Errorf("variant of product with available variants = %v, want %d", got[productID].VariantShopifyID, shopifyIDs[2])
+	}
+	if got[soldOutID].VariantShopifyID != nil || got[noVariantsID].VariantShopifyID != nil {
+		t.Errorf("sold out and variantless products have variants %v and %v, want none", got[soldOutID].VariantShopifyID, got[noVariantsID].VariantShopifyID)
 	}
 }
 

@@ -69,7 +69,7 @@ func TestListActiveProductsPutsTheGarmentShotFirst(t *testing.T) {
 		baseURL := "https://" + r.Host
 		node := fmt.Sprintf(`{"id":"gid://shopify/Product/1","media":{"pageInfo":{"hasNextPage":false},"nodes":[`+
 			`{"id":"gid://shopify/MediaImage/10","image":{"url":"%[1]s/model.png?v=1"}},`+
-			`{"id":"gid://shopify/MediaImage/20","image":{"url":"%[1]s/garment.jpg?v=1"}}]}}`, baseURL)
+			`{"id":"gid://shopify/MediaImage/20","image":{"url":"%[1]s/garment.jpg?v=1"}}]},"variants":%[2]s}`, baseURL, oneVariantJSON)
 		_, _ = io.WriteString(w, buildPageJSON(false, "", node))
 	})
 	mux.HandleFunc("GET /", serveThumbnails(t))
