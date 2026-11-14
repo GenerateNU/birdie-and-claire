@@ -7,7 +7,7 @@ import { fieldBoxClasses, fieldTextClasses } from "@/design-system/components/in
 import { Box } from "@/design-system/primitives/box";
 import { joinClasses } from "@/design-system/utils/join-classes";
 
-const iconSize = 16;
+const iconSizes = { md: 16, sm: 12 } as const;
 
 type SearchFieldProps = {
   label: string;
@@ -20,6 +20,7 @@ type SearchFieldProps = {
   inactive?: boolean;
   disabled?: boolean;
   leadingIcon?: Icon;
+  size?: keyof typeof iconSizes;
   className?: string;
 };
 
@@ -34,6 +35,7 @@ export function SearchField({
   inactive = false,
   disabled = false,
   leadingIcon: LeadingIcon,
+  size = "md",
   className,
 }: SearchFieldProps) {
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
@@ -46,12 +48,17 @@ export function SearchField({
   }
 
   const boxClasses = fieldBoxClasses({ disabled, invalid: false });
-  const textClasses = inactive ? `${fieldTextClasses} text-secondary` : fieldTextClasses;
+  const sizedTextClasses = size === "sm" ? `${fieldTextClasses} text-body-s` : fieldTextClasses;
+  const textClasses = inactive ? `${sizedTextClasses} text-secondary` : sizedTextClasses;
 
   return (
     <Box className={joinClasses(`flex h-xxl items-center gap-xs px-sm ${boxClasses}`, className)}>
       {LeadingIcon && (
-        <LeadingIcon size={iconSize} aria-hidden="true" className="shrink-0 text-secondary" />
+        <LeadingIcon
+          size={iconSizes[size]}
+          aria-hidden="true"
+          className="shrink-0 text-secondary"
+        />
       )}
       <BaseInput
         aria-label={label}

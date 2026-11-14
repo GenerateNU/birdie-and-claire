@@ -3,7 +3,7 @@ import type { Icon } from "@phosphor-icons/react";
 import type { ReactNode } from "react";
 
 const tabClasses =
-  "flex items-center justify-center gap-xxs border-b-thick border-transparent px-xxs py-sm text-label-l text-secondary hover:text-primary data-[active]:border-primary data-[active]:text-label-l-strong data-[active]:text-primary data-[disabled]:text-disabled focus-ring";
+  "flex items-center justify-center gap-xxs border-b-thick border-transparent px-xxs py-sm text-label-l text-secondary hover:text-primary data-[active]:border-primary data-[active]:text-label-l-strong data-[active]:text-primary data-[disabled]:text-disabled focus-ring motion-safe:transition-colors";
 
 const iconSize = 20;
 

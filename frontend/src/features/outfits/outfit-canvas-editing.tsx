@@ -74,7 +74,7 @@ export function EditableOutfitCanvas({ products, editing, children }: EditableOu
   }
 
   return (
-    <CanvasStage controls={children} onClick={clearSelectionOnEmptyClick}>
+    <CanvasStage controls={children} onClick={clearSelectionOnEmptyClick} variant="panel">
       {drawnGarments.map((drawn) => {
         const originId = originIdByProductId.get(drawn.product.id);
 

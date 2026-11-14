@@ -68,7 +68,7 @@ function OutfitDetailsPage() {
         style={canvasRatioStyle}
         className="order-2 aspect-[var(--canvas-ratio)] min-w-0 lg:order-none lg:aspect-auto lg:flex-1"
       >
-        <OutfitCanvas products={products} />
+        <OutfitCanvas products={products} variant="panel" />
       </Box>
       <section className="contents lg:flex lg:min-h-0 lg:w-content-md lg:flex-col lg:gap-lg lg:overflow-y-auto">
         <header className="order-1 flex shrink-0 flex-col gap-xxs border-b pb-lg">

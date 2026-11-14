@@ -42,7 +42,7 @@ export function CheckboxBox({
       indeterminate={indeterminate}
       onCheckedChange={onCheckedChange}
       disabled={disabled}
-      className={`flex size-control shrink-0 items-center justify-center border focus-ring ${boxState}`}
+      className={`flex size-control shrink-0 items-center justify-center border focus-ring motion-safe:transition-colors ${boxState}`}
     >
       <BaseCheckbox.Indicator aria-hidden="true" className="flex">
         <StateIcon size={iconSize} />
