@@ -30,7 +30,7 @@ function Step({ label, state, showLine }: StepProps) {
   return (
     <li
       aria-current={state === "current" ? "step" : undefined}
-      className={`flex flex-col gap-xs ${showLine ? "flex-1" : "shrink-0"}`}
+      className={`flex shrink-0 flex-col gap-xs ${showLine ? "w-step" : ""}`}
     >
       <Box className="flex items-center gap-xs">
         <Box
@@ -66,7 +66,7 @@ type ProgressStepperProps = {
 
 export function ProgressStepper({ steps, currentStep }: ProgressStepperProps) {
   return (
-    <ol className="flex w-full">
+    <ol className="flex max-w-full overflow-x-auto">
       {steps.map((label, index) => (
         <Step
           key={label}

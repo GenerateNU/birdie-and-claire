@@ -81,6 +81,9 @@ export const ThumbnailSize = { width: "92px", height: "112px" } as const;
 // The checkbox and radio box (`size-control`), from Figma.
 export const ControlSize = "1.25rem";
 
+// A progress stepper step's width (`w-step`), from Figma. The last step hugs its label.
+export const StepWidth = "180px";
+
 // The selected radio's dot (`size-radio-dot`), from Figma.
 export const RadioDotSize = "10px";
 

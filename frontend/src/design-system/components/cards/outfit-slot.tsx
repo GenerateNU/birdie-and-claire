@@ -15,9 +15,9 @@ type EmptySlotProps = {
 type FilledSlotProps = {
   title: string;
   piece: { src: string | null; bcStamp: boolean };
-  hidden: boolean;
-  onHiddenChange: (hidden: boolean) => void;
   onSwap: () => void;
+  /** Adds Hide/Show. Left out where the outfit can't hide pieces yet. */
+  visibility?: { hidden: boolean; onHiddenChange: (hidden: boolean) => void };
   selected?: boolean;
 };
 
@@ -41,7 +41,8 @@ export function OutfitSlot(props: OutfitSlotProps) {
     );
   }
 
-  const { title, piece, hidden, onHiddenChange, onSwap, selected = false } = props;
+  const { title, piece, onSwap, visibility, selected = false } = props;
+  const hidden = visibility?.hidden ?? false;
   const outline = selected ? "border-thick border-primary" : "border";
 
   return (
@@ -72,14 +73,16 @@ export function OutfitSlot(props: OutfitSlotProps) {
           leadingIcon={ArrowsLeftRightIcon}
           onClick={onSwap}
         />
-        <Button
-          label={hidden ? "Show" : "Hide"}
-          accessibleLabel={`${hidden ? "Show" : "Hide"} ${title}`}
-          variant="ghost"
-          size="sm"
-          leadingIcon={hidden ? EyeIcon : EyeSlashIcon}
-          onClick={() => onHiddenChange(!hidden)}
-        />
+        {visibility && (
+          <Button
+            label={hidden ? "Show" : "Hide"}
+            accessibleLabel={`${hidden ? "Show" : "Hide"} ${title}`}
+            variant="ghost"
+            size="sm"
+            leadingIcon={hidden ? EyeIcon : EyeSlashIcon}
+            onClick={() => visibility.onHiddenChange(!hidden)}
+          />
+        )}
       </Box>
     </Box>
   );

@@ -13,9 +13,9 @@ export function AuthScreen({ title, subtitle, children }: AuthScreenProps) {
   return (
     <Box className="flex min-h-screen flex-col items-center justify-center gap-lg p-md">
       <Logo className="w-full max-w-xs" />
-      <Box className="flex w-full max-w-content-sm flex-col gap-sm rounded-md bg-surface p-lg">
+      <Box className="flex w-full max-w-content-sm flex-col gap-sm bg-surface p-lg">
         {title && (
-          <Text variant="subheading" className="text-center normal-case">
+          <Text variant="subheading" className="text-center">
             {title}
           </Text>
         )}

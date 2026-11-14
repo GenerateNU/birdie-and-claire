@@ -1,4 +1,4 @@
-import { CaretLeft } from "@phosphor-icons/react";
+import { CaretLeftIcon } from "@phosphor-icons/react";
 import type { QueryClient } from "@tanstack/react-query";
 import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
 
@@ -17,7 +17,7 @@ function NotFound() {
       <Text variant="heading" className="mb-xs">
         Page not found
       </Text>
-      <TextLink to="/" leadingIcon={CaretLeft}>
+      <TextLink to="/" leadingIcon={CaretLeftIcon}>
         Home
       </TextLink>
     </Page>

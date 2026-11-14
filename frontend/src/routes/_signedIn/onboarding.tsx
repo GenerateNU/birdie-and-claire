@@ -1,4 +1,4 @@
-import { CaretLeft, CaretRight } from "@phosphor-icons/react";
+import { ArrowRightIcon, CaretLeftIcon } from "@phosphor-icons/react";
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
@@ -116,7 +116,7 @@ function Onboarding() {
         {back !== null && (
           <Button
             label="Back"
-            leadingIcon={CaretLeft}
+            leadingIcon={CaretLeftIcon}
             variant="secondary"
             size="sm"
             className="justify-self-start"
@@ -183,7 +183,7 @@ function Onboarding() {
       {isPreferenceField(step) && step !== "style" && (
         <Button
           label="Skip"
-          trailingIcon={CaretRight}
+          trailingIcon={ArrowRightIcon}
           variant="secondary"
           size="sm"
           className="fixed bottom-lg right-lg"

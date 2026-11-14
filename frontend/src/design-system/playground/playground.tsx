@@ -3,15 +3,14 @@ import {
   ArrowRightIcon,
   ArrowSquareOutIcon,
   BookmarkSimpleIcon,
+  CalendarBlankIcon,
   CaretLeftIcon,
-  CaretRightIcon,
   CoatHangerIcon,
-  DiamondsFourIcon,
   EnvelopeSimpleIcon,
+  ExportIcon,
   HouseIcon,
   MagnifyingGlassIcon,
   PlusIcon,
-  ShareNetworkIcon,
   SunIcon,
   UserIcon,
   XIcon,
@@ -77,7 +76,6 @@ import {
   TextField,
   TextLink,
   Toast,
-  Toggle,
   TypeScale,
   useToast,
 } from "@/design-system";
@@ -123,14 +121,13 @@ const iconButtonVariants = ["primary", "secondary", "ghost"] as const;
 
 // The serif variants are named for their role, so their type-scale keys differ.
 const textSamples = [
-  { variant: "display", scales: ["display-sm", "display-lg"] },
-  { variant: "headline", scales: ["display-sm", "display-md"] },
-  { variant: "heading", scales: ["heading"] },
-  { variant: "subheading", scales: ["subheading"] },
-  { variant: "body", scales: ["body"] },
-  { variant: "caption", scales: ["caption"] },
-  { variant: "display-hifi", scales: ["display"] },
-  { variant: "body-l", scales: ["body-l"] },
+  { variant: "display", scale: "display" },
+  { variant: "headline", scale: "heading-l" },
+  { variant: "heading", scale: "heading-m" },
+  { variant: "subheading", scale: "heading-s" },
+  { variant: "body-l", scale: "body-l" },
+  { variant: "body", scale: "body-m" },
+  { variant: "caption", scale: "body-s" },
 ] as const;
 
 const sectionTitles = {
@@ -143,7 +140,6 @@ const sectionTitles = {
   sidebar: "Sidebar",
   checkbox: "Checkbox",
   "checkbox-list": "Checkbox list",
-  toggle: "Toggle",
   "text-field": "Text field",
   "text-area": "Text area",
   chip: "Chip",
@@ -200,7 +196,6 @@ const navGroups = [
       "sidebar",
       "checkbox",
       "checkbox-list",
-      "toggle",
       "text-field",
       "text-area",
       "chip",
@@ -269,7 +264,7 @@ export function Playground() {
           <Box className="sticky top-xl flex flex-col gap-lg">
             {navGroups.map((group) => (
               <Box key={group.title} className="flex flex-col gap-xxs">
-                <Link to="/playground" hash={group.hash} className="text-subheading text-primary">
+                <Link to="/playground" hash={group.hash} className="text-heading-s text-primary">
                   {group.title}
                 </Link>
                 {group.sections.map((id) => (
@@ -277,7 +272,7 @@ export function Playground() {
                     key={id}
                     to="/playground"
                     hash={id}
-                    className="text-body text-secondary hover:text-primary"
+                    className="text-body-m text-secondary hover:text-primary"
                   >
                     {sectionTitles[id]}
                   </Link>
@@ -322,7 +317,7 @@ export function Playground() {
               </Box>
               <Box className="flex items-center gap-md">
                 <Button label="Back" variant="secondary" leadingIcon={CaretLeftIcon} />
-                <Button label="Next" trailingIcon={CaretRightIcon} />
+                <Button label="Next" trailingIcon={ArrowRightIcon} />
               </Box>
               <Label>leadingIcon · trailingIcon</Label>
               <Box className="grid grid-cols-[repeat(5,max-content)] items-center gap-x-md gap-y-sm">
@@ -340,7 +335,7 @@ export function Playground() {
                 {iconButtonVariants.map((variant) => (
                   <IconButton
                     key={variant}
-                    icon={ShareNetworkIcon}
+                    icon={ExportIcon}
                     label="Share"
                     variant={variant}
                     disabled
@@ -427,10 +422,6 @@ export function Playground() {
               <Stage>
                 <CheckboxListExamples />
               </Stage>
-            </Section>
-
-            <Section id="toggle">
-              <ToggleExamples />
             </Section>
 
             <Section id="text-field">
@@ -632,11 +623,11 @@ export function Playground() {
             </Section>
 
             <Section id="text">
-              {textSamples.map(({ variant, scales }) => (
+              {textSamples.map(({ variant, scale }) => (
                 <Box key={variant} className="flex flex-col gap-xxs">
                   <Text variant={variant}>The quick brown fox</Text>
                   <Label>
-                    {variant} · {scales.map((scale) => scaleLabel(scale)).join(" · lg:")}
+                    {variant} · {scaleLabel(scale)}
                   </Label>
                 </Box>
               ))}
@@ -723,7 +714,7 @@ function Section({ id, children }: SectionProps) {
       id={id}
       className="flex scroll-mt-xl flex-col gap-md rounded-lg border bg-placeholder p-lg"
     >
-      <Text variant="subsubheading">{sectionTitles[id]}</Text>
+      <Text variant="subheading">{sectionTitles[id]}</Text>
       {children}
     </section>
   );
@@ -963,22 +954,12 @@ function TabsExamples() {
         <Text variant="body">Showing the {tab} panel.</Text>
       </Tabs>
       <Tabs
-        tabs={sampleTabs.map((sample) => ({ ...sample, icon: DiamondsFourIcon }))}
+        tabs={sampleTabs.map((sample) => ({ ...sample, icon: CoatHangerIcon }))}
         value={tab}
         onValueChange={setTab}
         disabled={false}
-        appearance="underline"
       >
-        <Text variant="body">Showing the {tab} panel, underline appearance.</Text>
-      </Tabs>
-      <Tabs
-        tabs={sampleTabs}
-        value={tab}
-        onValueChange={setTab}
-        disabled={false}
-        appearance="underline"
-      >
-        <Text variant="body">Showing the {tab} panel, underline without icons.</Text>
+        <Text variant="body">Showing the {tab} panel, with icons.</Text>
       </Tabs>
     </Box>
   );
@@ -1078,17 +1059,6 @@ function CheckboxRow({ name, checked, indeterminate, hover }: CheckboxRowProps) 
         disabled
       />
     </>
-  );
-}
-
-function ToggleExamples() {
-  const [checked, setChecked] = useState(false);
-
-  return (
-    <Box className="flex flex-col gap-sm">
-      <Toggle label="Toggle" checked={checked} onCheckedChange={setChecked} />
-      <Toggle label="Disabled" checked onCheckedChange={() => {}} disabled />
-    </Box>
   );
 }
 
@@ -1431,7 +1401,11 @@ function OptionTileGroupExamples() {
       </Box>
       <OptionTileGroup
         label="No icon or subtitle"
-        options={radioOptions}
+        options={[
+          { label: "Workday", value: "workday" },
+          { label: "Night out", value: "night-out" },
+          { label: "Weekend", value: "weekend" },
+        ]}
         value={weather}
         onValueChange={setWeather}
       />
@@ -1568,8 +1542,7 @@ function OutfitSlotExamples() {
         <OutfitSlot
           title="Houndstooth blazer"
           piece={{ src: samplePhoto, bcStamp: true }}
-          hidden={hidden}
-          onHiddenChange={setHidden}
+          visibility={{ hidden, onHiddenChange: setHidden }}
           onSwap={noop}
         />
       </Box>
@@ -1578,8 +1551,7 @@ function OutfitSlotExamples() {
         <OutfitSlot
           title="Wide-leg trousers"
           piece={{ src: null, bcStamp: false }}
-          hidden
-          onHiddenChange={noop}
+          visibility={{ hidden: true, onHiddenChange: noop }}
           onSwap={noop}
         />
       </Box>
@@ -1588,11 +1560,14 @@ function OutfitSlotExamples() {
         <OutfitSlot
           title="Beret"
           piece={{ src: null, bcStamp: false }}
-          hidden={false}
-          onHiddenChange={noop}
+          visibility={{ hidden: false, onHiddenChange: noop }}
           onSwap={noop}
           selected
         />
+      </Box>
+      <Box className="flex flex-col gap-xs">
+        <Label>no visibility · Swap only</Label>
+        <OutfitSlot title="Loafers" piece={{ src: null, bcStamp: false }} onSwap={noop} />
       </Box>
     </Box>
   );
@@ -1997,8 +1972,11 @@ function ProgressStepperExamples() {
         </Box>
       ))}
       <Box className="flex flex-col gap-xs">
-        <ProgressStepper steps={stepperLabels.slice(0, 4)} currentStep={2} />
-        <Label>done · done · current · upcoming</Label>
+        <ProgressStepper
+          steps={["Weather", "Vibe", "Specific items", "Additional info"]}
+          currentStep={2}
+        />
+        <Label>done · done · current · upcoming, as in create outfit</Label>
       </Box>
     </Box>
   );
@@ -2013,7 +1991,7 @@ function EmptyStateExamples() {
         action={{ label: "New collection", icon: PlusIcon, onClick: () => {} }}
       />
       <EmptyState title="No pieces yet" description="Pieces you own will show up here." />
-      <EmptyState title="Nothing saved for this occasion" icon={ShareNetworkIcon} />
+      <EmptyState title="Nothing saved for this occasion" icon={CalendarBlankIcon} />
       <EmptyState title="No outfits yet" action={{ label: "Create outfit", onClick: () => {} }} />
       <EmptyState
         title="No collections yet"

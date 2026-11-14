@@ -1,9 +1,9 @@
 import {
   ChatCircleTextIcon,
   EnvelopeSimpleIcon,
+  ExportIcon,
   InstagramLogoIcon,
   RedditLogoIcon,
-  ShareIcon,
   XLogoIcon,
 } from "@phosphor-icons/react";
 import { useMutation } from "@tanstack/react-query";
@@ -69,7 +69,7 @@ export function ShareOutfit({ outfitId }: ShareOutfitProps) {
 
   return (
     <>
-      <Button label="Share" size="sm" leadingIcon={ShareIcon} onClick={openDialog} />
+      <Button label="Share" size="sm" leadingIcon={ExportIcon} onClick={openDialog} />
       <Modal open={open} onClose={() => setOpen(false)} title="Share" actions={[]} dismissible>
         {share.isPending && <Spinner />}
         {share.isError && (

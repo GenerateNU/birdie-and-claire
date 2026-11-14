@@ -1,4 +1,4 @@
-import { CaretLeft } from "@phosphor-icons/react";
+import { CaretLeftIcon } from "@phosphor-icons/react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 
 import { Box, Page, TextLink } from "@/design-system";
@@ -15,7 +15,7 @@ function AddOwnedPiecesPage() {
   return (
     <Page>
       <Box className="mb-md">
-        <TextLink to="/profile/pieces" leadingIcon={CaretLeft}>
+        <TextLink to="/profile/pieces" leadingIcon={CaretLeftIcon}>
           Back
         </TextLink>
       </Box>

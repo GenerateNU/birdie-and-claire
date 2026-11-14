@@ -126,7 +126,8 @@ export function CanvasStage({ controls, onClick, children }: CanvasStageProps) {
   return (
     <Box
       onClick={onClick}
-      className="relative isolate flex h-full items-center justify-center overflow-hidden border bg-placeholder [container-type:size]"
+      // Padding from Figma's Builder Space: 56px sides, 20px top and bottom. Neither has a token.
+      className="relative isolate flex h-full items-center justify-center overflow-hidden rounded-md bg-surface px-[56px] py-[20px] [container-type:size]"
     >
       {/* The canvas, centered in the panel. It's never larger than the Figma, and shrinks to fit
           whichever of the panel's width or height runs out first. isolate keeps the garments'

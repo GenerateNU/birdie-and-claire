@@ -108,7 +108,7 @@ export function SharedOutfitPage({ outfitId, viewer }: SharedOutfitPageProps) {
                 ? "Someone shared this outfit with you"
                 : `${outfit.owner_name} shared this outfit with you`}
             </Text>
-            <Text variant="heading" className="min-w-0 break-words">
+            <Text variant="display" className="min-w-0 break-words">
               {outfit.name}
             </Text>
             <SaveAction outfit={outfit} viewer={viewer} />

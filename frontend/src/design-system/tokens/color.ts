@@ -20,13 +20,9 @@ const Palette = {
   greenSubtle: "#E4EEE8",
 } as const;
 
-// warning and info stay raw because Figma has no counterpart for them yet. They are the only
-// values outside Palette.
 export const StatusColor = {
   success: Palette.green,
   error: Palette.red,
-  warning: "#D97706",
-  info: "#2563EB",
 } as const;
 
 export const TextColor = {
