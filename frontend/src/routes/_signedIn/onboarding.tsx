@@ -15,6 +15,7 @@ import {
 } from "@/features/onboarding/onboarding-screens";
 import { OnboardingStepper } from "@/features/onboarding/onboarding-stepper";
 import { addOwnedPiecesMutationKey, PiecePicker } from "@/features/pieces/piece-picker";
+import { PreferenceCard } from "@/features/style-preferences/preference-card";
 import {
   fitFields,
   noPreferences,
@@ -169,20 +170,26 @@ function Onboarding() {
     );
   }
 
+  // The style frame and the fit frames space their screens differently in Figma.
+  const layout =
+    step === "style"
+      ? { logo: "w-logo-onboarding", cards: "mt-xl", buttons: "mt-xxxl" }
+      : { logo: "w-logo-onboarding-fit", cards: "mt-lg", buttons: "mt-xl" };
+
   return (
     <Page className="flex flex-col pb-xxxl">
       <OnboardingStepper stage={step === "style" ? "style" : "fit"} />
 
       <Box className="mt-lg flex flex-1 flex-col items-center">
         <Box className="flex flex-col items-center gap-lg">
-          <Logo className="w-logo-onboarding" />
+          <Logo className={layout.logo} />
           <Text variant="heading-l">{questions[step].prompt}</Text>
           <Text variant="body">{preferences[step].length} selected</Text>
         </Box>
-        <Box className="mt-xl">
+        <Box className={layout.cards}>
           <Cards field={step} preferences={preferences} onToggle={toggle} disabled={saving} />
         </Box>
-        <Box className="mt-xxxl flex flex-col items-center gap-xs">
+        <Box className={`${layout.buttons} flex flex-col items-center gap-xs`}>
           <Button
             label={nextButtonLabel(step)}
             loading={saving}
@@ -219,11 +226,25 @@ function Cards({ field, preferences, onToggle, disabled }: CardsProps) {
   const { options } = questions[field];
   const picked: readonly PreferenceValue[] = preferences[field];
 
-  // Figma sets the fit questions' cards closer together on a grey panel. Style has no panel.
-  const layoutClasses = field === "style" ? "gap-xxl" : "gap-lg rounded-xl bg-placeholder p-lg";
+  if (field !== "style") {
+    return (
+      <Box className="flex flex-wrap justify-center gap-lg rounded-xl bg-placeholder p-lg">
+        {options.map((option) => (
+          <PreferenceCard
+            key={option.value}
+            label={option.label}
+            src={option.image}
+            checked={picked.includes(option.value)}
+            onCheckedChange={(checked) => onToggle(field, option.value, checked)}
+            disabled={disabled}
+          />
+        ))}
+      </Box>
+    );
+  }
 
   return (
-    <Box className={`flex flex-wrap justify-center ${layoutClasses}`}>
+    <Box className="flex flex-wrap justify-center gap-xxl">
       {options.map((option) => (
         <ImageOptionCard
           key={option.value}
