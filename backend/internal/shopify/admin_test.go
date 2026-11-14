@@ -141,8 +141,13 @@ func TestListActiveProductsMapsProductFields(t *testing.T) {
 		"handle": "linen-shirt",
 		"title": "Linen Shirt",
 		"productType": "Tops",
+		"description": "A breezy linen shirt.",
 		"category": {"fullName": "Apparel & Accessories > Clothing > Clothing Tops > Shirts"},
 		"tags": ["linen", "summer"],
+		"options": [{"name": "Color", "values": ["White", "Sage"]}, {"name": "Size", "values": ["S", "M"]}],
+		"fabricInfo": {"value": "100% linen"},
+		"materials": {"value": "[\"Linen\"]"},
+		"modelInfo": {"value": "Model wears size M."},
 		"media": {
 			"pageInfo": {"hasNextPage": false},
 			"nodes": [
@@ -164,8 +169,13 @@ func TestListActiveProductsMapsProductFields(t *testing.T) {
 		Handle:      "linen-shirt",
 		Title:       "Linen Shirt",
 		ProductType: "Tops",
+		Description: "A breezy linen shirt.",
 		Category:    "Apparel & Accessories > Clothing > Clothing Tops > Shirts",
 		Tags:        []string{"linen", "summer"},
+		Options:     []ShopifyOption{{Name: "Color", Values: []string{"White", "Sage"}}, {Name: "Size", Values: []string{"S", "M"}}},
+		FabricInfo:  "100% linen",
+		Materials:   []string{"Linen"},
+		ModelInfo:   "Model wears size M.",
 		Images: []ShopifyImage{
 			{ID: 111, URL: "https://cdn.shopify.com/front.jpg", AltText: "Front", Width: 1200, Height: 1600, Position: 1},
 			{ID: 333, URL: "https://cdn.shopify.com/back.jpg", Width: 1200, Height: 1600, Position: 3},
@@ -174,6 +184,23 @@ func TestListActiveProductsMapsProductFields(t *testing.T) {
 	}}
 	if !reflect.DeepEqual(products, want) {
 		t.Errorf("got  %+v\nwant %+v", products, want)
+	}
+}
+
+func TestListActiveProductsLeavesOutMaterialsThatAreNotAList(t *testing.T) {
+	const node = `{
+		"id": "gid://shopify/Product/1",
+		"materials": {"value": "Linen"},
+		"media": {"pageInfo": {"hasNextPage": false}, "nodes": []}
+	}`
+	client := newTestClient(t, respondWith(http.StatusOK, grantedTokenJSON), respondWith(http.StatusOK, buildPageJSON(false, "", node)))
+
+	products, err := client.ListActiveProducts(context.Background())
+	if err != nil {
+		t.Fatalf("ListActiveProducts: %v", err)
+	}
+	if len(products) != 1 || products[0].Materials != nil {
+		t.Fatalf("products = %+v, want the product kept without materials", products)
 	}
 }
 
