@@ -1,5 +1,5 @@
-import type { HTMLAttributes } from "react";
+import type { ComponentProps } from "react";
 
-export function Box(props: HTMLAttributes<HTMLDivElement>) {
+export function Box(props: ComponentProps<"div">) {
   return <div {...props} />;
 }
