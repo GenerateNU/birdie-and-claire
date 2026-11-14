@@ -1,12 +1,17 @@
-import { useMutation } from "@tanstack/react-query";
+import { ArrowRightIcon } from "@phosphor-icons/react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
-import { warmEmbedderMutation } from "@/api/generated/@tanstack/react-query.gen";
+import {
+  getCurrentUserOptions,
+  warmEmbedderMutation,
+} from "@/api/generated/@tanstack/react-query.gen";
 import { createOutfit, recommendProducts } from "@/api/generated/sdk.gen";
 import {
   RecommendationVibe,
   RecommendationWeather,
+  type CurrentUserResponse,
   type RecommendationDetail,
 } from "@/api/generated/types.gen";
 import {
@@ -14,11 +19,14 @@ import {
   Button,
   ChoiceGroup,
   EmptyState,
+  ErrorState,
   ImageOptionCard,
+  Link,
   ListCard,
   OptionTileGroup,
   Page,
   SearchField,
+  Spinner,
   Text,
   TextArea,
   useToast,
@@ -28,7 +36,7 @@ export const Route = createFileRoute("/_signedIn/_onboarded/create-outfit")({
   component: CreateOutfit,
 });
 
-type Step = "occasion" | "weather" | "vibe" | "specifics" | "custom" | "review";
+type Step = "intro" | "occasion" | "weather" | "vibe" | "specifics" | "custom" | "review";
 
 const barSteps = ["weather", "vibe", "specifics", "custom"] as const;
 
@@ -58,7 +66,7 @@ const specificsOptions: { label: string; value: SpecificsAnswer }[] = [
 ];
 
 function CreateOutfit() {
-  const [step, setStep] = useState<Step>("occasion");
+  const [step, setStep] = useState<Step>("intro");
   // Set by Review's Edit buttons, so Next on the edited step goes back to Review.
   const [returnToReview, setReturnToReview] = useState(false);
   const [cardOccasion, setCardOccasion] = useState<string | null>(null);
@@ -103,6 +111,10 @@ function CreateOutfit() {
     }
 
     advanceTo("weather");
+  }
+
+  if (step === "intro") {
+    return <Intro onStart={() => setStep("occasion")} />;
   }
 
   if (step === "weather") {
@@ -236,6 +248,49 @@ function CreateOutfit() {
         className="max-w-content-md"
       />
       <Button label="Continue" disabled={!canContinue} onClick={continueFromOccasion} />
+    </Page>
+  );
+}
+
+// The account has one free-text name, so the first word stands in for a first name.
+function firstName(user: CurrentUserResponse) {
+  return user.name.split(" ")[0];
+}
+
+type IntroProps = {
+  onStart: () => void;
+};
+
+function Intro({ onStart }: IntroProps) {
+  const firstNameQuery = useQuery({ ...getCurrentUserOptions(), select: firstName });
+
+  if (firstNameQuery.isPending) {
+    return <Spinner />;
+  }
+
+  if (firstNameQuery.data === undefined) {
+    return (
+      <ErrorState
+        message="Couldn't load your account."
+        onRetry={() => void firstNameQuery.refetch()}
+      />
+    );
+  }
+
+  return (
+    <Page className="flex flex-col">
+      <Box className="flex justify-end">
+        <Link to="/" variant="secondary" size="sm">
+          Exit
+        </Link>
+      </Box>
+      <Box className="flex flex-1 flex-col items-center justify-center gap-xl text-center">
+        <Box className="flex flex-col gap-xs">
+          <h1 className="font-serif text-display">Hi there, {firstNameQuery.data}!</h1>
+          <Text variant="body">Let’s figure out what occasion you need styling for</Text>
+        </Box>
+        <Button label="Let’s go" trailingIcon={ArrowRightIcon} onClick={onStart} />
+      </Box>
     </Page>
   );
 }
