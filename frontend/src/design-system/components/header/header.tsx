@@ -34,7 +34,7 @@ export function Header({ onLogoClick, items }: HeaderProps) {
         <ul className="flex flex-wrap items-center gap-x-xl gap-y-sm">
           {items.map((item) => (
             <li key={item.label}>
-              <NavItem item={item} />
+              <HeaderNavItem item={item} />
             </li>
           ))}
         </ul>
@@ -43,11 +43,11 @@ export function Header({ onLogoClick, items }: HeaderProps) {
   );
 }
 
-type NavItemProps = {
+type HeaderNavItemProps = {
   item: HeaderItem;
 };
 
-function NavItem({ item }: NavItemProps) {
+function HeaderNavItem({ item }: HeaderNavItemProps) {
   if ("to" in item) {
     return (
       <Link to={item.to} trailingIcon={item.icon} className={inactiveItemClasses}>

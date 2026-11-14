@@ -6,8 +6,8 @@ import {
   CaretRightIcon,
   CoatHangerIcon,
   DiamondsFourIcon,
-  HouseIcon,
   EnvelopeSimpleIcon,
+  HouseIcon,
   MagnifyingGlassIcon,
   PlusIcon,
   ShareNetworkIcon,
@@ -835,7 +835,7 @@ const sidebarCollections = [
   { label: "Work looks", to: "/playground" },
   { label: "Winter looks", to: "/playground" },
   { label: "Drafts (1)", to: "/playground" },
-  { label: "+ New collection", onClick: () => {} },
+  { label: "New collection", onClick: () => {} },
 ] as const;
 
 type SidebarExampleProps = {
