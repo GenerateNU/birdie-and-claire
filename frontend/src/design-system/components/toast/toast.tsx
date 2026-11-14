@@ -11,6 +11,7 @@ export type ToastAction = {
   onClick: () => void;
 };
 
+// Success looks like neutral except for its check icon.
 const variantClasses = {
   neutral: "bg-primary",
   success: "bg-primary",

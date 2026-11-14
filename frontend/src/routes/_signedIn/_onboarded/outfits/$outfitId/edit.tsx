@@ -49,7 +49,7 @@ function OutfitEditorPage() {
   if (isOutfitNotFound(outfitQuery.error)) {
     return (
       <EditorFrame onSave={ignoreSave} saveDisabled>
-        <EmptyState title="Outfit not found" className="p-lg" />
+        <EmptyState title="Outfit not found" className="px-lg" />
       </EditorFrame>
     );
   }

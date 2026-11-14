@@ -35,7 +35,7 @@ function OutfitDetailsPage() {
   if (isOutfitNotFound(outfitQuery.error)) {
     return (
       <OutfitDetailsFrame>
-        <EmptyState title="Outfit not found" className="p-lg" />
+        <EmptyState title="Outfit not found" className="px-lg" />
       </OutfitDetailsFrame>
     );
   }

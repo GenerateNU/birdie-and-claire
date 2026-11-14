@@ -12,20 +12,22 @@ type ToastData = {
 // Figma: a toast hides itself after about 4 seconds.
 const DEFAULT_DURATION_MS = 4000;
 
-// Long enough to reach the action before it goes.
+// Not in Figma: a toast with an action stays longer so there is time to reach it.
 const ACTION_DURATION_MS = 10000;
 
-type ToastConfig = {
+type ToastConfig = ToastData & {
   message: string;
-  variant?: ToastVariant;
-  action?: ToastAction;
-  closable?: boolean;
 };
 
 export function useToast() {
   const toastManager = BaseToast.useToastManager<ToastData>();
 
-  function show({ message, variant = "neutral", action, closable = false }: ToastConfig) {
+  function show({
+    message,
+    variant = "neutral",
+    action,
+    closable = variant === "error",
+  }: ToastConfig) {
     toastManager.add({
       title: message,
       timeout: action ? ACTION_DURATION_MS : DEFAULT_DURATION_MS,
@@ -63,7 +65,7 @@ function ToastList() {
       <BaseToast.Root key={toast.id} toast={toast} className="data-[limited]:hidden">
         <Toast
           variant={variant}
-          message={toast.title}
+          message={<BaseToast.Title render={<span />} />}
           action={
             action && {
               label: action.label,

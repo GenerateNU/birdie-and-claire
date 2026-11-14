@@ -37,7 +37,7 @@ export function Menu({ label, actions }: MenuProps) {
         <BaseMenu.Positioner side="bottom" align="end" sideOffset={MENU_OFFSET_PX} className="z-50">
           <BaseMenu.Popup render={<MenuPanel />}>
             {actions.map((action, index) => (
-              <Fragment key={action.label}>
+              <Fragment key={`${index}-${action.label}`}>
                 {action.destructive && index > 0 && !actions[index - 1].destructive && (
                   <Box className="py-xxs">
                     <Divider />

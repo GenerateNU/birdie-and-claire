@@ -36,6 +36,7 @@ export function Modal({
 }: ModalProps) {
   const titleId = useId();
   const messageId = useId();
+  // AlertDialog ignores outside clicks and Esc, which is what a non-dismissible modal needs.
   const ModalParts = dismissible ? Dialog : AlertDialog;
 
   return (
@@ -52,7 +53,8 @@ export function Modal({
         <ModalParts.Popup
           aria-labelledby={titleId}
           aria-describedby={message ? messageId : undefined}
-          className="fixed left-1/2 top-1/2 max-w-[calc(100vw-theme(spacing.md)*2)] -translate-x-1/2 -translate-y-1/2"
+          // Keeps a modal larger than the screen inside it, scrolling instead of cutting off the actions.
+          className="fixed left-1/2 top-1/2 max-h-[calc(100vh-theme(spacing.md)*2)] max-w-[calc(100vw-theme(spacing.md)*2)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto"
         >
           <ModalPanel
             title={title}
