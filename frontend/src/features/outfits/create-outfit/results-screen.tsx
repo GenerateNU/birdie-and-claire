@@ -108,7 +108,7 @@ export function ResultsScreen({
           onEdit={onEdit}
         />
       </Modal>
-      {selected ? (
+      {selectedIndex !== null && selected ? (
         <Box className="flex flex-1">
           <Box className="flex flex-1 flex-col items-center justify-center gap-md p-xxxl">
             <Button
@@ -147,7 +147,7 @@ export function ResultsScreen({
           </Box>
           <SaveOutfitDialog
             open={saveDestination !== null}
-            savedName={`${occasion} outfit ${outfits.indexOf(selected) + 1}`.slice(0, 100)}
+            savedName={`${occasion} outfit ${selectedIndex + 1}`.slice(0, 100)}
             savedDescription=""
             savedTags={suggestedTags}
             productsChanged

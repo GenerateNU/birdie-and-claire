@@ -40,7 +40,8 @@ import { StepScreen } from "@/features/outfits/create-outfit/step-screen";
 
 export function CreateOutfitFlow() {
   const [step, setStep] = useState<Step>("intro");
-  // Set by Review's Edit buttons, so Next or Back on the edited step goes back to Review.
+  // Set by the Edit buttons on Review and in Occasion Details, so Next or Back on the edited step
+  // goes back to Review.
   const [returnToReview, setReturnToReview] = useState(false);
   const [cardOccasion, setCardOccasion] = useState<string | null>(null);
   const [customOccasion, setCustomOccasion] = useState("");

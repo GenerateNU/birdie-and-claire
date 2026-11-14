@@ -64,16 +64,18 @@ export function OutfitSlot(props: OutfitSlotProps) {
           />
         )}
       </Box>
-      {onSwap && (
+      {(onSwap || visibility) && (
         <Box className="flex gap-xs">
-          <Button
-            label="Swap"
-            accessibleLabel={`Swap ${title}`}
-            variant="ghost"
-            size="sm"
-            leadingIcon={ArrowsLeftRightIcon}
-            onClick={onSwap}
-          />
+          {onSwap && (
+            <Button
+              label="Swap"
+              accessibleLabel={`Swap ${title}`}
+              variant="ghost"
+              size="sm"
+              leadingIcon={ArrowsLeftRightIcon}
+              onClick={onSwap}
+            />
+          )}
           {visibility && (
             <Button
               label={hidden ? "Show" : "Hide"}
