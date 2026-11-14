@@ -15,11 +15,12 @@ type OutfitListProps = {
   outfits: OutfitResponse[];
   hasMore: boolean;
   onLoadMore: () => void;
+  onOpen: (outfitId: string) => void;
   /** Whether the list ends with the tile that opens the outfit builder. */
   addTile: boolean;
 };
 
-export function OutfitList({ outfits, hasMore, onLoadMore, addTile }: OutfitListProps) {
+export function OutfitList({ outfits, hasMore, onLoadMore, onOpen, addTile }: OutfitListProps) {
   const navigate = useNavigate();
   const sentinelRef = useRef<HTMLLIElement>(null);
 
@@ -57,9 +58,7 @@ export function OutfitList({ outfits, hasMore, onLoadMore, addTile }: OutfitList
             pieces={piecesLine(outfit.products)}
             src={null}
             image={<OutfitCanvas products={outfit.products} variant="card" />}
-            onOpen={() =>
-              void navigate({ to: "/outfits/$outfitId", params: { outfitId: outfit.id } })
-            }
+            onOpen={() => onOpen(outfit.id)}
           />
         </li>
       ))}

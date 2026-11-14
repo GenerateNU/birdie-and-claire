@@ -4,7 +4,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Box, Button, Link, Text } from "@/design-system";
 import { signOut } from "@/features/account/account";
 
-export const Route = createFileRoute("/_signedIn/_onboarded/profile/settings/")({
+export const Route = createFileRoute("/_signedIn/_onboarded/_nav/profile/settings/")({
   component: SettingsPage,
 });
 

@@ -11,7 +11,7 @@ import { isOutfitNotFound, outfitQueryOptions } from "@/features/outfits/outfit-
 import { PiecesSection } from "@/features/outfits/pieces-section";
 import { ShareOutfit } from "@/features/outfits/share-outfit";
 
-export const Route = createFileRoute("/_signedIn/_onboarded/outfits/$outfitId/")({
+export const Route = createFileRoute("/_signedIn/_onboarded/_nav/outfits/$outfitId/")({
   component: OutfitDetailsPage,
 });
 

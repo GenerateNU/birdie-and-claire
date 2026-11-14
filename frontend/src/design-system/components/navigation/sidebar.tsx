@@ -21,8 +21,8 @@ type SidebarItem = {
 } & NavTarget;
 
 type SidebarProps = {
-  collapsed: boolean;
-  onToggleCollapsed: () => void;
+  /** Adds the collapse button. Null keeps the sidebar expanded, with no button. */
+  collapse: { collapsed: boolean; onToggle: () => void } | null;
   /** Where the logo goes. */
   logoTo: LinkProps["to"];
   /** The primary button under the logo, such as New outfit. */
@@ -35,14 +35,15 @@ type SidebarProps = {
 
 /** Home-base navigation. Expanded shows labels, collapsed only icons. Fills its parent's height. */
 export function Sidebar({
-  collapsed,
-  onToggleCollapsed,
+  collapse,
   logoTo,
   action,
   items,
   secondaryItems,
   account,
 }: SidebarProps) {
+  const collapsed = collapse?.collapsed ?? false;
+
   return (
     <nav
       aria-label="Sidebar"
@@ -64,13 +65,15 @@ export function Sidebar({
             <Logo className="h-logo-sidebar w-logo-sidebar object-cover object-bottom" />
           )}
         </Link>
-        <IconButton
-          icon={SidebarSimpleIcon}
-          label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          variant="ghost"
-          size="sm"
-          onClick={onToggleCollapsed}
-        />
+        {collapse && (
+          <IconButton
+            icon={SidebarSimpleIcon}
+            label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            variant="ghost"
+            size="sm"
+            onClick={collapse.onToggle}
+          />
+        )}
       </Box>
 
       {collapsed ? (

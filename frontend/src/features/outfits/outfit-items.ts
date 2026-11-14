@@ -25,7 +25,18 @@ export type CanvasSpot = {
   layer: number;
 };
 
-type ProductSlot = ProductResponse["slot"];
+export type ProductSlot = ProductResponse["slot"];
+
+/** The editor's slot cards, in the order they show. */
+export const SLOT_ORDER: ProductSlot[] = ["top", "one_piece", "bottom", "shoe", "accessory"];
+
+export const SLOT_NAMES: Record<ProductSlot, { title: string; plural: string }> = {
+  top: { title: "Top", plural: "tops" },
+  one_piece: { title: "One-piece", plural: "one-pieces" },
+  bottom: { title: "Bottoms", plural: "bottoms" },
+  shoe: { title: "Shoes", plural: "shoes" },
+  accessory: { title: "Accessory", plural: "accessories" },
+};
 
 // Measured from silhouette.png as drawn on the canvas: centered on x 466, head y 46-150 and about
 // 95px wide, shoulders at y 171, hips at y 408-436, feet at y 743. Robiya may tune these.
