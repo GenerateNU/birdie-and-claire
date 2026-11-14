@@ -69,8 +69,16 @@ func (s *recommendationService) RecommendProducts(ctx context.Context, request m
 		stylePreferences = user.StylePreferences
 	}
 
+	var necklinePicks, bottomPicks, shoePicks []string
+	// a shopper without saved preferences is assumed not to mind one-pieces
+	includeOnePieces := true
+	if stylePreferences != nil {
+		necklinePicks, bottomPicks, shoePicks = stylePreferences.Neckline, stylePreferences.Bottoms, stylePreferences.Shoes
+		includeOnePieces = stylePreferences.IncludeOnePieces
+	}
+
 	expandCtx, cancel := context.WithTimeout(ctx, expandAnswersTimeout)
-	rawExpandedAnswers, err := llm.ExpandAnswers(expandCtx, s.llm, answers, formatStylePreferences(stylePreferences))
+	rawExpandedAnswers, err := llm.ExpandAnswers(expandCtx, s.llm, answers, formatStylePreferences(stylePreferences), includeOnePieces)
 	cancel()
 	if err != nil {
 		return models.RecommendationResponse{}, fmt.Errorf("expand shopper answers: %w", err)
@@ -87,13 +95,6 @@ func (s *recommendationService) RecommendProducts(ctx context.Context, request m
 		ExcludeTags: lowercaseTags(rawExpandedAnswers.ExcludeTags),
 		NiceTags:    lowercaseTags(rawExpandedAnswers.NiceTags),
 	}
-	var necklinePicks, bottomPicks, shoePicks []string
-	// a shopper without saved preferences is assumed not to mind one-pieces
-	includeOnePieces := true
-	if stylePreferences != nil {
-		necklinePicks, bottomPicks, shoePicks = stylePreferences.Neckline, stylePreferences.Bottoms, stylePreferences.Shoes
-		includeOnePieces = stylePreferences.IncludeOnePieces
-	}
 	var tops, bottoms, onePieces, accessories, shoes []repository.ScoredProduct
 	slots := []slotSearch{
 		{name: models.SlotTop, phrase: expandedAnswers.Slots.Top, typePicks: necklinePicks, products: &tops},
@@ -102,12 +103,11 @@ func (s *recommendationService) RecommendProducts(ctx context.Context, request m
 		{name: models.SlotShoe, phrase: expandedAnswers.Slots.Shoe, typePicks: shoePicks, products: &shoes},
 		{name: models.SlotOnePiece, phrase: expandedAnswers.Slots.OnePiece, products: &onePieces},
 	}
-	// the model always writes a one-piece phrase, so it is checked even when it goes unsearched
-	if err := checkExpansionLimits(slots, expandedAnswers); err != nil {
-		return models.RecommendationResponse{}, err
-	}
 	if !includeOnePieces {
 		slots = slices.DeleteFunc(slots, func(slot slotSearch) bool { return slot.name == models.SlotOnePiece })
+	}
+	if err := checkExpansionLimits(slots, expandedAnswers); err != nil {
+		return models.RecommendationResponse{}, err
 	}
 
 	group, groupCtx := errgroup.WithContext(ctx)

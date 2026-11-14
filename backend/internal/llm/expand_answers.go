@@ -25,8 +25,9 @@ type expandAnswersInput struct {
 }
 
 // ExpandAnswers takes answers keyed by their prompt label, and stylePreferences as one line built from fixed option
-// values, empty when the shopper has none. Every slot of a nil-error result has a phrase.
-func ExpandAnswers(ctx context.Context, client Client, answers map[string]string, stylePreferences string) (ExpandedAnswers, error) {
+// values, empty when the shopper has none. Every slot of a nil-error result has a phrase, except that one_piece may be
+// blank when includeOnePieces is false.
+func ExpandAnswers(ctx context.Context, client Client, answers map[string]string, stylePreferences string, includeOnePieces bool) (ExpandedAnswers, error) {
 	stripped := make(map[string]string, len(answers)+1)
 	for label, answer := range answers {
 		stripped[label] = stripDotpromptMarkers(answer)
@@ -53,7 +54,7 @@ func ExpandAnswers(ctx context.Context, client Client, answers map[string]string
 		var expandedAnswers ExpandedAnswers
 		expandedAnswers, err = Generate[ExpandedAnswers](ctx, client, req)
 		if err == nil {
-			err = requireEverySlot(expandedAnswers.Slots)
+			err = requireSearchedSlots(expandedAnswers.Slots, includeOnePieces)
 		}
 		// the client already retries transport errors, 429 and 5xx, so only a bad answer is retried here
 		if !errors.Is(err, ErrInvalidOutput) {
@@ -63,9 +64,14 @@ func ExpandAnswers(ctx context.Context, client Client, answers map[string]string
 	return ExpandedAnswers{}, err
 }
 
-// the embedder rejects blank text, and an outfit needs a product in every slot
-func requireEverySlot(slots ExpandedSlots) error {
-	for _, phrase := range []string{slots.Top, slots.Bottom, slots.OnePiece, slots.Accessory, slots.Shoe} {
+// every searched slot needs a phrase because the embedder rejects blank text, even though an outfit can leave the top
+// and bottom empty when it wears a one-piece
+func requireSearchedSlots(slots ExpandedSlots, includeOnePieces bool) error {
+	phrases := []string{slots.Top, slots.Bottom, slots.Accessory, slots.Shoe}
+	if includeOnePieces {
+		phrases = append(phrases, slots.OnePiece)
+	}
+	for _, phrase := range phrases {
 		if strings.TrimSpace(phrase) == "" {
 			return fmt.Errorf("%w: a slot phrase is blank", ErrInvalidOutput)
 		}

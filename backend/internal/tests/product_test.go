@@ -138,7 +138,23 @@ func TestFindSimilarReturnsEachScore(t *testing.T) {
 
 	id := insertSlotProduct(t, db, testProduct{slot: models.SlotTop, tags: []string{"pastel"}, embedding: productEmbedding(0.1)})
 
-	products, err := repository.NewProductRepository(db).FindSimilar(context.Background(), queryEmbedding, models.SlotTop, nil, []string{"pastel"}, nil, nil, findSimilarLimit)
+	plainScore, products := findSimilarScore(t, db, id, nil)
+	// with no tags or picks, the score is the plain cosine distance, so it does not depend on the bonus weights
+	if want := 1 - 1/math.Sqrt(1+0.1*0.1); math.Abs(plainScore-want) > 1e-6 {
+		t.Errorf("score without nice tags = %v, want the cosine distance %v", plainScore, want)
+	}
+	if !slices.IsSortedFunc(products, func(a, b repository.ScoredProduct) int { return cmp.Compare(a.Score, b.Score) }) {
+		t.Error("scores are not in ascending order")
+	}
+	if taggedScore, _ := findSimilarScore(t, db, id, []string{"pastel"}); taggedScore >= plainScore {
+		t.Errorf("score with nice tag pastel = %v, want it below the plain distance %v", taggedScore, plainScore)
+	}
+}
+
+// findSimilarScore returns id's score from a FindSimilar call with niceTags, and everything that call returned.
+func findSimilarScore(t *testing.T, db *sql.DB, id uuid.UUID, niceTags []string) (float64, []repository.ScoredProduct) {
+	t.Helper()
+	products, err := repository.NewProductRepository(db).FindSimilar(context.Background(), queryEmbedding, models.SlotTop, nil, niceTags, nil, nil, findSimilarLimit)
 	if err != nil {
 		t.Fatalf("FindSimilar: %v", err)
 	}
@@ -146,15 +162,7 @@ func TestFindSimilarReturnsEachScore(t *testing.T) {
 	if index == -1 {
 		t.Fatalf("FindSimilar left out %v", id)
 	}
-	// mirrors bonusPerTag, which is unexported in repository
-	const bonusPerTag = 0.02
-	want := 1 - 1/math.Sqrt(1+0.1*0.1) - bonusPerTag
-	if got := products[index].Score; math.Abs(got-want) > 1e-6 {
-		t.Errorf("score = %v, want %v: cosine distance less one nice tag's bonus", got, want)
-	}
-	if !slices.IsSortedFunc(products, func(a, b repository.ScoredProduct) int { return cmp.Compare(a.Score, b.Score) }) {
-		t.Error("scores are not in ascending order")
-	}
+	return products[index].Score, products
 }
 
 func TestFindSimilarBreaksTiesByID(t *testing.T) {

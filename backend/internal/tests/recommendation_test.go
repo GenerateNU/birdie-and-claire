@@ -596,14 +596,26 @@ func TestRecommendFollowsTheOnePiecePreference(t *testing.T) {
 	}
 }
 
-func TestRecommendChecksTheOnePiecePhraseWhenOnePiecesAreLeftOut(t *testing.T) {
-	answer := strings.Replace(expandedAllSlots, `"floral midi dress"`, fmt.Sprintf("%q", strings.Repeat("é", 101)), 1)
-	users := &fakeUsers{user: models.User{StylePreferences: &models.StylePreferences{IncludeOnePieces: false}}}
-	repo := &repository.Repository{Product: &fakeProducts{}, User: users}
+func TestRecommendIgnoresTheOnePiecePhraseWhenOnePiecesAreLeftOut(t *testing.T) {
+	tests := map[string]string{
+		"blank":               `""`,
+		"over 100 characters": fmt.Sprintf("%q", strings.Repeat("é", 101)),
+	}
 
-	_, err := services.NewRecommendationService(repo, &llmtest.Fake{Text: answer}, &fakeEmbedder{}).RecommendProducts(context.Background(), summerWedding)
-	if err == nil {
-		t.Fatal("err = nil, want the 101 character one-piece phrase rejected")
+	for name, phrase := range tests {
+		t.Run(name, func(t *testing.T) {
+			answer := strings.Replace(expandedAllSlots, `"floral midi dress"`, phrase, 1)
+			users := &fakeUsers{user: models.User{StylePreferences: &models.StylePreferences{IncludeOnePieces: false}}}
+			repo := &repository.Repository{Product: &fakeProducts{}, User: users}
+			model := &llmtest.Fake{Text: answer}
+
+			if _, err := services.NewRecommendationService(repo, model, &fakeEmbedder{}).RecommendProducts(context.Background(), summerWedding); err != nil {
+				t.Fatalf("RecommendProducts: %v", err)
+			}
+			if got := len(model.Requests()); got != 1 {
+				t.Errorf("made %d model requests, want 1", got)
+			}
+		})
 	}
 }
 
