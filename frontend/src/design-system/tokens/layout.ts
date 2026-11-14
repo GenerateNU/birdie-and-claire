@@ -5,13 +5,12 @@ export const ModalWidth = { sm: "480px", md: "640px", lg: "880px" } as const;
 export const ModalImageWidth = "360px";
 
 // The onboarding screens' widths (`w-onboarding-<key>`), from Figma's Get To Know You frames: the
-// photo down the left, the welcome card, the answer rows, the stepper, and a fit question's card.
+// photo down the left, the welcome card, the answer rows, and the stepper.
 export const OnboardingWidth = {
   photo: "400px",
   card: "591px",
   choices: "565px",
-  stepper: "591px",
-  "preference-card": "240px",
+  stepper: "468px",
 } as const;
 
 // A menu's fixed width (`w-menu`), from Figma.

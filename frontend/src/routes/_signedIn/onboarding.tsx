@@ -15,7 +15,6 @@ import {
 } from "@/features/onboarding/onboarding-screens";
 import { OnboardingStepper } from "@/features/onboarding/onboarding-stepper";
 import { addOwnedPiecesMutationKey, PiecePicker } from "@/features/pieces/piece-picker";
-import { PreferenceCard } from "@/features/style-preferences/preference-card";
 import {
   fitFields,
   noPreferences,
@@ -111,10 +110,7 @@ function Onboarding() {
 
   if (!isPreferenceField(step)) {
     return (
-      <OwnedPiecesLayout
-        onBack={back === null ? null : () => setStep(back)}
-        stage={step === "owns-pieces" ? "owns-pieces" : "add-pieces"}
-      >
+      <OwnedPiecesLayout onBack={back === null ? null : () => setStep(back)} stage="owned-items">
         {step === "owns-pieces" && (
           <ChoiceQuestion
             heading={<Text variant="heading-l">Do you own any Birdie & Claire clothes?</Text>}
@@ -170,24 +166,17 @@ function Onboarding() {
     );
   }
 
-  const layout =
-    step === "style"
-      ? { cards: "mt-xl", buttons: "mt-xxxl" }
-      : { cards: "mt-lg", buttons: "mt-xl" };
-
   return (
-    <Page className="flex flex-col pb-xxxl">
+    <Page className="flex flex-col items-center gap-xxl">
       <OnboardingStepper stage={step === "style" ? "style" : "fit"} />
 
-      <Box className="mt-lg flex flex-1 flex-col items-center">
+      <Box className="flex flex-1 flex-col items-center justify-center gap-xxl">
+        <Text variant="display">{questions[step].prompt}</Text>
         <Box className="flex flex-col items-center gap-lg">
-          <Text variant="heading-l">{questions[step].prompt}</Text>
           <Text variant="body-l">{preferences[step].length} selected</Text>
-        </Box>
-        <Box className={layout.cards}>
           <Cards field={step} preferences={preferences} onToggle={toggle} disabled={saving} />
         </Box>
-        <Box className={`${layout.buttons} flex flex-col items-center gap-xs`}>
+        <Box className="flex flex-col items-center gap-sm">
           {/* Keyed by step so a repeated Enter doesn't land on the next screen's button. Clicks past the
               first of a double-click are ignored for the same reason. */}
           <Button
@@ -233,25 +222,8 @@ function Cards({ field, preferences, onToggle, disabled }: CardsProps) {
   const { options } = questions[field];
   const picked: readonly PreferenceValue[] = preferences[field];
 
-  if (field !== "style") {
-    return (
-      <Box className="flex flex-wrap justify-center gap-lg rounded-xl bg-placeholder p-lg">
-        {options.map((option) => (
-          <PreferenceCard
-            key={option.value}
-            label={option.label}
-            src={option.image}
-            checked={picked.includes(option.value)}
-            onCheckedChange={(checked) => onToggle(field, option.value, checked)}
-            disabled={disabled}
-          />
-        ))}
-      </Box>
-    );
-  }
-
   return (
-    <Box className="flex flex-wrap justify-center gap-xxl">
+    <Box className="flex flex-wrap justify-center gap-lg">
       {options.map((option) => (
         <ImageOptionCard
           key={option.value}
@@ -261,6 +233,7 @@ function Cards({ field, preferences, onToggle, disabled }: CardsProps) {
           onPressedChange={(pressed) => onToggle(field, option.value, pressed)}
           size="lg"
           selection="multi"
+          fit={field === "style" ? "cover" : "contain"}
           disabled={disabled}
         />
       ))}
