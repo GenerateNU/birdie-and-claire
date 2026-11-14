@@ -20,11 +20,11 @@ export function OnboardingStepper({ stage }: OnboardingStepperProps) {
   const currentStep = stages.findIndex((entry) => entry.stage === stage);
 
   return (
-    // 592px is the Progress Stepper instance in Figma's Own Any B&C Items 1.
+    // 591px is the Progress Stepper instance in Figma's Own Any B&C Items.
     <Box
       role="group"
       aria-label={`Step ${currentStep + 1} of ${stages.length}: ${stages[currentStep].name}`}
-      className="mx-auto w-[592px]"
+      className="mx-auto w-[591px]"
     >
       <ProgressStepper steps={stepLabels} currentStep={currentStep} />
     </Box>
