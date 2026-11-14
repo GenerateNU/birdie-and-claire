@@ -1,7 +1,15 @@
 import { ArrowSquareOutIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 
-import { Box, Button, EmptyState, ExternalLink, PieceRow, TextButton } from "@/design-system";
+import {
+  Box,
+  Button,
+  EmptyState,
+  ExternalLink,
+  PieceRow,
+  SectionHeader,
+  TextButton,
+} from "@/design-system";
 import type { ProductResponse } from "@/api/generated/types.gen";
 
 const STORE_BRAND = "Birdie & Claire";
@@ -28,11 +36,12 @@ export function PiecesSection({ products }: PiecesSectionProps) {
 
   return (
     <section className="flex flex-col gap-lg">
-      <Box className="flex items-baseline justify-between px-sm">
-        <h2 className="text-label-l-strong">Pieces in this outfit</h2>
-        <Box className="text-label-l-strong">
-          {products.length} {products.length === 1 ? "piece" : "pieces"}
-        </Box>
+      <Box className="px-sm">
+        <SectionHeader
+          title="Pieces in this outfit"
+          count={`${products.length} ${products.length === 1 ? "piece" : "pieces"}`}
+          size="sm"
+        />
       </Box>
       {products.length === 0 ? (
         <EmptyState title="This outfit has no items yet" />

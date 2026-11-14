@@ -1,4 +1,4 @@
-import { Box, ItemCard } from "@/design-system";
+import { Box, ItemCard, SectionHeader } from "@/design-system";
 
 // Mock pieces copied from the Figma until basics and partner brands are decided.
 const MOCK_EXTERNAL_PIECES = [
@@ -12,9 +12,12 @@ const MOCK_EXTERNAL_PIECES = [
 export function ExternalPiecesSection() {
   return (
     <section className="flex shrink-0 flex-col gap-lg">
-      <Box className="flex items-baseline justify-between px-sm">
-        <h2 className="text-label-l-strong">External pieces</h2>
-        <Box className="text-label-l-strong">{MOCK_EXTERNAL_PIECES.length} pieces</Box>
+      <Box className="px-sm">
+        <SectionHeader
+          title="External pieces"
+          count={`${MOCK_EXTERNAL_PIECES.length} pieces`}
+          size="sm"
+        />
       </Box>
       <ul className="flex justify-between">
         {MOCK_EXTERNAL_PIECES.map(({ name, brand }) => (

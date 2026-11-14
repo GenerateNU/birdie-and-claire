@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import type { CSSProperties } from "react";
 
-import { Box, Button, Chip, EmptyState, ErrorState, Link, Spinner } from "@/design-system";
+import { Box, Button, EmptyState, ErrorState, Link, Spinner, Text } from "@/design-system";
 import { ExternalPiecesSection } from "@/features/outfits/external-pieces-section";
 import { OutfitCanvas } from "@/features/outfits/outfit-canvas";
 import { CANVAS_SIZE } from "@/features/outfits/outfit-items";
@@ -19,8 +19,6 @@ export const Route = createFileRoute("/_signedIn/_onboarded/outfits/$outfitId/")
 const PLACEHOLDER_DESCRIPTION = "This is a short description about the outfit...";
 
 const PLACEHOLDER_TAGS = ["Tag 1", "Tag 2", "Tag 3"];
-
-function ignoreTagToggle() {}
 
 // SAFETY: CSSProperties has no index for custom properties; the value is a plain string.
 const canvasRatioStyle = {
@@ -95,12 +93,18 @@ function OutfitDetailsPage() {
             </Box>
             <ShareOutfit outfitId={outfitId} />
           </Box>
-          <h1 className="break-words font-serif text-display">{name}</h1>
-          <p className="text-body-l text-primary">{PLACEHOLDER_DESCRIPTION}</p>
+          <Text variant="display-hifi" className="break-words">
+            {name}
+          </Text>
+          <Text variant="body-l">{PLACEHOLDER_DESCRIPTION}</Text>
           <ul className="flex flex-wrap gap-sm py-sm">
             {PLACEHOLDER_TAGS.map((tag) => (
-              <li key={tag}>
-                <Chip label={tag} selected={false} onSelectedChange={ignoreTagToggle} disabled />
+              // Static text styled like a Chip: tags aren't selectable on this page.
+              <li
+                key={tag}
+                className="flex h-xl items-center bg-placeholder px-sm text-body-s text-primary"
+              >
+                {tag}
               </li>
             ))}
           </ul>

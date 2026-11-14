@@ -124,6 +124,8 @@ const textSamples = [
   { variant: "subheading", scales: ["subheading"] },
   { variant: "body", scales: ["body"] },
   { variant: "caption", scales: ["caption"] },
+  { variant: "display-hifi", scales: ["display"] },
+  { variant: "body-l", scales: ["body-l"] },
 ] as const;
 
 const sectionTitles = {
@@ -774,7 +776,8 @@ function SectionHeaderExamples() {
     <Box className="flex flex-col gap-md">
       <SectionHeader title="Recently saved" link={{ label: "See all", to: "/playground" }} />
       <SectionHeader title="Recently saved" />
-      <Label>with link · without link</Label>
+      <SectionHeader title="Pieces in this outfit" count="6 pieces" size="sm" />
+      <Label>with link · without link · sm with a count</Label>
     </Box>
   );
 }
