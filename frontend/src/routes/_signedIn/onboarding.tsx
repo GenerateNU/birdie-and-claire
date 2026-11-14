@@ -182,6 +182,8 @@ function Onboarding() {
           <Button
             key={step}
             label={nextButtonLabel(step)}
+            variant={preferences[step].length === 0 ? "secondary" : "primary"}
+            className="w-onboarding-next"
             loading={saving}
             onClick={(event) => {
               if (event.detail > 1) {
