@@ -5,7 +5,7 @@ import { useState } from "react";
 
 import { replaceCurrentUserStylePreferencesMutation } from "@/api/generated/@tanstack/react-query.gen";
 import type { StylePreferences } from "@/api/generated/types.gen";
-import { Box, Button, ImageCard, Logo, Page, ProgressBar, Tabs, Text } from "@/design-system";
+import { Box, Button, ImageOptionCard, Logo, Page, ProgressBar, Tabs, Text } from "@/design-system";
 import { AccountError, requireAccountStatus } from "@/features/account/account";
 import { PiecePicker } from "@/features/pieces/piece-picker";
 import {
@@ -208,7 +208,7 @@ function Cards({ field, preferences, onToggle, disabled }: CardsProps) {
   return (
     <Box className="flex flex-wrap justify-center gap-md">
       {options.map((option) => (
-        <ImageCard
+        <ImageOptionCard
           key={option.value}
           label={option.label}
           src={null}

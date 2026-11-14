@@ -9,7 +9,15 @@ import {
 } from "@/api/generated/@tanstack/react-query.gen";
 import type { ProductResponse } from "@/api/generated/types.gen";
 import { zAddOwnedProductsInputBody } from "@/api/generated/zod.gen";
-import { Box, Button, EmptyState, ErrorState, ImageCard, Spinner, Text } from "@/design-system";
+import {
+  Box,
+  Button,
+  EmptyState,
+  ErrorState,
+  ImageOptionCard,
+  Spinner,
+  Text,
+} from "@/design-system";
 import { LoadMoreSentinel } from "@/features/pieces/load-more-sentinel";
 import { usePagination } from "@/lib/use-pagination";
 
@@ -150,7 +158,7 @@ function Catalog({ selected, onToggle, disabled, atLimit }: CatalogProps) {
 
           return (
             <li key={product.id}>
-              <ImageCard
+              <ImageOptionCard
                 label={product.title}
                 src={product.image_url}
                 pressed={pressed}
