@@ -1,25 +1,17 @@
-import {
-  CalendarBlankIcon,
-  CoatHangerIcon,
-  KeyboardIcon,
-  PencilSimpleIcon,
-  SmileyIcon,
-  SunIcon,
-  type Icon,
-} from "@phosphor-icons/react";
 import { useMutation } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 
 import { warmEmbedderMutation } from "@/api/generated/@tanstack/react-query.gen";
 import type {
+  RecommendationResponse,
   RecommendationSetting,
   RecommendationVibe,
   RecommendationWeather,
 } from "@/api/generated/types.gen";
-import { Box, Button, ListCard, Page, Text, useToast } from "@/design-system";
-import { vibeCards, type Step } from "@/features/outfits/create-outfit/create-outfit-options";
-import { requestOutfit } from "@/features/outfits/create-outfit/request-outfit";
+import { Box, Button, Page, Text, useToast } from "@/design-system";
+import { AnswerList } from "@/features/outfits/create-outfit/answer-list";
+import type { Step } from "@/features/outfits/create-outfit/create-outfit-options";
+import { recommendOutfits } from "@/features/outfits/create-outfit/recommend-outfits";
 
 type ReviewProps = {
   occasion: string;
@@ -34,6 +26,7 @@ type ReviewProps = {
   // Empty when the shopper skipped Custom.
   custom: string;
   onEdit: (step: Step) => void;
+  onResults: (outfits: RecommendationResponse["outfits"]) => void;
 };
 
 export function Review({
@@ -45,15 +38,15 @@ export function Review({
   vibe,
   custom,
   onEdit,
+  onResults,
 }: ReviewProps) {
   const toast = useToast();
-  const navigate = useNavigate();
   const abortController = useRef(new AbortController());
   const { mutate: warmEmbedder } = useMutation(warmEmbedderMutation());
 
-  const createMutation = useMutation({
+  const recommendMutation = useMutation({
     mutationFn: () =>
-      requestOutfit(
+      recommendOutfits(
         occasion,
         weather,
         setting,
@@ -62,8 +55,8 @@ export function Review({
         custom,
         abortController.current.signal,
       ),
-    onSuccess: async (outfitId) => {
-      if (outfitId === null) {
+    onSuccess: (outfits) => {
+      if (outfits.length === 0) {
         toast.show({
           message:
             "Couldn't build a full outfit for that, try changing the weather, vibe or custom details",
@@ -73,7 +66,7 @@ export function Review({
         return;
       }
 
-      await navigate({ to: "/outfits/$outfitId", params: { outfitId } });
+      onResults(outfits);
     },
     onError: () => {
       if (abortController.current.signal.aborted) {
@@ -81,15 +74,13 @@ export function Review({
       }
 
       toast.show({
-        message: "Couldn't create the outfit. Try again in a moment.",
+        message: "Couldn't get outfit recommendations. Try again in a moment.",
         variant: "error",
       });
     },
   });
 
-  // Stays on through the navigation to the new outfit.
-  const creating =
-    createMutation.isPending || (createMutation.isSuccess && createMutation.data !== null);
+  const recommending = recommendMutation.isPending;
 
   useEffect(() => {
     // StrictMode mounts twice, and the first unmount aborts the controller, so make a fresh one.
@@ -97,57 +88,29 @@ export function Review({
     // Best effort: a cold embedder takes tens of seconds, so start it while the user reviews.
     warmEmbedder({});
 
-    // Leaving the page cancels a pending create, so it can't navigate back to the new outfit.
+    // Leaving the page cancels a pending request, so it can't open the results afterwards.
     return () => abortController.current.abort();
   }, [warmEmbedder]);
-
-  const rows: { step: Step; icon: Icon; title: string; value: string; italic?: boolean }[] = [
-    { step: "occasion", icon: CalendarBlankIcon, title: "Occasion", value: occasion },
-    { step: "weather", icon: SunIcon, title: "Weather", value: weatherSummary },
-    {
-      step: "vibe",
-      icon: SmileyIcon,
-      title: "Vibe",
-      value: vibeCards.find((card) => card.vibe === vibe)?.label ?? "None",
-    },
-    // Always "None" until catalog selection exists.
-    { step: "specifics", icon: CoatHangerIcon, title: "Items to include", value: "None" },
-    {
-      step: "custom",
-      icon: KeyboardIcon,
-      title: "Additional descriptions",
-      value: custom === "" ? "None" : `“${custom}”`,
-      italic: custom !== "",
-    },
-  ];
 
   return (
     <Page className="flex flex-col items-center justify-center gap-xl">
       <Text variant="display">Let’s Review</Text>
-      <Box className="flex w-full max-w-content-xl flex-col divide-y border">
-        {rows.map((row) => (
-          <ListCard
-            key={row.step}
-            icon={row.icon}
-            title={row.title}
-            value={row.value}
-            italic={row.italic}
-            action={{
-              label: "Edit",
-              accessibleLabel: `Edit ${row.title}`,
-              icon: PencilSimpleIcon,
-              onClick: () => onEdit(row.step),
-              disabled: creating,
-            }}
-          />
-        ))}
+      <Box className="w-full max-w-content-xl">
+        <AnswerList
+          occasion={occasion}
+          weatherSummary={weatherSummary}
+          vibe={vibe}
+          custom={custom}
+          disabled={recommending}
+          onEdit={onEdit}
+        />
       </Box>
       <Button
         className="mt-md"
         label="Create outfits"
-        loading={creating}
+        loading={recommending}
         loadingLabel="Styling your outfit…"
-        onClick={() => createMutation.mutate()}
+        onClick={() => recommendMutation.mutate()}
       />
     </Page>
   );
