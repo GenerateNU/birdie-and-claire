@@ -101,11 +101,13 @@ func (s *outfitService) GetShared(ctx context.Context, id uuid.UUID) (models.Sha
 		return models.SharedOutfitResponse{}, err
 	}
 	return models.SharedOutfitResponse{
-		ID:        outfit.ID,
-		Name:      outfit.Name,
-		OwnerID:   outfit.UserID,
-		OwnerName: ownerName,
-		Products:  products,
+		ID:          outfit.ID,
+		Name:        outfit.Name,
+		Description: outfit.Description,
+		Tags:        outfit.Tags,
+		OwnerID:     outfit.UserID,
+		OwnerName:   ownerName,
+		Products:    products,
 	}, nil
 }
 
