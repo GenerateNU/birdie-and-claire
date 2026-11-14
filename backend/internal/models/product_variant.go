@@ -1,18 +1,9 @@
 package models
 
-import (
-	"time"
+import "github.com/google/uuid"
 
-	"github.com/google/uuid"
-)
-
-// ProductVariant represents a row from the product_variants table.
+// ProductVariant is the part of a product_variants row that cart links need.
 type ProductVariant struct {
-	ID        uuid.UUID
 	ShopifyID int64
 	ProductID uuid.UUID
-	Available bool
-	Position  int
-	CreatedAt time.Time
-	UpdatedAt time.Time
 }

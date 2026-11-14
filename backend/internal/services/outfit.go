@@ -19,8 +19,6 @@ import (
 // shares them by public link.
 type OutfitService interface {
 	Create(ctx context.Context, params models.CreateOutfitParams) (models.OutfitResponse, error)
-	// Get returns the outfit with a cart link on each product the user can buy: a Birdie & Claire product that is
-	// active, not owned by the user, and has an available variant.
 	Get(ctx context.Context, id uuid.UUID) (models.OutfitDetailResponse, error)
 	Update(ctx context.Context, id uuid.UUID, params models.UpdateOutfitParams) (models.OutfitResponse, error)
 	List(ctx context.Context, params pagination.CursorParams) (pagination.Page[models.Outfit], error)

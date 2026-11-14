@@ -33,7 +33,6 @@ type OutfitPieceRowProps = {
   product: OutfitPiece;
 };
 
-/** The outfit's pieces, the first two until expanded, with Add all to cart under them. */
 export function PiecesSection({ products, addAllToCartUrl }: PiecesSectionProps) {
   const [expanded, setExpanded] = useState(false);
 
@@ -69,7 +68,7 @@ export function PiecesSection({ products, addAllToCartUrl }: PiecesSectionProps)
                 />
               </Box>
             )}
-            {addAllToCartUrl === undefined ? (
+            {!addAllToCartUrl ? (
               <Button label="Add all to cart" size="sm" leadingIcon={ArrowSquareOutIcon} disabled />
             ) : (
               <ExternalLink

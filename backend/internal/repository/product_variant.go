@@ -63,7 +63,7 @@ func (r *productVariantRepository) ReplaceShopifyVariants(ctx context.Context, p
 
 func (r *productVariantRepository) FirstAvailableByProductIDs(ctx context.Context, productIDs []uuid.UUID) (map[uuid.UUID]models.ProductVariant, error) {
 	rows, err := r.db.QueryContext(ctx, `
-		SELECT DISTINCT ON (product_id) id, shopify_id, product_id, available, position, created_at, updated_at
+		SELECT DISTINCT ON (product_id) shopify_id, product_id
 		FROM product_variants
 		WHERE product_id = ANY($1) AND available
 		ORDER BY product_id, position, id
@@ -76,15 +76,7 @@ func (r *productVariantRepository) FirstAvailableByProductIDs(ctx context.Contex
 	variants := make(map[uuid.UUID]models.ProductVariant)
 	for rows.Next() {
 		var variant models.ProductVariant
-		if err := rows.Scan(
-			&variant.ID,
-			&variant.ShopifyID,
-			&variant.ProductID,
-			&variant.Available,
-			&variant.Position,
-			&variant.CreatedAt,
-			&variant.UpdatedAt,
-		); err != nil {
+		if err := rows.Scan(&variant.ShopifyID, &variant.ProductID); err != nil {
 			return nil, fmt.Errorf("scan first available variant: %w", err)
 		}
 		variants[variant.ProductID] = variant
