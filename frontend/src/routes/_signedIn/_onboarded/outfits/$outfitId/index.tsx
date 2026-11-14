@@ -22,8 +22,6 @@ const PLACEHOLDER_TAGS = ["Tag 1", "Tag 2", "Tag 3"];
 
 function ignoreTagToggle() {}
 
-// Stacked, the canvas panel needs its own height, since the stage fits the canvas to the panel. A
-// custom property carries CANVAS_SIZE's ratio into a class, so lg:aspect-auto can still undo it.
 // SAFETY: CSSProperties has no index for custom properties; the value is a plain string.
 const canvasRatioStyle = {
   "--canvas-ratio": `${CANVAS_SIZE.width} / ${CANVAS_SIZE.height}`,
@@ -66,9 +64,6 @@ function OutfitDetailsPage() {
   const { name, products } = outfitQuery.data;
 
   return (
-    // From lg up the canvas sits beside the details and fits the window's height, and the details
-    // scroll on their own. Narrower, the page scrolls with the title above the canvas: the section
-    // becomes `contents` so `order` can put the canvas between its header and the pieces.
     <main className="flex flex-col gap-xl p-md lg:h-screen lg:flex-row lg:gap-xxxl lg:p-xxl">
       <Box
         style={canvasRatioStyle}
