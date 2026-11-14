@@ -88,9 +88,8 @@ export function PiecePicker({ onAdded }: PiecePickerProps) {
   return (
     <Box className="flex flex-col gap-md">
       <Box className="relative">
-        {/* Scrolls inside part of the viewport so the buttons below stay in view, in the onboarding
-            modal and on /pieces/add alike. */}
-        <Box inert={showingSelectedItems} className="max-h-[60vh] overflow-y-auto pr-xs">
+        {/* Scrolls inside a fixed height so the buttons below stay in view. */}
+        <Box inert={showingSelectedItems} className="max-h-scroll-area overflow-y-auto pr-xs">
           <Catalog selected={selected} onToggle={toggle} disabled={saving} atLimit={atLimit} />
         </Box>
         {showingSelectedItems && (
@@ -196,13 +195,9 @@ function Catalog({ selected, onToggle, disabled, atLimit }: CatalogProps) {
 
   if (isPending) {
     return (
-      <Box
-        role="status"
-        aria-label="Loading pieces"
-        className="grid grid-cols-2 gap-md md:grid-cols-3"
-      >
-        {[0, 1, 2, 3, 4, 5].map((item) => (
-          <Skeleton key={item} className="aspect-portrait" />
+      <Box role="status" aria-label="Loading pieces" className="grid grid-cols-4 gap-lg">
+        {[0, 1, 2, 3, 4, 5, 6, 7].map((item) => (
+          <Skeleton key={item} className="h-item-md w-item-md" />
         ))}
       </Box>
     );
