@@ -23,8 +23,6 @@ import {
   type PreferenceValue,
 } from "@/features/style-preferences/style-preferences";
 
-// The welcome and owned-pieces steps come first, then the style questions. The picker is a modal
-// over the add-method question.
 const introSteps = ["welcome", "owns-pieces", "add-method", "shop-login", "pick-pieces"] as const;
 
 type IntroStep = (typeof introSteps)[number];
@@ -57,7 +55,6 @@ function previousStep(step: OnboardingStep): OnboardingStep | null {
   }
 }
 
-/** The whole Get To Know You flow, from the welcome screen to saving style preferences. */
 export function OnboardingFlow() {
   const [step, setStep] = useState<OnboardingStep>("welcome");
 

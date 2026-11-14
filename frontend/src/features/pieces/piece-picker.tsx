@@ -140,7 +140,6 @@ type SelectedItemsPanelProps = {
   disabled: boolean;
 };
 
-/** The picks so far, each with a remove button. Covers the right of the catalog. */
 function SelectedItemsPanel({ selected, onRemove, disabled }: SelectedItemsPanelProps) {
   return (
     <Box className="absolute inset-y-0 right-0 flex w-3/5 flex-col gap-md overflow-y-auto border-l bg-card p-md shadow-modal">
@@ -150,9 +149,9 @@ function SelectedItemsPanel({ selected, onRemove, disabled }: SelectedItemsPanel
           You can always add more in your profile later!
         </Text>
       </Box>
-      <ul className="grid grid-cols-2 gap-md">
+      <Box role="list" className="grid grid-cols-2 gap-md">
         {selected.map((product) => (
-          <li key={product.id} className="relative">
+          <Box key={product.id} role="listitem" className="relative">
             <ItemCard name={product.title} src={product.image_url} size="sm" />
             <IconButton
               icon={TrashIcon}
@@ -163,9 +162,9 @@ function SelectedItemsPanel({ selected, onRemove, disabled }: SelectedItemsPanel
               className="absolute right-xs top-xs"
               onClick={() => onRemove(product)}
             />
-          </li>
+          </Box>
         ))}
-      </ul>
+      </Box>
     </Box>
   );
 }

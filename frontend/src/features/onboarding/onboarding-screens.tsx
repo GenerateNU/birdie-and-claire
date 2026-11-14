@@ -2,7 +2,7 @@ import { ArrowLeftIcon } from "@phosphor-icons/react";
 import type { ReactNode } from "react";
 
 import hero from "@/design-system/assets/landing/hero.jpg";
-import { Box, Button, Logo, Page, Text } from "@/design-system";
+import { Box, Button, CardImage, Logo, Page, Text } from "@/design-system";
 import { OnboardingStepper, type OnboardingStage } from "@/features/onboarding/onboarding-stepper";
 
 // Every screen reuses the landing hero until design exports the onboarding photos.
@@ -11,11 +11,10 @@ type WelcomeProps = {
   onStart: () => void;
 };
 
-/** The first onboarding screen: a full-bleed photo under the logo and a Start button. */
 export function Welcome({ onStart }: WelcomeProps) {
   return (
     <Page className="relative flex items-center justify-center">
-      <img src={hero} alt="" className="absolute inset-0 size-full object-cover" />
+      <CardImage src={hero} className="absolute inset-0 size-full" />
       <Box className="relative flex flex-col items-center gap-xl">
         <Box className="bg-card px-lg py-md">
           <Logo className="w-logo-header" />
@@ -40,32 +39,30 @@ type OwnedPiecesLayoutProps = {
   children: ReactNode;
 };
 
-/** A photo down the left, with Back and the stepper over the content on the right. */
 export function OwnedPiecesLayout({ onBack, stage, children }: OwnedPiecesLayoutProps) {
   return (
-    <main className="flex min-h-screen">
+    <Page className="flex">
       {/* 400px is the Image frame in Figma's Own Any B&C Items. The hero's subject stands right of
-          center, so 73% keeps her in the middle of the strip. */}
-      <img
-        src={hero}
-        alt=""
-        className="sticky top-0 h-screen w-[400px] shrink-0 object-cover object-[73%_50%]"
-      />
-      <Box className="relative flex flex-1 flex-col items-center gap-xxxl p-xl">
-        {onBack && (
-          <Button
-            label="Back"
-            leadingIcon={ArrowLeftIcon}
-            variant="ghost"
-            size="sm"
-            className="absolute left-lg top-lg"
-            onClick={onBack}
-          />
-        )}
-        <OnboardingStepper stage={stage} />
+          center, so 73% keeps her in the middle of the strip. Fixed so it sits outside the page's
+          padding. */}
+      <CardImage src={hero} className="fixed inset-y-0 left-0 w-[400px] object-[73%_50%]" />
+      <Box className="ml-[400px] flex flex-1 flex-col items-center gap-xxxl">
+        <Box className="relative w-full">
+          {onBack && (
+            <Button
+              label="Back"
+              leadingIcon={ArrowLeftIcon}
+              variant="ghost"
+              size="sm"
+              className="absolute left-0 top-0"
+              onClick={onBack}
+            />
+          )}
+          <OnboardingStepper stage={stage} />
+        </Box>
         <Box className="flex flex-1 flex-col items-center justify-center">{children}</Box>
       </Box>
-    </main>
+    </Page>
   );
 }
 
@@ -76,14 +73,12 @@ type Choice = {
 
 type ChoiceQuestionProps = {
   question: string;
-  /** A smaller second line under the question. */
   subtitle?: string;
   choices: Choice[];
 };
 
 // Buttons, not a radio group: picking an answer moves on at once, and a radio group would also
 // pick one as the arrow keys move focus through it.
-/** A question answered by clicking one of its rows. */
 export function ChoiceQuestion({ question, subtitle, choices }: ChoiceQuestionProps) {
   return (
     <Box className="flex flex-col items-center gap-lg">
