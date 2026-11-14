@@ -129,6 +129,7 @@ function CreateOutfit() {
 
   const chosenOccasion = cardOccasion ?? customOccasion.trim();
   const weather = weatherTile === null ? null : tileToApiWeather[weatherTile];
+  const weatherLabel = weatherTiles.find((tile) => tile.value === weatherTile)?.label ?? "None";
   const canContinue = chosenOccasion !== "";
 
   function selectCard(occasion: string, pressed: boolean) {
@@ -314,6 +315,7 @@ function CreateOutfit() {
       <Review
         occasion={chosenOccasion}
         weather={weather}
+        weatherLabel={weatherLabel}
         vibe={vibe}
         custom={custom.trim()}
         onEdit={editFromReview}
@@ -487,13 +489,14 @@ type ReviewProps = {
   occasion: string;
   // Null when the shopper skipped the questions.
   weather: RecommendationWeather | null;
+  weatherLabel: string;
   vibe: RecommendationVibe | null;
   // Empty when the shopper skipped Custom.
   custom: string;
   onEdit: (step: Step) => void;
 };
 
-function Review({ occasion, weather, vibe, custom, onEdit }: ReviewProps) {
+function Review({ occasion, weather, weatherLabel, vibe, custom, onEdit }: ReviewProps) {
   const toast = useToast();
   const navigate = useNavigate();
   const abortController = useRef(new AbortController());
@@ -555,20 +558,18 @@ function Review({ occasion, weather, vibe, custom, onEdit }: ReviewProps) {
             disabled: creating,
           }}
         />
-        {/* Only the weather and vibe values are lowercase list values; the occasion is the
-            shopper's own text, so it is not capitalized. */}
-        <Box className="capitalize">
-          <ListCard
-            title="Weather"
-            value={weather ?? "None"}
-            action={{
-              label: "Edit",
-              accessibleLabel: "Edit Weather",
-              onClick: () => onEdit("weather"),
-              disabled: creating,
-            }}
-          />
-        </Box>
+        <ListCard
+          title="Weather"
+          value={weatherLabel}
+          action={{
+            label: "Edit",
+            accessibleLabel: "Edit Weather",
+            onClick: () => onEdit("weather"),
+            disabled: creating,
+          }}
+        />
+        {/* Only the vibe value is a lowercase list value; the occasion is the shopper's own
+            text, so it is not capitalized. */}
         <Box className="capitalize">
           <ListCard
             title="Vibe"
