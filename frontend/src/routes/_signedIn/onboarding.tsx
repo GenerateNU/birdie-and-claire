@@ -5,7 +5,7 @@ import { useState } from "react";
 
 import { replaceCurrentUserStylePreferencesMutation } from "@/api/generated/@tanstack/react-query.gen";
 import type { StylePreferences } from "@/api/generated/types.gen";
-import { Box, Button, ImageOptionCard, Logo, Modal, Page, Text } from "@/design-system";
+import { Box, Button, ImageOptionCard, Modal, Page, Text } from "@/design-system";
 import { AccountError, requireAccountStatus } from "@/features/account/account";
 import { takeReturnPath } from "@/features/auth/return-path";
 import {
@@ -175,7 +175,6 @@ function Onboarding() {
 
       <Box className="mt-lg flex flex-1 flex-col items-center">
         <Box className="flex flex-col items-center gap-lg">
-          <Logo className="w-logo-onboarding" />
           <Text variant="heading-l">{questions[step].prompt}</Text>
           <Text variant="body">{preferences[step].length} selected</Text>
         </Box>
