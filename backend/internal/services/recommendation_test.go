@@ -97,7 +97,7 @@ func TestOnboardingOrdersCoverEveryValue(t *testing.T) {
 			t.Fatalf("StylePreferences has no %s field", fieldName)
 		}
 		for _, value := range strings.Split(field.Tag.Get("enum"), ",") {
-			// left out on purpose, since outfits have no slot for a dress
+			// left out on purpose, since recommended outfits don't include one-pieces yet
 			if value == "dress" {
 				continue
 			}
