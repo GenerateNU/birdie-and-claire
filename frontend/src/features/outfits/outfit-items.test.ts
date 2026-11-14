@@ -20,4 +20,18 @@ describe("placeOnCanvas", () => {
     expect(teeFirst[1].spot).toBe(blazerFirst[1].spot);
     expect(teeFirst[0].spot).not.toBe(teeFirst[1].spot);
   });
+
+  test("layers a top over a one-piece", () => {
+    const dress: Product = {
+      id: "dress",
+      title: "Dress",
+      slot: "one_piece",
+      image_url: "https://example.com/dress.png",
+    };
+
+    const [blazerPlacement, dressPlacement] = placeOnCanvas([blazer, dress]);
+
+    expect(dressPlacement.product.id).toBe("dress");
+    expect(blazerPlacement.spot.layer).toBeGreaterThan(dressPlacement.spot.layer);
+  });
 });

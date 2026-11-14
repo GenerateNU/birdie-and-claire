@@ -310,9 +310,10 @@ func TestOutfitProductsListHeadToToe(t *testing.T) {
 	shoe := insertSlotProduct(t, db, testProduct{slot: models.SlotShoe})
 	bottom := insertSlotProduct(t, db, testProduct{slot: models.SlotBottom})
 	top := insertSlotProduct(t, db, testProduct{slot: models.SlotTop})
+	onePiece := insertSlotProduct(t, db, testProduct{slot: models.SlotOnePiece})
 
 	outfits := repository.NewOutfitRepository(db)
-	params := models.CreateOutfitParams{Name: "fit", ProductIDs: []uuid.UUID{accessory, shoe, bottom, top}}
+	params := models.CreateOutfitParams{Name: "fit", ProductIDs: []uuid.UUID{accessory, shoe, onePiece, bottom, top}}
 	created, createdProducts, err := outfits.Create(ctx, params, insertTestUser(t, db))
 	if err != nil {
 		t.Fatalf("create outfit: %v", err)
@@ -326,7 +327,7 @@ func TestOutfitProductsListHeadToToe(t *testing.T) {
 		t.Fatalf("get outfit: %v", err)
 	}
 
-	want := []uuid.UUID{top, bottom, shoe, accessory}
+	want := []uuid.UUID{top, onePiece, bottom, shoe, accessory}
 	for name, products := range map[string][]models.ProductResponse{"create": createdProducts, "get": fetchedProducts} {
 		got := make([]uuid.UUID, 0, len(products))
 		for _, product := range products {
