@@ -1,10 +1,11 @@
 import { isAuthError } from "@supabase/supabase-js";
+import { ArrowLeftIcon } from "@phosphor-icons/react";
 import { useForm } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 
-import { Button, CodeInput, Form, Text, useToast } from "@/design-system";
+import { Button, Form, Text, TextField, useToast } from "@/design-system";
 import { AuthScreen } from "@/features/auth/auth-screen";
 import { sendCode, verifyCode } from "@/features/auth/otp";
 
@@ -100,19 +101,24 @@ export function VerifyScreen({ email, onVerified, onChangeEmail }: VerifyScreenP
   const busy = verifying || resendMutation.isPending;
 
   return (
-    <AuthScreen title="Enter your verification code" subtitle={`A code was sent to ${email}`}>
-      <Form form={form} className="flex flex-col items-center gap-sm">
+    <AuthScreen title="We sent a code to your inbox!" subtitle={`A code was sent to ${email}`}>
+      <Form form={form} className="flex flex-col items-center gap-lg">
         <form.Field name="code">
           {(field) => (
-            <CodeInput
+            <TextField
               ref={codeInputRef}
               label="Verification code"
-              length={AUTH_OTP_LENGTH}
+              hideLabel
+              placeholder="Enter code"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              className="w-full"
               value={field.state.value}
               onValueChange={(next) => {
-                field.handleChange(next);
+                field.handleChange(next.replace(/\D/g, "").slice(0, AUTH_OTP_LENGTH));
                 verifyMutation.reset();
               }}
+              onBlur={field.handleBlur}
               error={
                 wrongCode
                   ? "Incorrect code entered. Please try again."
@@ -122,12 +128,20 @@ export function VerifyScreen({ email, onVerified, onChangeEmail }: VerifyScreenP
             />
           )}
         </form.Field>
+        <Button
+          label="Verify Code"
+          type="submit"
+          className="w-full"
+          loading={verifying}
+          loadingLabel="Verifying…"
+          disabled={busy}
+        />
         {resendSecondsLeft > 0 ? (
           <Text variant="caption">Resend code in {resendSecondsLeft}s</Text>
         ) : (
           <Button
-            label="Resend verification code"
-            variant="secondary"
+            label="Resend code"
+            variant="ghost"
             size="sm"
             onClick={() => resendMutation.mutate()}
             loading={resendMutation.isPending}
@@ -141,17 +155,10 @@ export function VerifyScreen({ email, onVerified, onChangeEmail }: VerifyScreenP
           </Text>
         )}
         <Button
-          label="Verify Code"
-          type="submit"
-          variant="secondary"
-          loading={verifying}
-          loadingLabel="Verifying…"
-          disabled={busy}
-        />
-        <Button
-          label="Change the email address"
-          variant="secondary"
-          size="sm"
+          label="Back"
+          accessibleLabel="Back to change the email address"
+          variant="ghost"
+          leadingIcon={ArrowLeftIcon}
           onClick={onChangeEmail}
           disabled={busy}
         />
