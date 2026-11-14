@@ -188,10 +188,19 @@ function Onboarding() {
           <Cards field={step} preferences={preferences} onToggle={toggle} disabled={saving} />
         </Box>
         <Box className={`${layout.buttons} flex flex-col items-center gap-xs`}>
+          {/* Keyed by step so a repeated Enter doesn't land on the next screen's button. Clicks past the
+              first of a double-click are ignored for the same reason. */}
           <Button
+            key={step}
             label={nextButtonLabel(step)}
             loading={saving}
-            onClick={() => nextFieldOrFinish(step)}
+            onClick={(event) => {
+              if (event.detail > 1) {
+                return;
+              }
+
+              nextFieldOrFinish(step);
+            }}
           />
           {back !== null && (
             <Button

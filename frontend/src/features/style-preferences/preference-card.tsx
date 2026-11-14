@@ -17,7 +17,7 @@ export function PreferenceCard({
 }: PreferenceCardProps) {
   return (
     <Box className="relative flex w-onboarding-preference-card flex-col gap-xs border border-control bg-background p-xs">
-      {/* The cutouts are transparent, so the grey comes from here and can change with the token. */}
+      {/* The cutouts are transparent, so the grey comes from here. */}
       <Box className="h-card-lg bg-placeholder p-lg">
         <CardImage src={src} fit="contain" className="size-full" />
       </Box>
