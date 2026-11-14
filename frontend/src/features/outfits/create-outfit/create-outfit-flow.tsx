@@ -3,7 +3,7 @@ import { useState } from "react";
 
 import {
   RecommendationSetting,
-  type RecommendedOutfit,
+  type RecommendationResponse,
   type RecommendationCondition,
   type RecommendationVibe,
 } from "@/api/generated/types.gen";
@@ -53,7 +53,7 @@ export function CreateOutfitFlow() {
   const [conditions, setConditions] = useState<RecommendationCondition[]>([]);
   const [vibe, setVibe] = useState<RecommendationVibe | null>(null);
   const [custom, setCustom] = useState("");
-  const [outfits, setOutfits] = useState<RecommendedOutfit[]>([]);
+  const [outfits, setOutfits] = useState<RecommendationResponse["outfits"]>([]);
 
   const chosenOccasion = cardOccasion ?? customOccasion.trim();
   const weather = weatherTile === null ? null : tileToApiWeather[weatherTile];
@@ -106,7 +106,7 @@ export function CreateOutfitFlow() {
     setStep(next);
   }
 
-  function showResults(found: RecommendedOutfit[]) {
+  function showResults(found: RecommendationResponse["outfits"]) {
     setOutfits(found);
     setStep("results");
   }

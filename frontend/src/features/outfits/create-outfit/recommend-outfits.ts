@@ -1,7 +1,7 @@
 import { recommendProducts } from "@/api/generated/sdk.gen";
 import type {
   RecommendationDetail,
-  RecommendedOutfit,
+  RecommendationResponse,
   RecommendationSetting,
   RecommendationVibe,
   RecommendationWeather,
@@ -16,7 +16,7 @@ export async function recommendOutfits(
   vibe: RecommendationVibe | null,
   custom: string,
   signal: AbortSignal,
-): Promise<RecommendedOutfit[]> {
+): Promise<RecommendationResponse["outfits"]> {
   const details: RecommendationDetail[] = [];
 
   if (weather !== null) {

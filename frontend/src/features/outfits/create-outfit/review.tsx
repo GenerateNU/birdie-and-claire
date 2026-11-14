@@ -3,7 +3,7 @@ import { useEffect, useRef } from "react";
 
 import { warmEmbedderMutation } from "@/api/generated/@tanstack/react-query.gen";
 import type {
-  RecommendedOutfit,
+  RecommendationResponse,
   RecommendationSetting,
   RecommendationVibe,
   RecommendationWeather,
@@ -26,7 +26,7 @@ type ReviewProps = {
   // Empty when the shopper skipped Custom.
   custom: string;
   onEdit: (step: Step) => void;
-  onResults: (outfits: RecommendedOutfit[]) => void;
+  onResults: (outfits: RecommendationResponse["outfits"]) => void;
 };
 
 export function Review({

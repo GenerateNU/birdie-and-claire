@@ -7,7 +7,7 @@ import {
   createOutfitMutation,
   listOutfitsInfiniteQueryKey,
 } from "@/api/generated/@tanstack/react-query.gen";
-import type { RecommendationVibe, RecommendedOutfit } from "@/api/generated/types.gen";
+import type { RecommendationVibe, RecommendationResponse } from "@/api/generated/types.gen";
 import {
   Box,
   Button,
@@ -31,7 +31,7 @@ type ResultsScreenProps = {
   weatherSummary: string;
   vibe: RecommendationVibe | null;
   custom: string;
-  outfits: RecommendedOutfit[];
+  outfits: RecommendationResponse["outfits"];
   onEdit: (step: Step) => void;
 };
 
@@ -199,8 +199,10 @@ export function ResultsScreen({
 }
 
 // In the order Figma lists them. A slot with no match is missing from the outfit.
-function outfitPieces(outfit: RecommendedOutfit) {
-  return [outfit.top, outfit.bottom, outfit.shoe, outfit.accessory].flatMap((piece) =>
-    piece === undefined ? [] : [piece],
-  );
+function outfitPieces(outfit: RecommendationResponse["outfits"][number]) {
+  return [
+    ...(outfit.kind === "one_piece" ? [outfit.one_piece] : [outfit.top, outfit.bottom]),
+    outfit.shoe,
+    outfit.accessory,
+  ].flatMap((piece) => (piece === undefined ? [] : [piece]));
 }

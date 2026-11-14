@@ -7,6 +7,7 @@ import "database/sql"
 type Repository struct {
 	User           UserRepository
 	Outfit         OutfitRepository
+	Collection     CollectionRepository
 	OutfitReaction OutfitReactionRepository
 	Product        ProductRepository
 	ProductImage   ProductImageRepository
@@ -18,6 +19,7 @@ func New(database *sql.DB) *Repository {
 	return &Repository{
 		User:           NewUserRepository(database),
 		Outfit:         NewOutfitRepository(database),
+		Collection:     NewCollectionRepository(database),
 		OutfitReaction: NewOutfitReactionRepository(database),
 		Product:        NewProductRepository(database),
 		ProductImage:   NewProductImageRepository(database),
