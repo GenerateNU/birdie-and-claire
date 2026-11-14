@@ -7,7 +7,7 @@ import { LoadMoreSentinel } from "@/features/pieces/load-more-sentinel";
 import { OwnedPieceCard } from "@/features/pieces/owned-piece-card";
 import { usePagination } from "@/lib/use-pagination";
 
-export const Route = createFileRoute("/_signedIn/_onboarded/profile/pieces")({
+export const Route = createFileRoute("/_signedIn/_onboarded/_nav/profile/pieces")({
   component: PiecesPage,
 });
 

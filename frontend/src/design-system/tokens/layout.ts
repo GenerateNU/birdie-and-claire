@@ -82,6 +82,9 @@ export const CollectionCardSize = {
 // An outfit card's width and image height (`w-outfit`, `h-outfit`), from Figma.
 export const OutfitCardSize = { width: "240px", imageHeight: "300px" } as const;
 
+// The home hero's height and the photo's width (`h-hero`, `w-hero-photo`), from Figma.
+export const HomeHeroSize = { height: "19.375rem", photoWidth: "27.0625rem" } as const;
+
 // An outfit slot's width and photo heights (`w-outfit-slot`, `h-outfit-slot-*`), from Figma.
 export const OutfitSlotSize = {
   width: "258px",
@@ -129,6 +132,10 @@ export const TileSize = { width: "10rem", height: "11rem" } as const;
 
 // The icon on an option tile, for Phosphor's `size` prop.
 export const TileIconSize = "2.75rem";
+
+// The outfit editor's side panel (`w-editor-panel`), from Figma's editor frames: the Add Items
+// panel right of the canvas, which fits two outfit slots side by side.
+export const EditorPanelWidth = "600px";
 
 // A sidebar's width (`w-sidebar`, `w-sidebar-collapsed`), from Figma.
 export const SidebarWidth = { expanded: "15rem", collapsed: "4.5rem" } as const;

@@ -1,7 +1,8 @@
 import { useForm } from "@tanstack/react-form";
+import { EnvelopeSimpleIcon } from "@phosphor-icons/react";
 import { z } from "zod";
 
-import { Button, Form, TextField } from "@/design-system";
+import { Box, Button, Divider, Form, Text, TextField } from "@/design-system";
 import { AuthScreen } from "@/features/auth/auth-screen";
 import { emailSchema } from "@/features/auth/email-schema";
 
@@ -11,14 +12,14 @@ type LoginEmailScreenProps = {
   defaultEmail: string;
   sending: boolean;
   onSubmit: (email: string) => void;
-  onBack: () => void;
+  onSignUp: () => void;
 };
 
 export function LoginEmailScreen({
   defaultEmail,
   sending,
   onSubmit,
-  onBack,
+  onSignUp,
 }: LoginEmailScreenProps) {
   const form = useForm({
     defaultValues: { email: defaultEmail },
@@ -29,17 +30,17 @@ export function LoginEmailScreen({
 
   return (
     <AuthScreen
-      title="Sign in with email"
-      subtitle="We will send you a verification code via this email address"
+      title="Log in or Sign Up"
+      subtitle="Create outfits built around your tastes and closet!"
     >
       <Form form={form} className="flex flex-col gap-sm">
         <form.Field name="email">
           {(field) => (
             <TextField
               label="Email"
-              hideLabel
               inputMode="email"
-              placeholder="Enter your email address"
+              placeholder="Enter your email"
+              trailingIcon={EnvelopeSimpleIcon}
               autoComplete="email"
               aria-required
               value={field.state.value}
@@ -50,15 +51,24 @@ export function LoginEmailScreen({
             />
           )}
         </form.Field>
-        <Button
-          label="Send Code"
-          type="submit"
-          variant="secondary"
-          loading={sending}
-          loadingLabel="Sending…"
-        />
-        <Button label="Back" variant="secondary" size="sm" onClick={onBack} disabled={sending} />
+        <Button label="Log in" type="submit" loading={sending} loadingLabel="Sending…" />
       </Form>
+      <Box className="flex items-center gap-sm">
+        <Divider className="flex-1" />
+        <Text variant="caption" className="uppercase text-secondary">
+          Or
+        </Text>
+        <Divider className="flex-1" />
+      </Box>
+      <Box className="text-center">
+        <Button
+          label="Create an account"
+          variant="ghost"
+          className="normal-case"
+          onClick={onSignUp}
+          disabled={sending}
+        />
+      </Box>
     </AuthScreen>
   );
 }

@@ -36,6 +36,8 @@ export { ChoiceGroup } from "@/design-system/components/choices/choice-group";
 
 export { OptionTileGroup } from "@/design-system/components/choices/option-tile-group";
 
+export { AutocompleteField } from "@/design-system/components/inputs/autocomplete-field";
+
 export { CodeInput } from "@/design-system/components/inputs/code-input";
 
 export { CopyField } from "@/design-system/components/inputs/copy-field";

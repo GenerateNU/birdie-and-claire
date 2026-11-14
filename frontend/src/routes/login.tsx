@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { z } from "zod";
 
-import { ChoiceScreen } from "@/features/auth/choice-screen";
 import { LoginEmailScreen } from "@/features/auth/login-email-screen";
 import { forgetReturnPath, rememberReturnPath } from "@/features/auth/return-path";
 import { SignupScreen } from "@/features/auth/signup-screen";
@@ -49,25 +48,16 @@ function Login() {
         defaultEmail={flow.email}
         sending={flow.sendingCode}
         onSubmit={flow.sendSignupCode}
-        onBack={flow.backToChoice}
-      />
-    );
-  }
-
-  if (flow.step === "login-email") {
-    return (
-      <LoginEmailScreen
-        defaultEmail={flow.email}
-        sending={flow.sendingCode}
-        onSubmit={flow.sendLoginCode}
-        onBack={flow.backToChoice}
+        onBack={() => flow.choosePath("login")}
       />
     );
   }
 
   return (
-    <ChoiceScreen
-      onLogIn={() => flow.choosePath("login")}
+    <LoginEmailScreen
+      defaultEmail={flow.email}
+      sending={flow.sendingCode}
+      onSubmit={flow.sendLoginCode}
       onSignUp={() => flow.choosePath("signup")}
     />
   );

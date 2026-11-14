@@ -8,10 +8,12 @@ export function VerifiedScreen() {
     <AuthScreen>
       <Box role="status" className="flex flex-col items-center gap-sm">
         <CheckCircleIcon aria-hidden="true" className="size-xl text-success" />
-        <Text variant="body" className="text-success">
+        <Text variant="heading-m" className="text-success">
           Verified
         </Text>
-        <Text variant="body">Welcome to the Styler!</Text>
+        <Text variant="heading-m" className="italic">
+          Welcome to the styler!
+        </Text>
       </Box>
     </AuthScreen>
   );

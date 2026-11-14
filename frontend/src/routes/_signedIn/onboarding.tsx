@@ -1,6 +1,6 @@
 import { ArrowLeftIcon } from "@phosphor-icons/react";
 import { useIsMutating, useMutation } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { replaceCurrentUserStylePreferencesMutation } from "@/api/generated/@tanstack/react-query.gen";
@@ -8,6 +8,7 @@ import type { StylePreferences } from "@/api/generated/types.gen";
 import { Box, Button, Checkbox, ImageOptionCard, Modal, Page, Text } from "@/design-system";
 import { AccountError, requireAccountStatus } from "@/features/account/account";
 import { takeReturnPath } from "@/features/auth/return-path";
+import { ExitFlowButton } from "@/features/navigation/exit-flow-button";
 import {
   ChoiceQuestion,
   OwnedPiecesLayout,
@@ -64,7 +65,21 @@ function previousStep(step: OnboardingStep): OnboardingStep | null {
   }
 }
 
+/** The onboarding steps, with an X on every step that leaves for the landing page. */
 function Onboarding() {
+  const navigate = useNavigate();
+
+  return (
+    <>
+      <OnboardingSteps />
+      {/* No z-index: it stacks after the steps but before the modals, which portal to the end of
+          the body and so still cover it. */}
+      <ExitFlowButton onExit={() => void navigate({ to: "/" })} className="fixed right-lg top-lg" />
+    </>
+  );
+}
+
+function OnboardingSteps() {
   const [step, setStep] = useState<OnboardingStep>("welcome");
 
   const [preferences, setPreferences] = useState<StylePreferences>(noPreferences);

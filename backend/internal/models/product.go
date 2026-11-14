@@ -30,6 +30,10 @@ const (
 	SourceDemo ProductSource = "demo"
 )
 
+// ProductCategory is a tab of the Birdie & Claire catalog in the Add Items picker. The slots and product types each one
+// covers are in ListBirdieAndClaireProducts.
+type ProductCategory string
+
 // Product represents a row from the products table, without its embedding.
 type Product struct {
 	ID          uuid.UUID     `json:"id"`
