@@ -92,5 +92,6 @@ func OutfitRoutes(api huma.API, params types.RouteParams) {
 		Method:      http.MethodGet,
 		Path:        "/api/public/outfits/{id}/link-preview/{host}",
 		Hidden:      true,
+		Middlewares: huma.Middlewares{controllers.LinkPreviewHeaders},
 	}, controller.GetLinkPreview)
 }

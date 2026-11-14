@@ -1,12 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { AccountError, getAccountStatus } from "@/features/account/account";
 import { SharedOutfitPage, type SharedOutfitViewer } from "@/features/outfits/shared-outfit-page";
 import { supabase } from "@/lib/supabase";
 
 // Public: anyone with a share link can open it, signed in or not.
 export const Route = createFileRoute("/o/$outfitId")({
-  beforeLoad: async ({ context }): Promise<{ viewer: SharedOutfitViewer }> => {
+  beforeLoad: async (): Promise<{ viewer: SharedOutfitViewer }> => {
     const {
       data: { session },
     } = await supabase.auth.getSession();
@@ -16,11 +15,9 @@ export const Route = createFileRoute("/o/$outfitId")({
     }
 
     const userId = session.user.id;
-    const accountStatus = await getAccountStatus({ queryClient: context.queryClient, userId });
 
-    return { viewer: { id: userId, accountStatus } };
+    return { viewer: { id: userId } };
   },
-  errorComponent: AccountError,
   component: SharedOutfitRoute,
 });
 

@@ -20,11 +20,10 @@ export function toSafeReturnPath(raw: string, origin: string): string | null {
   return `${url.pathname}${url.search}${url.hash}`;
 }
 
-/** Remembers where to go once signed in and onboarded, or forgets it when `raw` is unset or unsafe. */
-export function rememberReturnPath(raw: string | undefined) {
-  const path = raw === undefined ? null : toSafeReturnPath(raw, window.location.origin);
+/** Remembers a safe path, clearing any stored path when `raw` is unsafe. */
+export function rememberReturnPath(raw: string) {
+  const path = toSafeReturnPath(raw, window.location.origin);
 
-  // Storage can be blocked, as in some private windows. The user then lands on / as before.
   try {
     if (path === null) {
       sessionStorage.removeItem(RETURN_PATH_KEY);
@@ -32,7 +31,16 @@ export function rememberReturnPath(raw: string | undefined) {
       sessionStorage.setItem(RETURN_PATH_KEY, path);
     }
   } catch {
-    return;
+    // Storage can be unavailable in private browsing.
+  }
+}
+
+/** Removes any path left by an earlier login attempt. */
+export function forgetReturnPath() {
+  try {
+    sessionStorage.removeItem(RETURN_PATH_KEY);
+  } catch {
+    // Storage can be unavailable in private browsing.
   }
 }
 

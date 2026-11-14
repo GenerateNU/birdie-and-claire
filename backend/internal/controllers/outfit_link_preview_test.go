@@ -43,13 +43,3 @@ func TestLinkPreviewEscapesOutfitAndOwner(t *testing.T) {
 		t.Fatalf("body has og:url:\n%s", body)
 	}
 }
-
-func TestLinkPreviewDropsImageForAnUnsafeHost(t *testing.T) {
-	for _, host := range []string{"", "evil.com/path", `evil.com"><script>`, "user@evil.com", "evil.com?x=1"} {
-		t.Run(host, func(t *testing.T) {
-			if preview := newLinkPreview(nil, host); preview.ImageURL != "" {
-				t.Fatalf("host %q gave image %q, want none", host, preview.ImageURL)
-			}
-		})
-	}
-}

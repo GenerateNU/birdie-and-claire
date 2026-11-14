@@ -7,12 +7,13 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
-	"regexp"
 	"strings"
 
 	"birdie-and-claire/internal/errs"
 	"birdie-and-claire/internal/models"
+	"birdie-and-claire/internal/services"
 
+	"github.com/danielgtaylor/huma/v2"
 	"github.com/google/uuid"
 )
 
@@ -43,26 +44,28 @@ var linkPreviewTemplate = template.Must(template.New("link-preview").Parse(`<!do
 </html>
 `))
 
-// The frontend host, as Vercel's rewrite passes it. A hostname with an optional port, nothing else.
-var linkPreviewHostPattern = regexp.MustCompile(`^[a-z0-9-]+(\.[a-z0-9-]+)*(:[0-9]{1,5})?$`)
-
 // The page has no scripts, styles, or frames, and the only thing it loads is the og:image.
 const linkPreviewCSP = "default-src 'none'; img-src https:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
 
 type OutfitLinkPreviewInput struct {
-	// A string, not a uuid.UUID, so a malformed ID gets the generic preview instead of a JSON 422.
+	// Keep this a string so a malformed ID gets the generic preview instead of a JSON 422.
 	ID string `path:"id"`
 	// In the path rather than the query, so a query string on the shared link can't replace it when
 	// Vercel's rewrite forwards the request.
-	Host string `path:"host"`
+	Host string `path:"host" maxLength:"253" pattern:"^[a-zA-Z0-9]([a-zA-Z0-9]|-[a-zA-Z0-9]){0,31}(\\.[a-zA-Z0-9]([a-zA-Z0-9]|-[a-zA-Z0-9]){0,31})*(:[0-9]{1,5})?$"`
 }
 
 type OutfitLinkPreviewOutput struct {
-	Status                int
-	ContentType           string `header:"Content-Type"`
-	ContentSecurityPolicy string `header:"Content-Security-Policy"`
-	ContentTypeOptions    string `header:"X-Content-Type-Options"`
-	Body                  []byte
+	Status int
+	Body   []byte
+}
+
+// LinkPreviewHeaders sets the constant headers for the HTML crawler response.
+func LinkPreviewHeaders(ctx huma.Context, next func(huma.Context)) {
+	ctx.SetHeader("Content-Type", "text/html; charset=utf-8")
+	ctx.SetHeader("Content-Security-Policy", linkPreviewCSP)
+	ctx.SetHeader("X-Content-Type-Options", "nosniff")
+	next(ctx)
 }
 
 type linkPreview struct {
@@ -75,24 +78,25 @@ type linkPreview struct {
 // GetLinkPreview answers a crawler with the shared outfit's preview tags, or generic ones with a 404
 // for a private, deleted, or malformed one.
 func (c *OutfitController) GetLinkPreview(ctx context.Context, input *OutfitLinkPreviewInput) (*OutfitLinkPreviewOutput, error) {
-	id, err := uuid.Parse(input.ID)
-	if err != nil {
-		return renderLinkPreview(http.StatusNotFound, newLinkPreview(nil, input.Host))
+	var outfit *models.SharedOutfitResponse
+	if id, err := uuid.Parse(input.ID); err == nil {
+		shared, err := c.service.GetShared(ctx, id)
+		if err != nil && !errors.Is(err, errs.ErrNotFound) {
+			return nil, errs.ToHuma(ctx, err)
+		}
+		if err == nil {
+			outfit = &shared
+		}
 	}
 
-	outfit, err := c.service.GetShared(ctx, id)
-	if errors.Is(err, errs.ErrNotFound) {
+	if outfit == nil {
 		return renderLinkPreview(http.StatusNotFound, newLinkPreview(nil, input.Host))
 	}
-	if err != nil {
-		return nil, errs.ToHuma(ctx, err)
-	}
-	return renderLinkPreview(http.StatusOK, newLinkPreview(&outfit, input.Host))
+	return renderLinkPreview(http.StatusOK, newLinkPreview(outfit, input.Host))
 }
 
-// newLinkPreview builds generic tags when outfit is nil. There is no og:url: anyone can call this
-// with any host, so the crawler's own fetched URL is the only one trusted to name the page. The
-// image is left out when host isn't a plain hostname, since crawlers need it absolute.
+// newLinkPreview builds generic tags when outfit is nil. Host has already passed request validation.
+// There is no og:url because the crawler's fetched URL is the only one trusted to name the page.
 func newLinkPreview(outfit *models.SharedOutfitResponse, host string) linkPreview {
 	preview := linkPreview{
 		Title:       "Birdie & Claire",
@@ -101,28 +105,14 @@ func newLinkPreview(outfit *models.SharedOutfitResponse, host string) linkPrevie
 	}
 	if outfit != nil {
 		preview.Title = outfit.Name
-		preview.Description = describeSharedOutfit(*outfit)
+		preview.Description = services.DescribeSharedOutfit(*outfit)
 		preview.Path = "/o/" + outfit.ID.String()
 	}
 
 	host = strings.ToLower(host)
-	if !linkPreviewHostPattern.MatchString(host) {
-		return preview
-	}
 	// Served from frontend/public at a fixed path, because Vite renames bundled assets on every build.
 	preview.ImageURL = "https://" + host + "/og-image.png"
 	return preview
-}
-
-func describeSharedOutfit(outfit models.SharedOutfitResponse) string {
-	pieces := fmt.Sprintf("%d pieces", len(outfit.Products))
-	if len(outfit.Products) == 1 {
-		pieces = "1 piece"
-	}
-	if outfit.OwnerName == "" {
-		return "An outfit shared on Birdie & Claire · " + pieces
-	}
-	return outfit.OwnerName + " shared an outfit on Birdie & Claire · " + pieces
 }
 
 func renderLinkPreview(status int, preview linkPreview) (*OutfitLinkPreviewOutput, error) {
@@ -130,11 +120,5 @@ func renderLinkPreview(status int, preview linkPreview) (*OutfitLinkPreviewOutpu
 	if err := linkPreviewTemplate.Execute(&body, preview); err != nil {
 		return nil, fmt.Errorf("render link preview: %w", err)
 	}
-	return &OutfitLinkPreviewOutput{
-		Status:                status,
-		ContentType:           "text/html; charset=utf-8",
-		ContentSecurityPolicy: linkPreviewCSP,
-		ContentTypeOptions:    "nosniff",
-		Body:                  body.Bytes(),
-	}, nil
+	return &OutfitLinkPreviewOutput{Status: status, Body: body.Bytes()}, nil
 }

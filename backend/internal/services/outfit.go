@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"slices"
 
 	"birdie-and-claire/internal/auth"
@@ -106,6 +107,15 @@ func (s *outfitService) GetShared(ctx context.Context, id uuid.UUID) (models.Sha
 		OwnerName: ownerName,
 		Products:  products,
 	}, nil
+}
+
+// DescribeSharedOutfit returns generic preview text without exposing the owner's name.
+func DescribeSharedOutfit(outfit models.SharedOutfitResponse) string {
+	pieces := fmt.Sprintf("%d pieces", len(outfit.Products))
+	if len(outfit.Products) == 1 {
+		pieces = "1 piece"
+	}
+	return "An outfit shared on Birdie & Claire · " + pieces
 }
 
 func (s *outfitService) Suggest(ctx context.Context, id uuid.UUID, productIDs []uuid.UUID, limit int) (models.OutfitSuggestionsResponse, error) {

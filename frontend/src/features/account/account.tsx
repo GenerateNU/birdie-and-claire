@@ -27,7 +27,7 @@ async function fetchCurrentUser(): Promise<CurrentUserResponse | null> {
   throw error;
 }
 
-function accountStatusQuery(userId: string) {
+export function accountStatusQuery(userId: string) {
   return queryOptions({
     queryKey: ["account-status", userId],
     // Checked once per page load. Login, account creation, finishing onboarding, and sign-out

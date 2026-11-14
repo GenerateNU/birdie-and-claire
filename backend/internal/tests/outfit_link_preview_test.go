@@ -41,8 +41,30 @@ func TestLinkPreviewShowsSharedOutfitAndHidesPrivateOne(t *testing.T) {
 	if err != nil {
 		t.Fatalf("shared preview: %v", err)
 	}
-	if shared.Status != http.StatusOK || !strings.Contains(string(shared.Body), `<meta property="og:title" content="fit">`) {
+	if shared.Status != http.StatusOK ||
+		!strings.Contains(string(shared.Body), `<meta property="og:title" content="fit">`) ||
+		!strings.Contains(string(shared.Body), `<meta property="og:description" content="An outfit shared on Birdie &amp; Claire · 1 piece">`) {
 		t.Fatalf("shared outfit gave status %d and body:\n%s", shared.Status, shared.Body)
+	}
+}
+
+func TestLinkPreviewRejectsInvalidHost(t *testing.T) {
+	controller := controllers.NewOutfitController(services.NewOutfitService(repository.New(nil)))
+	_, api := humatest.New(t, server.APIConfig(&config.Configuration{}))
+	huma.Register(api, huma.Operation{
+		OperationID: "get-shared-outfit-link-preview",
+		Method:      http.MethodGet,
+		Path:        "/api/public/outfits/{id}/link-preview/{host}",
+		Hidden:      true,
+	}, controller.GetLinkPreview)
+
+	for _, host := range []string{"-a.example.com", "a--b.example.com", strings.Repeat("a", 300)} {
+		t.Run(host, func(t *testing.T) {
+			response := api.Get("/api/public/outfits/not-an-id/link-preview/" + host)
+			if response.Code != http.StatusUnprocessableEntity {
+				t.Fatalf("status = %d, want %d for host %q", response.Code, http.StatusUnprocessableEntity, host)
+			}
+		})
 	}
 }
 
@@ -55,6 +77,7 @@ func TestLinkPreviewRouteServesHTMLForMalformedID(t *testing.T) {
 		Method:      http.MethodGet,
 		Path:        "/api/public/outfits/{id}/link-preview/{host}",
 		Hidden:      true,
+		Middlewares: huma.Middlewares{controllers.LinkPreviewHeaders},
 	}, controller.GetLinkPreview)
 
 	response := api.Get("/api/public/outfits/not-an-id/link-preview/app.example.com")

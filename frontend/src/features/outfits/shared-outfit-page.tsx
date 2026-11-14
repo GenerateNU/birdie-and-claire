@@ -15,12 +15,12 @@ import {
   EmptyState,
   ErrorState,
   Link,
-  Logo,
+  PageHeader,
   Spinner,
   Text,
   useToast,
 } from "@/design-system";
-import type { AccountStatus } from "@/features/account/account";
+import { accountStatusQuery } from "@/features/account/account";
 import { rememberReturnPath } from "@/features/auth/return-path";
 import { OutfitCanvas } from "@/features/outfits/outfit-canvas";
 import { isOutfitNotFound, retryUnlessOutfitNotFound } from "@/features/outfits/outfit-query";
@@ -29,7 +29,6 @@ import { PiecesSection } from "@/features/outfits/pieces-section";
 /** Who is looking at the share page, or null for a visitor who isn't signed in. */
 export type SharedOutfitViewer = {
   id: string;
-  accountStatus: AccountStatus;
 } | null;
 
 type SharedOutfitPageProps = {
@@ -39,6 +38,7 @@ type SharedOutfitPageProps = {
 
 type SharedOutfitFrameProps = {
   children: ReactNode;
+  title?: string;
 };
 
 type SaveActionProps = {
@@ -96,7 +96,7 @@ export function SharedOutfitPage({ outfitId, viewer }: SharedOutfitPageProps) {
   }
 
   return (
-    <SharedOutfitFrame>
+    <SharedOutfitFrame title={outfit.name}>
       <main className="flex min-h-0 flex-1 flex-col gap-xl p-md lg:flex-row lg:gap-xxl lg:px-xxl">
         <Box className="h-1/2 min-w-0 lg:h-auto lg:flex-1">
           <OutfitCanvas products={outfit.products}>{null}</OutfitCanvas>
@@ -120,14 +120,10 @@ export function SharedOutfitPage({ outfitId, viewer }: SharedOutfitPageProps) {
   );
 }
 
-function SharedOutfitFrame({ children }: SharedOutfitFrameProps) {
+function SharedOutfitFrame({ children, title = "Shared outfit" }: SharedOutfitFrameProps) {
   return (
     <Box className="flex h-screen flex-col">
-      <header className="flex h-[120px] shrink-0 items-end justify-center border-y">
-        <Link to="/">
-          <Logo className="h-[118px] w-[373px] object-cover object-bottom" />
-        </Link>
-      </header>
+      <PageHeader title={title} logoTo="/" actions={null} />
       {children}
     </Box>
   );
@@ -150,8 +146,33 @@ function SaveAction({ outfit, viewer }: SaveActionProps) {
     );
   }
 
+  return <SignedInSaveAction outfit={outfit} viewerId={viewer.id} sharePath={sharePath} />;
+}
+
+type SignedInSaveActionProps = {
+  outfit: SharedOutfitResponse;
+  viewerId: string;
+  sharePath: string;
+};
+
+function SignedInSaveAction({ outfit, viewerId, sharePath }: SignedInSaveActionProps) {
+  const accountStatus = useQuery(accountStatusQuery(viewerId));
+
+  if (accountStatus.isPending) {
+    return <Spinner className="self-start" />;
+  }
+
+  if (accountStatus.data === undefined) {
+    return (
+      <ErrorState
+        message="Couldn't check your account."
+        onRetry={() => void accountStatus.refetch()}
+      />
+    );
+  }
+
   // Signed in with no users row yet, so create-outfit would fail on the foreign key.
-  if (viewer.accountStatus === "none") {
+  if (accountStatus.data === "none") {
     return (
       <Link
         to="/create-account"
