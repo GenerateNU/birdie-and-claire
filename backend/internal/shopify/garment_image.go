@@ -1,6 +1,7 @@
 package shopify
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"image"
@@ -16,8 +17,9 @@ import (
 )
 
 const (
-	thumbnailWidth    = "200"
-	maxThumbnailBytes = 4 << 20
+	thumbnailWidth     = "200"
+	maxThumbnailBytes  = 4 << 20
+	maxThumbnailPixels = 200 * 5000
 	// A JPEG keeps slight noise in a flat studio backdrop.
 	flatBorderTolerance = 3
 )
@@ -66,11 +68,24 @@ func (c *adminClient) scoreBorderFlatness(ctx context.Context, imageURL string) 
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		return 0, fmt.Errorf("fetch thumbnail: %w", readStatusError(resp))
+		return 0, fmt.Errorf("fetch thumbnail: %s", resp.Status)
+	}
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxThumbnailBytes))
+	if err != nil {
+		return 0, fmt.Errorf("read thumbnail: %w", err)
+	}
+	// The decoders allocate for the size the header declares before reading
+	// any pixels, so a few bytes could otherwise claim gigabytes.
+	config, _, err := image.DecodeConfig(bytes.NewReader(body))
+	if err != nil {
+		return 0, fmt.Errorf("decode thumbnail header: %w", err)
+	}
+	if config.Width*config.Height > maxThumbnailPixels {
+		return 0, fmt.Errorf("thumbnail is %dx%d, larger than the CDN should send", config.Width, config.Height)
 	}
 	// Without a webp Accept header, Shopify's CDN answers a webp source with a
 	// JPEG, so PNG and JPEG cover every image.
-	decoded, _, err := image.Decode(io.LimitReader(resp.Body, maxThumbnailBytes))
+	decoded, _, err := image.Decode(bytes.NewReader(body))
 	if err != nil {
 		return 0, fmt.Errorf("decode thumbnail: %w", err)
 	}

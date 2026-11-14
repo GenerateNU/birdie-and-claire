@@ -17,8 +17,9 @@ import (
 	"birdie-and-claire/internal/config"
 )
 
-// serveThumbnails serves a flat-backdrop JPEG at /garment.jpg and a noisy PNG
-// at /model.png, and 404s anything else.
+// serveThumbnails serves a flat-backdrop JPEG at /garment.jpg, a noisy PNG at
+// /model.png, a PNG too large to be a thumbnail at /oversized.png, and 404s
+// anything else.
 func serveThumbnails(t *testing.T) http.HandlerFunc {
 	t.Helper()
 	flat := image.NewRGBA(image.Rect(0, 0, 20, 30))
@@ -41,6 +42,8 @@ func serveThumbnails(t *testing.T) http.HandlerFunc {
 			err = jpeg.Encode(w, flat, nil)
 		case "/model.png":
 			err = png.Encode(w, noisy)
+		case "/oversized.png":
+			err = png.Encode(w, image.NewGray(image.Rect(0, 0, 2000, 1000)))
 		default:
 			http.NotFound(w, r)
 		}
@@ -106,15 +109,19 @@ func TestPutGarmentShotFirstMovesTheFlattestImageToTheFront(t *testing.T) {
 
 func TestPutGarmentShotFirstKeepsStoreOrderWhenAThumbnailFails(t *testing.T) {
 	client, baseURL := newTLSTestClient(t, serveThumbnails(t))
-	images := []ShopifyImage{
-		{ID: 10, URL: baseURL + "/model.png?v=1", Position: 1},
-		{ID: 20, URL: baseURL + "/missing.png?v=1", Position: 2},
-		{ID: 30, URL: baseURL + "/garment.jpg?v=1", Position: 3},
-	}
+	for _, failingPath := range []string{"/missing.png", "/oversized.png"} {
+		t.Run(failingPath, func(t *testing.T) {
+			images := []ShopifyImage{
+				{ID: 10, URL: baseURL + "/model.png?v=1", Position: 1},
+				{ID: 20, URL: baseURL + failingPath + "?v=1", Position: 2},
+				{ID: 30, URL: baseURL + "/garment.jpg?v=1", Position: 3},
+			}
 
-	got := client.putGarmentShotFirst(context.Background(), ShopifyProduct{ID: 1, Images: images})
+			got := client.putGarmentShotFirst(context.Background(), ShopifyProduct{ID: 1, Images: images})
 
-	if !reflect.DeepEqual(got, images) {
-		t.Errorf("got  %+v\nwant the store order %+v", got, images)
+			if !reflect.DeepEqual(got, images) {
+				t.Errorf("got  %+v\nwant the store order %+v", got, images)
+			}
+		})
 	}
 }
