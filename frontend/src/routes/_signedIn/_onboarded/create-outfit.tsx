@@ -1,4 +1,4 @@
-import { ArrowRightIcon } from "@phosphor-icons/react";
+import { ArrowLeftIcon, ArrowRightIcon } from "@phosphor-icons/react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -41,7 +41,15 @@ export const Route = createFileRoute("/_signedIn/_onboarded/create-outfit")({
   component: CreateOutfit,
 });
 
-type Step = "intro" | "occasion" | "weather" | "vibe" | "specifics" | "custom" | "review";
+type Step =
+  | "intro"
+  | "occasion"
+  | "questions-intro"
+  | "weather"
+  | "vibe"
+  | "specifics"
+  | "custom"
+  | "review";
 
 const barSteps = ["weather", "vibe", "specifics", "custom"] as const;
 
@@ -99,7 +107,7 @@ function CreateOutfit() {
     setCustomOccasion(customOccasionDraft.trim());
     setCardOccasion(null);
     setCustomOccasionOpen(false);
-    advanceTo("weather");
+    advanceTo("questions-intro");
   }
 
   function advanceTo(next: Step) {
@@ -123,11 +131,21 @@ function CreateOutfit() {
       return;
     }
 
-    advanceTo("weather");
+    advanceTo("questions-intro");
   }
 
   if (step === "intro") {
     return <Intro onStart={() => setStep("occasion")} />;
+  }
+
+  if (step === "questions-intro") {
+    return (
+      <QuestionsIntro
+        onStart={() => setStep("weather")}
+        onSkip={() => setStep("review")}
+        onBack={() => setStep("occasion")}
+      />
+    );
   }
 
   if (step === "weather") {
@@ -135,7 +153,7 @@ function CreateOutfit() {
       <StepScreen
         step="weather"
         canContinue={weather !== null}
-        onBack={() => setStep("occasion")}
+        onBack={() => setStep("questions-intro")}
         onNext={() => advanceTo("vibe")}
       >
         <Box className="capitalize">
@@ -217,11 +235,6 @@ function CreateOutfit() {
   }
 
   if (step === "review") {
-    // Next on weather and vibe stays disabled until each is picked, so Review always has both.
-    if (weather === null || vibe === null) {
-      throw new Error("Reached Review before weather and vibe were picked");
-    }
-
     return (
       <Review
         occasion={chosenOccasion}
@@ -323,6 +336,38 @@ function Intro({ onStart }: IntroProps) {
   );
 }
 
+type QuestionsIntroProps = {
+  onStart: () => void;
+  onSkip: () => void;
+  onBack: () => void;
+};
+
+function QuestionsIntro({ onStart, onSkip, onBack }: QuestionsIntroProps) {
+  return (
+    <Page className="flex flex-col items-center justify-center gap-xl text-center">
+      <Box className="flex max-w-content-md flex-col gap-lg">
+        <h1 className="font-serif text-display">Sounds like a plan!</h1>
+        <Text variant="body">
+          To better style you to your personal and event preferences, answer a few additional
+          questions about the occasion. This step is optional, but more information will help us
+          style you better!
+        </Text>
+      </Box>
+      <Button label="Let’s go" trailingIcon={ArrowRightIcon} onClick={onStart} />
+      <Box className="flex flex-col items-center gap-xs">
+        <Button label="Skip" variant="ghost" size="sm" onClick={onSkip} />
+        <Button
+          label="Back"
+          variant="ghost"
+          size="sm"
+          leadingIcon={ArrowLeftIcon}
+          onClick={onBack}
+        />
+      </Box>
+    </Page>
+  );
+}
+
 type StepScreenProps = {
   step: BarStep;
   canContinue: boolean;
@@ -372,8 +417,9 @@ function StepBar({ current }: StepBarProps) {
 
 type ReviewProps = {
   occasion: string;
-  weather: RecommendationWeather;
-  vibe: RecommendationVibe;
+  // Null when the shopper skipped the questions.
+  weather: RecommendationWeather | null;
+  vibe: RecommendationVibe | null;
   // Empty when the shopper skipped Custom.
   custom: string;
   onEdit: (step: Step) => void;
@@ -446,7 +492,7 @@ function Review({ occasion, weather, vibe, custom, onEdit }: ReviewProps) {
         <Box className="capitalize">
           <ListCard
             title="Weather"
-            value={weather}
+            value={weather ?? "None"}
             action={{
               label: "Edit",
               accessibleLabel: "Edit Weather",
@@ -458,7 +504,7 @@ function Review({ occasion, weather, vibe, custom, onEdit }: ReviewProps) {
         <Box className="capitalize">
           <ListCard
             title="Vibe"
-            value={vibe}
+            value={vibe ?? "None"}
             action={{
               label: "Edit",
               accessibleLabel: "Edit Vibe",
@@ -492,15 +538,20 @@ function Review({ occasion, weather, vibe, custom, onEdit }: ReviewProps) {
  * Returns the new outfit's ID, or null when no outfit could be built. */
 async function requestOutfit(
   occasion: string,
-  weather: RecommendationWeather,
-  vibe: RecommendationVibe,
+  weather: RecommendationWeather | null,
+  vibe: RecommendationVibe | null,
   custom: string,
   signal: AbortSignal,
 ): Promise<string | null> {
-  const details: RecommendationDetail[] = [
-    { key: "weather", value: weather },
-    { key: "vibe", value: vibe },
-  ];
+  const details: RecommendationDetail[] = [];
+
+  if (weather !== null) {
+    details.push({ key: "weather", value: weather });
+  }
+
+  if (vibe !== null) {
+    details.push({ key: "vibe", value: vibe });
+  }
 
   // The endpoint rejects a blank custom value, and an empty field means the shopper skipped it.
   if (custom !== "") {
