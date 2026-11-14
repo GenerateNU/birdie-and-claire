@@ -6,7 +6,7 @@ import { Link } from "@/design-system/components/links/link";
 import { Logo } from "@/design-system/components/logo/logo";
 
 const itemBaseClasses =
-  "inline-flex items-center gap-xs border-b-thick pb-xxs text-label-m uppercase focus-ring";
+  "inline-flex items-center gap-xs border-b-thick pb-xxs text-label-m uppercase focus-ring motion-safe:transition-colors";
 
 const activeItemClasses = `${itemBaseClasses} border-primary`;
 
