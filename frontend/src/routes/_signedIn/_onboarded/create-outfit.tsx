@@ -445,6 +445,7 @@ async function requestOutfit(
       product_ids: [
         firstOutfit.top,
         firstOutfit.bottom,
+        firstOutfit.one_piece,
         firstOutfit.accessory,
         firstOutfit.shoe,
       ].flatMap((product) => (product === undefined ? [] : [product.id])),

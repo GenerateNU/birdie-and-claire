@@ -73,11 +73,13 @@ type RecommendationResponse struct {
 	Outfits         []RecommendedOutfit           `json:"outfits" nullable:"false" doc:"Up to 3 outfits, best first; fewer only when every slot has fewer matching products"`
 }
 
-// RecommendedOutfit takes the same rank from each slot's search, so outfit n holds every slot's nth match. A slot that
-// found fewer than n products is left out, so one empty slot never holds back the others.
+// RecommendedOutfit takes the same rank from each slot's search, so outfit n holds every slot's nth match. It holds either
+// a one-piece or a top and bottom, never both. A slot that found fewer than n products is left out, so one empty slot
+// never holds back the others.
 type RecommendedOutfit struct {
-	Top       *ProductResponse `json:"top,omitzero" doc:"Missing when no top matched"`
-	Bottom    *ProductResponse `json:"bottom,omitzero" doc:"Missing when no bottom matched"`
+	Top       *ProductResponse `json:"top,omitzero" doc:"Missing when no top matched or the outfit has a one-piece"`
+	Bottom    *ProductResponse `json:"bottom,omitzero" doc:"Missing when no bottom matched or the outfit has a one-piece"`
+	OnePiece  *ProductResponse `json:"one_piece,omitzero" doc:"A dress or jumpsuit in place of the top and bottom. Missing when the top and bottom matched better"`
 	Accessory *ProductResponse `json:"accessory,omitzero" doc:"Missing when no accessory matched"`
 	Shoe      *ProductResponse `json:"shoe,omitzero" doc:"Missing when no shoe matched"`
 }
@@ -91,6 +93,7 @@ type RecommendationExpandedAnswers struct {
 type RecommendationExpandedSlots struct {
 	Top       string `json:"top"`
 	Bottom    string `json:"bottom"`
+	OnePiece  string `json:"one_piece" doc:"Searched only when the shopper includes one-pieces"`
 	Accessory string `json:"accessory"`
 	Shoe      string `json:"shoe"`
 }

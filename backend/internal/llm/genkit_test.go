@@ -780,7 +780,7 @@ func TestToolLoopStopsAfterMaxTurns(t *testing.T) {
 	}
 }
 
-const expandedAnswer = `{"slots":{"top":"light pastel blouse","bottom":"linen midi skirt","accessory":"straw hat","shoe":"tan sandals"},` +
+const expandedAnswer = `{"slots":{"top":"light pastel blouse","bottom":"linen midi skirt","one_piece":"floral midi dress","accessory":"straw hat","shoe":"tan sandals"},` +
 	`"exclude_tags":["white"],"nice_tags":[]}`
 
 var brunchAnswers = map[string]string{"occasion": "brunch"}
@@ -799,7 +799,7 @@ func TestExpandAnswersRendersThePromptIntoTheRequest(t *testing.T) {
 		t.Fatalf("messages = %+v, want the rendered system and user messages", sent.Messages)
 	}
 	system, user := sent.Messages[0], sent.Messages[1]
-	if system.Role != "system" || !strings.Contains(messageText(system.Content), "top, bottom, accessory, and shoe") {
+	if system.Role != "system" || !strings.Contains(messageText(system.Content), "top, bottom, one_piece, accessory, and shoe") {
 		t.Errorf("first message = %+v, want the prompt's system instructions", system)
 	}
 	encoded, _ := json.Marshal(answers)
@@ -1000,8 +1000,9 @@ func TestExpandAnswersRejectsMissingFields(t *testing.T) {
 		name   string
 		answer string
 	}{
-		{name: "missing nice_tags", answer: `{"slots":{"top":"a","bottom":"b","accessory":"c","shoe":"d"},"exclude_tags":[]}`},
-		{name: "missing slot", answer: `{"slots":{"top":"a","bottom":"b","accessory":"c"},"exclude_tags":[],"nice_tags":[]}`},
+		{name: "missing nice_tags", answer: `{"slots":{"top":"a","bottom":"b","one_piece":"e","accessory":"c","shoe":"d"},"exclude_tags":[]}`},
+		{name: "missing one_piece", answer: `{"slots":{"top":"a","bottom":"b","accessory":"c","shoe":"d"},"exclude_tags":[],"nice_tags":[]}`},
+		{name: "missing slot", answer: `{"slots":{"top":"a","bottom":"b","one_piece":"e","accessory":"c"},"exclude_tags":[],"nice_tags":[]}`},
 	}
 
 	for _, tt := range tests {

@@ -1,13 +1,22 @@
 import type { StylePreferences } from "@/api/generated/types.gen";
 
-export type PreferenceField = keyof StylePreferences;
+/** A field the shopper answers by picking options. include_one_pieces is a yes or no instead. */
+export type PreferenceField = Exclude<keyof StylePreferences, "include_one_pieces">;
 
 /** Any option of any field. A field only offers its own, through `questions`. */
 export type PreferenceValue = StylePreferences[PreferenceField][number];
 
 type FitField = Exclude<PreferenceField, "style">;
 
-export const noPreferences: StylePreferences = { style: [], neckline: [], bottoms: [], shoes: [] };
+export const noPreferences: StylePreferences = {
+  style: [],
+  neckline: [],
+  bottoms: [],
+  shoes: [],
+  include_one_pieces: true,
+};
+
+export const includeOnePiecesLabel = "Include dresses and jumpsuits";
 
 type Question = {
   readonly name: string;
@@ -40,7 +49,6 @@ export const questions: Readonly<Record<PreferenceField, Question>> = {
     prompt: "What bottoms do you prefer?",
     options: [
       { value: "pants", label: "Pants" },
-      { value: "dress", label: "Dress" },
       { value: "skirt", label: "Skirt" },
       { value: "shorts", label: "Shorts" },
     ],

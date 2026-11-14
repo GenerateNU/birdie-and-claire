@@ -33,7 +33,7 @@ import (
 // mirrors productsPerSlot, which is unexported in services
 const productsPerSlot = 3
 
-const expandedAllSlots = `{"slots":{"top":"pastel blouse","bottom":"linen skirt","accessory":"straw hat","shoe":"tan sandals"},` +
+const expandedAllSlots = `{"slots":{"top":"pastel blouse","bottom":"linen skirt","one_piece":"floral midi dress","accessory":"straw hat","shoe":"tan sandals"},` +
 	`"exclude_tags":["white"],"nice_tags":["pastel"]}`
 
 var summerWedding = models.RecommendationRequest{Occasion: "summer wedding"}
@@ -71,17 +71,20 @@ type findSimilarCall struct {
 	limit       int
 }
 
-// fakeProducts answers FindSimilar with limit products titled "<slot> <rank>", or counts[slot] of them when set.
+// fakeProducts answers FindSimilar with limit products titled "<slot> <rank>", or counts[slot] of them when set. Each
+// product scores scores[slot] when set, and otherwise 0, except a one-piece's 1, so outfits keep their top and bottom
+// unless a test says otherwise.
 type fakeProducts struct {
 	repository.ProductRepository
 	err    error
 	counts map[models.ProductSlot]int
+	scores map[models.ProductSlot]float64
 
 	mu    sync.Mutex
 	calls []findSimilarCall
 }
 
-func (p *fakeProducts) FindSimilar(_ context.Context, embedding []float32, slot models.ProductSlot, excludeTags, niceTags, typePicks []string, _ []uuid.UUID, limit int) ([]models.ProductResponse, error) {
+func (p *fakeProducts) FindSimilar(_ context.Context, embedding []float32, slot models.ProductSlot, excludeTags, niceTags, typePicks []string, _ []uuid.UUID, limit int) ([]repository.ScoredProduct, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.calls = append(p.calls, findSimilarCall{embedding: embedding, slot: slot, excludeTags: excludeTags, niceTags: niceTags, typePicks: typePicks, limit: limit})
@@ -92,10 +95,15 @@ func (p *fakeProducts) FindSimilar(_ context.Context, embedding []float32, slot 
 	if !ok {
 		count = limit
 	}
-	products := make([]models.ProductResponse, 0, count)
+	score, ok := p.scores[slot]
+	if !ok && slot == models.SlotOnePiece {
+		score = 1
+	}
+	products := make([]repository.ScoredProduct, 0, count)
 	for rank := range count {
 		title := fmt.Sprintf("%s %d", slot, rank+1)
-		products = append(products, models.ProductResponse{Product: models.Product{ID: uuid.New(), Title: title, Slot: slot, Tags: []string{}}})
+		product := models.ProductResponse{Product: models.Product{ID: uuid.New(), Title: title, Slot: slot, Tags: []string{}}}
+		products = append(products, repository.ScoredProduct{Product: product, Score: score})
 	}
 	return products, nil
 }
@@ -134,7 +142,7 @@ func newRecommendationService(answer string, emb *fakeEmbedder, products *fakePr
 // outfitTitles writes "" for a slot the outfit leaves out.
 func outfitTitles(outfit models.RecommendedOutfit) []string {
 	var titles []string
-	for _, product := range []*models.ProductResponse{outfit.Top, outfit.Bottom, outfit.Accessory, outfit.Shoe} {
+	for _, product := range []*models.ProductResponse{outfit.Top, outfit.Bottom, outfit.OnePiece, outfit.Accessory, outfit.Shoe} {
 		if product == nil {
 			titles = append(titles, "")
 			continue
@@ -144,7 +152,7 @@ func outfitTitles(outfit models.RecommendedOutfit) []string {
 	return titles
 }
 
-var emptyCatalog = map[models.ProductSlot]int{models.SlotTop: 0, models.SlotBottom: 0, models.SlotAccessory: 0, models.SlotShoe: 0}
+var emptyCatalog = map[models.ProductSlot]int{models.SlotTop: 0, models.SlotBottom: 0, models.SlotOnePiece: 0, models.SlotAccessory: 0, models.SlotShoe: 0}
 
 func TestRecommendSearchesEverySlot(t *testing.T) {
 	emb := &fakeEmbedder{}
@@ -155,13 +163,13 @@ func TestRecommendSearchesEverySlot(t *testing.T) {
 	}
 
 	slices.Sort(emb.phrases)
-	if !slices.Equal(emb.phrases, []string{"linen skirt", "pastel blouse", "straw hat", "tan sandals"}) {
+	if !slices.Equal(emb.phrases, []string{"floral midi dress", "linen skirt", "pastel blouse", "straw hat", "tan sandals"}) {
 		t.Errorf("embedded %q, want each slot phrase once", emb.phrases)
 	}
 
 	calls := products.callsBySlot()
-	if len(calls) != 4 {
-		t.Fatalf("searched slots %v, want top, bottom, accessory, and shoe", calls)
+	if len(calls) != 5 {
+		t.Fatalf("searched slots %v, want top, bottom, one_piece, accessory, and shoe", calls)
 	}
 	shoe := calls["shoe"]
 	if shoe.embedding[0] != float32(len("tan sandals")) {
@@ -182,7 +190,7 @@ func TestRecommendBuildsEachOutfitFromOneRank(t *testing.T) {
 	}
 	for i, outfit := range response.Outfits {
 		rank := i + 1
-		want := []string{fmt.Sprintf("top %d", rank), fmt.Sprintf("bottom %d", rank), fmt.Sprintf("accessory %d", rank), fmt.Sprintf("shoe %d", rank)}
+		want := []string{fmt.Sprintf("top %d", rank), fmt.Sprintf("bottom %d", rank), "", fmt.Sprintf("accessory %d", rank), fmt.Sprintf("shoe %d", rank)}
 		if got := outfitTitles(outfit); !slices.Equal(got, want) {
 			t.Errorf("outfit %d = %q, want %q", i, got, want)
 		}
@@ -196,7 +204,7 @@ func TestRecommendReturnsAsManyOutfitsAsTheLongestSlot(t *testing.T) {
 		want   int
 	}{
 		{name: "one shoe", counts: map[models.ProductSlot]int{models.SlotShoe: 1}, want: productsPerSlot},
-		{name: "every slot short", counts: map[models.ProductSlot]int{models.SlotTop: 2, models.SlotBottom: 1, models.SlotAccessory: 1, models.SlotShoe: 0}, want: 2},
+		{name: "every slot short", counts: map[models.ProductSlot]int{models.SlotTop: 2, models.SlotBottom: 1, models.SlotOnePiece: 0, models.SlotAccessory: 1, models.SlotShoe: 0}, want: 2},
 		{name: "nothing matched", counts: emptyCatalog, want: 0},
 	}
 
@@ -215,16 +223,16 @@ func TestRecommendReturnsAsManyOutfitsAsTheLongestSlot(t *testing.T) {
 }
 
 func TestRecommendLeavesOutASlotThatRanOut(t *testing.T) {
-	products := &fakeProducts{counts: map[models.ProductSlot]int{models.SlotBottom: 1, models.SlotShoe: 0}}
+	products := &fakeProducts{counts: map[models.ProductSlot]int{models.SlotBottom: 1, models.SlotOnePiece: 0, models.SlotShoe: 0}}
 
 	response, err := newRecommendationService(expandedAllSlots, &fakeEmbedder{}, products).RecommendProducts(context.Background(), summerWedding)
 	if err != nil {
 		t.Fatalf("Recommend: %v", err)
 	}
 	want := [][]string{
-		{"top 1", "bottom 1", "accessory 1", ""},
-		{"top 2", "", "accessory 2", ""},
-		{"top 3", "", "accessory 3", ""},
+		{"top 1", "bottom 1", "", "accessory 1", ""},
+		{"top 2", "", "", "accessory 2", ""},
+		{"top 3", "", "", "accessory 3", ""},
 	}
 	if len(response.Outfits) != len(want) {
 		t.Fatalf("got %d outfits, want %d", len(response.Outfits), len(want))
@@ -258,14 +266,14 @@ func TestRecommendRejectsABlankSlotPhrase(t *testing.T) {
 }
 
 func TestRecommendReturnsTheExpansion(t *testing.T) {
-	answer := `{"slots":{"top":"pastel blouse","bottom":"linen skirt","accessory":"straw hat","shoe":"tan sandals"},` +
+	answer := `{"slots":{"top":"pastel blouse","bottom":"linen skirt","one_piece":"floral midi dress","accessory":"straw hat","shoe":"tan sandals"},` +
 		`"exclude_tags":["White","Sequins"],"nice_tags":null}`
 
 	response, err := newRecommendationService(answer, &fakeEmbedder{}, &fakeProducts{}).RecommendProducts(context.Background(), summerWedding)
 	if err != nil {
 		t.Fatalf("Recommend: %v", err)
 	}
-	wantSlots := models.RecommendationExpandedSlots{Top: "pastel blouse", Bottom: "linen skirt", Accessory: "straw hat", Shoe: "tan sandals"}
+	wantSlots := models.RecommendationExpandedSlots{Top: "pastel blouse", Bottom: "linen skirt", OnePiece: "floral midi dress", Accessory: "straw hat", Shoe: "tan sandals"}
 	if response.ExpandedAnswers.Slots != wantSlots {
 		t.Errorf("Slots = %+v, want %+v", response.ExpandedAnswers.Slots, wantSlots)
 	}
@@ -316,7 +324,7 @@ func numberedTags(count int) string {
 }
 
 func expansionWithShoe(shoe, excludeTags, niceTags string) string {
-	return fmt.Sprintf(`{"slots":{"top":"blouse","bottom":"skirt","accessory":"hat","shoe":%q},"exclude_tags":%s,"nice_tags":%s}`, shoe, excludeTags, niceTags)
+	return fmt.Sprintf(`{"slots":{"top":"blouse","bottom":"skirt","one_piece":"dress","accessory":"hat","shoe":%q},"exclude_tags":%s,"nice_tags":%s}`, shoe, excludeTags, niceTags)
 }
 
 func TestRecommendAcceptsAnExpansionAtTheLimits(t *testing.T) {
@@ -454,6 +462,131 @@ func TestRecommendPassesEachSlotItsTypePicks(t *testing.T) {
 	}
 }
 
+func TestRecommendPicksTheBetterShapeAtEachRank(t *testing.T) {
+	tests := []struct {
+		name   string
+		counts map[models.ProductSlot]int
+		scores map[models.ProductSlot]float64
+		want   [][]string
+	}{
+		{
+			name:   "one-piece scores lower than the top and bottom average",
+			scores: map[models.ProductSlot]float64{models.SlotTop: 0.1, models.SlotBottom: 0.5, models.SlotOnePiece: 0.25},
+			want: [][]string{
+				{"", "", "one_piece 1", "accessory 1", "shoe 1"},
+				{"", "", "one_piece 2", "accessory 2", "shoe 2"},
+				{"", "", "one_piece 3", "accessory 3", "shoe 3"},
+			},
+		},
+		{
+			name:   "top and bottom average lower than the one-piece",
+			scores: map[models.ProductSlot]float64{models.SlotTop: 0.1, models.SlotBottom: 0.5, models.SlotOnePiece: 0.35},
+			want: [][]string{
+				{"top 1", "bottom 1", "", "accessory 1", "shoe 1"},
+				{"top 2", "bottom 2", "", "accessory 2", "shoe 2"},
+				{"top 3", "bottom 3", "", "accessory 3", "shoe 3"},
+			},
+		},
+		{
+			name:   "bottoms ran out",
+			counts: map[models.ProductSlot]int{models.SlotBottom: 1},
+			want: [][]string{
+				{"top 1", "bottom 1", "", "accessory 1", "shoe 1"},
+				{"", "", "one_piece 2", "accessory 2", "shoe 2"},
+				{"", "", "one_piece 3", "accessory 3", "shoe 3"},
+			},
+		},
+		{
+			name:   "one-pieces ran out",
+			counts: map[models.ProductSlot]int{models.SlotOnePiece: 1},
+			scores: map[models.ProductSlot]float64{models.SlotOnePiece: -1},
+			want: [][]string{
+				{"", "", "one_piece 1", "accessory 1", "shoe 1"},
+				{"top 2", "bottom 2", "", "accessory 2", "shoe 2"},
+				{"top 3", "bottom 3", "", "accessory 3", "shoe 3"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			products := &fakeProducts{counts: tt.counts, scores: tt.scores}
+			response, err := newRecommendationService(expandedAllSlots, &fakeEmbedder{}, products).RecommendProducts(context.Background(), summerWedding)
+			if err != nil {
+				t.Fatalf("Recommend: %v", err)
+			}
+			if len(response.Outfits) != len(tt.want) {
+				t.Fatalf("got %d outfits, want %d", len(response.Outfits), len(tt.want))
+			}
+			for i, outfit := range response.Outfits {
+				if got := outfitTitles(outfit); !slices.Equal(got, tt.want[i]) {
+					t.Errorf("outfit %d = %q, want %q", i, got, tt.want[i])
+				}
+			}
+		})
+	}
+}
+
+func TestRecommendBreaksAScoreTieWithOneShape(t *testing.T) {
+	products := &fakeProducts{scores: map[models.ProductSlot]float64{models.SlotTop: 0.25, models.SlotBottom: 0.75, models.SlotOnePiece: 0.5}}
+
+	response, err := newRecommendationService(expandedAllSlots, &fakeEmbedder{}, products).RecommendProducts(context.Background(), summerWedding)
+	if err != nil {
+		t.Fatalf("Recommend: %v", err)
+	}
+	for i, outfit := range response.Outfits {
+		wearsOnePiece := outfit.OnePiece != nil && outfit.Top == nil && outfit.Bottom == nil
+		wearsSeparates := outfit.OnePiece == nil && outfit.Top != nil && outfit.Bottom != nil
+		if !wearsOnePiece && !wearsSeparates {
+			t.Errorf("outfit %d = %q, want either a one-piece or a top and bottom", i, outfitTitles(outfit))
+		}
+	}
+}
+
+func TestRecommendFollowsTheOnePiecePreference(t *testing.T) {
+	tests := []struct {
+		name          string
+		include       bool
+		wantOnePieces bool
+	}{
+		{name: "included", include: true, wantOnePieces: true},
+		{name: "left out", include: false, wantOnePieces: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			products := &fakeProducts{scores: map[models.ProductSlot]float64{models.SlotOnePiece: -1}}
+			users := &fakeUsers{user: models.User{StylePreferences: &models.StylePreferences{IncludeOnePieces: tt.include}}}
+			repo := &repository.Repository{Product: products, User: users}
+			ctx := auth.WithUserID(context.Background(), uuid.New())
+
+			response, err := services.NewRecommendationService(repo, &llmtest.Fake{Text: expandedAllSlots}, &fakeEmbedder{}).RecommendProducts(ctx, summerWedding)
+			if err != nil {
+				t.Fatalf("Recommend: %v", err)
+			}
+			if _, searched := products.callsBySlot()[models.SlotOnePiece]; searched != tt.wantOnePieces {
+				t.Errorf("searched one-pieces = %v, want %v", searched, tt.wantOnePieces)
+			}
+			for i, outfit := range response.Outfits {
+				if hasOnePiece := outfit.OnePiece != nil; hasOnePiece != tt.wantOnePieces {
+					t.Errorf("outfit %d = %q, want a one-piece: %v", i, outfitTitles(outfit), tt.wantOnePieces)
+				}
+			}
+		})
+	}
+}
+
+func TestRecommendChecksTheOnePiecePhraseWhenOnePiecesAreLeftOut(t *testing.T) {
+	answer := strings.Replace(expandedAllSlots, `"floral midi dress"`, fmt.Sprintf("%q", strings.Repeat("é", 101)), 1)
+	users := &fakeUsers{user: models.User{StylePreferences: &models.StylePreferences{IncludeOnePieces: false}}}
+	repo := &repository.Repository{Product: &fakeProducts{}, User: users}
+
+	_, err := services.NewRecommendationService(repo, &llmtest.Fake{Text: answer}, &fakeEmbedder{}).RecommendProducts(context.Background(), summerWedding)
+	if err == nil {
+		t.Fatal("err = nil, want the 101 character one-piece phrase rejected")
+	}
+}
+
 func recommendationAPI(t *testing.T, model llm.Client, products *fakeProducts, emb *fakeEmbedder) humatest.TestAPI {
 	t.Helper()
 
@@ -563,7 +696,7 @@ func TestRecommendRouteReturnsOutfits(t *testing.T) {
 	if len(decoded.Outfits) != productsPerSlot {
 		t.Fatalf("got %d outfits, want %d: %s", len(decoded.Outfits), productsPerSlot, response.Body)
 	}
-	if got := outfitTitles(decoded.Outfits[0]); !slices.Equal(got, []string{"top 1", "bottom 1", "accessory 1", "shoe 1"}) {
+	if got := outfitTitles(decoded.Outfits[0]); !slices.Equal(got, []string{"top 1", "bottom 1", "", "accessory 1", "shoe 1"}) {
 		t.Errorf("first outfit = %q, want each slot's first product", got)
 	}
 }
@@ -620,7 +753,7 @@ func TestRecommendRouteReturnsTheExpandedAnswers(t *testing.T) {
 	if err := json.Unmarshal(body.ExpandedAnswers["slots"], &slots); err != nil {
 		t.Fatalf("decode expanded_answers.slots in %s: %v", response.Body, err)
 	}
-	for _, slot := range []string{"top", "bottom", "accessory", "shoe"} {
+	for _, slot := range []string{"top", "bottom", "one_piece", "accessory", "shoe"} {
 		if slots[slot] == nil {
 			t.Errorf("expanded_answers.slots lacks %s: %s", slot, response.Body)
 		}

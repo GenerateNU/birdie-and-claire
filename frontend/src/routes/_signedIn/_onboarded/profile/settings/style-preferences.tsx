@@ -9,9 +9,19 @@ import {
   replaceCurrentUserStylePreferencesMutation,
 } from "@/api/generated/@tanstack/react-query.gen";
 import type { CurrentUserResponse, StylePreferences } from "@/api/generated/types.gen";
-import { Box, Button, ErrorState, ImageOptionCard, Link, Spinner, Text } from "@/design-system";
+import {
+  Box,
+  Button,
+  Checkbox,
+  ErrorState,
+  ImageOptionCard,
+  Link,
+  Spinner,
+  Text,
+} from "@/design-system";
 import {
   fitFields,
+  includeOnePiecesLabel,
   questions,
   togglePreference,
   type PreferenceField,
@@ -125,6 +135,14 @@ function StylePreferencesEditor({ saved }: StylePreferencesEditorProps) {
               onToggle={toggle}
             />
           ))}
+          <Checkbox
+            label={includeOnePiecesLabel}
+            checked={displayedPreferences.include_one_pieces}
+            onCheckedChange={(checked) =>
+              setDraft((current) => ({ ...current, include_one_pieces: checked }))
+            }
+            disabled={!editing || saving}
+          />
         </Box>
       </Box>
       {editing && (

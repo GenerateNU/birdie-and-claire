@@ -565,6 +565,9 @@ components:
           type: string
         bottom:
           type: string
+        one_piece:
+          description: Searched only when the shopper includes one-pieces
+          type: string
         shoe:
           type: string
         top:
@@ -572,6 +575,7 @@ components:
       required:
         - top
         - bottom
+        - one_piece
         - accessory
         - shoe
       type: object
@@ -634,13 +638,16 @@ components:
           description: Missing when no accessory matched
         bottom:
           $ref: "#/components/schemas/ProductResponse"
-          description: Missing when no bottom matched
+          description: Missing when no bottom matched or the outfit has a one-piece
+        one_piece:
+          $ref: "#/components/schemas/ProductResponse"
+          description: A dress or jumpsuit in place of the top and bottom. Missing when the top and bottom matched better
         shoe:
           $ref: "#/components/schemas/ProductResponse"
           description: Missing when no shoe matched
         top:
           $ref: "#/components/schemas/ProductResponse"
-          description: Missing when no top matched
+          description: Missing when no top matched or the outfit has a one-piece
       type: object
     ShareOutfitResponse:
       additionalProperties: false
@@ -688,12 +695,13 @@ components:
           items:
             enum:
               - pants
-              - dress
               - skirt
               - shorts
             type: string
           type: array
           uniqueItems: true
+        include_one_pieces:
+          type: boolean
         neckline:
           items:
             enum:
@@ -729,6 +737,7 @@ components:
         - neckline
         - bottoms
         - shoes
+        - include_one_pieces
       type: object
     UpdateOutfitInputBody:
       additionalProperties: false

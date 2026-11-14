@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand/v2"
 	"slices"
 	"strings"
 	"time"
@@ -34,7 +35,7 @@ type slotSearch struct {
 	phrase string
 	// the shopper's saved picks for this slot's labeled type, such as their necklines for the top
 	typePicks []string
-	products  *[]models.ProductResponse
+	products  *[]repository.ScoredProduct
 }
 
 type RecommendationService interface {
@@ -79,6 +80,7 @@ func (s *recommendationService) RecommendProducts(ctx context.Context, request m
 		Slots: models.RecommendationExpandedSlots{
 			Top:       strings.TrimSpace(rawExpandedAnswers.Slots.Top),
 			Bottom:    strings.TrimSpace(rawExpandedAnswers.Slots.Bottom),
+			OnePiece:  strings.TrimSpace(rawExpandedAnswers.Slots.OnePiece),
 			Accessory: strings.TrimSpace(rawExpandedAnswers.Slots.Accessory),
 			Shoe:      strings.TrimSpace(rawExpandedAnswers.Slots.Shoe),
 		},
@@ -86,18 +88,26 @@ func (s *recommendationService) RecommendProducts(ctx context.Context, request m
 		NiceTags:    lowercaseTags(rawExpandedAnswers.NiceTags),
 	}
 	var necklinePicks, bottomPicks, shoePicks []string
+	// a shopper without saved preferences is assumed not to mind one-pieces
+	includeOnePieces := true
 	if stylePreferences != nil {
 		necklinePicks, bottomPicks, shoePicks = stylePreferences.Neckline, stylePreferences.Bottoms, stylePreferences.Shoes
+		includeOnePieces = stylePreferences.IncludeOnePieces
 	}
-	var tops, bottoms, accessories, shoes []models.ProductResponse
+	var tops, bottoms, onePieces, accessories, shoes []repository.ScoredProduct
 	slots := []slotSearch{
 		{name: models.SlotTop, phrase: expandedAnswers.Slots.Top, typePicks: necklinePicks, products: &tops},
 		{name: models.SlotBottom, phrase: expandedAnswers.Slots.Bottom, typePicks: bottomPicks, products: &bottoms},
 		{name: models.SlotAccessory, phrase: expandedAnswers.Slots.Accessory, products: &accessories},
 		{name: models.SlotShoe, phrase: expandedAnswers.Slots.Shoe, typePicks: shoePicks, products: &shoes},
+		{name: models.SlotOnePiece, phrase: expandedAnswers.Slots.OnePiece, products: &onePieces},
 	}
+	// the model always writes a one-piece phrase, so it is checked even when it goes unsearched
 	if err := checkExpansionLimits(slots, expandedAnswers); err != nil {
 		return models.RecommendationResponse{}, err
+	}
+	if !includeOnePieces {
+		slots = slices.DeleteFunc(slots, func(slot slotSearch) bool { return slot.name == models.SlotOnePiece })
 	}
 
 	group, groupCtx := errgroup.WithContext(ctx)
@@ -115,28 +125,51 @@ func (s *recommendationService) RecommendProducts(ctx context.Context, request m
 		return models.RecommendationResponse{}, err
 	}
 
-	outfitCount := max(len(tops), len(bottoms), len(accessories), len(shoes))
+	outfitCount := max(len(tops), len(bottoms), len(onePieces), len(accessories), len(shoes))
 	// non-nil, since a null list would break the response schema
 	outfits := make([]models.RecommendedOutfit, 0, outfitCount)
 	for rank := range outfitCount {
-		outfits = append(outfits, models.RecommendedOutfit{
-			Top:       productAt(tops, rank),
-			Bottom:    productAt(bottoms, rank),
+		outfit := models.RecommendedOutfit{
 			Accessory: productAt(accessories, rank),
 			Shoe:      productAt(shoes, rank),
-		})
+		}
+		if wearsOnePiece(rank, tops, bottoms, onePieces) {
+			outfit.OnePiece = productAt(onePieces, rank)
+		} else {
+			outfit.Top = productAt(tops, rank)
+			outfit.Bottom = productAt(bottoms, rank)
+		}
+		outfits = append(outfits, outfit)
 	}
 	return models.RecommendationResponse{ExpandedAnswers: expandedAnswers, Outfits: outfits}, nil
 }
 
-func productAt(products []models.ProductResponse, rank int) *models.ProductResponse {
+func productAt(products []repository.ScoredProduct, rank int) *models.ProductResponse {
 	if rank >= len(products) {
 		return nil
 	}
-	return &products[rank]
+	return &products[rank].Product
 }
 
-func (s *recommendationService) searchSlot(ctx context.Context, slot slotSearch, excludeTags, niceTags []string) ([]models.ProductResponse, error) {
+// wearsOnePiece reports whether the outfit at rank takes its one-piece instead of its top and bottom. A complete shape
+// beats an incomplete one, and otherwise the lower score wins, with a tie broken at random.
+func wearsOnePiece(rank int, tops, bottoms, onePieces []repository.ScoredProduct) bool {
+	if rank >= len(onePieces) {
+		return false
+	}
+	if rank >= len(tops) || rank >= len(bottoms) {
+		return true
+	}
+	// untuned: each score is a distance to its own slot's phrase, so the two shapes are only roughly comparable
+	pairScore := (tops[rank].Score + bottoms[rank].Score) / 2
+	onePieceScore := onePieces[rank].Score
+	if onePieceScore == pairScore {
+		return rand.IntN(2) == 0
+	}
+	return onePieceScore < pairScore
+}
+
+func (s *recommendationService) searchSlot(ctx context.Context, slot slotSearch, excludeTags, niceTags []string) ([]repository.ScoredProduct, error) {
 	embedding, err := s.embedder.EmbedText(ctx, slot.phrase)
 	// a rejected phrase is the model's, not the shopper's, and Modal's detail can quote it
 	if errors.Is(err, errs.ErrInvalidInput) {
@@ -172,7 +205,7 @@ func lowercaseTags(tags []string) []string {
 }
 
 // picks are listed in this order so the same picks always produce the same prompt text, whatever order they were
-// saved in. dress is left out because recommended outfits don't include one-pieces yet.
+// saved in
 var (
 	bottomsInOnboardingOrder = []string{"pants", "skirt", "shorts"}
 	shoesInOnboardingOrder   = []string{"sneakers", "boots", "sandals", "heels", "flats"}
@@ -194,7 +227,7 @@ func formatStylePreferences(preferences *models.StylePreferences) string {
 	return strings.Join(fields, "; ")
 }
 
-// orderPicks drops any pick that order doesn't list, such as dress
+// orderPicks drops any pick that order doesn't list
 func orderPicks(picks, order []string) []string {
 	var ordered []string
 	for _, value := range order {

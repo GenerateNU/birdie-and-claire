@@ -65,7 +65,7 @@ func ExpandAnswers(ctx context.Context, client Client, answers map[string]string
 
 // the embedder rejects blank text, and an outfit needs a product in every slot
 func requireEverySlot(slots ExpandedSlots) error {
-	for _, phrase := range []string{slots.Top, slots.Bottom, slots.Accessory, slots.Shoe} {
+	for _, phrase := range []string{slots.Top, slots.Bottom, slots.OnePiece, slots.Accessory, slots.Shoe} {
 		if strings.TrimSpace(phrase) == "" {
 			return fmt.Errorf("%w: a slot phrase is blank", ErrInvalidOutput)
 		}

@@ -98,7 +98,7 @@ func stylePreferencesProbe(t *testing.T) humatest.TestAPI {
 
 // withField returns valid preferences with one field set to value.
 func withField(field string, value any) map[string]any {
-	preferences := map[string]any{"style": []string{}, "neckline": []string{}, "bottoms": []string{}, "shoes": []string{}}
+	preferences := map[string]any{"style": []string{}, "neckline": []string{}, "bottoms": []string{}, "shoes": []string{}, "include_one_pieces": true}
 	preferences[field] = value
 	return preferences
 }
@@ -109,8 +109,11 @@ func TestReplaceStylePreferencesInput(t *testing.T) {
 		body       map[string]any
 		wantStatus int
 	}{
-		{name: "all four", body: withField("bottoms", []string{"pants", "skirt"}), wantStatus: http.StatusNoContent},
-		{name: "missing field", body: map[string]any{"style": []string{}, "neckline": []string{}, "bottoms": []string{}}, wantStatus: http.StatusUnprocessableEntity},
+		{name: "every field", body: withField("bottoms", []string{"pants", "skirt"}), wantStatus: http.StatusNoContent},
+		{name: "one-pieces left out", body: withField("include_one_pieces", false), wantStatus: http.StatusNoContent},
+		{name: "missing field", body: map[string]any{"style": []string{}, "neckline": []string{}, "bottoms": []string{}, "include_one_pieces": true}, wantStatus: http.StatusUnprocessableEntity},
+		{name: "missing one-piece choice", body: map[string]any{"style": []string{}, "neckline": []string{}, "bottoms": []string{}, "shoes": []string{}}, wantStatus: http.StatusUnprocessableEntity},
+		{name: "dress as a bottom", body: withField("bottoms", []string{"dress"}), wantStatus: http.StatusUnprocessableEntity},
 		{name: "null field", body: withField("bottoms", nil), wantStatus: http.StatusUnprocessableEntity},
 		{name: "unknown value", body: withField("neckline", []string{"plunging"}), wantStatus: http.StatusUnprocessableEntity},
 		{name: "duplicate value", body: withField("shoes", []string{"heels", "heels"}), wantStatus: http.StatusUnprocessableEntity},
@@ -133,7 +136,7 @@ func TestStylePreferencesValueKeepsEmptyLists(t *testing.T) {
 	if err != nil {
 		t.Fatalf("value: %v", err)
 	}
-	want := `{"style":["chic_avant_garde"],"neckline":[],"bottoms":["pants"],"shoes":[]}`
+	want := `{"style":["chic_avant_garde"],"neckline":[],"bottoms":["pants"],"shoes":[],"include_one_pieces":false}`
 	if value != want {
 		t.Fatalf("value = %v, want %s", value, want)
 	}

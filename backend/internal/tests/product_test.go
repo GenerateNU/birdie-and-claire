@@ -1,8 +1,10 @@
 package tests
 
 import (
+	"cmp"
 	"context"
 	"database/sql"
+	"math"
 	"math/rand/v2"
 	"slices"
 	"testing"
@@ -77,9 +79,9 @@ func findSimilarIDsWithTypePicks(t *testing.T, db *sql.DB, ownIDs []uuid.UUID, e
 		t.Fatalf("FindSimilar: %v", err)
 	}
 	var ids []uuid.UUID
-	for _, product := range products {
-		if slices.Contains(ownIDs, product.ID) {
-			ids = append(ids, product.ID)
+	for _, scored := range products {
+		if slices.Contains(ownIDs, scored.Product.ID) {
+			ids = append(ids, scored.Product.ID)
 		}
 	}
 	return ids
@@ -131,6 +133,30 @@ func TestFindSimilarNiceTagsReorder(t *testing.T) {
 	}
 }
 
+func TestFindSimilarReturnsEachScore(t *testing.T) {
+	db := openTestDB(t)
+
+	id := insertSlotProduct(t, db, testProduct{slot: models.SlotTop, tags: []string{"pastel"}, embedding: productEmbedding(0.1)})
+
+	products, err := repository.NewProductRepository(db).FindSimilar(context.Background(), queryEmbedding, models.SlotTop, nil, []string{"pastel"}, nil, nil, findSimilarLimit)
+	if err != nil {
+		t.Fatalf("FindSimilar: %v", err)
+	}
+	index := slices.IndexFunc(products, func(scored repository.ScoredProduct) bool { return scored.Product.ID == id })
+	if index == -1 {
+		t.Fatalf("FindSimilar left out %v", id)
+	}
+	// mirrors bonusPerTag, which is unexported in repository
+	const bonusPerTag = 0.02
+	want := 1 - 1/math.Sqrt(1+0.1*0.1) - bonusPerTag
+	if got := products[index].Score; math.Abs(got-want) > 1e-6 {
+		t.Errorf("score = %v, want %v: cosine distance less one nice tag's bonus", got, want)
+	}
+	if !slices.IsSortedFunc(products, func(a, b repository.ScoredProduct) int { return cmp.Compare(a.Score, b.Score) }) {
+		t.Error("scores are not in ascending order")
+	}
+}
+
 func TestFindSimilarBreaksTiesByID(t *testing.T) {
 	db := openTestDB(t)
 
@@ -178,9 +204,9 @@ func TestFindSimilarExcludesProductIDs(t *testing.T) {
 		t.Fatalf("FindSimilar: %v", err)
 	}
 	var got []uuid.UUID
-	for _, product := range products {
-		if slices.Contains([]uuid.UUID{kept, excluded}, product.ID) {
-			got = append(got, product.ID)
+	for _, scored := range products {
+		if slices.Contains([]uuid.UUID{kept, excluded}, scored.Product.ID) {
+			got = append(got, scored.Product.ID)
 		}
 	}
 	if want := []uuid.UUID{kept}; !slices.Equal(got, want) {
