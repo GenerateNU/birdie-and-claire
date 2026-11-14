@@ -84,7 +84,7 @@ export function FeatureCarousel() {
   });
 
   return (
-    <Box className="flex flex-col items-center gap-xl px-md py-xxl lg:px-xxl">
+    <Box className="flex flex-col items-center gap-xl px-md py-xxxl lg:px-xxxl">
       <Text variant="heading" className="sr-only">
         Features
       </Text>

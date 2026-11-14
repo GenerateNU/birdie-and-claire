@@ -110,7 +110,7 @@ function Onboarding() {
   }
 
   return (
-    <Page className="flex flex-col pb-xxl">
+    <Page className="flex flex-col pb-xxxl">
       <Box className="grid h-xl w-full grid-cols-3 items-center">
         {back !== null && (
           <Button

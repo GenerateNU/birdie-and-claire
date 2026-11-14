@@ -54,6 +54,23 @@ const samplePhoto = `data:image/svg+xml,${encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><defs><linearGradient id="g"><stop stop-color="#000000"/><stop offset="1" stop-color="#FFFFFF"/></linearGradient></defs><rect width="1" height="1" fill="url(#g)"/></svg>',
 )}`;
 
+// Literal class names, so Tailwind generates them. See TypeScale for which styles need font-serif
+// and uppercase.
+const hifiTypeSamples = [
+  { scale: "display", className: "text-display font-serif" },
+  { scale: "heading-l", className: "text-heading-l font-serif" },
+  { scale: "heading-m", className: "text-heading-m font-serif" },
+  { scale: "heading-s", className: "text-heading-s" },
+  { scale: "body-l", className: "text-body-l" },
+  { scale: "body-m", className: "text-body-m" },
+  { scale: "body-s", className: "text-body-s" },
+  { scale: "label-l-strong", className: "text-label-l-strong" },
+  { scale: "label-l", className: "text-label-l" },
+  { scale: "label-m", className: "text-label-m uppercase" },
+  { scale: "label-s", className: "text-label-s uppercase" },
+  { scale: "overline", className: "text-overline uppercase" },
+] as const;
+
 const buttonVariants = ["primary", "secondary"] as const;
 
 const buttonSizes = ["sm", "md", "lg"] as const;
@@ -94,6 +111,8 @@ const sectionTitles = {
   toast: "Toast",
   text: "Text",
   "semantic-colors": "Semantic colors",
+  "type-scale": "Type scale",
+  shadows: "Shadows",
   "focus-ring": "Focus ring",
 } as const;
 
@@ -130,7 +149,11 @@ const navGroups = [
       "text",
     ],
   },
-  { title: "Tokens", hash: "tokens", sections: ["semantic-colors", "focus-ring"] },
+  {
+    title: "Tokens",
+    hash: "tokens",
+    sections: ["semantic-colors", "type-scale", "shadows", "focus-ring"],
+  },
 ] as const;
 
 const radioOptions = [
@@ -363,7 +386,7 @@ export function Playground() {
                 <Box key={variant} className="flex flex-col gap-xxs">
                   <Text variant={variant}>The quick brown fox</Text>
                   <Label>
-                    {variant} · {scales.map(scaleLabel).join(" · lg:")}
+                    {variant} · {scales.map((scale) => scaleLabel(scale)).join(" · lg:")}
                   </Label>
                 </Box>
               ))}
@@ -392,6 +415,22 @@ export function Playground() {
               ))}
             </Section>
 
+            <Section id="type-scale">
+              {hifiTypeSamples.map(({ scale, className }) => (
+                <Box key={scale} className="flex flex-col gap-xxs">
+                  <Box className={className}>The quick brown fox</Box>
+                  <Label>{scaleLabel(scale, className)}</Label>
+                </Box>
+              ))}
+            </Section>
+
+            <Section id="shadows">
+              <Box className="flex gap-lg">
+                <Box className="bg-card p-lg text-body-m shadow-menu">shadow-menu</Box>
+                <Box className="bg-card p-lg text-body-m shadow-toast">shadow-toast</Box>
+              </Box>
+            </Section>
+
             <Section id="focus-ring">
               <Box className="flex flex-col gap-xs">
                 <Box className="flex gap-md bg-primary p-lg">
@@ -414,10 +453,11 @@ export function Playground() {
   );
 }
 
-function scaleLabel(scale: keyof typeof TypeScale) {
-  const [fontSize, { lineHeight, fontWeight }] = TypeScale[scale];
+function scaleLabel(scale: keyof typeof TypeScale, className = `text-${scale}`) {
+  const [fontSize, config] = TypeScale[scale];
+  const letterSpacing = "letterSpacing" in config ? ` · ${config.letterSpacing}` : "";
 
-  return `text-${scale} · ${fontSize}/${lineHeight} · ${fontWeight}`;
+  return `${className} · ${fontSize}/${config.lineHeight} · ${config.fontWeight}${letterSpacing}`;
 }
 
 type SectionProps = {
@@ -808,7 +848,7 @@ type SwatchProps = {
 function Swatch({ name, value }: SwatchProps) {
   return (
     <Box className="flex w-[96px] flex-col gap-xxs">
-      <Box className="h-xxl rounded-sm border" style={{ backgroundColor: value }} />
+      <Box className="h-xxxl rounded-sm border" style={{ backgroundColor: value }} />
       <Label>{name}</Label>
       <Label>{value}</Label>
     </Box>

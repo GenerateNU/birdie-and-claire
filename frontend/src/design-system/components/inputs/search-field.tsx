@@ -53,7 +53,7 @@ export function SearchField({
       onClick={onClick}
       maxLength={maxLength}
       enterKeyHint="go"
-      className={LeadingIcon ? `${stateClasses} pl-xxl` : joinClasses(stateClasses, className)}
+      className={LeadingIcon ? `${stateClasses} pl-xxxl` : joinClasses(stateClasses, className)}
     />
   );
 

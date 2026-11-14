@@ -60,7 +60,7 @@ function OutfitDetailsPage() {
       {/* The canvas fits the height under the header. Side by side from lg up, with the back button
           beside the canvas as in the Figma. Narrower than that, the panels stack and split the
           height. */}
-      <main className="flex min-h-0 flex-1 flex-col gap-xl p-md lg:flex-row lg:gap-xxl lg:px-xxl">
+      <main className="flex min-h-0 flex-1 flex-col gap-xl p-md lg:flex-row lg:gap-xxxl lg:px-xxxl">
         <Link
           to="/profile/outfits"
           aria-label="Back to saved outfits"
