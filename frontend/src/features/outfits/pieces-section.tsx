@@ -94,10 +94,10 @@ export function PiecesSection({ products, addAllToCartUrl }: PiecesSectionProps)
 function OutfitPieceRow({ product }: OutfitPieceRowProps) {
   const isStoreProduct = product.source === "birdie_and_claire";
 
-  const viewProductLink = (
+  const viewProductLink = (variant: "primary" | "secondary") => (
     <ExternalLink
       href={`${STORE_PRODUCT_URL}/${encodeURIComponent(product.handle)}`}
-      variant="secondary"
+      variant={variant}
       size="sm"
       trailingIcon={ArrowSquareOutIcon}
     >
@@ -112,7 +112,7 @@ function OutfitPieceRow({ product }: OutfitPieceRowProps) {
         name={product.title}
         detail="You own this"
         src={product.image_url}
-        action={isStoreProduct ? viewProductLink : undefined}
+        action={isStoreProduct ? viewProductLink("secondary") : undefined}
       />
     );
   }
@@ -147,7 +147,7 @@ function OutfitPieceRow({ product }: OutfitPieceRowProps) {
           </ExternalLink>
         )
       }
-      secondaryAction={viewProductLink}
+      secondaryAction={viewProductLink("primary")}
     />
   );
 }

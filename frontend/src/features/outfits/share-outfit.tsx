@@ -1,9 +1,9 @@
 import {
   ChatCircleTextIcon,
   EnvelopeSimpleIcon,
+  ExportIcon,
   InstagramLogoIcon,
   RedditLogoIcon,
-  ShareIcon,
   XLogoIcon,
 } from "@phosphor-icons/react";
 import { useMutation } from "@tanstack/react-query";
@@ -11,13 +11,12 @@ import { useState } from "react";
 
 import { shareOutfitMutation } from "@/api/generated/@tanstack/react-query.gen";
 import {
-  Box,
   Button,
+  CopyField,
   ErrorState,
   IconButton,
   Modal,
   Spinner,
-  TextField,
   useToast,
 } from "@/design-system";
 
@@ -70,23 +69,14 @@ export function ShareOutfit({ outfitId }: ShareOutfitProps) {
 
   return (
     <>
-      <Button label="Share" size="sm" leadingIcon={ShareIcon} onClick={openDialog} />
+      <Button label="Share" size="sm" leadingIcon={ExportIcon} onClick={openDialog} />
       <Modal open={open} onClose={() => setOpen(false)} title="Share" actions={[]} dismissible>
         {share.isPending && <Spinner />}
         {share.isError && (
           <ErrorState message="Couldn't make a share link. Try again." onRetry={makeLink} />
         )}
         {shareLink !== null && (
-          <Box className="flex items-end gap-xs">
-            <TextField
-              label="Link"
-              value={shareLink}
-              readOnly
-              onFocus={(event) => event.currentTarget.select()}
-              className="min-w-0 flex-1"
-            />
-            <Button label="Copy" variant="secondary" onClick={() => void copyLink(shareLink)} />
-          </Box>
+          <CopyField label="Share link" value={shareLink} onCopy={() => void copyLink(shareLink)} />
         )}
         <ul className="flex justify-center gap-md">
           {SHARE_TARGETS.map(({ name, Icon }) => (

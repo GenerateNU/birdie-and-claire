@@ -360,15 +360,15 @@ func TestOutfitDescriptionAndTagsRoundTrip(t *testing.T) {
 			wantDescriptionAndTags(t, "create", created, test.wantDescription, test.wantTags)
 			wantDescriptionAndTags(t, "get", got, test.wantDescription, test.wantTags)
 
-			listed, err := outfits.List(ctx, userID, pagination.CursorParams{Limit: 50})
+			listed, _, err := outfits.List(ctx, userID, pagination.CursorParams{Limit: 50})
 			if err != nil {
 				t.Fatalf("list outfits: %v", err)
 			}
-			listedIndex := slices.IndexFunc(listed, func(outfit models.Outfit) bool { return outfit.ID == created.ID })
+			listedIndex := slices.IndexFunc(listed, func(outfit models.OutfitResponse) bool { return outfit.ID == created.ID })
 			if listedIndex < 0 {
 				t.Fatalf("list outfits: %s missing", created.ID)
 			}
-			wantDescriptionAndTags(t, "list", listed[listedIndex], test.wantDescription, test.wantTags)
+			wantDescriptionAndTags(t, "list", listed[listedIndex].Outfit, test.wantDescription, test.wantTags)
 		})
 	}
 }

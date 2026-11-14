@@ -1,4 +1,11 @@
-import { CaretLeftIcon, DiamondsFourIcon, MagnifyingGlassIcon } from "@phosphor-icons/react";
+import {
+  ArrowSquareOutIcon,
+  BookmarkSimpleIcon,
+  CaretLeftIcon,
+  CoatHangerIcon,
+  MagnifyingGlassIcon,
+  type Icon,
+} from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
@@ -41,6 +48,12 @@ type SuggestedTilesProps = {
 type SwapTab = "suggested" | "owned" | "catalog";
 
 const TAB_ORDER: SwapTab[] = ["suggested", "owned", "catalog"];
+
+const TAB_ICONS: Record<SwapTab, Icon> = {
+  suggested: BookmarkSimpleIcon,
+  owned: CoatHangerIcon,
+  catalog: ArrowSquareOutIcon,
+};
 
 const SLOT_NAMES: Record<Product["slot"], { heading: string; plural: string }> = {
   top: { heading: "TOP", plural: "Tops" },
@@ -132,12 +145,11 @@ function SpotSwapPanel({ outfitId, items, originId, onSwap, onBack }: SpotSwapPa
             tabs={TAB_ORDER.map((value) => ({
               value,
               label: tabLabel(value, slot),
-              icon: DiamondsFourIcon,
+              icon: TAB_ICONS[value],
             }))}
             value={tab}
             onValueChange={setTab}
             disabled={false}
-            appearance="underline"
           >
             {tab === "suggested" ? (
               <SuggestedTiles

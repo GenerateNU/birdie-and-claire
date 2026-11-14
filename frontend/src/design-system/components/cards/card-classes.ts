@@ -1,1 +1,1 @@
-export const cardFrameClasses = "rounded-md border bg-background text-primary";
+export const cardFrameClasses = "border bg-background text-primary";

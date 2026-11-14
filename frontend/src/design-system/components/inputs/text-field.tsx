@@ -43,6 +43,7 @@ export function TextField({
   const messageId = useId();
   const message = error ?? helper;
   const state = { disabled, invalid: Boolean(error) };
+  const iconClasses = disabled ? "shrink-0 text-disabled" : "shrink-0 text-primary";
 
   // Added to the caller's aria-describedby, not in place of it.
   let describedBy = inputProps["aria-describedby"];
@@ -55,9 +56,7 @@ export function TextField({
     <Field.Root disabled={disabled} className={joinClasses("flex flex-col gap-xs", className)}>
       <Field.Label className={hideLabel ? "sr-only" : fieldLabelClasses}>{label}</Field.Label>
       <Box className={`flex h-xxl items-center gap-xs px-sm ${fieldBoxClasses(state)}`}>
-        {LeadingIcon && (
-          <LeadingIcon size={iconSize} aria-hidden="true" className="shrink-0 text-secondary" />
-        )}
+        {LeadingIcon && <LeadingIcon size={iconSize} aria-hidden="true" className={iconClasses} />}
         <BaseInput
           {...inputProps}
           aria-invalid={error ? true : undefined}
@@ -65,7 +64,7 @@ export function TextField({
           className={`min-w-0 flex-1 bg-transparent ${fieldTextClasses}`}
         />
         {TrailingIcon && (
-          <TrailingIcon size={iconSize} aria-hidden="true" className="shrink-0 text-secondary" />
+          <TrailingIcon size={iconSize} aria-hidden="true" className={iconClasses} />
         )}
       </Box>
       {message && (

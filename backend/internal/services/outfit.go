@@ -21,7 +21,7 @@ type OutfitService interface {
 	Create(ctx context.Context, params models.CreateOutfitParams) (models.OutfitResponse, error)
 	Get(ctx context.Context, id uuid.UUID) (models.OutfitDetailResponse, error)
 	Update(ctx context.Context, id uuid.UUID, params models.UpdateOutfitParams) (models.OutfitResponse, error)
-	List(ctx context.Context, params pagination.CursorParams) (pagination.Page[models.Outfit], error)
+	List(ctx context.Context, params pagination.CursorParams) (models.ListOutfitsResponse, error)
 	Share(ctx context.Context, id uuid.UUID) (models.ShareOutfitResponse, error)
 	Unshare(ctx context.Context, id uuid.UUID) error
 	Delete(ctx context.Context, id uuid.UUID) error
@@ -109,25 +109,28 @@ func (s *outfitService) Update(ctx context.Context, id uuid.UUID, params models.
 	return models.OutfitResponse{Outfit: outfit, Products: products}, nil
 }
 
-func (s *outfitService) List(ctx context.Context, params pagination.CursorParams) (pagination.Page[models.Outfit], error) {
-	rows, err := s.repo.Outfit.List(ctx, auth.UserID(ctx), params)
+func (s *outfitService) List(ctx context.Context, params pagination.CursorParams) (models.ListOutfitsResponse, error) {
+	rows, total, err := s.repo.Outfit.List(ctx, auth.UserID(ctx), params)
 	if err != nil {
-		return pagination.Page[models.Outfit]{}, err
+		return models.ListOutfitsResponse{}, err
 	}
 
 	outfits, hasMore := pagination.Split(rows, params.Limit)
-	page := pagination.Page[models.Outfit]{Items: outfits, HasMore: hasMore}
+	response := models.ListOutfitsResponse{
+		Page:  pagination.Page[models.OutfitResponse]{Items: outfits, HasMore: hasMore},
+		Total: total,
+	}
 	if !hasMore {
-		return page, nil
+		return response, nil
 	}
 
 	last := outfits[len(outfits)-1]
 	nextCursor, err := pagination.CursorFields{"created_at": last.CreatedAt, "id": last.ID}.Encode()
 	if err != nil {
-		return pagination.Page[models.Outfit]{}, err
+		return models.ListOutfitsResponse{}, err
 	}
-	page.NextCursor = &nextCursor
-	return page, nil
+	response.NextCursor = &nextCursor
+	return response, nil
 }
 
 func (s *outfitService) Share(ctx context.Context, id uuid.UUID) (models.ShareOutfitResponse, error) {

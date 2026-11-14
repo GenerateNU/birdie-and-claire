@@ -1,18 +1,8 @@
-import { Plus } from "@phosphor-icons/react";
-import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useRef, useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useCallback, useRef } from "react";
 
 import { listCurrentUserPiecesInfiniteOptions } from "@/api/generated/@tanstack/react-query.gen";
-import {
-  Box,
-  Button,
-  EmptyState,
-  ErrorState,
-  Link,
-  Spinner,
-  Text,
-  TextLink,
-} from "@/design-system";
+import { AddTile, Box, EmptyState, ErrorState, Spinner, Text, TextLink } from "@/design-system";
 import { LoadMoreSentinel } from "@/features/pieces/load-more-sentinel";
 import { OwnedPieceCard } from "@/features/pieces/owned-piece-card";
 import { usePagination } from "@/lib/use-pagination";
@@ -22,7 +12,7 @@ export const Route = createFileRoute("/_signedIn/_onboarded/profile/pieces")({
 });
 
 function PiecesPage() {
-  const [editing, setEditing] = useState(false);
+  const navigate = useNavigate();
   const listRef = useRef<HTMLUListElement>(null);
 
   const {
@@ -65,9 +55,7 @@ function PiecesPage() {
         </Text>
         <Box className="flex flex-col items-center gap-sm">
           <EmptyState title="No pieces yet" />
-          <TextLink to="/pieces/add" leadingIcon={Plus}>
-            Add Items
-          </TextLink>
+          <TextLink to="/pieces/add">Add Items</TextLink>
         </Box>
       </>
     );
@@ -75,32 +63,20 @@ function PiecesPage() {
 
   return (
     <>
-      <Box className="mb-lg flex items-center justify-between gap-md">
-        <Text variant="heading">Pieces I Own</Text>
-        <Button
-          label={editing ? "Done" : "Edit"}
-          variant="secondary"
-          size="sm"
-          onClick={() => setEditing(!editing)}
-        />
-      </Box>
+      <Text variant="heading" className="mb-lg">
+        Pieces I Own
+      </Text>
       <ul
         ref={listRef}
         tabIndex={-1}
         aria-label="Pieces I own"
-        className="grid grid-cols-2 gap-md focus-ring md:grid-cols-3 lg:grid-cols-4"
+        className="flex flex-wrap items-start gap-md focus-ring"
       >
         {pieces.map((piece) => (
-          <OwnedPieceCard key={piece.id} piece={piece} showRemove={editing} onRemoved={focusList} />
+          <OwnedPieceCard key={piece.id} piece={piece} onRemoved={focusList} />
         ))}
         <li>
-          <Link
-            to="/pieces/add"
-            className="flex aspect-portrait flex-col items-center justify-center gap-xs bg-placeholder text-body"
-          >
-            <Plus aria-hidden="true" />
-            Add Another Piece
-          </Link>
+          <AddTile label="Add another piece" onClick={() => void navigate({ to: "/pieces/add" })} />
         </li>
         {hasNextPage && <LoadMoreSentinel onVisible={loadMore} />}
       </ul>

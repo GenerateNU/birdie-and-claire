@@ -1,4 +1,3 @@
-import { CaretRight } from "@phosphor-icons/react";
 import { type QueryClient, useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
@@ -71,12 +70,8 @@ function Dev() {
         .
       </Text>
       <Box className="flex flex-col items-start gap-xxs">
-        <TextLink to="/profile-picture-test" trailingIcon={CaretRight}>
-          Profile picture test
-        </TextLink>
-        <TextLink to="/playground" trailingIcon={CaretRight}>
-          Design system playground
-        </TextLink>
+        <TextLink to="/profile-picture-test">Profile picture test</TextLink>
+        <TextLink to="/playground">Design system playground</TextLink>
       </Box>
       <Box className="mt-lg flex flex-col items-start gap-xs">
         <Button

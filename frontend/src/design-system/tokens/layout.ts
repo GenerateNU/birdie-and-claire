@@ -4,6 +4,15 @@ export const ModalWidth = { sm: "480px", md: "640px", lg: "880px" } as const;
 // The photo beside a split modal's content (`w-modal-image`), from Figma.
 export const ModalImageWidth = "360px";
 
+// The onboarding screens' widths (`w-onboarding-<key>`), from Figma's Get To Know You frames: the
+// photo down the left, the welcome card, the answer rows, and the stepper.
+export const OnboardingWidth = {
+  photo: "400px",
+  card: "591px",
+  choices: "565px",
+  stepper: "591px",
+} as const;
+
 // A menu's fixed width (`w-menu`), from Figma.
 export const MenuWidth = "200px";
 
@@ -61,6 +70,13 @@ export const CollectionCardSize = {
 // An outfit card's width and image height (`w-outfit`, `h-outfit`), from Figma.
 export const OutfitCardSize = { width: "240px", imageHeight: "300px" } as const;
 
+// An outfit slot's width and photo heights (`w-outfit-slot`, `h-outfit-slot-*`), from Figma.
+export const OutfitSlotSize = {
+  width: "258px",
+  photoHeight: "168px",
+  emptyHeight: "208px",
+} as const;
+
 // The thumbnail in a piece row (`w-row-thumbnail`, `h-row-thumbnail`), from Figma.
 export const RowThumbnailSize = { width: "64px", height: "80px" } as const;
 
@@ -73,6 +89,12 @@ export const ThumbnailSize = { width: "92px", height: "112px" } as const;
 
 // The checkbox and radio box (`size-control`), from Figma.
 export const ControlSize = "1.25rem";
+
+// A progress stepper step's width (`w-step`), from Figma. The last step hugs its label.
+export const StepWidth = "180px";
+
+// The selected radio's dot (`size-radio-dot`), from Figma.
+export const RadioDotSize = "10px";
 
 // The text area's fixed box (`h-textarea`), from Figma.
 export const TextAreaHeight = "7rem";
@@ -97,6 +119,7 @@ export const PageHeaderHeight = "5rem";
 export const LogoSize = {
   sidebar: { width: "9.375rem", height: "2.9375rem" },
   header: { width: "11.25rem", height: "3.5625rem" },
+  onboarding: { width: "20.75rem", height: "6.5625rem" },
 } as const;
 
 export const AspectRatio = {

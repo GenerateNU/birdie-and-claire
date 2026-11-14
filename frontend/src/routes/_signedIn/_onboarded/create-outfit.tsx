@@ -1,3 +1,14 @@
+import {
+  CloudIcon,
+  CloudLightningIcon,
+  CloudRainIcon,
+  CloudSnowIcon,
+  SunIcon,
+  ThermometerColdIcon,
+  ThermometerHotIcon,
+  WindIcon,
+  type Icon,
+} from "@phosphor-icons/react";
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -18,6 +29,7 @@ import {
   ListCard,
   OptionTileGroup,
   Page,
+  ProgressStepper,
   SearchField,
   Text,
   TextArea,
@@ -34,6 +46,9 @@ const barSteps = ["weather", "vibe", "specifics", "custom"] as const;
 
 type BarStep = (typeof barSteps)[number];
 
+// In barSteps order, named as in Figma's Progress Stepper example.
+const STEP_LABELS = ["Weather", "Vibe", "Specific items", "Additional info"];
+
 // Photos live in the public Supabase bucket the product images use, until occasions
 // come from the backend. Travel reuses festive.png until it has a photo of its own.
 const occasionImageBase =
@@ -47,6 +62,17 @@ const occasions = [
 ];
 
 const weathers = Object.values(RecommendationWeather);
+
+const WEATHER_ICONS: Record<RecommendationWeather, Icon> = {
+  hot: ThermometerHotIcon,
+  warm: SunIcon,
+  chilly: CloudIcon,
+  cold: ThermometerColdIcon,
+  rainy: CloudRainIcon,
+  windy: WindIcon,
+  snowy: CloudSnowIcon,
+  storm: CloudLightningIcon,
+};
 
 const vibes = Object.values(RecommendationVibe);
 
@@ -116,7 +142,11 @@ function CreateOutfit() {
         <Box className="capitalize">
           <OptionTileGroup
             label="Weather"
-            options={weathers.map((option) => ({ label: option, value: option }))}
+            options={weathers.map((option) => ({
+              label: option,
+              value: option,
+              icon: WEATHER_ICONS[option],
+            }))}
             value={weather}
             onValueChange={setWeather}
           />
@@ -252,38 +282,13 @@ function StepScreen({ step, canContinue, onBack, onNext, children }: StepScreenP
   return (
     <Page className="flex flex-col items-center gap-lg">
       <Text variant="heading">Describe the occasion</Text>
-      <StepBar current={step} />
+      <ProgressStepper steps={STEP_LABELS} currentStep={barSteps.indexOf(step)} />
       <Box className="w-full max-w-content-lg">{children}</Box>
       <Box className="mt-auto flex w-full max-w-content-lg justify-between">
         <Button label="Back" variant="secondary" onClick={onBack} />
         <Button label="Next" disabled={!canContinue} onClick={onNext} />
       </Box>
     </Page>
-  );
-}
-
-type StepBarProps = {
-  current: BarStep;
-};
-
-/** Display only: Back and Next are the way to move between steps. */
-function StepBar({ current }: StepBarProps) {
-  return (
-    <ol aria-label="Steps" className="flex rounded-full border">
-      {barSteps.map((barStep) => (
-        <li
-          key={barStep}
-          aria-current={barStep === current ? "step" : undefined}
-          className={
-            barStep === current
-              ? "rounded-full bg-primary px-md py-xxs text-caption uppercase text-inverse"
-              : "px-md py-xxs text-caption uppercase"
-          }
-        >
-          {barStep}
-        </li>
-      ))}
-    </ol>
   );
 }
 
