@@ -7,6 +7,7 @@ import type { ErrorModel } from "@/api/generated/types.gen";
 import { zCreateUserInputBody } from "@/api/generated/zod.gen";
 import { Button, Form, Page, Text, TextField } from "@/design-system";
 import { AccountError, requireAccountStatus } from "@/features/account/account";
+import { takeReturnPath } from "@/features/auth/return-path";
 
 export const Route = createFileRoute("/_signedIn/create-account")({
   beforeLoad: ({ context }) => requireAccountStatus(context, ["none"]),
@@ -16,8 +17,8 @@ export const Route = createFileRoute("/_signedIn/create-account")({
 
 // Has to stay a full page load. The cached "none" status never expires, so a router navigation
 // would send the user straight back here.
-function goHome() {
-  window.location.assign("/");
+function finishAccountCreation() {
+  window.location.assign(takeReturnPath() ?? "/");
 }
 
 // 409: the account already exists, which is where this page was headed anyway.
@@ -28,10 +29,10 @@ function alreadyCreated(error: ErrorModel | null) {
 function CreateAccount() {
   const createMutation = useMutation({
     ...createCurrentUserMutation(),
-    onSuccess: goHome,
+    onSuccess: finishAccountCreation,
     onError: (error) => {
       if (alreadyCreated(error)) {
-        goHome();
+        finishAccountCreation();
       }
     },
   });

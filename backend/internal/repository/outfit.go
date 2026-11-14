@@ -26,7 +26,7 @@ const (
 type OutfitRepository interface {
 	Create(ctx context.Context, params models.CreateOutfitParams, userID uuid.UUID) (models.Outfit, []models.ProductResponse, error)
 	GetByID(ctx context.Context, id uuid.UUID, userID uuid.UUID) (models.Outfit, []models.ProductResponse, error)
-	GetShared(ctx context.Context, id uuid.UUID) (models.Outfit, []models.ProductResponse, error)
+	GetShared(ctx context.Context, id uuid.UUID) (models.Outfit, string, []models.ProductResponse, error)
 	Update(ctx context.Context, id uuid.UUID, params models.UpdateOutfitParams, userID uuid.UUID) (models.Outfit, []models.ProductResponse, error)
 	Share(ctx context.Context, id uuid.UUID, userID uuid.UUID) error
 	Unshare(ctx context.Context, id uuid.UUID, userID uuid.UUID) error
@@ -133,7 +133,7 @@ func getOutfitByID(ctx context.Context, dbOrTx querier, id uuid.UUID, userID uui
 	}
 	defer func() { _ = rows.Close() }()
 
-	outfit, products, err := scanOutfitWithProducts(rows)
+	outfit, _, products, err := scanOutfitWithProducts(rows, false)
 	if err != nil {
 		return models.Outfit{}, nil, fmt.Errorf("get outfit %s: %w", id, err)
 	}
@@ -196,12 +196,13 @@ func (r *outfitRepository) Update(ctx context.Context, id uuid.UUID, params mode
 }
 
 // GetShared returns ErrNotFound for a private outfit as well as a missing one.
-func (r *outfitRepository) GetShared(ctx context.Context, id uuid.UUID) (models.Outfit, []models.ProductResponse, error) {
+func (r *outfitRepository) GetShared(ctx context.Context, id uuid.UUID) (models.Outfit, string, []models.ProductResponse, error) {
 	rows, err := r.db.QueryContext(ctx, `
-		SELECT o.id, o.user_id, o.name, o.shared_at, o.created_at, o.updated_at,
+		SELECT o.id, o.user_id, o.name, o.shared_at, o.created_at, o.updated_at, COALESCE(u.name, ''),
 			p.id, p.shopify_id, p.handle, p.title, p.product_type, p.slot, p.source, p.tags, p.created_at, p.updated_at,
 			first_image.url
 		FROM outfits o
+		JOIN users u ON u.id = o.user_id
 		LEFT JOIN outfit_products op ON op.outfit_id = o.id
 		LEFT JOIN products p ON p.id = op.product_id
 		LEFT JOIN LATERAL (
@@ -217,15 +218,15 @@ func (r *outfitRepository) GetShared(ctx context.Context, id uuid.UUID) (models.
 		ORDER BY array_position(ARRAY['top', 'bottom', 'shoe', 'accessory']::product_slot[], p.slot), p.id
 	`, id)
 	if err != nil {
-		return models.Outfit{}, nil, fmt.Errorf("get shared outfit %s: %w", id, err)
+		return models.Outfit{}, "", nil, fmt.Errorf("get shared outfit %s: %w", id, err)
 	}
 	defer func() { _ = rows.Close() }()
 
-	outfit, products, err := scanOutfitWithProducts(rows)
+	outfit, ownerName, products, err := scanOutfitWithProducts(rows, true)
 	if err != nil {
-		return models.Outfit{}, nil, fmt.Errorf("get shared outfit %s: %w", id, err)
+		return models.Outfit{}, "", nil, fmt.Errorf("get shared outfit %s: %w", id, err)
 	}
-	return outfit, products, nil
+	return outfit, ownerName, products, nil
 }
 
 // Share keeps the first shared_at on a repeat call, so sharing twice changes nothing.
@@ -307,8 +308,9 @@ func (r *outfitRepository) List(ctx context.Context, userID uuid.UUID, params pa
 // scanOutfitWithProducts reads the o.id through o.updated_at, then p.id through
 // first_image.url, columns GetByID and GetShared select, one row per product.
 // It returns ErrNotFound when there are no rows.
-func scanOutfitWithProducts(rows *sql.Rows) (models.Outfit, []models.ProductResponse, error) {
+func scanOutfitWithProducts(rows *sql.Rows, includeOwner bool) (models.Outfit, string, []models.ProductResponse, error) {
 	var outfit models.Outfit
+	var ownerName string
 	found := false
 	products := make([]models.ProductResponse, 0)
 	for rows.Next() {
@@ -322,13 +324,18 @@ func scanOutfitWithProducts(rows *sql.Rows) (models.Outfit, []models.ProductResp
 			tags                  []string
 			createdAt, updatedAt  sql.NullTime
 		)
-		if err := rows.Scan(
+		scanTargets := []any{
 			&outfit.ID,
 			&outfit.UserID,
 			&outfit.Name,
 			&outfit.SharedAt,
 			&outfit.CreatedAt,
 			&outfit.UpdatedAt,
+		}
+		if includeOwner {
+			scanTargets = append(scanTargets, &ownerName)
+		}
+		scanTargets = append(scanTargets,
 			&productID,
 			&shopifyID,
 			&handle,
@@ -340,8 +347,9 @@ func scanOutfitWithProducts(rows *sql.Rows) (models.Outfit, []models.ProductResp
 			&createdAt,
 			&updatedAt,
 			&imageURL,
-		); err != nil {
-			return models.Outfit{}, nil, fmt.Errorf("scan: %w", err)
+		)
+		if err := rows.Scan(scanTargets...); err != nil {
+			return models.Outfit{}, "", nil, fmt.Errorf("scan: %w", err)
 		}
 		// A NULL product id is the LEFT JOIN's row for an outfit with no products.
 		if !productID.Valid {
@@ -364,10 +372,10 @@ func scanOutfitWithProducts(rows *sql.Rows) (models.Outfit, []models.ProductResp
 		})
 	}
 	if err := rows.Err(); err != nil {
-		return models.Outfit{}, nil, fmt.Errorf("iterate: %w", err)
+		return models.Outfit{}, "", nil, fmt.Errorf("iterate: %w", err)
 	}
 	if !found {
-		return models.Outfit{}, nil, errs.ErrNotFound
+		return models.Outfit{}, "", nil, errs.ErrNotFound
 	}
-	return outfit, products, nil
+	return outfit, ownerName, products, nil
 }

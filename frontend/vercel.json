@@ -13,6 +13,22 @@
   ],
   "rewrites": [
     {
+      "source": "/o/:id",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Facebot|Twitterbot|Slackbot|Discordbot|WhatsApp|LinkedInBot|TelegramBot|Applebot|redditbot|Pinterestbot|SkypeUriPreview|Embedly|iframely).*"
+        },
+        { "type": "host", "value": "(?<host>.*)" }
+      ],
+      "destination": "https://api.birdie-and-claire.generatenu.com/api/public/outfits/:id/link-preview/:host"
+    },
+    {
+      "source": "/api/public/outfits/:id/link-preview/:path*",
+      "destination": "/index.html"
+    },
+    {
       "source": "/api/:path*",
       "destination": "https://api.birdie-and-claire.generatenu.com/api/:path*"
     },

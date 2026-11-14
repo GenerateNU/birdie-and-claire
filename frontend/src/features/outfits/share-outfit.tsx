@@ -65,6 +65,9 @@ export function ShareOutfit({ outfitId }: ShareOutfitProps) {
     }
   }
 
+  // The API answers with a path, so the link works on whichever deploy made it, previews included.
+  const shareLink = share.isSuccess ? `${window.location.origin}${share.data.url}` : null;
+
   return (
     <>
       <Button label="Share" leadingIcon={ShareNetwork} onClick={openDialog} />
@@ -73,20 +76,16 @@ export function ShareOutfit({ outfitId }: ShareOutfitProps) {
         {share.isError && (
           <ErrorState message="Couldn't make a share link. Try again." onRetry={makeLink} />
         )}
-        {share.isSuccess && (
+        {shareLink !== null && (
           <Box className="flex items-end gap-xs">
             <TextField
               label="Link"
-              value={share.data.url}
+              value={shareLink}
               readOnly
               onFocus={(event) => event.currentTarget.select()}
               className="min-w-0 flex-1"
             />
-            <Button
-              label="Copy"
-              variant="secondary"
-              onClick={() => void copyLink(share.data.url)}
-            />
+            <Button label="Copy" variant="secondary" onClick={() => void copyLink(shareLink)} />
           </Box>
         )}
         <ul className="flex justify-center gap-md">

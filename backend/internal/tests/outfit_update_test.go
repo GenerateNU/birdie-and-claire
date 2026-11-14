@@ -208,7 +208,7 @@ func TestUpdateOutfitRouteReplacesProducts(t *testing.T) {
 	db := openTestDB(t)
 	replacement := insertTestProduct(t, db)
 	outfitID, ownerID := insertTestOutfit(t, db)
-	controller := controllers.NewOutfitController(services.NewOutfitService(repository.New(db), ""))
+	controller := controllers.NewOutfitController(services.NewOutfitService(repository.New(db)))
 
 	_, api := humatest.New(t)
 	huma.Register(api, huma.Operation{
