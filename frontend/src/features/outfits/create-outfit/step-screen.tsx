@@ -30,7 +30,7 @@ export function StepScreen({
         />
       </Box>
       <Box className="flex w-full max-w-content-xl flex-1 flex-col items-center justify-center gap-lg">
-        <Text variant="display-hifi" className="text-center">
+        <Text variant="display" className="text-center">
           {title}
         </Text>
         <Box className="w-full">{children}</Box>

@@ -113,7 +113,7 @@ function OutfitPieceRow({ product }: OutfitPieceRowProps) {
       secondaryAction={
         <ExternalLink
           href={`${STORE_PRODUCT_URL}/${encodeURIComponent(product.handle)}`}
-          variant="secondary"
+          variant="primary"
           size="sm"
           trailingIcon={ArrowSquareOutIcon}
         >

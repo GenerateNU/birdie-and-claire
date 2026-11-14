@@ -12,7 +12,7 @@ type PieceRowProps = {
   type: "owned" | "bc";
   /** A TextButton for Swap on an owned piece, or a small secondary Button for Add to cart. */
   action?: ReactNode;
-  /** A second control stacked under `action`, such as View product beside Add to cart. */
+  /** A primary control stacked under a secondary `action`, as in Figma's B&C row. */
   secondaryAction?: ReactNode;
 };
 
@@ -35,7 +35,7 @@ export function PieceRow({ name, detail, src, type, action, secondaryAction }: P
         <Box className="text-body-s text-secondary">{detail}</Box>
       </Box>
       {(action || secondaryAction) && (
-        <Box className="flex shrink-0 flex-col gap-xs">
+        <Box className="flex shrink-0 flex-col gap-xxs">
           {action}
           {secondaryAction}
         </Box>

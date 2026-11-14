@@ -20,13 +20,9 @@ const Palette = {
   greenSubtle: "#E4EEE8",
 } as const;
 
-// warning and info stay raw because Figma has no counterpart for them yet. They are the only
-// values outside Palette.
 export const StatusColor = {
   success: Palette.green,
   error: Palette.red,
-  warning: "#D97706",
-  info: "#2563EB",
 } as const;
 
 export const TextColor = {
@@ -54,7 +50,7 @@ export const BackgroundColor = {
   "control-off": Palette.slate,
   // Fill of a disabled field, checkbox, radio, tile or chip.
   disabled: Palette.slateFaint,
-  overlay: "rgba(0, 0, 0, 0.4)",
+  overlay: "rgba(36, 36, 36, 0.4)",
   // Darkens a photo enough for inverse text to read on it. The opacity is the lofi homescreen's.
   "photo-overlay": "rgba(0, 0, 0, 0.69)",
 } as const;

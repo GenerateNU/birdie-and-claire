@@ -10,7 +10,7 @@ import { joinClasses } from "@/design-system/utils/join-classes";
 
 // The label carries `group`, so hovering the text lights up the radio too.
 const radioClasses =
-  "flex size-control shrink-0 items-center justify-center rounded-full border data-[checked]:border-medium focus-ring";
+  "flex size-control shrink-0 items-center justify-center rounded-full border data-[checked]:border-medium focus-ring motion-safe:transition-colors";
 
 type RadioOption<T extends string> = {
   label: string;
@@ -70,7 +70,7 @@ export function RadioGroup<T extends string>({
             value={option.value}
             className={`${radioClasses} ${radioStateClasses[state]}`}
           >
-            <Radio.Indicator className={`size-xs rounded-full ${dotStateClasses[state]}`} />
+            <Radio.Indicator className={`size-radio-dot rounded-full ${dotStateClasses[state]}`} />
           </Radio.Root>
           {option.label}
         </label>
