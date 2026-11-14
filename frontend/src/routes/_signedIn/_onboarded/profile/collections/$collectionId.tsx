@@ -9,7 +9,7 @@ import {
   EmptyState,
   ErrorState,
   IconButton,
-  OutfitCard,
+  Skeleton,
   Spinner,
   Text,
 } from "@/design-system";
@@ -18,6 +18,9 @@ import {
   isCollectionNotFound,
 } from "@/features/collections/collection-query";
 import { EditCollection } from "@/features/collections/edit-collection";
+import { useCollectionOutfits } from "@/features/collections/use-collection-outfits";
+import { OutfitList } from "@/features/outfits/outfit-list";
+import { isEmptyList } from "@/features/outfits/saved-outfits";
 
 export const Route = createFileRoute("/_signedIn/_onboarded/profile/collections/$collectionId")({
   component: CollectionDetailPage,
@@ -73,32 +76,59 @@ function CollectionDetailPage() {
         </Box>
         <Button label="Edit" variant="secondary" size="sm" onClick={() => setEditing(true)} />
       </Box>
-      {collection.outfits.length === 0 ? (
-        <EmptyState title="No outfits in this collection yet" />
-      ) : (
-        <ul className="flex flex-wrap gap-lg">
-          {collection.outfits.map((outfit) => (
-            <li key={outfit.id}>
-              <OutfitCard
-                mode="browse"
-                title={outfit.name}
-                // Products come head to toe, so the first is the outfit's top piece.
-                src={outfit.products.at(0)?.image_url ?? null}
-                image={null}
-                onOpen={() =>
-                  void navigate({ to: "/outfits/$outfitId", params: { outfitId: outfit.id } })
-                }
-              />
-            </li>
-          ))}
-        </ul>
-      )}
+      <CollectionOutfits collectionId={collection.id} />
       {editing && (
         <EditCollection
           collection={collection}
           startWith="edit"
           onClose={() => setEditing(false)}
           onDeleted={backToCollections}
+        />
+      )}
+    </>
+  );
+}
+
+function CollectionOutfits({ collectionId }: { collectionId: string }) {
+  const outfits = useCollectionOutfits(collectionId);
+
+  if (outfits.status === "loading") {
+    return (
+      <Box
+        role="status"
+        aria-label="Loading this collection's outfits"
+        className="grid grid-cols-1 gap-lg sm:grid-cols-2 lg:grid-cols-3"
+      >
+        {[0, 1, 2].map((item) => (
+          <Skeleton key={item} className="aspect-[3/1]" />
+        ))}
+      </Box>
+    );
+  }
+
+  if (outfits.status === "error") {
+    return (
+      <ErrorState message="Couldn't load this collection's outfits." onRetry={outfits.retry} />
+    );
+  }
+
+  return (
+    <>
+      {isEmptyList(outfits.outfits.length, outfits.hasMore) ? (
+        <EmptyState title="No outfits in this collection yet" />
+      ) : (
+        <OutfitList
+          outfits={outfits.outfits}
+          hasMore={outfits.hasMore}
+          onLoadMore={outfits.loadMore}
+          addTile={false}
+        />
+      )}
+      {outfits.loadMoreFailed && (
+        <ErrorState
+          message="Couldn't load more outfits."
+          onRetry={outfits.retryLoadMore}
+          retryLabel="Retry"
         />
       )}
     </>

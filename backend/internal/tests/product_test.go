@@ -1,8 +1,10 @@
 package tests
 
 import (
+	"cmp"
 	"context"
 	"database/sql"
+	"math"
 	"math/rand/v2"
 	"slices"
 	"testing"
@@ -77,9 +79,9 @@ func findSimilarIDsWithTypePicks(t *testing.T, db *sql.DB, ownIDs []uuid.UUID, e
 		t.Fatalf("FindSimilar: %v", err)
 	}
 	var ids []uuid.UUID
-	for _, product := range products {
-		if slices.Contains(ownIDs, product.ID) {
-			ids = append(ids, product.ID)
+	for _, scored := range products {
+		if slices.Contains(ownIDs, scored.Product.ID) {
+			ids = append(ids, scored.Product.ID)
 		}
 	}
 	return ids
@@ -131,6 +133,38 @@ func TestFindSimilarNiceTagsReorder(t *testing.T) {
 	}
 }
 
+func TestFindSimilarReturnsEachScore(t *testing.T) {
+	db := openTestDB(t)
+
+	id := insertSlotProduct(t, db, testProduct{slot: models.SlotTop, tags: []string{"pastel"}, embedding: productEmbedding(0.1)})
+
+	plainScore, products := findSimilarScore(t, db, id, nil)
+	// with no tags or picks, the score is the plain cosine distance, so it does not depend on the bonus weights
+	if want := 1 - 1/math.Sqrt(1+0.1*0.1); math.Abs(plainScore-want) > 1e-6 {
+		t.Errorf("score without nice tags = %v, want the cosine distance %v", plainScore, want)
+	}
+	if !slices.IsSortedFunc(products, func(a, b repository.ScoredProduct) int { return cmp.Compare(a.Score, b.Score) }) {
+		t.Error("scores are not in ascending order")
+	}
+	if taggedScore, _ := findSimilarScore(t, db, id, []string{"pastel"}); taggedScore >= plainScore {
+		t.Errorf("score with nice tag pastel = %v, want it below the plain distance %v", taggedScore, plainScore)
+	}
+}
+
+// findSimilarScore returns id's score from a FindSimilar call with niceTags, and everything that call returned.
+func findSimilarScore(t *testing.T, db *sql.DB, id uuid.UUID, niceTags []string) (float64, []repository.ScoredProduct) {
+	t.Helper()
+	products, err := repository.NewProductRepository(db).FindSimilar(context.Background(), queryEmbedding, models.SlotTop, nil, niceTags, nil, nil, findSimilarLimit)
+	if err != nil {
+		t.Fatalf("FindSimilar: %v", err)
+	}
+	index := slices.IndexFunc(products, func(scored repository.ScoredProduct) bool { return scored.Product.ID == id })
+	if index == -1 {
+		t.Fatalf("FindSimilar left out %v", id)
+	}
+	return products[index].Score, products
+}
+
 func TestFindSimilarBreaksTiesByID(t *testing.T) {
 	db := openTestDB(t)
 
@@ -178,9 +212,9 @@ func TestFindSimilarExcludesProductIDs(t *testing.T) {
 		t.Fatalf("FindSimilar: %v", err)
 	}
 	var got []uuid.UUID
-	for _, product := range products {
-		if slices.Contains([]uuid.UUID{kept, excluded}, product.ID) {
-			got = append(got, product.ID)
+	for _, scored := range products {
+		if slices.Contains([]uuid.UUID{kept, excluded}, scored.Product.ID) {
+			got = append(got, scored.Product.ID)
 		}
 	}
 	if want := []uuid.UUID{kept}; !slices.Equal(got, want) {

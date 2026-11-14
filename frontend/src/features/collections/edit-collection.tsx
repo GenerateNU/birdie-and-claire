@@ -7,12 +7,12 @@ import {
   listCollectionsQueryKey,
   updateCollectionMutation,
 } from "@/api/generated/@tanstack/react-query.gen";
-import type { CollectionResponse } from "@/api/generated/types.gen";
+import type { Collection } from "@/api/generated/types.gen";
 import { Modal, useToast } from "@/design-system";
 import { CollectionFormDialog } from "@/features/collections/collection-form-dialog";
 
 type EditCollectionProps = {
-  collection: Pick<CollectionResponse, "id" | "name" | "description">;
+  collection: Pick<Collection, "id" | "name" | "description">;
   /** `delete` goes straight to the confirmation, and No then closes instead of showing the form. */
   startWith: "edit" | "delete";
   onClose: () => void;

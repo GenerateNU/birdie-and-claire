@@ -56,7 +56,7 @@ func addToCollection(t *testing.T, db *sql.DB, collectionID, outfitID uuid.UUID,
 	}
 }
 
-func createCollection(t *testing.T, repo repository.CollectionRepository, userID uuid.UUID, name string) models.CollectionResponse {
+func createCollection(t *testing.T, repo repository.CollectionRepository, userID uuid.UUID, name string) models.CollectionSummaryResponse {
 	t.Helper()
 
 	collection, err := repo.Create(context.Background(), models.CreateCollectionParams{Name: name}, userID)
@@ -108,9 +108,9 @@ func TestListCollectionsCountsOutfitsAndTakesThumbnailsFromTheFourNewest(t *test
 	strangerID := insertTestUser(t, db)
 	createCollection(t, repo, strangerID, "stranger's")
 
-	got, err := repo.List(context.Background(), userID)
+	got, err := repo.ListByUser(context.Background(), userID, cursorParams(t, 20, ""))
 	if err != nil {
-		t.Fatalf("List: %v", err)
+		t.Fatalf("ListByUser: %v", err)
 	}
 
 	if len(got) != 3 || got[0].ID != empty.ID || got[1].ID != newer.ID || got[2].ID != older.ID {
@@ -142,9 +142,9 @@ func TestListCollectionsOutfitWithoutImageLeavesAGap(t *testing.T) {
 		addToCollection(t, db, collection.ID, insertOutfitWithImage(t, db, userID, url), base.Add(time.Duration(i)*time.Minute))
 	}
 
-	got, err := repo.List(context.Background(), userID)
+	got, err := repo.ListByUser(context.Background(), userID, cursorParams(t, 20, ""))
 	if err != nil {
-		t.Fatalf("List: %v", err)
+		t.Fatalf("ListByUser: %v", err)
 	}
 
 	want := []string{"https://example.com/e.png", "https://example.com/d.png", "https://example.com/b.png"}
@@ -153,45 +153,86 @@ func TestListCollectionsOutfitWithoutImageLeavesAGap(t *testing.T) {
 	}
 }
 
-func TestGetCollectionReturnsOutfitsNewestAddedFirstWithProducts(t *testing.T) {
+// The page stays newest added first across the cursor, and each outfit comes with its products.
+func TestListCollectionOutfitsPagesNewestAddedFirstWithProducts(t *testing.T) {
 	db := openTestDB(t)
-	repo := repository.NewCollectionRepository(db)
 	userID := insertTestUser(t, db)
-	collection := createCollection(t, repo, userID, "fits")
-	first := insertOutfitWithImage(t, db, userID, "https://example.com/first.png")
-	second := insertOutfitWithImage(t, db, userID, "https://example.com/second.png")
-	now := time.Now()
-	addToCollection(t, db, collection.ID, first, now.Add(-time.Hour))
-	addToCollection(t, db, collection.ID, second, now)
+	collection := createCollection(t, repository.NewCollectionRepository(db), userID, "fits")
+	service := services.NewCollectionService(repository.New(db))
+	ctx := auth.WithUserID(context.Background(), userID)
+	base := time.Now().Add(-time.Hour)
+	var newestFirst []uuid.UUID
+	for i := range 3 {
+		outfitID := insertOutfitWithImage(t, db, userID, "https://example.com/a.png")
+		addToCollection(t, db, collection.ID, outfitID, base.Add(time.Duration(i)*time.Minute))
+		newestFirst = slices.Insert(newestFirst, 0, outfitID)
+	}
 
-	got, err := repo.GetByID(context.Background(), collection.ID, userID)
+	first, err := service.ListCollectionOutfits(ctx, collection.ID, cursorParams(t, 2, ""))
 	if err != nil {
-		t.Fatalf("GetByID: %v", err)
+		t.Fatalf("list first page: %v", err)
 	}
-
-	if got.Name != "fits" || len(got.Outfits) != 2 || got.Outfits[0].ID != second || got.Outfits[1].ID != first {
-		t.Fatalf("got %+v, want both outfits, the one added last first", got)
+	if len(first.Items) != 2 || first.Items[0].ID != newestFirst[0] || first.Items[1].ID != newestFirst[1] || !first.HasMore || first.NextCursor == nil {
+		t.Fatalf("first page = %+v, want the two newest added and a cursor", first)
 	}
-	for _, outfit := range got.Outfits {
+	second, err := service.ListCollectionOutfits(ctx, collection.ID, cursorParams(t, 2, *first.NextCursor))
+	if err != nil {
+		t.Fatalf("list second page: %v", err)
+	}
+	if len(second.Items) != 1 || second.Items[0].ID != newestFirst[2] || second.HasMore || second.NextCursor != nil {
+		t.Fatalf("second page = %+v, want only the oldest added and no cursor", second)
+	}
+	for _, outfit := range append(first.Items, second.Items...) {
 		if len(outfit.Products) != 1 || outfit.Products[0].ImageURL == nil {
 			t.Errorf("outfit %s products = %+v, want one product with its image", outfit.ID, outfit.Products)
 		}
 	}
 }
 
-func TestGetEmptyCollectionHasNoOutfits(t *testing.T) {
+func TestListCollectionsPagesNewestFirst(t *testing.T) {
 	db := openTestDB(t)
-	repo := repository.NewCollectionRepository(db)
 	userID := insertTestUser(t, db)
-	collection := createCollection(t, repo, userID, "empty")
-
-	got, err := repo.GetByID(context.Background(), collection.ID, userID)
-	if err != nil {
-		t.Fatalf("GetByID: %v", err)
+	repo := repository.NewCollectionRepository(db)
+	service := services.NewCollectionService(repository.New(db))
+	ctx := auth.WithUserID(context.Background(), userID)
+	var newestFirst []uuid.UUID
+	for i := range 3 {
+		collection := createCollection(t, repo, userID, "c")
+		if _, err := db.Exec(`UPDATE collections SET created_at = $2 WHERE id = $1`, collection.ID, time.Now().Add(time.Duration(i-3)*time.Hour)); err != nil {
+			t.Fatalf("set created_at: %v", err)
+		}
+		newestFirst = slices.Insert(newestFirst, 0, collection.ID)
 	}
 
-	if got.Outfits == nil || len(got.Outfits) != 0 {
-		t.Fatalf("outfits = %#v, want a non-nil empty list", got.Outfits)
+	first, err := service.ListUserCollections(ctx, cursorParams(t, 2, ""))
+	if err != nil {
+		t.Fatalf("list first page: %v", err)
+	}
+	if len(first.Items) != 2 || first.Items[0].ID != newestFirst[0] || first.Items[1].ID != newestFirst[1] || !first.HasMore || first.NextCursor == nil {
+		t.Fatalf("first page = %+v, want the two newest and a cursor", first)
+	}
+	second, err := service.ListUserCollections(ctx, cursorParams(t, 2, *first.NextCursor))
+	if err != nil {
+		t.Fatalf("list second page: %v", err)
+	}
+	if len(second.Items) != 1 || second.Items[0].ID != newestFirst[2] || second.HasMore || second.NextCursor != nil {
+		t.Fatalf("second page = %+v, want only the oldest and no cursor", second)
+	}
+}
+
+func TestListEmptyCollectionOutfitsIsAnEmptyPage(t *testing.T) {
+	db := openTestDB(t)
+	userID := insertTestUser(t, db)
+	collection := createCollection(t, repository.NewCollectionRepository(db), userID, "empty")
+	service := services.NewCollectionService(repository.New(db))
+
+	got, err := service.ListCollectionOutfits(auth.WithUserID(context.Background(), userID), collection.ID, cursorParams(t, 20, ""))
+	if err != nil {
+		t.Fatalf("ListCollectionOutfits: %v", err)
+	}
+
+	if got.Items == nil || len(got.Items) != 0 || got.HasMore {
+		t.Fatalf("page = %#v, want a non-nil empty list and no more", got)
 	}
 }
 
@@ -200,6 +241,7 @@ func TestCollectionOfAnotherUserOrMissingIsNotFound(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()
 	repo := repository.NewCollectionRepository(db)
+	service := services.NewCollectionService(repository.New(db))
 	ownerID := insertTestUser(t, db)
 	strangerID := insertTestUser(t, db)
 	collection := createCollection(t, repo, ownerID, "mine")
@@ -208,9 +250,11 @@ func TestCollectionOfAnotherUserOrMissingIsNotFound(t *testing.T) {
 	for label, id := range map[string]uuid.UUID{"someone else's": collection.ID, "missing": uuid.New()} {
 		t.Run(label, func(t *testing.T) {
 			_, getErr := repo.GetByID(ctx, id, strangerID)
+			_, outfitsErr := service.ListCollectionOutfits(auth.WithUserID(ctx, strangerID), id, cursorParams(t, 20, ""))
 			_, updateErr := repo.Update(ctx, id, models.UpdateCollectionParams{Name: name}, strangerID)
 			deleteErr := repo.Delete(ctx, id, strangerID)
 			wantNotFound(t, getErr)
+			wantNotFound(t, outfitsErr)
 			wantNotFound(t, updateErr)
 			wantNotFound(t, deleteErr)
 		})
@@ -231,14 +275,12 @@ func TestUpdateCollectionChangesOnlyWhatIsSent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create: %v", err)
 	}
-	addToCollection(t, db, created.ID, insertOutfitWithImage(t, db, userID, "https://example.com/a.png"), time.Now())
-
 	renamed, err := repo.Update(ctx, created.ID, models.UpdateCollectionParams{Name: "new"}, userID)
 	if err != nil {
 		t.Fatalf("Update name: %v", err)
 	}
-	if renamed.Name != "new" || renamed.Description != "keep me" || renamed.OutfitCount != 1 || len(renamed.ThumbnailURLs) != 1 {
-		t.Fatalf("after renaming got %+v, want the new name, the old description, and the outfit's count and thumbnail", renamed)
+	if renamed.Name != "new" || renamed.Description != "keep me" {
+		t.Fatalf("after renaming got %+v, want the new name and the old description", renamed)
 	}
 
 	cleared := ""
@@ -283,9 +325,9 @@ func TestDeletingAnOutfitRemovesItFromItsCollections(t *testing.T) {
 		t.Fatalf("delete outfit: %v", err)
 	}
 
-	got, err := repo.List(ctx, userID)
+	got, err := repo.ListByUser(ctx, userID, cursorParams(t, 20, ""))
 	if err != nil || len(got) != 1 || got[0].OutfitCount != 0 || len(got[0].ThumbnailURLs) != 0 {
-		t.Fatalf("List = %+v, %v, want the collection with no outfits", got, err)
+		t.Fatalf("ListByUser = %+v, %v, want the collection with no outfits", got, err)
 	}
 }
 
@@ -298,7 +340,7 @@ func TestCollectionRoutesValidateTheirBodies(t *testing.T) {
 	_, api := humatest.New(t, server.APIConfig(&config.Configuration{}))
 	huma.Register(api, huma.Operation{
 		OperationID: "create-collection", Method: http.MethodPost, Path: "/api/v1/collections", DefaultStatus: http.StatusCreated,
-	}, func(ctx context.Context, input *controllers.CreateCollectionInput) (*controllers.CollectionOutput, error) {
+	}, func(ctx context.Context, input *controllers.CreateCollectionInput) (*controllers.CollectionSummaryOutput, error) {
 		// Stands in for the auth middleware, which the test API does not run.
 		return controller.Create(auth.WithUserID(ctx, userID), input)
 	})

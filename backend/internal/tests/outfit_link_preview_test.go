@@ -20,7 +20,7 @@ func TestLinkPreviewShowsSharedOutfitAndHidesPrivateOne(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()
 	outfitID, ownerID := insertTestOutfit(t, db)
-	controller := controllers.NewOutfitController(services.NewOutfitService(repository.New(db)))
+	controller := controllers.NewOutfitController(services.NewOutfitService(repository.New(db), ""))
 	input := &controllers.OutfitLinkPreviewInput{ID: outfitID.String(), Host: "app.example.com"}
 
 	private, err := controller.GetLinkPreview(ctx, input)
@@ -49,7 +49,7 @@ func TestLinkPreviewShowsSharedOutfitAndHidesPrivateOne(t *testing.T) {
 }
 
 func TestLinkPreviewRejectsInvalidHost(t *testing.T) {
-	controller := controllers.NewOutfitController(services.NewOutfitService(repository.New(nil)))
+	controller := controllers.NewOutfitController(services.NewOutfitService(repository.New(nil), ""))
 	_, api := humatest.New(t, server.APIConfig(&config.Configuration{}))
 	huma.Register(api, huma.Operation{
 		OperationID: "get-shared-outfit-link-preview",
@@ -70,7 +70,7 @@ func TestLinkPreviewRejectsInvalidHost(t *testing.T) {
 
 // A malformed ID never reaches the database, so this checks huma sends the HTML as HTML without one.
 func TestLinkPreviewRouteServesHTMLForMalformedID(t *testing.T) {
-	controller := controllers.NewOutfitController(services.NewOutfitService(repository.New(nil)))
+	controller := controllers.NewOutfitController(services.NewOutfitService(repository.New(nil), ""))
 	_, api := humatest.New(t, server.APIConfig(&config.Configuration{}))
 	huma.Register(api, huma.Operation{
 		OperationID: "get-shared-outfit-link-preview",

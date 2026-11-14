@@ -23,9 +23,12 @@ components:
       required:
         - keys_loaded
       type: object
-    CollectionDetailResponse:
+    Collection:
       additionalProperties: false
       properties:
+        created_at:
+          format: date-time
+          type: string
         description:
           description: Empty when the collection has no description
           type: string
@@ -33,20 +36,18 @@ components:
           type: string
         name:
           type: string
-        outfits:
-          description: Newest added first
-          items:
-            $ref: "#/components/schemas/OutfitResponse"
-          type: array
       required:
-        - outfits
         - id
         - name
         - description
+        - created_at
       type: object
-    CollectionResponse:
+    CollectionSummaryResponse:
       additionalProperties: false
       properties:
+        created_at:
+          format: date-time
+          type: string
         description:
           description: Empty when the collection has no description
           type: string
@@ -68,6 +69,7 @@ components:
         - id
         - name
         - description
+        - created_at
       type: object
     ConfirmProfilePictureInputBody:
       additionalProperties: false
@@ -219,16 +221,6 @@ components:
           format: uri
           type: string
       type: object
-    ListCollectionsResponse:
-      additionalProperties: false
-      properties:
-        items:
-          items:
-            $ref: "#/components/schemas/CollectionResponse"
-          type: array
-      required:
-        - items
-      type: object
     ListOutfitsResponse:
       additionalProperties: false
       properties:
@@ -261,6 +253,138 @@ components:
           type: string
       required:
         - status
+      type: object
+    OnePieceOutfit:
+      additionalProperties: false
+      properties:
+        accessory:
+          $ref: "#/components/schemas/ProductResponse"
+          description: Missing when no accessory matched
+        kind:
+          enum:
+            - one_piece
+          type: string
+        one_piece:
+          $ref: "#/components/schemas/ProductResponse"
+          description: A dress or jumpsuit in place of the top and bottom
+        shoe:
+          $ref: "#/components/schemas/ProductResponse"
+          description: Missing when no shoe matched
+      required:
+        - kind
+        - one_piece
+      type: object
+    OutfitDetailProductResponse:
+      additionalProperties: false
+      properties:
+        cart_url:
+          description: Shopify cart link adding this product, left out when it cannot be bought
+          type: string
+        created_at:
+          format: date-time
+          type: string
+        handle:
+          type: string
+        id:
+          type: string
+        image_url:
+          description: URL of the product's lowest-position image, or null when it has none
+          type:
+            - string
+            - "null"
+        owned:
+          description: Whether the signed-in user owns the product
+          type: boolean
+        product_type:
+          type:
+            - string
+            - "null"
+        shopify_id:
+          format: int64
+          type: integer
+        slot:
+          enum:
+            - top
+            - bottom
+            - accessory
+            - shoe
+            - one_piece
+          type: string
+        source:
+          description: birdie_and_claire for a product sold in the store, demo for seeded filler that is not for sale
+          enum:
+            - birdie_and_claire
+            - demo
+          type: string
+        tags:
+          items:
+            type: string
+          type: array
+        title:
+          type: string
+        updated_at:
+          format: date-time
+          type: string
+      required:
+        - owned
+        - image_url
+        - id
+        - shopify_id
+        - handle
+        - title
+        - product_type
+        - slot
+        - source
+        - tags
+        - created_at
+        - updated_at
+      type: object
+    OutfitDetailResponse:
+      additionalProperties: false
+      properties:
+        add_all_to_cart_url:
+          description: Shopify cart link adding every buyable product, left out when none can be bought
+          type: string
+        created_at:
+          format: date-time
+          type: string
+        description:
+          description: Empty when the outfit has no description
+          type: string
+        id:
+          type: string
+        name:
+          type: string
+        products:
+          items:
+            $ref: "#/components/schemas/OutfitDetailProductResponse"
+          type: array
+        shared_at:
+          description: When the outfit was shared by link, or null while it is private
+          format: date-time
+          type:
+            - string
+            - "null"
+        tags:
+          description: Free-text labels such as weather or occasion
+          items:
+            type: string
+          type: array
+        updated_at:
+          format: date-time
+          type: string
+        user_id:
+          type: string
+      required:
+        - products
+        - id
+        - user_id
+        - name
+        - description
+        - tags
+        - shared_at
+        - created_at
+        - updated_at
       type: object
     OutfitResponse:
       additionalProperties: false
@@ -382,6 +506,42 @@ components:
         - tags
         - created_at
         - updated_at
+      type: object
+    PageCollectionSummaryResponse:
+      additionalProperties: false
+      properties:
+        has_more:
+          type: boolean
+        items:
+          items:
+            $ref: "#/components/schemas/CollectionSummaryResponse"
+          type: array
+        next_cursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - next_cursor
+        - has_more
+      type: object
+    PageOutfitResponse:
+      additionalProperties: false
+      properties:
+        has_more:
+          type: boolean
+        items:
+          items:
+            $ref: "#/components/schemas/OutfitResponse"
+          type: array
+        next_cursor:
+          type:
+            - string
+            - "null"
+      required:
+        - items
+        - next_cursor
+        - has_more
       type: object
     PageOwnedProductResponse:
       additionalProperties: false
@@ -615,6 +775,9 @@ components:
           type: string
         bottom:
           type: string
+        one_piece:
+          description: Searched only when the shopper includes one-pieces
+          type: string
         shoe:
           type: string
         top:
@@ -622,6 +785,7 @@ components:
       required:
         - top
         - bottom
+        - one_piece
         - accessory
         - shoe
       type: object
@@ -651,7 +815,14 @@ components:
         outfits:
           description: Up to 3 outfits, best first; fewer only when every slot has fewer matching products
           items:
-            $ref: "#/components/schemas/RecommendedOutfit"
+            discriminator:
+              mapping:
+                one_piece: "#/components/schemas/OnePieceOutfit"
+                separates: "#/components/schemas/SeparatesOutfit"
+              propertyName: kind
+            oneOf:
+              - $ref: "#/components/schemas/SeparatesOutfit"
+              - $ref: "#/components/schemas/OnePieceOutfit"
           type: array
       required:
         - expanded_answers
@@ -681,7 +852,7 @@ components:
         - snowy
         - storm
       type: string
-    RecommendedOutfit:
+    SeparatesOutfit:
       additionalProperties: false
       properties:
         accessory:
@@ -690,12 +861,18 @@ components:
         bottom:
           $ref: "#/components/schemas/ProductResponse"
           description: Missing when no bottom matched
+        kind:
+          enum:
+            - separates
+          type: string
         shoe:
           $ref: "#/components/schemas/ProductResponse"
           description: Missing when no shoe matched
         top:
           $ref: "#/components/schemas/ProductResponse"
           description: Missing when no top matched
+      required:
+        - kind
       type: object
     ShareOutfitResponse:
       additionalProperties: false
@@ -743,12 +920,13 @@ components:
           items:
             enum:
               - pants
-              - dress
               - skirt
               - shorts
             type: string
           type: array
           uniqueItems: true
+        include_one_pieces:
+          type: boolean
         neckline:
           items:
             enum:
@@ -784,6 +962,7 @@ components:
         - neckline
         - bottoms
         - shoes
+        - include_one_pieces
       type: object
     UpdateCollectionInputBody:
       additionalProperties: false
@@ -901,14 +1080,33 @@ paths:
         - outfits
   /api/v1/collections:
     get:
-      description: Newest first, each with its outfit count and up to 4 thumbnails. The list is not paginated.
+      description: Newest first, each with its outfit count and up to 4 thumbnails.
       operationId: list-collections
+      parameters:
+        - description: Max items to return
+          explode: false
+          in: query
+          name: limit
+          schema:
+            default: 20
+            description: Max items to return
+            format: int64
+            maximum: 100
+            minimum: 1
+            type: integer
+        - description: Opaque cursor from a previous page's next_cursor
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: Opaque cursor from a previous page's next_cursor
+            type: string
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ListCollectionsResponse"
+                $ref: "#/components/schemas/PageCollectionSummaryResponse"
           description: OK
         default:
           content:
@@ -934,7 +1132,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CollectionResponse"
+                $ref: "#/components/schemas/CollectionSummaryResponse"
           description: Created
         default:
           content:
@@ -989,7 +1187,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CollectionDetailResponse"
+                $ref: "#/components/schemas/Collection"
           description: OK
         default:
           content:
@@ -999,7 +1197,7 @@ paths:
           description: Error
       security:
         - bearer: []
-      summary: Get one of the authenticated user's collections with its outfits
+      summary: Get one of the authenticated user's collections
       tags:
         - collections
     patch:
@@ -1023,7 +1221,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CollectionResponse"
+                $ref: "#/components/schemas/Collection"
           description: OK
         default:
           content:
@@ -1034,6 +1232,54 @@ paths:
       security:
         - bearer: []
       summary: Update a collection's name or description
+      tags:
+        - collections
+  /api/v1/collections/{id}/outfits:
+    get:
+      description: Newest added first. Someone else's collection and a missing one both return 404.
+      operationId: list-collection-outfits
+      parameters:
+        - description: Collection ID
+          in: path
+          name: id
+          required: true
+          schema:
+            description: Collection ID
+            type: string
+        - description: Max items to return
+          explode: false
+          in: query
+          name: limit
+          schema:
+            default: 20
+            description: Max items to return
+            format: int64
+            maximum: 100
+            minimum: 1
+            type: integer
+        - description: Opaque cursor from a previous page's next_cursor
+          explode: false
+          in: query
+          name: cursor
+          schema:
+            description: Opaque cursor from a previous page's next_cursor
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PageOutfitResponse"
+          description: OK
+        default:
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorModel"
+          description: Error
+      security:
+        - bearer: []
+      summary: List the outfits in one of the authenticated user's collections
       tags:
         - collections
   /api/v1/embedder/warm:
@@ -1111,7 +1357,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/OutfitResponse"
+                $ref: "#/components/schemas/OutfitDetailResponse"
           description: Created
         default:
           content:
@@ -1165,7 +1411,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/OutfitResponse"
+                $ref: "#/components/schemas/OutfitDetailResponse"
           description: OK
         default:
           content:
@@ -1200,7 +1446,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/OutfitResponse"
+                $ref: "#/components/schemas/OutfitDetailResponse"
           description: OK
         default:
           content:

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"math/rand/v2"
+	"reflect"
 	"slices"
 	"testing"
 	"time"
@@ -130,6 +131,7 @@ func newSyncProduct(t *testing.T, db *sql.DB, category string, imageCount int) s
 		Category: category,
 		Tags:     []string{"Knitwear"},
 		Images:   []shopify.ShopifyImage{},
+		Variants: []shopify.ShopifyVariant{{ID: rand.Int64(), Available: true, Position: 1}},
 	}
 	for position := 1; position <= imageCount; position++ {
 		product.Images = append(product.Images, shopify.ShopifyImage{
@@ -155,6 +157,41 @@ func runSyncWithLabeler(t *testing.T, db *sql.DB, emb *recordingEmbedder, labele
 	if err := services.NewCatalogSyncService(repository.New(db), catalog, emb, labeler).Sync(context.Background()); err != nil {
 		t.Fatalf("Sync: %v", err)
 	}
+}
+
+type syncedVariant struct {
+	shopifyID int64
+	available bool
+	position  int
+	updatedAt time.Time
+}
+
+func findSyncedVariants(t *testing.T, db *sql.DB, productID uuid.UUID) []syncedVariant {
+	t.Helper()
+
+	rows, err := db.Query(`
+		SELECT shopify_id, available, position, updated_at
+		FROM product_variants
+		WHERE product_id = $1
+		ORDER BY position, id
+	`, productID)
+	if err != nil {
+		t.Fatalf("query synced variants: %v", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var variants []syncedVariant
+	for rows.Next() {
+		var variant syncedVariant
+		if err := rows.Scan(&variant.shopifyID, &variant.available, &variant.position, &variant.updatedAt); err != nil {
+			t.Fatalf("scan synced variant: %v", err)
+		}
+		variants = append(variants, variant)
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatalf("iterate synced variants: %v", err)
+	}
+	return variants
 }
 
 type syncedRow struct {
@@ -272,6 +309,88 @@ func TestCatalogSyncDeletesRemovedImages(t *testing.T) {
 
 	if row := mustFindSyncedRow(t, db, product.ID); row.imageCount != 1 {
 		t.Fatalf("product has %d images, want 1", row.imageCount)
+	}
+}
+
+func TestCatalogSyncStoresVariants(t *testing.T) {
+	db := openSyncTestDB(t)
+	product := newSyncProduct(t, db, topsCategory, 1)
+	product.Variants = []shopify.ShopifyVariant{
+		{ID: rand.Int64(), Available: false, Position: 1},
+		{ID: rand.Int64(), Available: true, Position: 2},
+	}
+
+	runSync(t, db, &recordingEmbedder{}, product)
+
+	variants := findSyncedVariants(t, db, mustFindSyncedRow(t, db, product.ID).id)
+	if len(variants) != 2 {
+		t.Fatalf("stored %d variants, want 2", len(variants))
+	}
+	for i, variant := range variants {
+		want := product.Variants[i]
+		if variant.shopifyID != want.ID || variant.available != want.Available || variant.position != want.Position {
+			t.Fatalf("variant %d = %+v, want %+v", i, variant, want)
+		}
+	}
+}
+
+func TestCatalogSyncRerunLeavesVariantsAlone(t *testing.T) {
+	db := openSyncTestDB(t)
+	product := newSyncProduct(t, db, topsCategory, 1)
+	emb := &recordingEmbedder{}
+
+	runSync(t, db, emb, product)
+	productID := mustFindSyncedRow(t, db, product.ID).id
+	first := findSyncedVariants(t, db, productID)
+	runSync(t, db, emb, product)
+	second := findSyncedVariants(t, db, productID)
+
+	if !reflect.DeepEqual(first, second) {
+		t.Fatalf("rerun touched the variants: %+v -> %+v", first, second)
+	}
+}
+
+func TestCatalogSyncUpdatesChangedVariant(t *testing.T) {
+	db := openSyncTestDB(t)
+	product := newSyncProduct(t, db, topsCategory, 1)
+
+	runSync(t, db, &recordingEmbedder{}, product)
+	productID := mustFindSyncedRow(t, db, product.ID).id
+	before := findSyncedVariants(t, db, productID)[0]
+	product.Variants[0].Available = false
+	product.Variants[0].Position = 3
+	runSync(t, db, &recordingEmbedder{}, product)
+	after := findSyncedVariants(t, db, productID)[0]
+
+	if after.available || after.position != 3 || !after.updatedAt.After(before.updatedAt) {
+		t.Fatalf("variant = %+v after the change, was %+v, want it unavailable at position 3 with a newer updated_at", after, before)
+	}
+}
+
+func TestCatalogSyncDeletesRemovedVariants(t *testing.T) {
+	db := openSyncTestDB(t)
+	product := newSyncProduct(t, db, topsCategory, 1)
+	product.Variants = append(product.Variants, shopify.ShopifyVariant{ID: rand.Int64(), Available: true, Position: 2})
+
+	runSync(t, db, &recordingEmbedder{}, product)
+	product.Variants = product.Variants[:1]
+	runSync(t, db, &recordingEmbedder{}, product)
+
+	variants := findSyncedVariants(t, db, mustFindSyncedRow(t, db, product.ID).id)
+	if len(variants) != 1 || variants[0].shopifyID != product.Variants[0].ID {
+		t.Fatalf("variants = %+v, want only %d", variants, product.Variants[0].ID)
+	}
+}
+
+func TestCatalogSyncStoresVariantsWhileShopifyProcessesAnImage(t *testing.T) {
+	db := openSyncTestDB(t)
+	product := newSyncProduct(t, db, topsCategory, 1)
+	product.HasProcessingImages = true
+
+	runSync(t, db, &recordingEmbedder{}, product)
+
+	if variants := findSyncedVariants(t, db, mustFindSyncedRow(t, db, product.ID).id); len(variants) != 1 {
+		t.Fatalf("stored %d variants, want 1", len(variants))
 	}
 }
 
@@ -544,8 +663,8 @@ func TestCatalogSyncDeactivatesMissingProductAndKeepsSavedOutfit(t *testing.T) {
 	if err != nil {
 		t.Fatalf("FindSimilar: %v", err)
 	}
-	for _, product := range similar {
-		if product.ID == removedID {
+	for _, scored := range similar {
+		if scored.Product.ID == removedID {
 			t.Fatal("FindSimilar returned an inactive product")
 		}
 	}

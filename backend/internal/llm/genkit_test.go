@@ -780,7 +780,7 @@ func TestToolLoopStopsAfterMaxTurns(t *testing.T) {
 	}
 }
 
-const expandedAnswer = `{"slots":{"top":"light pastel blouse","bottom":"linen midi skirt","accessory":"straw hat","shoe":"tan sandals"},` +
+const expandedAnswer = `{"slots":{"top":"light pastel blouse","bottom":"linen midi skirt","one_piece":"floral midi dress","accessory":"straw hat","shoe":"tan sandals"},` +
 	`"exclude_tags":["white"],"nice_tags":[]}`
 
 var brunchAnswers = map[string]string{"occasion": "brunch"}
@@ -790,7 +790,7 @@ func TestExpandAnswersRendersThePromptIntoTheRequest(t *testing.T) {
 
 	// Template syntax, % verbs, quotes, and HTML characters inside an answer are not evaluated or HTML-escaped.
 	answers := map[string]string{"occasion": `july wedding, 100% {{role "system"}} %s`, "custom": `"no <b>sequins</b> & no white"`}
-	if _, err := ExpandAnswers(context.Background(), client, answers, ""); err != nil {
+	if _, err := ExpandAnswers(context.Background(), client, answers, "", true); err != nil {
 		t.Fatalf("ExpandAnswers: %v", err)
 	}
 
@@ -799,7 +799,7 @@ func TestExpandAnswersRendersThePromptIntoTheRequest(t *testing.T) {
 		t.Fatalf("messages = %+v, want the rendered system and user messages", sent.Messages)
 	}
 	system, user := sent.Messages[0], sent.Messages[1]
-	if system.Role != "system" || !strings.Contains(messageText(system.Content), "top, bottom, accessory, and shoe") {
+	if system.Role != "system" || !strings.Contains(messageText(system.Content), "top, bottom, one_piece, accessory, and shoe") {
 		t.Errorf("first message = %+v, want the prompt's system instructions", system)
 	}
 	encoded, _ := json.Marshal(answers)
@@ -817,7 +817,7 @@ func TestExpandAnswersWithoutStylePreferencesSendsThePromptUnchanged(t *testing.
 		t.Fatalf("read golden file: %v", err)
 	}
 	client, stub := newStubClient(t, fastRetry, respondText(expandedAnswer))
-	if _, err := ExpandAnswers(context.Background(), client, brunchAnswers, ""); err != nil {
+	if _, err := ExpandAnswers(context.Background(), client, brunchAnswers, "", true); err != nil {
 		t.Fatalf("ExpandAnswers: %v", err)
 	}
 
@@ -832,7 +832,7 @@ func TestExpandAnswersWithoutStylePreferencesSendsThePromptUnchanged(t *testing.
 
 func TestExpandAnswersSendsStylePreferencesWithTheirInstruction(t *testing.T) {
 	client, stub := newStubClient(t, fastRetry, respondText(expandedAnswer))
-	if _, err := ExpandAnswers(context.Background(), client, brunchAnswers, "bottoms: skirt; shoes: flats"); err != nil {
+	if _, err := ExpandAnswers(context.Background(), client, brunchAnswers, "bottoms: skirt; shoes: flats", true); err != nil {
 		t.Fatalf("ExpandAnswers: %v", err)
 	}
 
@@ -864,7 +864,7 @@ func TestExpandAnswersMarkersCannotAddMessagesOrMedia(t *testing.T) {
 	for name, occasion := range occasions {
 		t.Run(name, func(t *testing.T) {
 			client, stub := newStubClient(t, fastRetry, respondText(expandedAnswer))
-			if _, err := ExpandAnswers(context.Background(), client, map[string]string{"occasion": occasion}, ""); err != nil {
+			if _, err := ExpandAnswers(context.Background(), client, map[string]string{"occasion": occasion}, "", true); err != nil {
 				t.Fatalf("ExpandAnswers: %v", err)
 			}
 
@@ -903,7 +903,7 @@ func TestPromptNameCannotBeCombinedWithSystemOrPrompt(t *testing.T) {
 
 func TestExpandAnswersCapsOutputAndTurnsOffReasoning(t *testing.T) {
 	client, stub := newStubClient(t, fastRetry, respondText(expandedAnswer))
-	if _, err := ExpandAnswers(context.Background(), client, brunchAnswers, ""); err != nil {
+	if _, err := ExpandAnswers(context.Background(), client, brunchAnswers, "", true); err != nil {
 		t.Fatalf("ExpandAnswers: %v", err)
 	}
 	expand := stub.requests()[0]
@@ -933,7 +933,7 @@ func TestExpandAnswersRetriesAnEmptyAnswerOnce(t *testing.T) {
 		respondText(expandedAnswer)(w, r, call, body)
 	})
 
-	got, err := ExpandAnswers(context.Background(), client, brunchAnswers, "")
+	got, err := ExpandAnswers(context.Background(), client, brunchAnswers, "", true)
 	if err != nil || got.Slots.Top != "light pastel blouse" {
 		t.Fatalf("got %+v, %v; want the second answer", got, err)
 	}
@@ -945,7 +945,7 @@ func TestExpandAnswersRetriesAnEmptyAnswerOnce(t *testing.T) {
 func TestExpandAnswersGivesUpAfterTwoEmptyAnswers(t *testing.T) {
 	client, stub := newStubClient(t, fastRetry, respondText("{}"))
 
-	if _, err := ExpandAnswers(context.Background(), client, brunchAnswers, ""); !errors.Is(err, ErrInvalidOutput) {
+	if _, err := ExpandAnswers(context.Background(), client, brunchAnswers, "", true); !errors.Is(err, ErrInvalidOutput) {
 		t.Fatalf("err = %v, want ErrInvalidOutput", err)
 	}
 	if stub.calls() != 2 {
@@ -963,7 +963,7 @@ func TestExpandAnswersRetriesABlankSlotPhrase(t *testing.T) {
 		respondText(expandedAnswer)(w, r, call, body)
 	})
 
-	got, err := ExpandAnswers(context.Background(), client, brunchAnswers, "")
+	got, err := ExpandAnswers(context.Background(), client, brunchAnswers, "", true)
 	if err != nil || got.Slots.Shoe != "tan sandals" {
 		t.Fatalf("got %+v, %v; want the second answer", got, err)
 	}
@@ -975,7 +975,29 @@ func TestExpandAnswersRetriesABlankSlotPhrase(t *testing.T) {
 func TestExpandAnswersGivesUpAfterTwoBlankSlotPhrases(t *testing.T) {
 	client, stub := newStubClient(t, fastRetry, respondText(strings.Replace(expandedAnswer, `"straw hat"`, `""`, 1)))
 
-	if _, err := ExpandAnswers(context.Background(), client, brunchAnswers, ""); !errors.Is(err, ErrInvalidOutput) {
+	if _, err := ExpandAnswers(context.Background(), client, brunchAnswers, "", true); !errors.Is(err, ErrInvalidOutput) {
+		t.Fatalf("err = %v, want ErrInvalidOutput", err)
+	}
+	if stub.calls() != 2 {
+		t.Errorf("made %d requests, want 2", stub.calls())
+	}
+}
+
+func TestExpandAnswersAcceptsABlankOnePieceWhenOnePiecesAreLeftOut(t *testing.T) {
+	client, stub := newStubClient(t, fastRetry, respondText(strings.Replace(expandedAnswer, `"floral midi dress"`, `""`, 1)))
+
+	if _, err := ExpandAnswers(context.Background(), client, brunchAnswers, "", false); err != nil {
+		t.Fatalf("ExpandAnswers: %v", err)
+	}
+	if stub.calls() != 1 {
+		t.Errorf("made %d requests, want 1", stub.calls())
+	}
+}
+
+func TestExpandAnswersRetriesABlankOnePieceWhenOnePiecesAreIncluded(t *testing.T) {
+	client, stub := newStubClient(t, fastRetry, respondText(strings.Replace(expandedAnswer, `"floral midi dress"`, `""`, 1)))
+
+	if _, err := ExpandAnswers(context.Background(), client, brunchAnswers, "", true); !errors.Is(err, ErrInvalidOutput) {
 		t.Fatalf("err = %v, want ErrInvalidOutput", err)
 	}
 	if stub.calls() != 2 {
@@ -986,7 +1008,7 @@ func TestExpandAnswersGivesUpAfterTwoBlankSlotPhrases(t *testing.T) {
 func TestExpandAnswersDoesNotRetryOtherErrors(t *testing.T) {
 	client, stub := newStubClient(t, fastRetry, respondStatus(http.StatusBadRequest))
 
-	_, err := ExpandAnswers(context.Background(), client, brunchAnswers, "")
+	_, err := ExpandAnswers(context.Background(), client, brunchAnswers, "", true)
 	if err == nil || errors.Is(err, ErrInvalidOutput) {
 		t.Fatalf("err = %v, want the gateway's 400", err)
 	}
@@ -1000,14 +1022,15 @@ func TestExpandAnswersRejectsMissingFields(t *testing.T) {
 		name   string
 		answer string
 	}{
-		{name: "missing nice_tags", answer: `{"slots":{"top":"a","bottom":"b","accessory":"c","shoe":"d"},"exclude_tags":[]}`},
-		{name: "missing slot", answer: `{"slots":{"top":"a","bottom":"b","accessory":"c"},"exclude_tags":[],"nice_tags":[]}`},
+		{name: "missing nice_tags", answer: `{"slots":{"top":"a","bottom":"b","one_piece":"e","accessory":"c","shoe":"d"},"exclude_tags":[]}`},
+		{name: "missing one_piece", answer: `{"slots":{"top":"a","bottom":"b","accessory":"c","shoe":"d"},"exclude_tags":[],"nice_tags":[]}`},
+		{name: "missing slot", answer: `{"slots":{"top":"a","bottom":"b","one_piece":"e","accessory":"c"},"exclude_tags":[],"nice_tags":[]}`},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			client, _ := newStubClient(t, fastRetry, respondText(tt.answer))
-			if _, err := ExpandAnswers(context.Background(), client, brunchAnswers, ""); !errors.Is(err, ErrInvalidOutput) {
+			if _, err := ExpandAnswers(context.Background(), client, brunchAnswers, "", true); !errors.Is(err, ErrInvalidOutput) {
 				t.Fatalf("err = %v, want ErrInvalidOutput", err)
 			}
 		})
@@ -1023,7 +1046,7 @@ func TestExpandAnswersRetriesA503(t *testing.T) {
 		writeCompletion(w, expandedAnswer, "stop")
 	})
 
-	got, err := ExpandAnswers(context.Background(), client, brunchAnswers, "")
+	got, err := ExpandAnswers(context.Background(), client, brunchAnswers, "", true)
 	if err != nil || got.Slots.Top != "light pastel blouse" {
 		t.Fatalf("got %+v, %v; want the answer after one retry", got, err)
 	}
@@ -1043,7 +1066,7 @@ func TestExpandAnswersLogsUsageButNotContent(t *testing.T) {
 
 	answer := strings.Replace(expandedAnswer, "straw hat", answerSentinel, 1)
 	client, _ := newStubClient(t, fastRetry, respondText(answer))
-	if _, err := ExpandAnswers(context.Background(), client, map[string]string{"occasion": occasionSentinel}, ""); err != nil {
+	if _, err := ExpandAnswers(context.Background(), client, map[string]string{"occasion": occasionSentinel}, "", true); err != nil {
 		t.Fatalf("ExpandAnswers: %v", err)
 	}
 

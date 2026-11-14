@@ -6,6 +6,7 @@ import (
 	"birdie-and-claire/internal/errs"
 	"birdie-and-claire/internal/models"
 	"birdie-and-claire/internal/services"
+	"birdie-and-claire/internal/utils/pagination"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/google/uuid"
@@ -26,11 +27,11 @@ type CreateCollectionInput struct {
 	}
 }
 
-type CollectionOutput struct {
-	Body models.CollectionResponse
+type CollectionSummaryOutput struct {
+	Body models.CollectionSummaryResponse
 }
 
-func (c *CollectionController) Create(ctx context.Context, input *CreateCollectionInput) (*CollectionOutput, error) {
+func (c *CollectionController) Create(ctx context.Context, input *CreateCollectionInput) (*CollectionSummaryOutput, error) {
 	collection, err := c.service.Create(ctx, models.CreateCollectionParams{
 		Name:        input.Body.Name,
 		Description: input.Body.Description,
@@ -38,35 +39,56 @@ func (c *CollectionController) Create(ctx context.Context, input *CreateCollecti
 	if err != nil {
 		return nil, errs.ToHuma(ctx, err)
 	}
-	return &CollectionOutput{Body: collection}, nil
+	return &CollectionSummaryOutput{Body: collection}, nil
 }
 
-type ListCollectionsOutput struct {
-	Body models.ListCollectionsResponse
+type ListUserCollectionsInput struct {
+	pagination.CursorParams
 }
 
-func (c *CollectionController) List(ctx context.Context, _ *struct{}) (*ListCollectionsOutput, error) {
-	collections, err := c.service.List(ctx)
+type ListUserCollectionsOutput struct {
+	Body pagination.Page[models.CollectionSummaryResponse]
+}
+
+func (c *CollectionController) ListUserCollections(ctx context.Context, input *ListUserCollectionsInput) (*ListUserCollectionsOutput, error) {
+	page, err := c.service.ListUserCollections(ctx, input.CursorParams)
 	if err != nil {
 		return nil, errs.ToHuma(ctx, err)
 	}
-	return &ListCollectionsOutput{Body: collections}, nil
+	return &ListUserCollectionsOutput{Body: page}, nil
 }
 
 type CollectionIDInput struct {
 	ID uuid.UUID `path:"id" doc:"Collection ID"`
 }
 
-type CollectionDetailOutput struct {
-	Body models.CollectionDetailResponse
+type CollectionOutput struct {
+	Body models.Collection
 }
 
-func (c *CollectionController) Get(ctx context.Context, input *CollectionIDInput) (*CollectionDetailOutput, error) {
+func (c *CollectionController) Get(ctx context.Context, input *CollectionIDInput) (*CollectionOutput, error) {
 	collection, err := c.service.Get(ctx, input.ID)
 	if err != nil {
 		return nil, errs.ToHuma(ctx, err)
 	}
-	return &CollectionDetailOutput{Body: collection}, nil
+	return &CollectionOutput{Body: collection}, nil
+}
+
+type ListCollectionOutfitsInput struct {
+	CollectionIDInput
+	pagination.CursorParams
+}
+
+type ListCollectionOutfitsOutput struct {
+	Body pagination.Page[models.OutfitResponse]
+}
+
+func (c *CollectionController) ListCollectionOutfits(ctx context.Context, input *ListCollectionOutfitsInput) (*ListCollectionOutfitsOutput, error) {
+	page, err := c.service.ListCollectionOutfits(ctx, input.ID, input.CursorParams)
+	if err != nil {
+		return nil, errs.ToHuma(ctx, err)
+	}
+	return &ListCollectionOutfitsOutput{Body: page}, nil
 }
 
 type UpdateCollectionInput struct {

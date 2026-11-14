@@ -8,7 +8,7 @@ import {
   listCollectionsOptions,
   listCollectionsQueryKey,
 } from "@/api/generated/@tanstack/react-query.gen";
-import type { CollectionResponse } from "@/api/generated/types.gen";
+import type { CollectionSummaryResponse } from "@/api/generated/types.gen";
 import { Button, CollectionCard, EmptyState, ErrorState, Spinner, useToast } from "@/design-system";
 import { CollectionFormDialog } from "@/features/collections/collection-form-dialog";
 import { EditCollection } from "@/features/collections/edit-collection";
@@ -21,7 +21,7 @@ export const Route = createFileRoute("/_signedIn/_onboarded/profile/collections/
 // The card has three image slots, and the API sends up to four thumbnails.
 const CARD_IMAGE_COUNT = 3;
 
-type Editing = { collection: CollectionResponse; startWith: "edit" | "delete" };
+type Editing = { collection: CollectionSummaryResponse; startWith: "edit" | "delete" };
 
 function CollectionsPage() {
   const navigate = useNavigate();
