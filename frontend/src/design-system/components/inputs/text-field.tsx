@@ -1,11 +1,17 @@
 import { Field } from "@base-ui/react/field";
 import { Input as BaseInput } from "@base-ui/react/input";
+import type { Icon } from "@phosphor-icons/react";
 import { useId, type ComponentProps } from "react";
-import { Text } from "@/design-system/primitives/text";
+import {
+  fieldBoxClasses,
+  fieldHelperClasses,
+  fieldLabelClasses,
+  fieldTextClasses,
+} from "@/design-system/components/inputs/field-classes";
+import { Box } from "@/design-system/primitives/box";
 import { joinClasses } from "@/design-system/utils/join-classes";
 
-const inputClasses =
-  "rounded-sm border bg-background px-sm py-xs text-body text-primary focus-ring data-[disabled]:opacity-disabled disabled:opacity-disabled";
+const iconSize = 16;
 
 type SharedProps = {
   label: string;
@@ -13,89 +19,60 @@ type SharedProps = {
   hideLabel?: boolean;
   value: string;
   onValueChange?: (value: string) => void;
-  /** Shown under the field, which is then marked invalid. */
+  /** Shown under the field in place of `helper`, which is then marked invalid. */
   error?: string;
+  helper?: string;
+  leadingIcon?: Icon;
+  trailingIcon?: Icon;
   className?: string;
 };
 
-type SingleLineProps = SharedProps &
-  Omit<ComponentProps<"input">, keyof SharedProps | "onChange"> & { multiline?: false };
+type TextFieldProps = SharedProps & Omit<ComponentProps<"input">, keyof SharedProps | "onChange">;
 
-type MultilineProps = SharedProps &
-  Omit<ComponentProps<"textarea">, keyof SharedProps | "onChange"> & { multiline: true };
-
-type TextFieldProps = SingleLineProps | MultilineProps;
-
-export function TextField(props: TextFieldProps) {
-  const errorId = useId();
-  const labelClasses = "flex flex-col gap-xxs text-body";
-  const classes = joinClasses(labelClasses, props.className);
-
-  const label = (
-    <Field.Label className={props.hideLabel ? "sr-only" : undefined}>{props.label}</Field.Label>
-  );
+export function TextField({
+  label,
+  hideLabel,
+  error,
+  helper,
+  leadingIcon: LeadingIcon,
+  trailingIcon: TrailingIcon,
+  className,
+  disabled = false,
+  ...inputProps
+}: TextFieldProps) {
+  const messageId = useId();
+  const message = error ?? helper;
+  const state = { disabled, invalid: Boolean(error) };
 
   // Added to the caller's aria-describedby, not in place of it.
-  let describedBy = props["aria-describedby"];
+  let describedBy = inputProps["aria-describedby"];
 
-  if (props.error) {
-    describedBy = describedBy ? `${describedBy} ${errorId}` : errorId;
+  if (message) {
+    describedBy = describedBy ? `${describedBy} ${messageId}` : messageId;
   }
-
-  const errorProps = {
-    "aria-invalid": props.error ? true : undefined,
-    "aria-describedby": describedBy,
-  };
-
-  const errorText = props.error && (
-    <Text variant="caption" id={errorId} className="text-error">
-      {props.error}
-    </Text>
-  );
-
-  if (props.multiline) {
-    const {
-      label: _label,
-      hideLabel: _hideLabel,
-      value,
-      onValueChange,
-      multiline: _multiline,
-      className: _className,
-      error: _error,
-      ...textareaProps
-    } = props;
-
-    return (
-      <Field.Root className={classes}>
-        {label}
-        {/* Base UI's Input types its props for an <input>, so the textarea's own attributes, like
-            rows, go on the rendered element. Its props win over Input's when both set one, which
-            is why errorProps, with the combined aria-describedby, comes last there. */}
-        <BaseInput
-          render={<textarea {...textareaProps} {...errorProps} />}
-          value={value}
-          onValueChange={onValueChange}
-          className={inputClasses}
-        />
-        {errorText}
-      </Field.Root>
-    );
-  }
-
-  const {
-    label: _label,
-    hideLabel: _hideLabel,
-    multiline: _multiline,
-    className: _className,
-    error: _error,
-    ...inputProps
-  } = props;
 
   return (
-    <Field.Root className={classes}>
-      {label}
-      <BaseInput {...inputProps} {...errorProps} className={inputClasses} />
-      {errorText}
+    <Field.Root disabled={disabled} className={joinClasses("flex flex-col gap-xs", className)}>
+      <Field.Label className={hideLabel ? "sr-only" : fieldLabelClasses}>{label}</Field.Label>
+      <Box className={`flex h-xxl items-center gap-xs px-sm ${fieldBoxClasses(state)}`}>
+        {LeadingIcon && (
+          <LeadingIcon size={iconSize} aria-hidden="true" className="shrink-0 text-secondary" />
+        )}
+        <BaseInput
+          {...inputProps}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy}
+          className={`min-w-0 flex-1 bg-transparent ${fieldTextClasses}`}
+        />
+        {TrailingIcon && (
+          <TrailingIcon size={iconSize} aria-hidden="true" className="shrink-0 text-secondary" />
+        )}
+      </Box>
+      {message && (
+        <Box id={messageId} className={fieldHelperClasses(state)}>
+          {message}
+        </Box>
+      )}
     </Field.Root>
   );
 }

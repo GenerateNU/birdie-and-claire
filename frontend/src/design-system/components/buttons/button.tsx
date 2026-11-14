@@ -4,6 +4,7 @@ import { motion } from "motion/react";
 import type { MouseEventHandler } from "react";
 import {
   buttonClasses,
+  buttonIconSize,
   type ButtonSize,
   type ButtonVariant,
 } from "@/design-system/components/buttons/variant";
@@ -38,8 +39,7 @@ export function Button({
   disabled = false,
   className,
 }: ButtonProps) {
-  const hasIcon = LeadingIcon !== undefined || TrailingIcon !== undefined;
-  const classes = joinClasses(buttonClasses(variant, size, hasIcon), className);
+  const classes = joinClasses(buttonClasses(variant, size), className);
 
   return (
     <BaseButton
@@ -52,9 +52,9 @@ export function Button({
       aria-label={loading ? undefined : accessibleLabel}
       className={classes}
     >
-      {LeadingIcon && !loading && <LeadingIcon aria-hidden="true" />}
+      {LeadingIcon && !loading && <LeadingIcon size={buttonIconSize[size]} aria-hidden="true" />}
       {loading ? loadingLabel : label}
-      {TrailingIcon && !loading && <TrailingIcon aria-hidden="true" />}
+      {TrailingIcon && !loading && <TrailingIcon size={buttonIconSize[size]} aria-hidden="true" />}
     </BaseButton>
   );
 }

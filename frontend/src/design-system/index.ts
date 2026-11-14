@@ -12,41 +12,75 @@ export { TextButton } from "@/design-system/components/buttons/text-button";
 
 export { Toggle } from "@/design-system/components/buttons/toggle";
 
+export { AddTile } from "@/design-system/components/cards/add-tile";
+
 export { CardImage } from "@/design-system/components/cards/card-image";
 
-export { ImageCard } from "@/design-system/components/cards/image-card";
+export { CollectionCard } from "@/design-system/components/cards/collection-card";
+
+export { ImageOptionCard } from "@/design-system/components/cards/image-option-card";
+
+export { ItemCard } from "@/design-system/components/cards/item-card";
 
 export { ListCard } from "@/design-system/components/cards/list-card";
 
-export { OptionCardGroup } from "@/design-system/components/cards/option-card-group";
+export { OutfitCard } from "@/design-system/components/cards/outfit-card";
+
+export { PieceRow } from "@/design-system/components/cards/piece-row";
+
+export { Chip } from "@/design-system/components/chips/chip";
+
+export { ChoiceGroup } from "@/design-system/components/choices/choice-group";
+
+export { OptionTileGroup } from "@/design-system/components/choices/option-tile-group";
 
 export { CodeInput } from "@/design-system/components/inputs/code-input";
 
 export { SearchField } from "@/design-system/components/inputs/search-field";
 
+export { SegmentedControl } from "@/design-system/components/inputs/segmented-control";
+
+export { TextArea } from "@/design-system/components/inputs/text-area";
+
 export { TextField } from "@/design-system/components/inputs/text-field";
 
 export { Link } from "@/design-system/components/links/link";
+
+export { TextLink } from "@/design-system/components/links/text-link";
 
 export { Logo } from "@/design-system/components/logo/logo";
 
 export { Tabs } from "@/design-system/components/tabs/tabs";
 
-export { Dialog } from "@/design-system/components/dialog/dialog";
-
 export { Form } from "@/design-system/components/form/form";
 
 export { Header } from "@/design-system/components/header/header";
 
-export { Empty } from "@/design-system/components/status/empty";
+export { Menu } from "@/design-system/components/menu/menu";
+
+export { MenuItem } from "@/design-system/components/menu/menu-item";
+
+export { MenuPanel } from "@/design-system/components/menu/menu-panel";
+
+export { Modal } from "@/design-system/components/modal/modal";
+
+export { ModalPanel } from "@/design-system/components/modal/modal-panel";
+
+export { Scrim } from "@/design-system/components/modal/scrim";
+
+export { EmptyState } from "@/design-system/components/status/empty-state";
 
 export { ErrorState } from "@/design-system/components/status/error";
 
 export { ProgressBar } from "@/design-system/components/status/progress-bar";
 
+export { ProgressStepper } from "@/design-system/components/status/progress-stepper";
+
 export { Spinner } from "@/design-system/components/status/spinner";
 
 export { Skeleton } from "@/design-system/components/status/skeleton";
+
+export { Toast } from "@/design-system/components/toast/toast";
 
 export { ToastProvider, useToast } from "@/design-system/components/toast/toast-manager";
 

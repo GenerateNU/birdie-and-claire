@@ -6,12 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
+	"birdie-and-claire/internal/models"
 )
 
 const (
 	dotpromptMarker = "<<<dotprompt:"
-	// the answer is four short phrases and two short tag lists; this bounds what a padded answer can bill
-	expandAnswersMaxOutputTokens = 512
 	// the default free model sometimes answers {}, and in replays it never did so twice for the same answers
 	expandAnswersAttempts = 2
 	stylePreferencesLabel = "saved preferences"
@@ -20,7 +20,8 @@ const (
 type expandAnswersInput struct {
 	Answers string `json:"answers"`
 	// the template can't see inside the encoded answers, so this tells it whether to explain the saved preferences key
-	HasStylePreferences bool `json:"has_style_preferences"`
+	HasStylePreferences bool               `json:"has_style_preferences"`
+	TagVocabulary       models.ProductTags `json:"tag_vocabulary"`
 }
 
 // ExpandAnswers takes answers keyed by their prompt label, and stylePreferences as one line built from fixed option
@@ -41,10 +42,12 @@ func ExpandAnswers(ctx context.Context, client Client, answers map[string]string
 	}
 
 	req := Request{
-		promptName:      "expand_answers",
-		promptInput:     expandAnswersInput{Answers: string(encoded), HasStylePreferences: stylePreferences != ""},
-		maxOutputTokens: expandAnswersMaxOutputTokens,
-		noReasoning:     true,
+		promptName: "expand_answers",
+		promptInput: expandAnswersInput{
+			Answers:             string(encoded),
+			HasStylePreferences: stylePreferences != "",
+			TagVocabulary:       models.ProductTagValues,
+		},
 	}
 	for range expandAnswersAttempts {
 		var expandedAnswers ExpandedAnswers

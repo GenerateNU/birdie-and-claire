@@ -1,49 +1,70 @@
-import { Toast as BaseToast, type ToastObject } from "@base-ui/react/toast";
+import { CheckIcon, XIcon } from "@phosphor-icons/react";
+import type { ReactNode } from "react";
 
-import { Button } from "@/design-system/components/buttons/button";
-import { CloseButton } from "@/design-system/components/buttons/close-button";
-import { cardFrameClasses } from "@/design-system/components/cards/card-classes";
 import { Box } from "@/design-system/primitives/box";
+import { joinClasses } from "@/design-system/utils/join-classes";
 
-export type ToastVariant = "neutral" | "success";
+export type ToastVariant = "neutral" | "success" | "error";
 
 export type ToastAction = {
   label: string;
   onClick: () => void;
 };
 
-export type ToastData = {
-  action?: ToastAction;
-};
+// Success looks like neutral except for its check icon.
+const variantClasses = {
+  neutral: "bg-primary",
+  success: "bg-primary",
+  error: "bg-error",
+} as const;
 
-const rootClasses = `${cardFrameClasses} flex items-start gap-md p-md data-[type=success]:border-success data-[limited]:hidden motion-safe:transition-opacity motion-safe:data-[starting-style]:opacity-0 motion-safe:data-[ending-style]:opacity-0`;
+const variantIcons = {
+  neutral: null,
+  success: CheckIcon,
+  error: XIcon,
+} as const;
 
 type ToastProps = {
-  toast: ToastObject<ToastData>;
+  variant: ToastVariant;
+  message: ReactNode;
+  action?: ToastAction;
+  /** Shows the close button. */
+  onClose?: () => void;
+  className?: string;
 };
 
-export function Toast({ toast }: ToastProps) {
-  const toastManager = BaseToast.useToastManager();
-  const action = toast.data?.action;
+/** The toast itself, without the timer or the stack it sits in, so it can also sit in the page. */
+export function Toast({ variant, message, action, onClose, className }: ToastProps) {
+  const VariantIcon = variantIcons[variant];
 
   return (
-    <BaseToast.Root toast={toast} className={rootClasses}>
-      <Box className="flex flex-1 flex-col gap-xxs">
-        <BaseToast.Title className="text-body" />
-        <BaseToast.Description className="text-caption text-secondary" />
-      </Box>
-      {action && (
-        <Button
-          label={action.label}
-          variant="secondary"
-          size="sm"
-          onClick={() => {
-            action.onClick();
-            toastManager.close(toast.id);
-          }}
-        />
+    <Box
+      className={joinClasses(
+        `${variantClasses[variant]} flex min-h-xxxl max-w-content-md items-center gap-sm py-xs pl-md pr-sm text-inverse shadow-toast`,
+        className,
       )}
-      <BaseToast.Close render={<CloseButton />} />
-    </BaseToast.Root>
+    >
+      {VariantIcon && <VariantIcon size={16} aria-hidden="true" />}
+      <span className="text-label-l">{message}</span>
+      {action && (
+        <button
+          type="button"
+          onClick={action.onClick}
+          className="whitespace-nowrap text-label-m uppercase hover:underline focus-ring focus-visible:outline-focus-inverse"
+        >
+          {action.label}
+        </button>
+      )}
+      {onClose && (
+        <button
+          type="button"
+          aria-label="Close"
+          onClick={onClose}
+          className="focus-ring focus-visible:outline-focus-inverse"
+        >
+          <XIcon size={16} aria-hidden="true" />
+        </button>
+      )}
+    </Box>
   );
 }

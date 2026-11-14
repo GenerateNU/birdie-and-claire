@@ -79,7 +79,7 @@ export function useAuthFlow() {
     setBusy(false);
 
     if (error) {
-      toast.show({ message: "Couldn't send the code. Try again." });
+      toast.show({ message: "Couldn't send the code. Try again.", variant: "error" });
 
       return;
     }
@@ -140,7 +140,7 @@ export function useAuthFlow() {
     }
 
     if (error) {
-      toast.show({ message: "Couldn't verify the code. Try again." });
+      toast.show({ message: "Couldn't verify the code. Try again.", variant: "error" });
 
       return;
     }
@@ -169,7 +169,10 @@ export function useAuthFlow() {
             return;
           }
 
-          toast.show({ message: "Couldn't create your account, please enter your name again" });
+          toast.show({
+            message: "Couldn't create your account, please enter your name again",
+            variant: "error",
+          });
           // A router navigation, not a page load, so the toast stays on screen.
           await navigate({ to: "/create-account" });
         },

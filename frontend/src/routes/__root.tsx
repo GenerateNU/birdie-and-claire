@@ -4,7 +4,7 @@ import { createRootRouteWithContext, Outlet, useRouterState } from "@tanstack/re
 import { useAnimate, useReducedMotion } from "motion/react";
 import { useEffect, useRef } from "react";
 
-import { Box, Link, Page, Text } from "@/design-system";
+import { Box, Page, Text, TextLink } from "@/design-system";
 
 type RouterContext = { queryClient: QueryClient };
 
@@ -49,9 +49,9 @@ function NotFound() {
       <Text variant="heading" className="mb-xs">
         Page not found
       </Text>
-      <Link variant="text" to="/" leadingIcon={CaretLeft}>
+      <TextLink to="/" leadingIcon={CaretLeft}>
         Home
-      </Link>
+      </TextLink>
     </Page>
   );
 }
