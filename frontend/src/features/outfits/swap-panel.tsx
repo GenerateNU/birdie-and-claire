@@ -8,7 +8,7 @@ import {
   EmptyState,
   ErrorState,
   IconButton,
-  ImageCard,
+  ImageOptionCard,
   SearchField,
   Spinner,
   Tabs,
@@ -195,7 +195,7 @@ function SuggestedTiles({
   return (
     <Box className="grid grid-cols-3 gap-md">
       {tiles.map((product) => (
-        <ImageCard
+        <ImageOptionCard
           key={product.id}
           label={product.title}
           src={product.image_url}

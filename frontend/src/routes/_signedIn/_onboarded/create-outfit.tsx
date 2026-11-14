@@ -14,7 +14,7 @@ import {
   Button,
   ChoiceGroup,
   EmptyState,
-  ImageCard,
+  ImageOptionCard,
   ListCard,
   OptionTileGroup,
   Page,
@@ -213,7 +213,7 @@ function CreateOutfit() {
       <Text variant="heading">What's the occasion?</Text>
       <Box className="grid w-full max-w-content-xl grid-cols-2 gap-md md:grid-cols-4">
         {occasions.map(({ name, src }) => (
-          <ImageCard
+          <ImageOptionCard
             key={name}
             label={name}
             src={src}

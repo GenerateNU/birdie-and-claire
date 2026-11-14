@@ -16,6 +16,7 @@ import { useState, type ReactNode } from "react";
 import { z } from "zod";
 
 import {
+  AddTile,
   Avatar,
   BackgroundColor,
   BorderColor,
@@ -25,6 +26,7 @@ import {
   Chip,
   ChoiceGroup,
   CodeInput,
+  CollectionCard,
   Divider,
   EmptyState,
   Form,
@@ -32,7 +34,8 @@ import {
   IconButton,
   OutlineColor,
   ErrorState,
-  ImageCard,
+  ImageOptionCard,
+  ItemCard,
   Link,
   ListCard,
   Logo,
@@ -42,6 +45,8 @@ import {
   Modal,
   ModalPanel,
   OptionTileGroup,
+  OutfitCard,
+  PieceRow,
   ProgressBar,
   ProgressStepper,
   RadioGroup,
@@ -76,6 +81,7 @@ const hifiTypeSamples = [
   { scale: "heading-l", className: "text-heading-l font-serif" },
   { scale: "heading-m", className: "text-heading-m font-serif" },
   { scale: "heading-s", className: "text-heading-s" },
+  { scale: "heading-m-italic", className: "text-heading-m-italic font-serif italic" },
   { scale: "body-l", className: "text-body-l" },
   { scale: "body-m", className: "text-body-m" },
   { scale: "body-s", className: "text-body-s" },
@@ -126,7 +132,12 @@ const sectionTitles = {
   form: "Form",
   "search-field": "Search field",
   "code-input": "Code input",
-  "image-card": "Image card",
+  "image-option-card": "Image option card",
+  "add-tile": "Add tile",
+  "item-card": "Item card",
+  "collection-card": "Collection card",
+  "outfit-card": "Outfit card",
+  "piece-row": "Piece row",
   "list-card": "List card",
   spinner: "Spinner",
   "progress-bar": "Progress bar",
@@ -170,7 +181,12 @@ const navGroups = [
       "form",
       "search-field",
       "code-input",
-      "image-card",
+      "image-option-card",
+      "add-tile",
+      "item-card",
+      "collection-card",
+      "outfit-card",
+      "piece-row",
       "list-card",
       "spinner",
       "progress-bar",
@@ -395,8 +411,40 @@ export function Playground() {
               <CodeInputExamples />
             </Section>
 
-            <Section id="image-card">
-              <ImageCardExamples />
+            <Section id="image-option-card">
+              <Stage>
+                <ImageOptionCardExamples />
+              </Stage>
+            </Section>
+
+            <Section id="add-tile">
+              <Stage>
+                <AddTileExamples />
+              </Stage>
+            </Section>
+
+            <Section id="item-card">
+              <Stage>
+                <ItemCardExamples />
+              </Stage>
+            </Section>
+
+            <Section id="collection-card">
+              <Stage>
+                <CollectionCardExamples />
+              </Stage>
+            </Section>
+
+            <Section id="outfit-card">
+              <Stage>
+                <OutfitCardExamples />
+              </Stage>
+            </Section>
+
+            <Section id="piece-row">
+              <Stage>
+                <PieceRowExamples />
+              </Stage>
             </Section>
 
             <Section id="list-card">
@@ -1190,24 +1238,313 @@ function SearchFieldExamples() {
   );
 }
 
-function ImageCardExamples() {
+// Literal class names so Tailwind generates them. A card shows its hover look through overlays that
+// the pointer would have to hover, so they are forced directly.
+const forcedCardHover = "[&_[data-card-wash]]:!opacity-wash [&_[data-card-hover]]:!opacity-100";
+
+const cardStates = [
+  { name: "default", forced: "", selected: false, disabled: false },
+  { name: "hover", forced: forcedCardHover, selected: false, disabled: false },
+  { name: "selected", forced: "", selected: true, disabled: false },
+  { name: "disabled", forced: "", selected: false, disabled: true },
+] as const;
+
+const sampleMenu = {
+  label: "Card actions",
+  actions: [
+    { label: "Edit", onSelect: () => {} },
+    { label: "Delete", onSelect: () => {}, destructive: true },
+  ],
+};
+
+function ImageOptionCardExamples() {
   const [pressed, setPressed] = useState(false);
 
   return (
-    <Box className="grid max-w-content-lg grid-cols-3 gap-md">
-      <ImageCard
-        label="Pressable"
+    <Box className="flex flex-col gap-xl p-sm">
+      {(["single", "multi"] as const).map((selection) =>
+        (["lg", "sm"] as const).map((size) => (
+          <Box key={`${selection}-${size}`} className="flex flex-col gap-md">
+            <Box className="flex flex-wrap items-start gap-xl">
+              {cardStates.map((state) => (
+                <Box key={state.name} className={state.forced}>
+                  <ImageOptionCard
+                    label="Title"
+                    subtitle="Description"
+                    src={samplePhoto}
+                    pressed={state.selected}
+                    onPressedChange={() => {}}
+                    size={size}
+                    selection={selection}
+                    disabled={state.disabled}
+                  />
+                </Box>
+              ))}
+            </Box>
+            <Label>
+              {selection} · {size} · default · hover · selected · disabled
+            </Label>
+          </Box>
+        )),
+      )}
+      <Box className="flex flex-wrap items-start gap-xl">
+        <ImageOptionCard
+          label="No subtitle"
+          src={samplePhoto}
+          pressed={false}
+          onPressedChange={() => {}}
+          size="sm"
+        />
+        <ImageOptionCard
+          label="No image"
+          subtitle="Empty photo"
+          src={null}
+          pressed={false}
+          onPressedChange={() => {}}
+          size="sm"
+        />
+        <ImageOptionCard
+          label="Failed load"
+          subtitle="Empty photo"
+          src="/missing-photo.png"
+          pressed={false}
+          onPressedChange={() => {}}
+          size="sm"
+        />
+        <Box className="w-card-lg">
+          <ImageOptionCard
+            label="Fill, interactive"
+            subtitle="Takes its container's width"
+            src={samplePhoto}
+            pressed={pressed}
+            onPressedChange={setPressed}
+            selection="multi"
+          />
+        </Box>
+      </Box>
+      <Label>no subtitle · no image · failed load · fill and interactive</Label>
+    </Box>
+  );
+}
+
+function AddTileExamples() {
+  return (
+    <Box className="flex flex-col gap-xl">
+      {(["lg", "sm"] as const).map((size) => (
+        <Box key={size} className="flex flex-col gap-md">
+          <Box className="flex flex-wrap items-start gap-xl">
+            <AddTile size={size} title="Something else?" label="Add your own" onClick={() => {}} />
+            <Box className="[&_button]:!bg-hover">
+              <AddTile
+                size={size}
+                title="Something else?"
+                label="Add your own"
+                onClick={() => {}}
+              />
+            </Box>
+            <AddTile size={size} label="Add your own" onClick={() => {}} />
+          </Box>
+          <Label>{size} · default · hover · no title</Label>
+        </Box>
+      ))}
+    </Box>
+  );
+}
+
+function ItemCardExamples() {
+  const [selected, setSelected] = useState(false);
+
+  return (
+    <Box className="flex flex-col gap-xl p-sm">
+      {(["md", "sm"] as const).map((size) => (
+        <Box key={size} className="flex flex-col gap-md">
+          <Box className="flex flex-wrap items-start gap-xl">
+            {cardStates.map((state) => (
+              <Box key={state.name} className={state.forced}>
+                <ItemCard
+                  name="Wrap midi dress"
+                  detail="Owned"
+                  src={samplePhoto}
+                  size={size}
+                  selection={{ selected: state.selected, onSelectedChange: () => {} }}
+                  menu={sampleMenu}
+                  disabled={state.disabled}
+                />
+              </Box>
+            ))}
+          </Box>
+          <Label>{size} · default · hover · selected · disabled</Label>
+        </Box>
+      ))}
+      <Box className="flex flex-wrap items-start gap-xl">
+        <ItemCard name="Wrap midi dress" detail="Birdie & Claire" src={samplePhoto} bcStamp />
+        <ItemCard
+          name="Wrap midi dress"
+          detail="Birdie & Claire"
+          src={samplePhoto}
+          size="sm"
+          bcStamp
+        />
+        <ItemCard name="No detail, no menu" src={samplePhoto} />
+        <ItemCard name="No image" detail="Empty photo" src={null} menu={sampleMenu} />
+        <ItemCard
+          name="Interactive"
+          detail="Click to select"
+          src={samplePhoto}
+          selection={{ selected, onSelectedChange: setSelected }}
+          menu={sampleMenu}
+        />
+      </Box>
+      <Label>B&C stamp md · sm · no detail or menu · no image · interactive</Label>
+    </Box>
+  );
+}
+
+function CollectionCardExamples() {
+  return (
+    <Box className="flex flex-col gap-xl p-sm">
+      <Box className="flex flex-wrap items-start gap-xl">
+        <CollectionCard
+          type="collection"
+          title="Workday"
+          count="5 outfits"
+          images={[samplePhoto, samplePhoto, samplePhoto]}
+          menu={sampleMenu}
+          onOpen={() => {}}
+        />
+        <Box className={forcedCardHover}>
+          <CollectionCard
+            type="collection"
+            title="Workday"
+            count="5 outfits"
+            images={[samplePhoto, samplePhoto, samplePhoto]}
+            menu={sampleMenu}
+            onOpen={() => {}}
+          />
+        </Box>
+      </Box>
+      <Label>collection · default · hover</Label>
+      <Box className="flex flex-wrap items-start gap-xl">
+        <CollectionCard type="new" onClick={() => {}} />
+        <Box className="[&_button]:!bg-hover">
+          <CollectionCard type="new" onClick={() => {}} />
+        </Box>
+      </Box>
+      <Label>new · default · hover</Label>
+      <Box className="flex flex-wrap items-start gap-xl">
+        <CollectionCard
+          type="collection"
+          title="Workday"
+          count="5 outfits"
+          description="Everything I rotate through for the office"
+          images={[samplePhoto, samplePhoto, samplePhoto]}
+          menu={sampleMenu}
+          onOpen={() => {}}
+        />
+        <CollectionCard
+          type="collection"
+          title="Empty"
+          count="0 outfits"
+          images={[]}
+          onOpen={() => {}}
+        />
+        <CollectionCard
+          type="collection"
+          title="One outfit"
+          count="1 outfit"
+          images={[samplePhoto]}
+          onOpen={() => {}}
+        />
+      </Box>
+      <Label>with description · no images or menu · one image</Label>
+    </Box>
+  );
+}
+
+// Outfit cards have no disabled look. Browse has no selected one either.
+const outfitCardStateCount = { browse: 2, single: 3, multi: 3 } as const;
+
+const sampleOutfitPieces = "Houndstooth blazer, black trousers, red sneakers, beret";
+
+function OutfitCardExamples() {
+  const [selected, setSelected] = useState(false);
+
+  return (
+    <Box className="flex flex-col gap-xl p-sm">
+      {(["browse", "single", "multi"] as const).map((mode) => (
+        <Box key={mode} className="flex flex-col gap-md">
+          <Box className="flex flex-wrap items-start gap-xl">
+            {cardStates.slice(0, outfitCardStateCount[mode]).map((state) => (
+              <Box key={state.name} className={state.forced}>
+                {mode === "browse" ? (
+                  <OutfitCard
+                    mode="browse"
+                    title="Work outfit 2"
+                    pieces={sampleOutfitPieces}
+                    src={samplePhoto}
+                    menu={sampleMenu}
+                    onOpen={() => {}}
+                  />
+                ) : (
+                  <OutfitCard
+                    mode={mode}
+                    title="Work outfit 2"
+                    pieces={sampleOutfitPieces}
+                    src={samplePhoto}
+                    selected={state.selected}
+                    onSelectedChange={() => {}}
+                  />
+                )}
+              </Box>
+            ))}
+          </Box>
+          <Label>
+            {mode} · {mode === "browse" ? "default · hover" : "default · hover · selected"}
+          </Label>
+        </Box>
+      ))}
+      <Box className="flex flex-wrap items-start gap-xl">
+        <OutfitCard mode="browse" title="No pieces or menu" src={samplePhoto} onOpen={() => {}} />
+        <OutfitCard
+          mode="browse"
+          title="No image"
+          pieces="A very long list of pieces that is cut off after two lines, no matter how long it gets"
+          src={null}
+          onOpen={() => {}}
+        />
+        <OutfitCard
+          mode="multi"
+          title="Interactive"
+          pieces="Click to select"
+          src={samplePhoto}
+          selected={selected}
+          onSelectedChange={setSelected}
+        />
+      </Box>
+      <Label>no pieces or menu · no image, long pieces · interactive</Label>
+    </Box>
+  );
+}
+
+function PieceRowExamples() {
+  return (
+    <Box className="flex max-w-content-sm flex-col gap-lg">
+      <PieceRow
+        type="owned"
+        name="Wrap midi dress"
+        detail="From where"
         src={samplePhoto}
-        pressed={pressed}
-        onPressedChange={setPressed}
+        action={<TextButton label="Swap" onClick={() => {}} />}
       />
-      <ImageCard label="No image" src={null} pressed={false} onPressedChange={() => {}} />
-      <ImageCard
-        label="Failed load"
-        src="/missing-photo.png"
-        pressed={false}
-        onPressedChange={() => {}}
+      <PieceRow
+        type="bc"
+        name="Wrap midi dress"
+        detail="From where"
+        src={samplePhoto}
+        action={<Button label="Add to cart" variant="secondary" size="sm" />}
       />
+      <PieceRow type="owned" name="No action" detail="From where" src={null} />
+      <Label>owned with swap · B&C with add to cart · owned, no action, no image</Label>
     </Box>
   );
 }

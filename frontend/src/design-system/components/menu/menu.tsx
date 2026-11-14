@@ -16,7 +16,7 @@ type MenuAction = {
   disabled?: boolean;
 };
 
-type MenuProps = {
+export type MenuProps = {
   /** The ⋯ button's accessible name, like "Item actions". */
   label: string;
   /** A divider goes before the first destructive action, so put those last. */
