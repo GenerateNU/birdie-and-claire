@@ -25,13 +25,48 @@ export const ContentWidth = {
 
 export const ScrollAreaHeight = "384px";
 
-// Fixed width and smallest height of an image card (`w-card-*`, `min-h-card-*`), from Figma: sm is
-// the settings cards, lg the onboarding cards. A fixed width makes long labels wrap instead of
-// widening one card.
+// Fixed width and photo height of an image option card (`w-card-*`, `h-card-*`), from Figma: sm is
+// for neckline, bottoms and shoes, lg for occasion and style vibe. A fixed width makes long labels
+// wrap instead of widening one card.
 export const CardSize = {
-  sm: { width: "193px", height: "200px" },
-  lg: { width: "236px", height: "408px" },
+  sm: { width: "140px", photoHeight: "140px" },
+  lg: { width: "236px", photoHeight: "290px" },
 } as const;
+
+// Fixed width and photo height of an item card (`w-item-*`, `h-item-*`), from Figma.
+export const ItemCardSize = {
+  md: { width: "180px", photoHeight: "225px" },
+  sm: { width: "120px", photoHeight: "150px" },
+} as const;
+
+// The B&C stamp on an item card's photo (`size-stamp-*`), from Figma.
+export const StampSize = { md: "48px", sm: "36px" } as const;
+
+// An add tile's fixed size (`w-add-tile-*`, `h-add-tile-*`), from Figma. Lg matches the photo height
+// of an image option card.
+export const AddTileSize = {
+  lg: { width: "196px", height: "290px" },
+  sm: { width: "140px", height: "140px" },
+} as const;
+
+// A collection card's width and collage height (`w-collection`, `h-collection`), and the width of
+// the collage's large image (`w-collage-main`), from Figma. The two stacked images take the rest.
+export const CollectionCardSize = {
+  width: "340px",
+  collageHeight: "255px",
+  mainWidth: "208px",
+} as const;
+
+// An outfit card's width and image height (`w-outfit`, `h-outfit`), from Figma.
+export const OutfitCardSize = { width: "240px", imageHeight: "300px" } as const;
+
+// The thumbnail in a piece row (`w-row-thumbnail`, `h-row-thumbnail`), from Figma.
+export const RowThumbnailSize = { width: "64px", height: "80px" } as const;
+
+// How far a card's overlays reach past its box (`inset-card-ring`, `inset-card-hover`), from Figma:
+// the selected ring's outer edge sits 6px outside the photo (4px gap plus 2px border), the hover
+// outline 10px outside the whole card.
+export const CardOverlayInset = { ring: "-6px", hover: "-10px" } as const;
 
 export const ThumbnailSize = { width: "92px", height: "112px" } as const;
 

@@ -9,7 +9,7 @@ import {
   replaceCurrentUserStylePreferencesMutation,
 } from "@/api/generated/@tanstack/react-query.gen";
 import type { CurrentUserResponse, StylePreferences } from "@/api/generated/types.gen";
-import { Box, Button, ErrorState, ImageCard, Link, Spinner, Text } from "@/design-system";
+import { Box, Button, ErrorState, ImageOptionCard, Link, Spinner, Text } from "@/design-system";
 import {
   fitFields,
   questions,
@@ -174,13 +174,14 @@ function PreferenceRow({ field, preferences, editing, saving, onToggle }: Prefer
       )}
       <Box className="flex flex-wrap gap-md">
         {shownOptions.map((option) => (
-          <ImageCard
+          <ImageOptionCard
             key={option.value}
             label={option.label}
             src={null}
             pressed={picked.includes(option.value)}
             onPressedChange={(pressed) => onToggle(field, option.value, pressed)}
             size="sm"
+            selection="multi"
             disabled={!editing || saving}
           />
         ))}
