@@ -46,7 +46,7 @@ func (s *outfitService) Create(ctx context.Context, params models.CreateOutfitPa
 	if err != nil {
 		return models.OutfitDetailResponse{}, err
 	}
-	return s.detail(ctx, userID, outfit, products)
+	return s.buildDetailResponse(ctx, userID, outfit, products)
 }
 
 func (s *outfitService) Get(ctx context.Context, id uuid.UUID) (models.OutfitDetailResponse, error) {
@@ -55,7 +55,7 @@ func (s *outfitService) Get(ctx context.Context, id uuid.UUID) (models.OutfitDet
 	if err != nil {
 		return models.OutfitDetailResponse{}, err
 	}
-	return s.detail(ctx, userID, outfit, products)
+	return s.buildDetailResponse(ctx, userID, outfit, products)
 }
 
 func (s *outfitService) Update(ctx context.Context, id uuid.UUID, params models.UpdateOutfitParams) (models.OutfitDetailResponse, error) {
@@ -64,12 +64,12 @@ func (s *outfitService) Update(ctx context.Context, id uuid.UUID, params models.
 	if err != nil {
 		return models.OutfitDetailResponse{}, err
 	}
-	return s.detail(ctx, userID, outfit, products)
+	return s.buildDetailResponse(ctx, userID, outfit, products)
 }
 
-// detail adds ownership and cart links to an outfit's products. A product gets a cart link when it is a
+// buildDetailResponse adds ownership and cart links to an outfit's products. A product gets a cart link when it is a
 // Birdie & Claire product that is active, not owned by userID, and has an available variant.
-func (s *outfitService) detail(ctx context.Context, userID uuid.UUID, outfit models.Outfit, products []models.ProductResponse) (models.OutfitDetailResponse, error) {
+func (s *outfitService) buildDetailResponse(ctx context.Context, userID uuid.UUID, outfit models.Outfit, products []models.ProductResponse) (models.OutfitDetailResponse, error) {
 	productIDs := make([]uuid.UUID, 0, len(products))
 	for _, product := range products {
 		productIDs = append(productIDs, product.ID)
