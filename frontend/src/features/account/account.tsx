@@ -6,6 +6,11 @@ import type { CurrentUserResponse } from "@/api/generated/types.gen";
 import { Box, Button, Page, Text } from "@/design-system";
 import { supabase } from "@/lib/supabase";
 
+// Shown for a name error, which is only ever a blank name: the inputs stop at 100 characters. The
+// name's schema comes from the spec, which can't carry wording, so zod's own messages read like
+// "Invalid string: must match pattern /\S/".
+export const NAME_ERROR = "Enter your name.";
+
 /**
  * Where the signed-in user is in sign-up: no row in our users table yet, an account that
  * hasn't finished the onboarding preference steps, or done.
