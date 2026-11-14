@@ -2,13 +2,8 @@ import { ArrowRightIcon } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 
 import { getCurrentUserOptions } from "@/api/generated/@tanstack/react-query.gen";
-import type { CurrentUserResponse } from "@/api/generated/types.gen";
 import { Box, Button, ErrorState, Link, Page, Spinner, Text } from "@/design-system";
-
-// The account has one free-text name, so the first word stands in for a first name.
-function firstName(user: CurrentUserResponse) {
-  return user.name.split(" ")[0];
-}
+import { firstName } from "@/features/account/first-name";
 
 type IntroProps = {
   onStart: () => void;
