@@ -321,51 +321,55 @@ function CreateOutfit() {
     );
   }
 
-  return (
-    <Page className="flex flex-col items-center justify-center gap-xl">
-      <Text variant="display-hifi">What’s the occasion?</Text>
-      <Box className="flex flex-wrap items-start justify-center gap-lg">
-        {occasions.map(({ name, src }) => (
-          <ImageOptionCard
-            key={name}
-            // A wrapping `uppercase` doesn't reach the label: Tailwind's preflight resets
-            // text-transform on buttons, and the card is one.
-            label={name.toUpperCase()}
-            src={src}
-            size="lg"
-            pressed={cardOccasion === name}
-            onPressedChange={(pressed) => selectCard(name, pressed)}
+  if (step === "occasion") {
+    return (
+      <Page className="flex flex-col items-center justify-center gap-xl">
+        <Text variant="display-hifi">What’s the occasion?</Text>
+        <Box className="flex flex-wrap items-start justify-center gap-lg">
+          {occasions.map(({ name, src }) => (
+            <ImageOptionCard
+              key={name}
+              // A wrapping `uppercase` doesn't reach the label: Tailwind's preflight resets
+              // text-transform on buttons, and the card is one.
+              label={name.toUpperCase()}
+              src={src}
+              size="lg"
+              pressed={cardOccasion === name}
+              onPressedChange={(pressed) => selectCard(name, pressed)}
+            />
+          ))}
+          <AddTile title="Something else?" label="Add your own" onClick={openCustomOccasion} />
+        </Box>
+        <Button label="Next" disabled={!canContinue} onClick={continueFromOccasion} />
+        <Modal
+          open={customOccasionOpen}
+          onClose={() => setCustomOccasionOpen(false)}
+          title="Describe your own occasion"
+          dismissible
+          actions={[
+            { label: "Cancel", variant: "ghost", onClick: () => setCustomOccasionOpen(false) },
+            {
+              label: "Confirm",
+              variant: "primary",
+              disabled: customOccasionDraft.trim() === "",
+              onClick: confirmCustomOccasion,
+            },
+          ]}
+        >
+          <TextArea
+            label="Describe the occasion"
+            placeholder="Type here…"
+            // The endpoint caps occasion at 100 characters.
+            maxLength={100}
+            value={customOccasionDraft}
+            onValueChange={setCustomOccasionDraft}
           />
-        ))}
-        <AddTile title="Something else?" label="Add your own" onClick={openCustomOccasion} />
-      </Box>
-      <Button label="Next" disabled={!canContinue} onClick={continueFromOccasion} />
-      <Modal
-        open={customOccasionOpen}
-        onClose={() => setCustomOccasionOpen(false)}
-        title="Describe your own occasion"
-        dismissible
-        actions={[
-          { label: "Cancel", variant: "ghost", onClick: () => setCustomOccasionOpen(false) },
-          {
-            label: "Confirm",
-            variant: "primary",
-            disabled: customOccasionDraft.trim() === "",
-            onClick: confirmCustomOccasion,
-          },
-        ]}
-      >
-        <TextArea
-          label="Describe the occasion"
-          placeholder="Type here…"
-          // The endpoint caps occasion at 100 characters.
-          maxLength={100}
-          value={customOccasionDraft}
-          onValueChange={setCustomOccasionDraft}
-        />
-      </Modal>
-    </Page>
-  );
+        </Modal>
+      </Page>
+    );
+  }
+
+  return step satisfies never;
 }
 
 // The account has one free-text name, so the first word stands in for a first name.
