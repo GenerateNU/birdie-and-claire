@@ -12,14 +12,15 @@ import {
 import {
   Box,
   Button,
-  Empty,
+  ChoiceGroup,
+  EmptyState,
   ImageCard,
   ListCard,
-  OptionCardGroup,
+  OptionTileGroup,
   Page,
   SearchField,
   Text,
-  TextField,
+  TextArea,
   useToast,
 } from "@/design-system";
 
@@ -113,7 +114,7 @@ function CreateOutfit() {
         onNext={() => advanceTo("vibe")}
       >
         <Box className="capitalize">
-          <OptionCardGroup
+          <OptionTileGroup
             label="Weather"
             options={weathers.map((option) => ({ label: option, value: option }))}
             value={weather}
@@ -133,12 +134,11 @@ function CreateOutfit() {
         onNext={() => advanceTo("specifics")}
       >
         <Box className="capitalize">
-          <OptionCardGroup
+          <OptionTileGroup
             label="Vibe"
             options={vibes.map((option) => ({ label: option, value: option }))}
             value={vibe}
             onValueChange={setVibe}
-            className="grid grid-cols-2 gap-md md:grid-cols-5"
           />
         </Box>
       </StepScreen>
@@ -154,15 +154,14 @@ function CreateOutfit() {
         onNext={() => advanceTo("custom")}
       >
         <Box className="flex flex-col gap-lg">
-          <OptionCardGroup
+          <ChoiceGroup
             label="Are there any Birdie & Claire items you would like to style?"
             options={specificsOptions}
             value={specificsAnswer}
             onValueChange={setSpecificsAnswer}
-            className="grid grid-cols-1 gap-md"
           />
           {specificsAnswer === "yes" && (
-            <Empty
+            <EmptyState
               title="Coming soon"
               description="Styling your Birdie & Claire pieces is on its way. Tap Next to keep going."
             />
@@ -180,13 +179,11 @@ function CreateOutfit() {
         onBack={() => setStep("specifics")}
         onNext={() => advanceTo("review")}
       >
-        <TextField
-          multiline
+        <TextArea
           label="Enter any other details you would like considered."
           placeholder="i.e. Outfit for a chill night out with long sleeves and rainy weather"
           // The endpoint caps custom at 200 characters.
           maxLength={200}
-          rows={4}
           value={custom}
           onValueChange={setCustom}
         />
@@ -313,6 +310,7 @@ function Review({ occasion, weather, vibe, custom, onEdit }: ReviewProps) {
         toast.show({
           message:
             "Couldn't build a full outfit for that, try changing the weather, vibe or custom details",
+          variant: "error",
         });
 
         return;
@@ -325,7 +323,10 @@ function Review({ occasion, weather, vibe, custom, onEdit }: ReviewProps) {
         return;
       }
 
-      toast.show({ message: "Couldn't create the outfit", subtitle: "Try again in a moment." });
+      toast.show({
+        message: "Couldn't create the outfit. Try again in a moment.",
+        variant: "error",
+      });
     },
   });
 

@@ -3,10 +3,13 @@ import {
   CaretLeftIcon,
   CaretRightIcon,
   DiamondsFourIcon,
+  EnvelopeSimpleIcon,
   MagnifyingGlassIcon,
   PlusIcon,
   ShareNetworkIcon,
+  SunIcon,
   UserIcon,
+  XIcon,
 } from "@phosphor-icons/react";
 import { useForm } from "@tanstack/react-form";
 import { useState, type ReactNode } from "react";
@@ -19,10 +22,11 @@ import {
   Box,
   Button,
   Checkbox,
+  Chip,
+  ChoiceGroup,
   CodeInput,
-  Dialog,
   Divider,
-  Empty,
+  EmptyState,
   Form,
   Header,
   IconButton,
@@ -32,17 +36,28 @@ import {
   Link,
   ListCard,
   Logo,
-  OptionCardGroup,
+  Menu,
+  MenuItem,
+  MenuPanel,
+  Modal,
+  ModalPanel,
+  OptionTileGroup,
   ProgressBar,
+  ProgressStepper,
   RadioGroup,
+  Scrim,
   SearchField,
+  SegmentedControl,
   StatusColor,
   Spinner,
   Tabs,
   Text,
+  TextArea,
   TextColor,
   TextButton,
   TextField,
+  TextLink,
+  Toast,
   Toggle,
   TypeScale,
   useToast,
@@ -54,9 +69,37 @@ const samplePhoto = `data:image/svg+xml,${encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><defs><linearGradient id="g"><stop stop-color="#000000"/><stop offset="1" stop-color="#FFFFFF"/></linearGradient></defs><rect width="1" height="1" fill="url(#g)"/></svg>',
 )}`;
 
-const buttonVariants = ["primary", "secondary"] as const;
+// Literal class names, so Tailwind generates them. See TypeScale for which styles need font-serif
+// and uppercase.
+const hifiTypeSamples = [
+  { scale: "display", className: "text-display font-serif" },
+  { scale: "heading-l", className: "text-heading-l font-serif" },
+  { scale: "heading-m", className: "text-heading-m font-serif" },
+  { scale: "heading-s", className: "text-heading-s" },
+  { scale: "body-l", className: "text-body-l" },
+  { scale: "body-m", className: "text-body-m" },
+  { scale: "body-s", className: "text-body-s" },
+  { scale: "label-l-strong", className: "text-label-l-strong" },
+  { scale: "label-l", className: "text-label-l" },
+  { scale: "label-m", className: "text-label-m uppercase" },
+  { scale: "label-s", className: "text-label-s uppercase" },
+  { scale: "overline", className: "text-overline uppercase" },
+] as const;
 
-const buttonSizes = ["sm", "md", "lg"] as const;
+const buttonVariants = ["primary", "secondary", "ghost", "destructive"] as const;
+
+const buttonSizes = ["sm", "md"] as const;
+
+// Literal class names so Tailwind generates them. The important modifier makes a resting button
+// show its hover or pressed look, which the pointer can't hold still for a screenshot.
+const forcedButtonStates = {
+  primary: { hover: "!bg-primary-hover", pressed: "!bg-primary-pressed" },
+  secondary: { hover: "!bg-hover", pressed: "!bg-pressed" },
+  ghost: { hover: "!bg-hover", pressed: "!bg-pressed" },
+  destructive: { hover: "!bg-error-hover", pressed: "!bg-error-pressed" },
+} as const;
+
+const iconButtonVariants = ["primary", "secondary", "ghost"] as const;
 
 // The serif variants are named for their role, so their type-scale keys differ.
 const textSamples = [
@@ -75,6 +118,11 @@ const sectionTitles = {
   checkbox: "Checkbox",
   toggle: "Toggle",
   "text-field": "Text field",
+  "text-area": "Text area",
+  chip: "Chip",
+  "segmented-control": "Segmented control",
+  "choice-group": "Choice group",
+  "option-tile-group": "Option tile group",
   form: "Form",
   "search-field": "Search field",
   "code-input": "Code input",
@@ -82,18 +130,22 @@ const sectionTitles = {
   "list-card": "List card",
   spinner: "Spinner",
   "progress-bar": "Progress bar",
-  empty: "Empty",
+  "progress-stepper": "Progress stepper",
+  "empty-state": "Empty state",
   "error-state": "Error state",
   tabs: "Tabs",
   divider: "Divider",
   logo: "Logo",
   "radio-group": "Radio group",
-  "option-card-group": "Option card group",
   avatar: "Avatar",
-  dialog: "Dialog",
+  scrim: "Scrim",
+  modal: "Modal",
+  menu: "Menu",
   toast: "Toast",
   text: "Text",
   "semantic-colors": "Semantic colors",
+  "type-scale": "Type scale",
+  shadows: "Shadows",
   "focus-ring": "Focus ring",
 } as const;
 
@@ -110,6 +162,11 @@ const navGroups = [
       "checkbox",
       "toggle",
       "text-field",
+      "text-area",
+      "chip",
+      "segmented-control",
+      "choice-group",
+      "option-tile-group",
       "form",
       "search-field",
       "code-input",
@@ -117,20 +174,26 @@ const navGroups = [
       "list-card",
       "spinner",
       "progress-bar",
-      "empty",
+      "progress-stepper",
+      "empty-state",
       "error-state",
       "tabs",
       "divider",
       "logo",
       "radio-group",
-      "option-card-group",
       "avatar",
-      "dialog",
+      "scrim",
+      "modal",
+      "menu",
       "toast",
       "text",
     ],
   },
-  { title: "Tokens", hash: "tokens", sections: ["semantic-colors", "focus-ring"] },
+  {
+    title: "Tokens",
+    hash: "tokens",
+    sections: ["semantic-colors", "type-scale", "shadows", "focus-ring"],
+  },
 ] as const;
 
 const radioOptions = [
@@ -178,9 +241,9 @@ export function Playground() {
 
         <main className="flex min-w-0 flex-1 flex-col gap-xl">
           <Box>
-            <Link variant="text" to="/dev" leadingIcon={CaretLeftIcon}>
+            <TextLink to="/dev" leadingIcon={CaretLeftIcon}>
               Dev
-            </Link>
+            </TextLink>
             <Text variant="heading" className="mt-md">
               Design system playground
             </Text>
@@ -195,11 +258,13 @@ export function Playground() {
             </Text>
 
             <Section id="buttons">
-              <Box className="grid grid-cols-[repeat(6,max-content)] items-center gap-x-md gap-y-sm">
+              <Box className="grid grid-cols-[repeat(7,max-content)] items-center gap-x-md gap-y-sm">
                 <Box />
                 {buttonSizes.map((size) => (
                   <Label key={size}>{size}</Label>
                 ))}
+                <Label>hover</Label>
+                <Label>pressed</Label>
                 <Label>disabled</Label>
                 <Label>loading</Label>
 
@@ -212,12 +277,28 @@ export function Playground() {
                 <Button label="Next" trailingIcon={CaretRightIcon} />
               </Box>
               <Label>leadingIcon · trailingIcon</Label>
-              <Box className="flex items-center gap-md">
-                <IconButton icon={PlusIcon} label="Add" variant="outlined" />
-                <IconButton icon={ShareNetworkIcon} label="Share" variant="plain" />
-                <IconButton icon={PlusIcon} label="Add" variant="outlined" disabled />
+              <Box className="grid grid-cols-[repeat(5,max-content)] items-center gap-x-md gap-y-sm">
+                <Box />
+                <Label>md</Label>
+                <Label>sm</Label>
+                <Label>hover</Label>
+                <Label>pressed</Label>
+                {iconButtonVariants.map((variant) => (
+                  <IconButtonRow key={variant} variant={variant} />
+                ))}
               </Box>
-              <Label>IconButton · outlined · plain · disabled</Label>
+              <Label>IconButton · primary · secondary · ghost, disabled below</Label>
+              <Box className="flex items-center gap-md">
+                {iconButtonVariants.map((variant) => (
+                  <IconButton
+                    key={variant}
+                    icon={ShareNetworkIcon}
+                    label="Share"
+                    variant={variant}
+                    disabled
+                  />
+                ))}
+              </Box>
               <TextButton label="swap item" onClick={() => {}} />
               <Label>TextButton</Label>
             </Section>
@@ -225,16 +306,18 @@ export function Playground() {
             <Section id="link">
               <Box className="flex items-center gap-md">
                 <Link to="/playground">Default (unstyled)</Link>
-                <Link variant="text" to="/playground">
-                  Text
-                </Link>
-                <Link variant="text" to="/playground" leadingIcon={CaretLeftIcon}>
+                <TextLink to="/playground">See all</TextLink>
+                <TextLink to="/playground" className="underline">
+                  Forced hover
+                </TextLink>
+                <TextLink to="/playground" leadingIcon={CaretLeftIcon}>
                   Leading icon
-                </Link>
-                <Link variant="text" to="/playground" trailingIcon={CaretRightIcon}>
+                </TextLink>
+                <TextLink to="/playground" trailingIcon={ArrowRightIcon}>
                   Trailing icon
-                </Link>
+                </TextLink>
               </Box>
+              <Label>TextLink · default · hover · leading icon · trailing icon</Label>
               <Box className="flex flex-wrap items-center gap-md">
                 {buttonVariants.map((variant) =>
                   buttonSizes.map((size) => (
@@ -247,7 +330,7 @@ export function Playground() {
                   Trailing icon
                 </Link>
               </Box>
-              <Label>primary sm · md · lg · secondary sm · md · lg · trailing icon</Label>
+              <Label>Link as a Button · every variant at sm and md · trailing icon</Label>
             </Section>
 
             <Section id="header">
@@ -255,7 +338,9 @@ export function Playground() {
             </Section>
 
             <Section id="checkbox">
-              <CheckboxExamples />
+              <Stage>
+                <CheckboxExamples />
+              </Stage>
             </Section>
 
             <Section id="toggle">
@@ -263,7 +348,39 @@ export function Playground() {
             </Section>
 
             <Section id="text-field">
-              <TextFieldExamples />
+              <Stage>
+                <TextFieldExamples />
+              </Stage>
+            </Section>
+
+            <Section id="text-area">
+              <Stage>
+                <TextAreaExamples />
+              </Stage>
+            </Section>
+
+            <Section id="chip">
+              <Stage>
+                <ChipExamples />
+              </Stage>
+            </Section>
+
+            <Section id="segmented-control">
+              <Stage>
+                <SegmentedControlExamples />
+              </Stage>
+            </Section>
+
+            <Section id="choice-group">
+              <Stage>
+                <ChoiceGroupExamples />
+              </Stage>
+            </Section>
+
+            <Section id="option-tile-group">
+              <Stage>
+                <OptionTileGroupExamples />
+              </Stage>
             </Section>
 
             <Section id="form">
@@ -301,8 +418,16 @@ export function Playground() {
               <ProgressBarExamples />
             </Section>
 
-            <Section id="empty">
-              <Empty title="Nothing here yet" description="Items you add will show up here." />
+            <Section id="progress-stepper">
+              <Stage>
+                <ProgressStepperExamples />
+              </Stage>
+            </Section>
+
+            <Section id="empty-state">
+              <Stage>
+                <EmptyStateExamples />
+              </Stage>
             </Section>
 
             <Section id="error-state">
@@ -329,11 +454,9 @@ export function Playground() {
             </Section>
 
             <Section id="radio-group">
-              <RadioExamples />
-            </Section>
-
-            <Section id="option-card-group">
-              <OptionCardExamples />
+              <Stage>
+                <RadioExamples />
+              </Stage>
             </Section>
 
             <Section id="avatar">
@@ -350,12 +473,26 @@ export function Playground() {
               <Label>photo sm · md · lg · initials sm · md · lg · failed load · no initials</Label>
             </Section>
 
-            <Section id="dialog">
-              <DialogExamples />
+            <Section id="scrim">
+              <ScrimExamples />
+            </Section>
+
+            <Section id="modal">
+              <Stage>
+                <ModalExamples />
+              </Stage>
+            </Section>
+
+            <Section id="menu">
+              <Stage>
+                <MenuExamples />
+              </Stage>
             </Section>
 
             <Section id="toast">
-              <ToastExamples />
+              <Stage>
+                <ToastExamples />
+              </Stage>
             </Section>
 
             <Section id="text">
@@ -363,7 +500,7 @@ export function Playground() {
                 <Box key={variant} className="flex flex-col gap-xxs">
                   <Text variant={variant}>The quick brown fox</Text>
                   <Label>
-                    {variant} · {scales.map(scaleLabel).join(" · lg:")}
+                    {variant} · {scales.map((scale) => scaleLabel(scale)).join(" · lg:")}
                   </Label>
                 </Box>
               ))}
@@ -392,6 +529,23 @@ export function Playground() {
               ))}
             </Section>
 
+            <Section id="type-scale">
+              {hifiTypeSamples.map(({ scale, className }) => (
+                <Box key={scale} className="flex flex-col gap-xxs">
+                  <Box className={className}>The quick brown fox</Box>
+                  <Label>{scaleLabel(scale, className)}</Label>
+                </Box>
+              ))}
+            </Section>
+
+            <Section id="shadows">
+              <Box className="flex gap-lg">
+                <Box className="bg-card p-lg text-body-m shadow-menu">shadow-menu</Box>
+                <Box className="bg-card p-lg text-body-m shadow-toast">shadow-toast</Box>
+                <Box className="bg-card p-lg text-body-m shadow-modal">shadow-modal</Box>
+              </Box>
+            </Section>
+
             <Section id="focus-ring">
               <Box className="flex flex-col gap-xs">
                 <Box className="flex gap-md bg-primary p-lg">
@@ -414,10 +568,11 @@ export function Playground() {
   );
 }
 
-function scaleLabel(scale: keyof typeof TypeScale) {
-  const [fontSize, { lineHeight, fontWeight }] = TypeScale[scale];
+function scaleLabel(scale: keyof typeof TypeScale, className = `text-${scale}`) {
+  const [fontSize, config] = TypeScale[scale];
+  const letterSpacing = "letterSpacing" in config ? ` · ${config.letterSpacing}` : "";
 
-  return `text-${scale} · ${fontSize}/${lineHeight} · ${fontWeight}`;
+  return `${className} · ${fontSize}/${config.lineHeight} · ${config.fontWeight}${letterSpacing}`;
 }
 
 type SectionProps = {
@@ -449,8 +604,28 @@ function ButtonRow({ variant }: ButtonRowProps) {
       {buttonSizes.map((size) => (
         <Button key={size} label="Button" variant={variant} size={size} />
       ))}
+      <Button label="Button" variant={variant} className={forcedButtonStates[variant].hover} />
+      <Button label="Button" variant={variant} className={forcedButtonStates[variant].pressed} />
       <Button label="Button" variant={variant} disabled />
       <Button label="Button" variant={variant} loading />
+    </>
+  );
+}
+
+type IconButtonRowProps = {
+  variant: (typeof iconButtonVariants)[number];
+};
+
+function IconButtonRow({ variant }: IconButtonRowProps) {
+  const forced = forcedButtonStates[variant];
+
+  return (
+    <>
+      <Label>{variant}</Label>
+      <IconButton icon={PlusIcon} label="Add" variant={variant} />
+      <IconButton icon={PlusIcon} label="Add" variant={variant} size="sm" />
+      <IconButton icon={PlusIcon} label="Add" variant={variant} className={forced.hover} />
+      <IconButton icon={PlusIcon} label="Add" variant={variant} className={forced.pressed} />
     </>
   );
 }
@@ -546,14 +721,70 @@ function FormExamples() {
   );
 }
 
+// Literal class names so Tailwind generates them. A checkbox or radio shows its hover look when
+// its label is hovered, so the box is forced directly.
+const checkboxRows = [
+  { name: "Off", checked: false, indeterminate: false, hover: "[&_[role=checkbox]]:!bg-hover" },
+  {
+    name: "On",
+    checked: true,
+    indeterminate: false,
+    hover: "[&_[role=checkbox]]:!bg-primary-hover",
+  },
+  {
+    name: "Indeterminate",
+    checked: false,
+    indeterminate: true,
+    hover: "[&_[role=checkbox]]:!bg-primary-hover",
+  },
+] as const;
+
 function CheckboxExamples() {
   const [checked, setChecked] = useState(false);
 
   return (
-    <Box className="flex flex-col gap-sm">
-      <Checkbox label="Checkbox" checked={checked} onCheckedChange={setChecked} />
-      <Checkbox label="Disabled" checked onCheckedChange={() => {}} disabled />
+    <Box className="flex flex-col gap-md">
+      <Box className="grid grid-cols-[repeat(4,max-content)] items-center gap-x-xl gap-y-sm">
+        <Box />
+        <Label>default</Label>
+        <Label>hover</Label>
+        <Label>disabled</Label>
+        {checkboxRows.map((row) => (
+          <CheckboxRow key={row.name} {...row} />
+        ))}
+      </Box>
+      <Checkbox label="Interactive" checked={checked} onCheckedChange={setChecked} />
     </Box>
+  );
+}
+
+type CheckboxRowProps = (typeof checkboxRows)[number];
+
+function CheckboxRow({ name, checked, indeterminate, hover }: CheckboxRowProps) {
+  return (
+    <>
+      <Label>{name}</Label>
+      <Checkbox
+        label="Label"
+        checked={checked}
+        indeterminate={indeterminate}
+        onCheckedChange={() => {}}
+      />
+      <Checkbox
+        label="Label"
+        checked={checked}
+        indeterminate={indeterminate}
+        onCheckedChange={() => {}}
+        className={hover}
+      />
+      <Checkbox
+        label="Label"
+        checked={checked}
+        indeterminate={indeterminate}
+        onCheckedChange={() => {}}
+        disabled
+      />
+    </>
   );
 }
 
@@ -568,24 +799,339 @@ function ToggleExamples() {
   );
 }
 
+// Forces the focused look onto the box around the input, which a screenshot can't focus.
+const forcedFocusedField = "[&_div:has(>input)]:!border-medium [&_div:has(>input)]:!border-primary";
+
 function TextFieldExamples() {
   const [value, setValue] = useState("");
 
   return (
-    <Box className="flex max-w-content-sm flex-col gap-sm">
-      <TextField
-        label="Text field"
-        placeholder="Type here"
-        value={value}
-        onValueChange={setValue}
+    <Box className="flex flex-col gap-lg">
+      <Box className="grid max-w-content-lg grid-cols-3 items-start gap-md">
+        <TextField label="Empty" placeholder="Placeholder" value="" onValueChange={() => {}} />
+        <TextField
+          label="Helper text"
+          helper="We never share your email."
+          placeholder="Placeholder"
+          value=""
+          onValueChange={() => {}}
+        />
+        <TextField
+          label="Focused"
+          value="Placeholder"
+          onValueChange={() => {}}
+          className={forcedFocusedField}
+        />
+        <TextField label="Filled" value="Placeholder" onValueChange={() => {}} />
+        <TextField label="Error" value="Placeholder" onValueChange={() => {}} error="Error text" />
+        <TextField label="Disabled" value="Placeholder" onValueChange={() => {}} disabled />
+        <TextField
+          label="Leading icon"
+          placeholder="Placeholder"
+          value=""
+          onValueChange={() => {}}
+          leadingIcon={EnvelopeSimpleIcon}
+        />
+        <TextField
+          label="Trailing icon"
+          value="Placeholder"
+          onValueChange={() => {}}
+          trailingIcon={XIcon}
+        />
+        <TextField
+          label="Both icons, disabled"
+          value="Placeholder"
+          onValueChange={() => {}}
+          leadingIcon={EnvelopeSimpleIcon}
+          trailingIcon={XIcon}
+          disabled
+        />
+      </Box>
+      <Box className="flex max-w-content-sm flex-col gap-sm">
+        <TextField
+          label="Interactive"
+          placeholder="Type here"
+          value={value}
+          onValueChange={setValue}
+        />
+        <TextField
+          label="Hidden label"
+          hideLabel
+          placeholder="Label is read by screen readers only"
+          value={value}
+          onValueChange={setValue}
+        />
+      </Box>
+    </Box>
+  );
+}
+
+const forcedFocusedTextArea = "[&_textarea]:!border-medium [&_textarea]:!border-primary";
+
+function TextAreaExamples() {
+  const [value, setValue] = useState("");
+
+  return (
+    <Box className="flex flex-col gap-lg">
+      <Box className="grid max-w-content-lg grid-cols-3 items-start gap-md">
+        <TextArea
+          label="Empty"
+          placeholder="Placeholder"
+          maxLength={250}
+          value=""
+          onValueChange={() => {}}
+        />
+        <TextArea
+          label="Focused"
+          maxLength={250}
+          value="Placeholder"
+          onValueChange={() => {}}
+          className={forcedFocusedTextArea}
+        />
+        <TextArea
+          label="Filled, with helper"
+          helper="Helper text"
+          maxLength={250}
+          value="Placeholder"
+          onValueChange={() => {}}
+        />
+        <TextArea
+          label="Error"
+          maxLength={250}
+          value="Placeholder"
+          onValueChange={() => {}}
+          error="Error message"
+        />
+        <TextArea
+          label="Disabled"
+          maxLength={250}
+          value="Placeholder"
+          onValueChange={() => {}}
+          disabled
+        />
+        <TextArea label="No count" value="Placeholder" onValueChange={() => {}} />
+      </Box>
+      <Box className="max-w-content-sm">
+        <TextArea
+          label="Interactive"
+          placeholder="Type here"
+          maxLength={250}
+          value={value}
+          onValueChange={setValue}
+        />
+      </Box>
+    </Box>
+  );
+}
+
+const chipSizes = ["md", "sm"] as const;
+
+function ChipExamples() {
+  const [selected, setSelected] = useState(false);
+
+  return (
+    <Box className="flex flex-col gap-md">
+      <Box className="grid grid-cols-[repeat(5,max-content)] items-center gap-x-xl gap-y-sm">
+        <Box />
+        <Label>default</Label>
+        <Label>hover</Label>
+        <Label>selected</Label>
+        <Label>disabled</Label>
+        {chipSizes.map((size) => (
+          <ChipRow key={size} size={size} />
+        ))}
+      </Box>
+      <Box className="flex items-center gap-md">
+        <Chip label="Add" selected={false} onSelectedChange={() => {}} leadingIcon={PlusIcon} />
+        <Chip label="Removable" selected={false} onSelectedChange={() => {}} trailingIcon={XIcon} />
+        <Chip
+          label="Both"
+          selected
+          onSelectedChange={() => {}}
+          leadingIcon={PlusIcon}
+          trailingIcon={XIcon}
+        />
+        <Chip
+          label="Disabled"
+          selected={false}
+          onSelectedChange={() => {}}
+          leadingIcon={PlusIcon}
+          trailingIcon={XIcon}
+          disabled
+        />
+        <Chip label="Interactive" selected={selected} onSelectedChange={setSelected} />
+      </Box>
+      <Label>leading icon · trailing icon · both · disabled with icons · interactive</Label>
+    </Box>
+  );
+}
+
+type ChipRowProps = {
+  size: (typeof chipSizes)[number];
+};
+
+function ChipRow({ size }: ChipRowProps) {
+  return (
+    <>
+      <Label>{size}</Label>
+      <Chip label="Chip" selected={false} onSelectedChange={() => {}} size={size} />
+      <Chip
+        label="Chip"
+        selected={false}
+        onSelectedChange={() => {}}
+        size={size}
+        className="!bg-pressed"
       />
-      <TextField label="Disabled" value="Can't edit" onValueChange={() => {}} disabled />
-      <TextField
-        label="Hidden label"
-        hideLabel
-        placeholder="Label is read by screen readers only"
-        value={value}
-        onValueChange={setValue}
+      <Chip label="Chip" selected onSelectedChange={() => {}} size={size} />
+      <Chip label="Chip" selected={false} onSelectedChange={() => {}} size={size} disabled />
+    </>
+  );
+}
+
+const segmentOptions = [
+  { label: "Option 1", value: "one" },
+  { label: "Option 2", value: "two" },
+  { label: "Option 3", value: "three" },
+  { label: "Option 4", value: "four" },
+];
+
+function SegmentedControlExamples() {
+  const [value, setValue] = useState("one");
+
+  return (
+    <Box className="flex flex-col items-start gap-md">
+      {[2, 3, 4].map((count) => (
+        <SegmentedControl
+          key={count}
+          label={`${count} options`}
+          options={segmentOptions.slice(0, count)}
+          value={value}
+          onValueChange={setValue}
+        />
+      ))}
+      <Label>2 · 3 · 4 options. Click to change the selection.</Label>
+      <Box className="flex items-center gap-xl">
+        <Box className="flex flex-col gap-xs">
+          <SegmentedControl
+            label="Hover"
+            options={segmentOptions.slice(0, 3)}
+            value="one"
+            onValueChange={() => {}}
+            className="[&_[role=radio]:not([data-checked])]:!bg-hover"
+          />
+          <Label>hover on unselected segments</Label>
+        </Box>
+        <Box className="flex flex-col gap-xs">
+          <SegmentedControl
+            label="Disabled"
+            options={segmentOptions.slice(0, 3)}
+            value="one"
+            onValueChange={() => {}}
+            disabled
+          />
+          <Label>disabled</Label>
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
+const choiceRowStates = [
+  { name: "default", selected: false, disabled: false, forced: "" },
+  {
+    name: "hover",
+    selected: false,
+    disabled: false,
+    forced: "[&_[role=radio]]:!border-primary [&_[role=radio]>div:last-child]:!bg-hover",
+  },
+  { name: "selected", selected: true, disabled: false, forced: "" },
+  { name: "disabled", selected: false, disabled: true, forced: "" },
+] as const;
+
+const choiceOptions = [
+  { label: "Option 1", value: "one" },
+  { label: "Option 2", value: "two" },
+  { label: "Option 3", value: "three" },
+  { label: "Option 4", value: "four" },
+];
+
+function ChoiceGroupExamples() {
+  const [choice, setChoice] = useState<string | null>("one");
+
+  return (
+    <Box className="flex flex-col gap-lg">
+      <Box className="grid grid-cols-2 gap-md">
+        {choiceRowStates.map((state) => (
+          <Box key={state.name} className="flex flex-col gap-xs">
+            <Label>{state.name}</Label>
+            <Box className={state.forced}>
+              <ChoiceGroup
+                options={[
+                  {
+                    label: "Yes",
+                    subtitle: "Bring me to the Birdie & Claire catalog",
+                    value: "yes",
+                    disabled: state.disabled,
+                  },
+                ]}
+                value={state.selected ? "yes" : null}
+                onValueChange={() => {}}
+              />
+            </Box>
+          </Box>
+        ))}
+      </Box>
+      <Box className="max-w-content-sm">
+        <ChoiceGroup
+          label="Four options, no subtitles"
+          options={choiceOptions}
+          value={choice}
+          onValueChange={setChoice}
+        />
+      </Box>
+    </Box>
+  );
+}
+
+const tileStates = [
+  { name: "default", selected: false, disabled: false, forced: "" },
+  { name: "hover", selected: false, disabled: false, forced: "[&_[role=radio]]:!border-primary" },
+  { name: "selected", selected: true, disabled: false, forced: "" },
+  { name: "disabled", selected: false, disabled: true, forced: "" },
+] as const;
+
+function OptionTileGroupExamples() {
+  const [weather, setWeather] = useState<string | null>(null);
+
+  return (
+    <Box className="flex flex-col gap-lg">
+      <Box className="flex flex-wrap gap-md">
+        {tileStates.map((state) => (
+          <Box key={state.name} className="flex flex-col gap-xs">
+            <Label>{state.name}</Label>
+            <Box className={state.forced}>
+              <OptionTileGroup
+                options={[
+                  {
+                    label: "Hot",
+                    subtitle: "80° and up",
+                    icon: SunIcon,
+                    value: "hot",
+                    disabled: state.disabled,
+                  },
+                ]}
+                value={state.selected ? "hot" : null}
+                onValueChange={() => {}}
+              />
+            </Box>
+          </Box>
+        ))}
+      </Box>
+      <OptionTileGroup
+        label="No icon or subtitle"
+        options={radioOptions}
+        value={weather}
+        onValueChange={setWeather}
       />
     </Box>
   );
@@ -666,93 +1212,362 @@ function ImageCardExamples() {
   );
 }
 
-function OptionCardExamples() {
-  const [size, setSize] = useState<string | null>(null);
-  const [answer, setAnswer] = useState<string | null>(null);
+const singleRadio = [{ label: "Label", value: "label" }];
 
-  return (
-    <Box className="flex max-w-content-lg flex-col gap-xl">
-      <OptionCardGroup label="Size" options={radioOptions} value={size} onValueChange={setSize} />
-      <OptionCardGroup
-        label="One column"
-        options={[
-          { label: "Yes", value: "yes" },
-          { label: "No", value: "no" },
-        ]}
-        value={answer}
-        onValueChange={setAnswer}
-        className="grid grid-cols-1 gap-md"
-      />
-    </Box>
-  );
-}
+const radioRows = [
+  { name: "Off", value: null },
+  { name: "On", value: "label" },
+] as const;
 
 function RadioExamples() {
   const [size, setSize] = useState<string | null>(null);
 
   return (
-    <Box className="flex gap-xl">
-      <RadioGroup label="Size" options={radioOptions} value={size} onValueChange={setSize} />
-      <RadioGroup
-        label="Disabled"
-        options={radioOptions}
-        value="md"
-        onValueChange={() => {}}
-        disabled
-      />
+    <Box className="flex flex-col gap-lg">
+      <Box className="grid grid-cols-[repeat(4,max-content)] items-center gap-x-xl gap-y-sm">
+        <Box />
+        <Label>default</Label>
+        <Label>hover</Label>
+        <Label>disabled</Label>
+        {radioRows.map((row) => (
+          <RadioRow key={row.name} {...row} />
+        ))}
+      </Box>
+      <Box className="flex gap-xl">
+        <RadioGroup label="Size" options={radioOptions} value={size} onValueChange={setSize} />
+        <RadioGroup
+          label="Disabled"
+          options={radioOptions}
+          value="md"
+          onValueChange={() => {}}
+          disabled
+        />
+      </Box>
     </Box>
   );
 }
 
-function DialogExamples() {
-  const [openDialog, setOpenDialog] = useState<"confirm" | "dismissible" | "content" | null>(null);
+type RadioRowProps = (typeof radioRows)[number];
 
-  const [dialogName, setDialogName] = useState("Weekend look");
-  const close = () => setOpenDialog(null);
+function RadioRow({ name, value }: RadioRowProps) {
+  return (
+    <>
+      <Label>{name}</Label>
+      <RadioGroup options={singleRadio} value={value} onValueChange={() => {}} />
+      <RadioGroup
+        options={singleRadio}
+        value={value}
+        onValueChange={() => {}}
+        className="[&_[role=radio]]:!bg-hover"
+      />
+      <RadioGroup options={singleRadio} value={value} onValueChange={() => {}} disabled />
+    </>
+  );
+}
+
+const stepperLabels = ["Step 1", "Step 2", "Step 3", "Step 4", "Step 5"];
+
+function ProgressStepperExamples() {
+  return (
+    <Box className="flex flex-col gap-lg">
+      {[3, 4, 5].map((count) => (
+        <Box key={count} className="flex flex-col gap-xs">
+          <ProgressStepper steps={stepperLabels.slice(0, count)} currentStep={0} />
+          <Label>{count} steps · first in progress</Label>
+        </Box>
+      ))}
+      <Box className="flex flex-col gap-xs">
+        <ProgressStepper steps={stepperLabels.slice(0, 4)} currentStep={2} />
+        <Label>done · done · current · upcoming</Label>
+      </Box>
+    </Box>
+  );
+}
+
+function EmptyStateExamples() {
+  return (
+    <Box className="grid grid-cols-2 gap-lg">
+      <EmptyState
+        title="No collections yet"
+        description="Group pieces you love into a collection."
+        action={{ label: "New collection", icon: PlusIcon, onClick: () => {} }}
+      />
+      <EmptyState title="No pieces yet" description="Pieces you own will show up here." />
+      <EmptyState title="Nothing saved for this occasion" icon={ShareNetworkIcon} />
+      <EmptyState title="No outfits yet" action={{ label: "Create outfit", onClick: () => {} }} />
+    </Box>
+  );
+}
+
+const sampleModalActions = [
+  { label: "Cancel", variant: "ghost", onClick: () => {} },
+  { label: "Confirm", variant: "primary", onClick: () => {} },
+] as const;
+
+// Figma's "Modal Content" placeholder is 120px tall. Not a token: only this page draws it.
+function ModalPlaceholder() {
+  return (
+    <Box className="flex h-[120px] items-center justify-center border border-dashed text-body-s text-secondary">
+      Modal content
+    </Box>
+  );
+}
+
+const ownPiecesOptions = [
+  { label: "Yes, I'm an existing customer", value: "yes" },
+  { label: "No, I'm new", value: "no" },
+];
+
+function ModalExamples() {
+  const [openModal, setOpenModal] = useState<"confirm" | "dismissible" | "content" | null>(null);
+  const [name, setName] = useState("Weekend look");
+  const close = () => setOpenModal(null);
 
   return (
-    <Box className="flex gap-sm">
-      <Button label="Confirm dialog" onClick={() => setOpenDialog("confirm")} />
-      <Button
-        label="Dismissible dialog"
-        variant="secondary"
-        onClick={() => setOpenDialog("dismissible")}
-      />
-      <Button
-        label="Dialog with content"
-        variant="secondary"
-        onClick={() => setOpenDialog("content")}
-      />
+    <Box className="flex flex-col gap-xl">
+      <Box className="flex flex-col items-start gap-lg">
+        <ModalPanel
+          title="Modal title"
+          message="Description"
+          actions={[...sampleModalActions]}
+          onClose={() => {}}
+        >
+          <ModalPlaceholder />
+        </ModalPanel>
+        <ModalPanel
+          size="md"
+          title="Modal title"
+          message="Description"
+          actions={[...sampleModalActions]}
+          onClose={() => {}}
+        >
+          <ModalPlaceholder />
+        </ModalPanel>
+        <ModalPanel
+          size="lg"
+          title="Modal title"
+          message="Description"
+          actions={[...sampleModalActions]}
+          onClose={() => {}}
+        >
+          <ModalPlaceholder />
+        </ModalPanel>
+        <Label>small 480 · medium 640 · large 880</Label>
+      </Box>
 
-      <Dialog
-        open={openDialog === "confirm"}
+      <Box className="flex flex-col items-start gap-lg">
+        <ModalPanel
+          title="Delete outfit?"
+          message="This can't be undone."
+          actions={[
+            { label: "Cancel", variant: "ghost", onClick: () => {} },
+            { label: "Delete", variant: "destructive", onClick: () => {} },
+          ]}
+          onClose={() => {}}
+        />
+        <ModalPanel
+          title="No close button"
+          message="Without onClose, only the actions dismiss it."
+          actions={[{ label: "Got it", variant: "primary", onClick: () => {} }]}
+        />
+        <ModalPanel title="No description or actions" actions={[]} onClose={() => {}}>
+          <ModalPlaceholder />
+        </ModalPanel>
+        <Label>destructive · no close · bare</Label>
+      </Box>
+
+      <Box className="flex flex-col items-start gap-lg">
+        <ModalPanel
+          size="md"
+          title="New collection"
+          actions={[
+            { label: "Cancel", variant: "ghost", onClick: () => {} },
+            { label: "Create", variant: "primary", onClick: () => {} },
+          ]}
+          onClose={() => {}}
+        >
+          <Box className="flex flex-col gap-md">
+            <TextField label="Name" value="Winter weddings" onValueChange={() => {}} />
+            <TextArea
+              label="Description (optional)"
+              placeholder="What makes this collection yours?"
+              maxLength={250}
+              value=""
+              onValueChange={() => {}}
+            />
+          </Box>
+        </ModalPanel>
+        <ModalPanel
+          size="md"
+          title="Own B&C pieces"
+          message="Do you already own Birdie & Claire clothes?"
+          actions={[
+            { label: "Cancel", variant: "ghost", onClick: () => {} },
+            { label: "Continue", variant: "primary", onClick: () => {} },
+          ]}
+          onClose={() => {}}
+        >
+          <ChoiceGroup options={ownPiecesOptions} value="yes" onValueChange={() => {}} />
+        </ModalPanel>
+        <Label>content slot · collection form · own B&C pieces</Label>
+      </Box>
+
+      <Box className="flex flex-col items-start gap-lg">
+        <ModalPanel
+          image={null}
+          title="Modal title"
+          message="Description"
+          actions={[...sampleModalActions]}
+          onClose={() => {}}
+        >
+          <ModalPlaceholder />
+        </ModalPanel>
+        <ModalPanel
+          image={samplePhoto}
+          title="Saved!"
+          message="Your outfit is in your profile."
+          actions={[{ label: "Done", variant: "primary", onClick: () => {} }]}
+          onClose={() => {}}
+        />
+        <Label>split modal · surface color · photo</Label>
+      </Box>
+
+      <Box className="flex flex-col items-start gap-xs">
+        <Box className="flex gap-sm">
+          <Button label="Alert modal" onClick={() => setOpenModal("confirm")} />
+          <Button
+            label="Dismissible modal"
+            variant="secondary"
+            onClick={() => setOpenModal("dismissible")}
+          />
+          <Button
+            label="Modal with content"
+            variant="secondary"
+            onClick={() => setOpenModal("content")}
+          />
+        </Box>
+        <Label>Modal in its portal, over a scrim</Label>
+      </Box>
+
+      <Modal
+        open={openModal === "confirm"}
         onClose={close}
         title="Delete outfit?"
         message="Clicking outside won't close this one. Use a button or Esc."
         actions={[
-          { label: "Cancel", variant: "secondary", onClick: close },
-          { label: "Delete", variant: "primary", onClick: close },
+          { label: "Cancel", variant: "ghost", onClick: close },
+          { label: "Delete", variant: "destructive", onClick: close },
         ]}
       />
-      <Dialog
-        open={openDialog === "dismissible"}
+      <Modal
+        open={openModal === "dismissible"}
         onClose={close}
-        title="Dismissible dialog"
-        message="Clicking outside, Esc, the ×, or the button closes this one."
+        title="Dismissible modal"
+        message="Clicking outside, Esc, the close button, or the action closes this one."
         actions={[{ label: "Got it", variant: "primary", onClick: close }]}
         dismissible
       />
-      <Dialog
-        open={openDialog === "content"}
+      <Modal
+        open={openModal === "content"}
         onClose={close}
         title="Name your outfit"
+        size="md"
         actions={[
-          { label: "Cancel", variant: "secondary", onClick: close, disabled: true },
+          { label: "Cancel", variant: "ghost", onClick: close, disabled: true },
           { label: "Save", variant: "primary", onClick: close, loading: true },
         ]}
       >
-        <TextField label="Outfit name" value={dialogName} onValueChange={setDialogName} />
-      </Dialog>
+        <TextField label="Outfit name" value={name} onValueChange={setName} />
+      </Modal>
+    </Box>
+  );
+}
+
+function ScrimExamples() {
+  return (
+    <Box className="relative flex flex-col gap-md bg-background p-lg">
+      <Text variant="subheading">Page under the scrim</Text>
+      <Text variant="body">The scrim dims whatever sits behind a modal.</Text>
+      <Button label="Behind" className="self-start" />
+      <Scrim className="absolute inset-0" />
+    </Box>
+  );
+}
+
+const forcedMenuItemHover = "!bg-hover";
+
+const forcedDestructiveMenuItemHover = "!bg-error-subtle";
+
+function MenuExamples() {
+  return (
+    <Box className="flex flex-col gap-xl">
+      <Box className="grid grid-cols-[repeat(4,max-content)] items-center gap-x-xl gap-y-sm">
+        <Box />
+        <Label>default</Label>
+        <Label>hover</Label>
+        <Label>disabled</Label>
+        <Label>default</Label>
+        <Box className="w-menu">
+          <MenuItem label="Edit" />
+        </Box>
+        <Box className="w-menu">
+          <MenuItem label="Edit" className={forcedMenuItemHover} />
+        </Box>
+        <Box className="w-menu">
+          <MenuItem label="Edit" disabled />
+        </Box>
+        <Label>with icon</Label>
+        <Box className="w-menu">
+          <MenuItem label="Add" icon={PlusIcon} />
+        </Box>
+        <Box className="w-menu">
+          <MenuItem label="Add" icon={PlusIcon} className={forcedMenuItemHover} />
+        </Box>
+        <Box className="w-menu">
+          <MenuItem label="Add" icon={PlusIcon} disabled />
+        </Box>
+        <Label>destructive</Label>
+        <Box className="w-menu">
+          <MenuItem label="Edit" destructive />
+        </Box>
+        <Box className="w-menu">
+          <MenuItem label="Edit" destructive className={forcedDestructiveMenuItemHover} />
+        </Box>
+        <Box className="w-menu">
+          <MenuItem label="Edit" destructive disabled />
+        </Box>
+      </Box>
+
+      <Box className="flex items-start gap-xl">
+        <MenuPanel>
+          <MenuItem label="Edit" />
+          <MenuItem label="Add to collection" />
+          <MenuItem label="Share" />
+          <Box className="py-xxs">
+            <Divider />
+          </Box>
+          <MenuItem label="Delete" destructive />
+        </MenuPanel>
+        <MenuPanel>
+          <MenuItem label="Edit" />
+          <MenuItem label="Share" />
+        </MenuPanel>
+        <Box className="flex flex-col items-start gap-xs">
+          <Menu
+            label="Item actions"
+            actions={[
+              { label: "Edit", onSelect: () => {} },
+              { label: "Add to collection", onSelect: () => {} },
+              { label: "Share", onSelect: () => {} },
+              { label: "Delete", onSelect: () => {}, destructive: true },
+            ]}
+          />
+          <Label>Menu · click the ⋯</Label>
+        </Box>
+      </Box>
+      <Label>
+        item states · menu with a delete row · menu with two actions · the menu with its ⋯ button
+      </Label>
     </Box>
   );
 }
@@ -761,31 +1576,75 @@ function ToastExamples() {
   const toast = useToast();
 
   return (
-    <Box className="flex flex-wrap gap-sm">
-      <Button label="Neutral" onClick={() => toast.show({ message: "Outfit saved" })} />
-      <Button
-        label="Success"
-        onClick={() => toast.show({ message: "Profile updated", variant: "success" })}
-      />
-      <Button
-        label="With subtitle"
-        variant="secondary"
-        onClick={() =>
-          toast.show({ message: "Outfit saved", subtitle: "You can find it under Outfits." })
-        }
-      />
-      <Button
-        label="With action"
-        variant="secondary"
-        onClick={() =>
-          toast.show({
-            message: "Outfit deleted",
-            action: { label: "Undo", onClick: () => toast.show({ message: "Restored" }) },
-          })
-        }
-      />
+    <Box className="flex flex-col gap-lg">
+      <Box className="flex flex-col items-start gap-md">
+        <Toast variant="neutral" message="Link copied" />
+        <Toast
+          variant="neutral"
+          message="Saved to Workday"
+          action={{ label: "View", onClick: () => {} }}
+        />
+        <Toast
+          variant="success"
+          message="Saved to Workday"
+          action={{ label: "View", onClick: () => {} }}
+        />
+        <Toast
+          variant="error"
+          message="Couldn't save"
+          action={{ label: "Retry", onClick: () => {} }}
+        />
+        <Toast
+          variant="success"
+          message="Saved to Workday"
+          action={{ label: "View", onClick: () => {} }}
+          onClose={() => {}}
+        />
+        <Toast variant="error" message="Couldn't save" onClose={() => {}} />
+        <Label>
+          neutral · neutral with action · success · error · success with action and close · error
+          with close
+        </Label>
+      </Box>
+      <Box className="flex flex-col items-start gap-xs">
+        <Box className="flex flex-wrap gap-sm">
+          <Button label="Neutral" onClick={() => toast.show({ message: "Link copied" })} />
+          <Button
+            label="Success"
+            variant="secondary"
+            onClick={() => toast.show({ message: "Profile updated", variant: "success" })}
+          />
+          <Button
+            label="Error"
+            variant="secondary"
+            onClick={() => toast.show({ message: "Couldn't save", variant: "error" })}
+          />
+          <Button
+            label="With action"
+            variant="secondary"
+            onClick={() =>
+              toast.show({
+                message: "Outfit deleted",
+                action: { label: "Undo", onClick: () => toast.show({ message: "Restored" }) },
+              })
+            }
+          />
+          <Button
+            label="With close"
+            variant="secondary"
+            onClick={() => toast.show({ message: "Outfit saved", closable: true })}
+          />
+        </Box>
+        <Label>At the bottom center of the screen, hides itself after about 4 seconds</Label>
+      </Box>
     </Box>
   );
+}
+
+// Hi-fi inputs are drawn for the page background. The section's own fill would hide a disabled
+// checkbox, whose fill is the same slate.
+function Stage({ children }: { children: ReactNode }) {
+  return <Box className="bg-background p-md">{children}</Box>;
 }
 
 type LabelProps = {
@@ -808,7 +1667,7 @@ type SwatchProps = {
 function Swatch({ name, value }: SwatchProps) {
   return (
     <Box className="flex w-[96px] flex-col gap-xxs">
-      <Box className="h-xxl rounded-sm border" style={{ backgroundColor: value }} />
+      <Box className="h-xxxl rounded-sm border" style={{ backgroundColor: value }} />
       <Label>{name}</Label>
       <Label>{value}</Label>
     </Box>

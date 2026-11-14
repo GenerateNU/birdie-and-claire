@@ -1,5 +1,17 @@
-// Width of floating panels: dialogs and the toast stack.
-export const PopupWidth = "384px";
+// A modal's width (`w-modal-<key>`), from Figma. The split modal is the large width.
+export const ModalWidth = { sm: "480px", md: "640px", lg: "880px" } as const;
+
+// The photo beside a split modal's content (`w-modal-image`), from Figma.
+export const ModalImageWidth = "360px";
+
+// A menu's fixed width (`w-menu`), from Figma.
+export const MenuWidth = "200px";
+
+// The widest an empty state grows (`max-w-empty-state`), from Figma.
+export const EmptyStateWidth = "400px";
+
+// The square behind an empty state's icon (`size-empty-state-icon`), from Figma.
+export const EmptyStateIconSize = "56px";
 
 // Widths for page content, narrowest first. Each becomes `max-w-content-<key>` and
 // `w-content-<key>`.
@@ -22,6 +34,21 @@ export const CardSize = {
 } as const;
 
 export const ThumbnailSize = { width: "92px", height: "112px" } as const;
+
+// The checkbox and radio box (`size-control`), from Figma.
+export const ControlSize = "1.25rem";
+
+// The text area's fixed box (`h-textarea`), from Figma.
+export const TextAreaHeight = "7rem";
+
+// A choice row's smallest height (`min-h-choice-row`), from Figma.
+export const ChoiceRowHeight = "3.75rem";
+
+// An option tile's fixed size (`w-tile`, `h-tile`), from Figma.
+export const TileSize = { width: "10rem", height: "11rem" } as const;
+
+// The icon on an option tile, for Phosphor's `size` prop.
+export const TileIconSize = "2.75rem";
 
 export const AspectRatio = {
   portrait: "3 / 4",

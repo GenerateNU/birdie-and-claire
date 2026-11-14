@@ -15,12 +15,21 @@ import { FocusRing } from "./src/design-system/tokens/focus-ring";
 import {
   AspectRatio,
   CardSize,
+  ChoiceRowHeight,
   ContentWidth,
-  PopupWidth,
+  ControlSize,
+  EmptyStateIconSize,
+  EmptyStateWidth,
+  MenuWidth,
+  ModalImageWidth,
+  ModalWidth,
   ScrollAreaHeight,
+  TextAreaHeight,
   ThumbnailSize,
+  TileSize,
 } from "./src/design-system/tokens/layout";
 import { Opacity } from "./src/design-system/tokens/opacity";
+import { Shadow } from "./src/design-system/tokens/shadow";
 import { Spacing } from "./src/design-system/tokens/spacing";
 import { FontFamily, TypeScale } from "./src/design-system/tokens/typography";
 
@@ -38,28 +47,43 @@ export default {
     outlineColor: OutlineColor,
     spacing: { 0: "0px", px: "1px", ...Spacing },
     borderRadius: CornerRadius,
+    boxShadow: { none: "none", ...Shadow },
     borderWidth: { 0: "0px", ...BorderWidth },
     opacity: { 0: "0", 100: "1", ...Opacity },
     fontFamily: FontFamily,
     fontSize: TypeScale,
     extend: {
       width: {
-        popup: PopupWidth,
+        "modal-sm": ModalWidth.sm,
+        "modal-md": ModalWidth.md,
+        "modal-lg": ModalWidth.lg,
+        "modal-image": ModalImageWidth,
+        menu: MenuWidth,
         "card-sm": CardSize.sm.width,
         "card-lg": CardSize.lg.width,
         thumbnail: ThumbnailSize.width,
+        tile: TileSize.width,
         ...Object.fromEntries(
           Object.entries(ContentWidth).map(([key, value]) => [`content-${key}`, value]),
         ),
       },
-      maxWidth: Object.fromEntries(
-        Object.entries(ContentWidth).map(([key, value]) => [`content-${key}`, value]),
-      ),
-      height: { thumbnail: ThumbnailSize.height },
+      maxWidth: {
+        "empty-state": EmptyStateWidth,
+        ...Object.fromEntries(
+          Object.entries(ContentWidth).map(([key, value]) => [`content-${key}`, value]),
+        ),
+      },
+      height: { thumbnail: ThumbnailSize.height, textarea: TextAreaHeight, tile: TileSize.height },
       maxHeight: { "scroll-area": ScrollAreaHeight },
-      minHeight: { "card-sm": CardSize.sm.height, "card-lg": CardSize.lg.height },
+      minHeight: {
+        "card-sm": CardSize.sm.height,
+        "card-lg": CardSize.lg.height,
+        "choice-row": ChoiceRowHeight,
+      },
       aspectRatio: AspectRatio,
       size: {
+        control: ControlSize,
+        "empty-state-icon": EmptyStateIconSize,
         "avatar-sm": AvatarSize.sm,
         "avatar-md": AvatarSize.md,
         "avatar-lg": AvatarSize.lg,

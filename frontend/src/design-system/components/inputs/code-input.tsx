@@ -6,7 +6,7 @@ import { Text } from "@/design-system/primitives/text";
 
 // Boxes shrink to share the row, so a long code still fits a phone, and stop growing at 48px.
 const boxBaseClasses =
-  "flex aspect-square min-w-0 max-w-xxl flex-1 items-center justify-center rounded-xs border bg-background text-body text-primary";
+  "flex aspect-square min-w-0 max-w-xxxl flex-1 items-center justify-center rounded-xs border bg-background text-body text-primary";
 
 type CodeInputProps = {
   ref?: Ref<HTMLInputElement>;
