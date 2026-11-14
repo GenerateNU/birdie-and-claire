@@ -115,18 +115,25 @@ func (s *recommendationService) RecommendProducts(ctx context.Context, request m
 		return models.RecommendationResponse{}, err
 	}
 
-	outfitCount := min(len(tops), len(bottoms), len(accessories), len(shoes))
+	outfitCount := max(len(tops), len(bottoms), len(accessories), len(shoes))
 	// non-nil, since a null list would break the response schema
 	outfits := make([]models.RecommendedOutfit, 0, outfitCount)
 	for rank := range outfitCount {
 		outfits = append(outfits, models.RecommendedOutfit{
-			Top:       tops[rank],
-			Bottom:    bottoms[rank],
-			Accessory: accessories[rank],
-			Shoe:      shoes[rank],
+			Top:       productAt(tops, rank),
+			Bottom:    productAt(bottoms, rank),
+			Accessory: productAt(accessories, rank),
+			Shoe:      productAt(shoes, rank),
 		})
 	}
 	return models.RecommendationResponse{ExpandedAnswers: expandedAnswers, Outfits: outfits}, nil
+}
+
+func productAt(products []models.ProductResponse, rank int) *models.ProductResponse {
+	if rank >= len(products) {
+		return nil
+	}
+	return &products[rank]
 }
 
 func (s *recommendationService) searchSlot(ctx context.Context, slot slotSearch, excludeTags, niceTags []string) ([]models.ProductResponse, error) {
@@ -165,7 +172,7 @@ func lowercaseTags(tags []string) []string {
 }
 
 // picks are listed in this order so the same picks always produce the same prompt text, whatever order they were
-// saved in. dress is left out because outfits have no dress slot (#117).
+// saved in. dress is left out because recommended outfits don't include one-pieces yet.
 var (
 	bottomsInOnboardingOrder = []string{"pants", "skirt", "shorts"}
 	shoesInOnboardingOrder   = []string{"sneakers", "boots", "sandals", "heels", "flats"}
