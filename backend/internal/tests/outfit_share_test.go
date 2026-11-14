@@ -7,6 +7,7 @@ import (
 	"slices"
 	"testing"
 
+	"birdie-and-claire/internal/auth"
 	"birdie-and-claire/internal/errs"
 	"birdie-and-claire/internal/models"
 	"birdie-and-claire/internal/repository"
@@ -72,7 +73,7 @@ func TestNonOwnerAndMissingOutfitReturnNotFound(t *testing.T) {
 	}
 
 	// A stranger's failed share must not have shared it.
-	_, _, err := repo.GetShared(ctx, outfitID)
+	_, _, _, err := repo.GetShared(ctx, outfitID)
 	wantNotFound(t, err)
 }
 
@@ -82,27 +83,27 @@ func TestSharedOutfitIsReadableOnlyWhileShared(t *testing.T) {
 	repo := repository.NewOutfitRepository(db)
 	outfitID, ownerID := insertTestOutfit(t, db)
 
-	_, _, err := repo.GetShared(ctx, outfitID)
+	_, _, _, err := repo.GetShared(ctx, outfitID)
 	wantNotFound(t, err)
 
 	if err := repo.Share(ctx, outfitID, ownerID); err != nil {
 		t.Fatalf("share: %v", err)
 	}
-	outfit, products, err := repo.GetShared(ctx, outfitID)
+	outfit, ownerName, products, err := repo.GetShared(ctx, outfitID)
 	if err != nil {
 		t.Fatalf("get shared outfit: %v", err)
 	}
-	if outfit.ID != outfitID || len(products) != 1 {
+	if outfit.ID != outfitID || ownerName == "" || len(products) != 1 {
 		t.Fatalf("got outfit %s with %d products, want %s with 1", outfit.ID, len(products), outfitID)
 	}
 
 	if err := repo.Unshare(ctx, outfitID, ownerID); err != nil {
 		t.Fatalf("unshare: %v", err)
 	}
-	_, _, err = repo.GetShared(ctx, outfitID)
+	_, _, _, err = repo.GetShared(ctx, outfitID)
 	wantNotFound(t, err)
 
-	_, _, err = repo.GetShared(ctx, uuid.New())
+	_, _, _, err = repo.GetShared(ctx, uuid.New())
 	wantNotFound(t, err)
 }
 
@@ -119,12 +120,37 @@ func TestSharedOutfitShowsDescriptionAndTags(t *testing.T) {
 		t.Fatalf("share: %v", err)
 	}
 
-	shared, err := services.NewOutfitService(repository.New(db), "").GetShared(ctx, outfitID)
+	shared, err := services.NewOutfitService(repository.New(db)).GetShared(ctx, outfitID)
 	if err != nil {
 		t.Fatalf("get shared outfit: %v", err)
 	}
 	if shared.Description != description || !slices.Equal(shared.Tags, []string{"rain", "casual"}) {
 		t.Fatalf("description = %q, tags = %v, want %q, [rain casual]", shared.Description, shared.Tags, description)
+	}
+}
+
+func TestShareLinksToFrontendPageAndCreditsOwner(t *testing.T) {
+	db := openTestDB(t)
+	outfitID, ownerID := insertTestOutfit(t, db)
+	if _, err := db.Exec(`UPDATE users SET name = 'Birdie' WHERE id = $1`, ownerID); err != nil {
+		t.Fatalf("name owner: %v", err)
+	}
+	service := services.NewOutfitService(repository.New(db))
+
+	shared, err := service.Share(auth.WithUserID(context.Background(), ownerID), outfitID)
+	if err != nil {
+		t.Fatalf("share: %v", err)
+	}
+	if want := "/o/" + outfitID.String(); shared.URL != want {
+		t.Fatalf("share url = %q, want %q", shared.URL, want)
+	}
+
+	outfit, err := service.GetShared(context.Background(), outfitID)
+	if err != nil {
+		t.Fatalf("get shared outfit: %v", err)
+	}
+	if outfit.OwnerID != ownerID || outfit.OwnerName != "Birdie" {
+		t.Fatalf("owner = %s %q, want %s %q", outfit.OwnerID, outfit.OwnerName, ownerID, "Birdie")
 	}
 }
 

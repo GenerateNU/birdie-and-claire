@@ -33,6 +33,7 @@ import {
   CollectionCard,
   Divider,
   EmptyState,
+  ExternalLink,
   Form,
   Header,
   IconButton,
@@ -123,6 +124,8 @@ const textSamples = [
   { variant: "subheading", scales: ["subheading"] },
   { variant: "body", scales: ["body"] },
   { variant: "caption", scales: ["caption"] },
+  { variant: "display-hifi", scales: ["display"] },
+  { variant: "body-l", scales: ["body-l"] },
 ] as const;
 
 const sectionTitles = {
@@ -363,6 +366,18 @@ export function Playground() {
                 </Link>
               </Box>
               <Label>Link as a Button · every variant at sm and md · trailing icon</Label>
+              <Box className="flex flex-wrap items-center gap-md">
+                <ExternalLink href="https://birdieandclaire.com">Birdie & Claire</ExternalLink>
+                <ExternalLink
+                  href="https://birdieandclaire.com"
+                  variant="secondary"
+                  size="sm"
+                  trailingIcon={ArrowSquareOutIcon}
+                >
+                  View product
+                </ExternalLink>
+              </Box>
+              <Label>ExternalLink · unstyled · as a Button, opens a new tab</Label>
             </Section>
 
             <Section id="header">
@@ -761,7 +776,8 @@ function SectionHeaderExamples() {
     <Box className="flex flex-col gap-md">
       <SectionHeader title="Recently saved" link={{ label: "See all", to: "/playground" }} />
       <SectionHeader title="Recently saved" />
-      <Label>with link · without link</Label>
+      <SectionHeader title="Pieces in this outfit" count="6 pieces" size="sm" />
+      <Label>with link · without link · sm with a count</Label>
     </Box>
   );
 }
@@ -1539,7 +1555,7 @@ function ItemCardExamples() {
 
   return (
     <Box className="flex flex-col gap-xl p-sm">
-      {(["md", "sm"] as const).map((size) => (
+      {(["md", "sm", "xs"] as const).map((size) => (
         <Box key={size} className="flex flex-col gap-md">
           <Box className="flex flex-wrap items-start gap-xl">
             {cardStates.map((state) => (
@@ -1726,8 +1742,18 @@ function PieceRowExamples() {
         src={samplePhoto}
         action={<Button label="Add to cart" variant="secondary" size="sm" />}
       />
+      <PieceRow
+        type="bc"
+        name="Wrap midi dress"
+        detail="From where"
+        src={samplePhoto}
+        action={<Button label="Add to cart" size="sm" />}
+        secondaryAction={<Button label="View product" variant="secondary" size="sm" />}
+      />
       <PieceRow type="owned" name="No action" detail="From where" src={null} />
-      <Label>owned with swap · B&C with add to cart · owned, no action, no image</Label>
+      <Label>
+        owned with swap · B&C with add to cart · B&C with two actions · owned, no action, no image
+      </Label>
     </Box>
   );
 }
