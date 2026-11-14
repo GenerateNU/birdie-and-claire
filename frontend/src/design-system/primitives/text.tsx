@@ -11,6 +11,8 @@ const variants = {
   caption: { tag: "span", className: "text-caption" },
   // Hi-fi styles. `-hifi` only where a lofi variant already has the name.
   "display-hifi": { tag: "h1", className: "font-serif text-display" },
+  "heading-l": { tag: "h1", className: "font-serif text-heading-l" },
+  "heading-m": { tag: "p", className: "font-serif text-heading-m" },
   "body-l": { tag: "p", className: "text-body-l" },
 } as const;
 

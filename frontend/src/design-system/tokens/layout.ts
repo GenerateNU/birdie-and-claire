@@ -4,6 +4,15 @@ export const ModalWidth = { sm: "480px", md: "640px", lg: "880px" } as const;
 // The photo beside a split modal's content (`w-modal-image`), from Figma.
 export const ModalImageWidth = "360px";
 
+// The onboarding screens' widths (`w-onboarding-<key>`), from Figma's Get To Know You frames: the
+// photo down the left, the welcome card, the answer rows, and the stepper.
+export const OnboardingWidth = {
+  photo: "400px",
+  card: "591px",
+  choices: "565px",
+  stepper: "591px",
+} as const;
+
 // A menu's fixed width (`w-menu`), from Figma.
 export const MenuWidth = "200px";
 
@@ -97,6 +106,7 @@ export const PageHeaderHeight = "5rem";
 export const LogoSize = {
   sidebar: { width: "9.375rem", height: "2.9375rem" },
   header: { width: "11.25rem", height: "3.5625rem" },
+  onboarding: { width: "20.75rem", height: "6.5625rem" },
 } as const;
 
 export const AspectRatio = {
