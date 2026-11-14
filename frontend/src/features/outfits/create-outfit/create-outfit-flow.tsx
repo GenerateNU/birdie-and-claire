@@ -24,7 +24,7 @@ import {
   occasions,
   specificsOptions,
   tileToApiWeather,
-  vibes,
+  vibeCards,
   weatherConditions,
   weatherTiles,
   type SpecificsAnswer,
@@ -177,18 +177,22 @@ export function CreateOutfitFlow() {
     return (
       <StepScreen
         step="vibe"
-        title="Describe the occasion"
+        title="What vibe describes you best?"
         canContinue={vibe !== null}
         onBack={() => goBackTo("weather")}
         onNext={() => advanceTo("specifics")}
       >
-        <Box className="capitalize">
-          <OptionTileGroup
-            label="Vibe"
-            options={vibes.map((option) => ({ label: option, value: option }))}
-            value={vibe}
-            onValueChange={setVibe}
-          />
+        <Box className="flex flex-wrap justify-center gap-lg">
+          {vibeCards.map((card) => (
+            <ImageOptionCard
+              key={card.vibe}
+              label={card.label.toUpperCase()}
+              src={card.src}
+              size="lg"
+              pressed={vibe === card.vibe}
+              onPressedChange={(pressed) => setVibe(pressed ? card.vibe : null)}
+            />
+          ))}
         </Box>
       </StepScreen>
     );
@@ -203,7 +207,7 @@ export function CreateOutfitFlow() {
         onBack={() => goBackTo("vibe")}
         onNext={() => advanceTo("custom")}
       >
-        <Box className="flex flex-col gap-lg">
+        <Box className="mx-auto flex max-w-content-lg flex-col gap-lg">
           <ChoiceGroup
             label="Are there any Birdie & Claire items you would like to style?"
             options={specificsOptions}
@@ -231,6 +235,7 @@ export function CreateOutfitFlow() {
         onNext={() => advanceTo("review")}
       >
         <TextArea
+          className="mx-auto max-w-content-lg"
           label="Enter any other details you would like considered."
           placeholder="i.e. Outfit for a chill night out with long sleeves and rainy weather"
           // The endpoint caps custom at 200 characters.

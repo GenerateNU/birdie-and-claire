@@ -29,7 +29,7 @@ export function StepScreen({
           currentStep={barSteps.findIndex((barStep) => barStep.step === step)}
         />
       </Box>
-      <Box className="flex w-full max-w-content-xl flex-1 flex-col items-center justify-center gap-lg">
+      <Box className="flex w-full max-w-content-2xl flex-1 flex-col items-center justify-center gap-lg">
         <Text variant="display-hifi" className="text-center">
           {title}
         </Text>
