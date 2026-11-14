@@ -26,15 +26,23 @@ export { ListCard } from "@/design-system/components/cards/list-card";
 
 export { OutfitCard } from "@/design-system/components/cards/outfit-card";
 
+export { OutfitSlot } from "@/design-system/components/cards/outfit-slot";
+
 export { PieceRow } from "@/design-system/components/cards/piece-row";
 
 export { Chip } from "@/design-system/components/chips/chip";
+
+export { CheckboxList } from "@/design-system/components/choices/checkbox-list";
 
 export { ChoiceGroup } from "@/design-system/components/choices/choice-group";
 
 export { OptionTileGroup } from "@/design-system/components/choices/option-tile-group";
 
 export { CodeInput } from "@/design-system/components/inputs/code-input";
+
+export { CopyField } from "@/design-system/components/inputs/copy-field";
+
+export { EditableTitle } from "@/design-system/components/inputs/editable-title";
 
 export { SearchField } from "@/design-system/components/inputs/search-field";
 

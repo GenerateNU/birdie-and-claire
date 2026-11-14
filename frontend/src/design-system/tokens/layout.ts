@@ -61,6 +61,14 @@ export const CollectionCardSize = {
 // An outfit card's width and image height (`w-outfit`, `h-outfit`), from Figma.
 export const OutfitCardSize = { width: "240px", imageHeight: "300px" } as const;
 
+// An outfit slot's width and photo heights (`w-outfit-slot`, `h-outfit-slot-*`), from Figma. The
+// empty slot's dashed box is taller because it has no action row under it.
+export const OutfitSlotSize = {
+  width: "258px",
+  photoHeight: "168px",
+  emptyHeight: "208px",
+} as const;
+
 // The thumbnail in a piece row (`w-row-thumbnail`, `h-row-thumbnail`), from Figma.
 export const RowThumbnailSize = { width: "64px", height: "80px" } as const;
 
@@ -73,6 +81,9 @@ export const ThumbnailSize = { width: "92px", height: "112px" } as const;
 
 // The checkbox and radio box (`size-control`), from Figma.
 export const ControlSize = "1.25rem";
+
+// The selected radio's dot (`size-radio-dot`), from Figma.
+export const RadioDotSize = "10px";
 
 // The text area's fixed box (`h-textarea`), from Figma.
 export const TextAreaHeight = "7rem";

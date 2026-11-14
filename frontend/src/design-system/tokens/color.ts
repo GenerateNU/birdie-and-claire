@@ -54,7 +54,8 @@ export const BackgroundColor = {
   "control-off": Palette.slate,
   // Fill of a disabled field, checkbox, radio, tile or chip.
   disabled: Palette.slateFaint,
-  overlay: "rgba(0, 0, 0, 0.4)",
+  // Ink at 40%, from Figma's scrim.
+  overlay: "rgba(36, 36, 36, 0.4)",
   // Darkens a photo enough for inverse text to read on it. The opacity is the lofi homescreen's.
   "photo-overlay": "rgba(0, 0, 0, 0.69)",
 } as const;

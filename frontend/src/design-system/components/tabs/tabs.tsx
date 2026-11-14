@@ -10,13 +10,16 @@ const appearanceClasses = {
     tab: "px-lg py-xs text-caption text-primary border-r border-primary last:border-r-0 first:rounded-l-full last:rounded-r-full data-[active]:bg-primary data-[active]:text-inverse focus-ring",
   },
   // Fills its container's height and scrolls the panel, so a long grid stays under the tabs.
+  // The transparent bottom border keeps every tab the same height as the underlined active one.
   underline: {
     root: "flex min-h-0 w-full flex-1 flex-col gap-md",
     panel: "min-h-0 w-full flex-1 overflow-y-auto",
-    list: "flex w-full border-b",
-    tab: "group flex flex-1 flex-col items-center gap-xxs pt-xs text-caption text-primary focus-ring",
+    list: "flex w-full gap-lg border-b",
+    tab: "flex items-center justify-center gap-xxs border-b-thick border-transparent px-xxs py-sm text-label-l text-secondary hover:text-primary data-[active]:border-primary data-[active]:text-label-l-strong data-[active]:text-primary data-[disabled]:text-disabled focus-ring",
   },
 };
+
+const underlineIconSize = 20;
 
 type TabOption<T extends string> = {
   label: string;
@@ -29,7 +32,8 @@ type TabsProps<T extends string> = {
   value: T;
   onValueChange: (value: T) => void;
   disabled: boolean;
-  /** segmented is a pill row. underline is a full-width row that underlines the active tab. */
+  /** segmented is a pill row. underline is a row of content-width tabs over a rule, with the
+   * active tab underlined. */
   appearance?: keyof typeof appearanceClasses;
   children: ReactNode;
 };
@@ -55,13 +59,15 @@ export function Tabs<T extends string>({
     >
       <BaseTabs.List className={classes.list}>
         {tabs.map(({ label, value: tabValue, icon: TabIcon }) => (
-          <BaseTabs.Tab key={tabValue} value={tabValue} disabled={disabled} className={classes.tab}>
-            {underlined && TabIcon && <TabIcon aria-hidden="true" weight="fill" />}
+          <BaseTabs.Tab
+            key={tabValue}
+            value={tabValue}
+            disabled={disabled}
+            // An icon tab stacks its icon above the label, as in the editor.
+            className={underlined && TabIcon ? `${classes.tab} flex-col` : classes.tab}
+          >
+            {underlined && TabIcon && <TabIcon size={underlineIconSize} aria-hidden="true" />}
             {label}
-            {/* Invisible rather than absent, so the row doesn't shift when the active tab moves. */}
-            {underlined && (
-              <span className="invisible h-xxs w-xl rounded-full bg-primary group-data-[active]:visible" />
-            )}
           </BaseTabs.Tab>
         ))}
       </BaseTabs.List>

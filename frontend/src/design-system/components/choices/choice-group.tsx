@@ -33,6 +33,8 @@ type ChoiceGroupProps<T extends string> = {
   options: ChoiceOption<T>[];
   value: T | null;
   onValueChange: (value: T) => void;
+  /** Leaves the radio out of each row, so only the row's border and fill show the choice. */
+  hideRadio?: boolean;
 };
 
 /** A single choice drawn as stacked full-width rows, for short questions like Yes or No. */
@@ -41,6 +43,7 @@ export function ChoiceGroup<T extends string>({
   options,
   value,
   onValueChange,
+  hideRadio = false,
 }: ChoiceGroupProps<T>) {
   const labelId = useId();
 
@@ -80,9 +83,13 @@ export function ChoiceGroup<T extends string>({
                 </Box>
               )}
             </Box>
-            <Box aria-hidden="true" className={`${radioClasses} ${radioStateClasses[state]}`}>
-              <Radio.Indicator className={`size-xs rounded-full ${dotStateClasses[state]}`} />
-            </Box>
+            {!hideRadio && (
+              <Box aria-hidden="true" className={`${radioClasses} ${radioStateClasses[state]}`}>
+                <Radio.Indicator
+                  className={`size-radio-dot rounded-full ${dotStateClasses[state]}`}
+                />
+              </Box>
+            )}
           </Radio.Root>
         );
       })}

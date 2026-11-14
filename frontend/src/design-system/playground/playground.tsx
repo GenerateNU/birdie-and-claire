@@ -1,4 +1,5 @@
 import {
+  ArrowClockwiseIcon,
   ArrowRightIcon,
   ArrowSquareOutIcon,
   BookmarkSimpleIcon,
@@ -27,11 +28,14 @@ import {
   Box,
   Button,
   Checkbox,
+  CheckboxList,
   Chip,
   ChoiceGroup,
   CodeInput,
   CollectionCard,
+  CopyField,
   Divider,
+  EditableTitle,
   EmptyState,
   ExternalLink,
   Form,
@@ -52,6 +56,7 @@ import {
   NavItem,
   OptionTileGroup,
   OutfitCard,
+  OutfitSlot,
   PageHeader,
   PieceRow,
   ProgressBar,
@@ -137,6 +142,7 @@ const sectionTitles = {
   "nav-item": "Nav item",
   sidebar: "Sidebar",
   checkbox: "Checkbox",
+  "checkbox-list": "Checkbox list",
   toggle: "Toggle",
   "text-field": "Text field",
   "text-area": "Text area",
@@ -147,11 +153,14 @@ const sectionTitles = {
   form: "Form",
   "search-field": "Search field",
   "code-input": "Code input",
+  "copy-field": "Copy field",
+  "editable-title": "Editable title",
   "image-option-card": "Image option card",
   "add-tile": "Add tile",
   "item-card": "Item card",
   "collection-card": "Collection card",
   "outfit-card": "Outfit card",
+  "outfit-slot": "Outfit slot",
   "piece-row": "Piece row",
   "list-card": "List card",
   spinner: "Spinner",
@@ -190,6 +199,7 @@ const navGroups = [
       "nav-item",
       "sidebar",
       "checkbox",
+      "checkbox-list",
       "toggle",
       "text-field",
       "text-area",
@@ -200,11 +210,14 @@ const navGroups = [
       "form",
       "search-field",
       "code-input",
+      "copy-field",
+      "editable-title",
       "image-option-card",
       "add-tile",
       "item-card",
       "collection-card",
       "outfit-card",
+      "outfit-slot",
       "piece-row",
       "list-card",
       "spinner",
@@ -410,6 +423,12 @@ export function Playground() {
               </Stage>
             </Section>
 
+            <Section id="checkbox-list">
+              <Stage>
+                <CheckboxListExamples />
+              </Stage>
+            </Section>
+
             <Section id="toggle">
               <ToggleExamples />
             </Section>
@@ -462,6 +481,18 @@ export function Playground() {
               <CodeInputExamples />
             </Section>
 
+            <Section id="copy-field">
+              <Stage>
+                <CopyFieldExamples />
+              </Stage>
+            </Section>
+
+            <Section id="editable-title">
+              <Stage>
+                <EditableTitleExamples />
+              </Stage>
+            </Section>
+
             <Section id="image-option-card">
               <Stage>
                 <ImageOptionCardExamples />
@@ -489,6 +520,12 @@ export function Playground() {
             <Section id="outfit-card">
               <Stage>
                 <OutfitCardExamples />
+              </Stage>
+            </Section>
+
+            <Section id="outfit-slot">
+              <Stage>
+                <OutfitSlotExamples />
               </Stage>
             </Section>
 
@@ -934,6 +971,15 @@ function TabsExamples() {
       >
         <Text variant="body">Showing the {tab} panel, underline appearance.</Text>
       </Tabs>
+      <Tabs
+        tabs={sampleTabs}
+        value={tab}
+        onValueChange={setTab}
+        disabled={false}
+        appearance="underline"
+      >
+        <Text variant="body">Showing the {tab} panel, underline without icons.</Text>
+      </Tabs>
     </Box>
   );
 }
@@ -1336,6 +1382,15 @@ function ChoiceGroupExamples() {
           onValueChange={setChoice}
         />
       </Box>
+      <Box className="max-w-content-sm">
+        <ChoiceGroup
+          label="No radio"
+          options={choiceOptions}
+          value={choice}
+          onValueChange={setChoice}
+          hideRadio
+        />
+      </Box>
     </Box>
   );
 }
@@ -1406,6 +1461,7 @@ function CodeInputExamples() {
 function SearchFieldExamples() {
   const [value, setValue] = useState("");
   const [submitted, setSubmitted] = useState<string | null>(null);
+  const [search, setSearch] = useState("houndstooth");
 
   return (
     <Box className="flex max-w-content-sm flex-col gap-sm">
@@ -1428,11 +1484,116 @@ function SearchFieldExamples() {
       <SearchField
         label="With a leading icon"
         placeholder="Search items"
+        value={search}
+        onValueChange={setSearch}
+        onSubmit={() => {}}
+        leadingIcon={MagnifyingGlassIcon}
+      />
+      <Label>type to see the clear button</Label>
+      <SearchField
+        label="Disabled"
+        placeholder="Search items"
         value=""
         onValueChange={() => {}}
         onSubmit={() => {}}
         leadingIcon={MagnifyingGlassIcon}
+        disabled
       />
+    </Box>
+  );
+}
+
+function CopyFieldExamples() {
+  const [copies, setCopies] = useState(0);
+
+  return (
+    <Box className="flex max-w-content-sm flex-col gap-sm">
+      <CopyField
+        label="Share link"
+        value="https://birdieandclaire.com/s/yFSfg921"
+        onCopy={() => setCopies((count) => count + 1)}
+      />
+      <Label>copied {copies} times</Label>
+    </Box>
+  );
+}
+
+function EditableTitleExamples() {
+  const [title, setTitle] = useState("Weekend in Paris");
+
+  return (
+    <Box className="flex flex-col gap-sm">
+      <EditableTitle label="Outfit name" value={title} onValueChange={setTitle} maxLength={100} />
+      <Label>hover shows the pencil · click to edit · Enter or blur saves · Esc cancels</Label>
+    </Box>
+  );
+}
+
+function CheckboxListExamples() {
+  const [checked, setChecked] = useState<Record<string, boolean>>({ work1: true });
+
+  const collections = [
+    { value: "work1", label: "WORK OUTFIT 1 (3)" },
+    { value: "work2", label: "WORK OUTFIT 2 (0)" },
+    { value: "work3", label: "WORK OUTFIT 3 (2)" },
+  ];
+
+  return (
+    <CheckboxList
+      label="Collections"
+      items={collections.map((collection) => ({
+        ...collection,
+        checked: checked[collection.value] ?? false,
+      }))}
+      onCheckedChange={(value, isChecked) =>
+        setChecked((current) => ({ ...current, [value]: isChecked }))
+      }
+      className="max-w-content-sm"
+    />
+  );
+}
+
+function OutfitSlotExamples() {
+  const [hidden, setHidden] = useState(false);
+  const noop = () => {};
+
+  return (
+    <Box className="flex flex-wrap items-start gap-lg">
+      <Box className="flex flex-col gap-xs">
+        <Label>empty</Label>
+        <OutfitSlot title="Jacket" piece={null} onAdd={noop} />
+      </Box>
+      <Box className="flex flex-col gap-xs">
+        <Label>filled · Hide toggles hidden</Label>
+        <OutfitSlot
+          title="Houndstooth blazer"
+          piece={{ src: samplePhoto, bcStamp: true }}
+          hidden={hidden}
+          onHiddenChange={setHidden}
+          onSwap={noop}
+        />
+      </Box>
+      <Box className="flex flex-col gap-xs">
+        <Label>hidden</Label>
+        <OutfitSlot
+          title="Wide-leg trousers"
+          piece={{ src: null, bcStamp: false }}
+          hidden
+          onHiddenChange={noop}
+          onSwap={noop}
+        />
+      </Box>
+      <Box className="flex flex-col gap-xs">
+        <Label>selected</Label>
+        <OutfitSlot
+          title="Beret"
+          piece={{ src: null, bcStamp: false }}
+          hidden={false}
+          onHiddenChange={noop}
+          onSwap={noop}
+          selected
+        />
+      </Box>
     </Box>
   );
 }
@@ -1486,6 +1647,19 @@ function ImageOptionCardExamples() {
           </Box>
         )),
       )}
+      <Box className="flex flex-col gap-md">
+        <Box className="flex flex-wrap items-start gap-xl">
+          <ImageOptionCard
+            label="Sneakers"
+            src={samplePhoto}
+            pressed={false}
+            onPressedChange={() => {}}
+            size="sm"
+            fit="contain"
+          />
+        </Box>
+        <Label>sm · fit contain, for product cutouts</Label>
+      </Box>
       <Box className="flex flex-wrap items-start gap-xl">
         <ImageOptionCard
           label="No subtitle"
@@ -1841,6 +2015,13 @@ function EmptyStateExamples() {
       <EmptyState title="No pieces yet" description="Pieces you own will show up here." />
       <EmptyState title="Nothing saved for this occasion" icon={ShareNetworkIcon} />
       <EmptyState title="No outfits yet" action={{ label: "Create outfit", onClick: () => {} }} />
+      <EmptyState
+        title="No collections yet"
+        description="Make one, or bring in what you bought from the shop."
+        icon={CoatHangerIcon}
+        action={{ label: "New collection", icon: PlusIcon, onClick: () => {} }}
+        secondaryAction={{ label: "Sync with shop", icon: ArrowClockwiseIcon, onClick: () => {} }}
+      />
     </Box>
   );
 }

@@ -35,7 +35,7 @@ export function PieceRow({ name, detail, src, type, action, secondaryAction }: P
         <Box className="text-body-s text-secondary">{detail}</Box>
       </Box>
       {(action || secondaryAction) && (
-        <Box className="flex shrink-0 flex-col gap-xs">
+        <Box className="flex shrink-0 flex-col gap-xxs">
           {action}
           {secondaryAction}
         </Box>
