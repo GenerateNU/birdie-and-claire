@@ -123,7 +123,6 @@ export function SharedOutfitPage({ outfitId, viewer }: SharedOutfitPageProps) {
 function SharedOutfitFrame({ children }: SharedOutfitFrameProps) {
   return (
     <Box className="flex h-screen flex-col">
-      {/* The outfit details page's navigation bar height and logo size, from the Figma. */}
       <header className="flex h-[120px] shrink-0 items-end justify-center border-y">
         <Link to="/">
           <Logo className="h-[118px] w-[373px] object-cover object-bottom" />
@@ -165,7 +164,6 @@ function SaveAction({ outfit, viewer }: SaveActionProps) {
     );
   }
 
-  // Keyed so moving to another share link starts with a fresh save, not the last outfit's copy.
   return <SaveSharedOutfit key={outfit.id} outfit={outfit} />;
 }
 

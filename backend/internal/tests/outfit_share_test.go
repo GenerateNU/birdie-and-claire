@@ -72,7 +72,7 @@ func TestNonOwnerAndMissingOutfitReturnNotFound(t *testing.T) {
 	}
 
 	// A stranger's failed share must not have shared it.
-	_, _, err := repo.GetShared(ctx, outfitID)
+	_, _, _, err := repo.GetShared(ctx, outfitID)
 	wantNotFound(t, err)
 }
 
@@ -82,27 +82,27 @@ func TestSharedOutfitIsReadableOnlyWhileShared(t *testing.T) {
 	repo := repository.NewOutfitRepository(db)
 	outfitID, ownerID := insertTestOutfit(t, db)
 
-	_, _, err := repo.GetShared(ctx, outfitID)
+	_, _, _, err := repo.GetShared(ctx, outfitID)
 	wantNotFound(t, err)
 
 	if err := repo.Share(ctx, outfitID, ownerID); err != nil {
 		t.Fatalf("share: %v", err)
 	}
-	outfit, products, err := repo.GetShared(ctx, outfitID)
+	outfit, ownerName, products, err := repo.GetShared(ctx, outfitID)
 	if err != nil {
 		t.Fatalf("get shared outfit: %v", err)
 	}
-	if outfit.ID != outfitID || len(products) != 1 {
+	if outfit.ID != outfitID || ownerName == "" || len(products) != 1 {
 		t.Fatalf("got outfit %s with %d products, want %s with 1", outfit.ID, len(products), outfitID)
 	}
 
 	if err := repo.Unshare(ctx, outfitID, ownerID); err != nil {
 		t.Fatalf("unshare: %v", err)
 	}
-	_, _, err = repo.GetShared(ctx, outfitID)
+	_, _, _, err = repo.GetShared(ctx, outfitID)
 	wantNotFound(t, err)
 
-	_, _, err = repo.GetShared(ctx, uuid.New())
+	_, _, _, err = repo.GetShared(ctx, uuid.New())
 	wantNotFound(t, err)
 }
 

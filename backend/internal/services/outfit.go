@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"fmt"
 	"slices"
 
 	"birdie-and-claire/internal/auth"
@@ -96,20 +95,15 @@ func (s *outfitService) Unshare(ctx context.Context, id uuid.UUID) error {
 }
 
 func (s *outfitService) GetShared(ctx context.Context, id uuid.UUID) (models.SharedOutfitResponse, error) {
-	outfit, products, err := s.repo.Outfit.GetShared(ctx, id)
+	outfit, ownerName, products, err := s.repo.Outfit.GetShared(ctx, id)
 	if err != nil {
 		return models.SharedOutfitResponse{}, err
-	}
-
-	owner, err := s.repo.User.GetByID(ctx, outfit.UserID)
-	if err != nil {
-		return models.SharedOutfitResponse{}, fmt.Errorf("get owner of shared outfit %s: %w", id, err)
 	}
 	return models.SharedOutfitResponse{
 		ID:        outfit.ID,
 		Name:      outfit.Name,
-		OwnerID:   owner.ID,
-		OwnerName: owner.Name,
+		OwnerID:   outfit.UserID,
+		OwnerName: ownerName,
 		Products:  products,
 	}, nil
 }
