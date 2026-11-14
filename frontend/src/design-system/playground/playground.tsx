@@ -130,6 +130,7 @@ const textSamples = [
   { variant: "display-hifi", scales: ["display"] },
   { variant: "body-l", scales: ["body-l"] },
   { variant: "body-m", scales: ["body-m"] },
+  { variant: "label-l-strong", scales: ["label-l-strong"] },
 ] as const;
 
 const sectionTitles = {

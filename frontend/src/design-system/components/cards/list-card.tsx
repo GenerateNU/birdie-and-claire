@@ -33,7 +33,7 @@ export function ListCard({
       <Box className="flex items-center gap-sm">
         <LeadingIcon aria-hidden="true" className="size-md shrink-0" />
         <Box className="flex flex-col">
-          <Box className="text-label-l-strong uppercase">{title}</Box>
+          <Text variant="label-l-strong">{title}</Text>
           <Text variant="body-m" className={italic ? "italic" : undefined}>
             {value}
           </Text>

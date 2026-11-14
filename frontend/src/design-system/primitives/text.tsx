@@ -13,6 +13,7 @@ const variants = {
   "display-hifi": { tag: "h1", className: "font-serif text-display" },
   "body-l": { tag: "p", className: "text-body-l" },
   "body-m": { tag: "p", className: "text-body-m" },
+  "label-l-strong": { tag: "p", className: "text-label-l-strong uppercase" },
 } as const;
 
 type TextVariant = keyof typeof variants;
