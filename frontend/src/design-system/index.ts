@@ -82,6 +82,8 @@ export { ModalPanel } from "@/design-system/components/modal/modal-panel";
 
 export { Scrim } from "@/design-system/components/modal/scrim";
 
+export { SidePanel } from "@/design-system/components/modal/side-panel";
+
 export { EmptyState } from "@/design-system/components/status/empty-state";
 
 export { ErrorState } from "@/design-system/components/status/error";

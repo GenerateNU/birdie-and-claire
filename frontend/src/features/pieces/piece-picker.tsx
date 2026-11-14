@@ -1,4 +1,3 @@
-import { TrashIcon } from "@phosphor-icons/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
 
@@ -15,8 +14,8 @@ import {
   Button,
   EmptyState,
   ErrorState,
-  IconButton,
   ItemCard,
+  SidePanel,
   Skeleton,
   Text,
 } from "@/design-system";
@@ -85,23 +84,30 @@ export function PiecePicker({ onAdded }: PiecePickerProps) {
 
   const selectedCount = `${selected.length} ${selected.length === 1 ? "Item" : "Items"} Selected`;
 
+  const addButton = (
+    <Button
+      label="Add Items to Owned"
+      loading={saving}
+      loadingLabel="Adding…"
+      disabled={selected.length === 0}
+      onClick={addSelected}
+    />
+  );
+
+  const addError = addMutation.isError && (
+    <Text variant="body" className="text-center text-error">
+      Couldn't add your pieces. Try again.
+    </Text>
+  );
+
   return (
-    <Box className="flex flex-col gap-md">
-      <Box className="relative">
-        {/* Scrolls inside part of the viewport so the buttons below stay in view, in the onboarding
-            modal and on /pieces/add alike. */}
-        <Box inert={showingSelectedItems} className="max-h-[60vh] overflow-y-auto pr-xs">
-          <Catalog selected={selected} onToggle={toggle} disabled={saving} atLimit={atLimit} />
-        </Box>
-        {showingSelectedItems && (
-          <SelectedItemsPanel
-            selected={selected}
-            onRemove={(product) =>
-              changeSelection(selected.filter((picked) => picked.id !== product.id))
-            }
-            disabled={saving}
-          />
-        )}
+    <Box className="flex flex-col gap-lg">
+      {/* Scrolls inside part of the viewport so the buttons below stay in view, in the onboarding
+          modal and on /pieces/add alike. A scroll box clips on every side, so the padding leaves
+          room for the selected ring and hover outline outside the cards, and the negative margin
+          keeps the grid where Figma puts it. */}
+      <Box className="scrollbar-thin -m-sm max-h-[60vh] overflow-y-auto p-sm">
+        <Catalog selected={selected} onToggle={toggle} disabled={saving} atLimit={atLimit} />
       </Box>
       {atLimit && (
         <Text variant="caption" className="text-center text-secondary">
@@ -111,59 +117,40 @@ export function PiecePicker({ onAdded }: PiecePickerProps) {
       <Box className="flex justify-end gap-sm">
         <Button
           label={selectedCount}
-          accessibleLabel={showingSelectedItems ? "Back to the catalog" : undefined}
           variant="secondary"
           disabled={selected.length === 0 || saving}
-          onClick={() => setShowingSelectedItems(!showingSelectedItems)}
+          onClick={() => setShowingSelectedItems(true)}
         />
-        <Button
-          label="Add Items to Owned"
-          loading={saving}
-          loadingLabel="Adding…"
-          disabled={selected.length === 0}
-          onClick={addSelected}
-        />
+        {addButton}
       </Box>
-      {addMutation.isError && (
-        <Text variant="body" className="text-center text-error">
-          Couldn't add your pieces. Try again.
-        </Text>
-      )}
-    </Box>
-  );
-}
-
-type SelectedItemsPanelProps = {
-  selected: ProductResponse[];
-  onRemove: (product: ProductResponse) => void;
-  disabled: boolean;
-};
-
-function SelectedItemsPanel({ selected, onRemove, disabled }: SelectedItemsPanelProps) {
-  return (
-    <Box className="absolute inset-y-0 right-0 flex w-3/5 flex-col gap-md overflow-y-auto border-l bg-card p-md shadow-modal">
-      <Box className="flex flex-col items-center text-center">
-        <Box className="text-label-l-strong">Selected Items</Box>
-        <Text variant="body" className="text-secondary">
-          You can always add more in your profile later!
-        </Text>
-      </Box>
-      <Box role="list" className="grid grid-cols-2 gap-md">
-        {selected.map((product) => (
-          <Box key={product.id} role="listitem" className="relative">
-            <ItemCard name={product.title} src={product.image_url} size="sm" />
-            <IconButton
-              icon={TrashIcon}
-              label={`Remove ${product.title}`}
-              variant="secondary"
-              size="sm"
-              disabled={disabled}
-              className="absolute right-xs top-xs"
-              onClick={() => onRemove(product)}
-            />
-          </Box>
-        ))}
-      </Box>
+      {!showingSelectedItems && addError}
+      <SidePanel
+        open={showingSelectedItems}
+        onClose={() => setShowingSelectedItems(false)}
+        title="Selected Items"
+        footer={
+          <>
+            {addButton}
+            {addError}
+          </>
+        }
+      >
+        <Box role="list" className="grid grid-cols-2 gap-lg">
+          {selected.map((product) => (
+            <Box key={product.id} role="listitem">
+              <ItemCard
+                name={product.title}
+                src={product.image_url}
+                size="sm"
+                onRemove={() =>
+                  changeSelection(selected.filter((picked) => picked.id !== product.id))
+                }
+                disabled={saving}
+              />
+            </Box>
+          ))}
+        </Box>
+      </SidePanel>
     </Box>
   );
 }

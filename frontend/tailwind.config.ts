@@ -35,7 +35,9 @@ import {
   RadioDotSize,
   RowThumbnailSize,
   ScrollAreaHeight,
+  ScrollbarWidth,
   SidebarWidth,
+  SidePanelWidth,
   StampSize,
   StepWidth,
   TextAreaHeight,
@@ -73,6 +75,7 @@ export default {
         "modal-lg": ModalWidth.lg,
         "modal-image": ModalImageWidth,
         menu: MenuWidth,
+        "side-panel": SidePanelWidth,
         "card-sm": CardSize.sm.width,
         "card-lg": CardSize.lg.width,
         "item-md": ItemCardSize.md.width,
@@ -191,6 +194,19 @@ export default {
           outlineWidth: FocusRing.width,
           outlineOffset: FocusRing.offset,
           outlineColor: OutlineColor.focus,
+        },
+        // Chrome ignores the ::-webkit-scrollbar rules once scrollbar-color is set, and the
+        // standard properties can't make a track this thin, so only Firefox gets them.
+        ".scrollbar-thin::-webkit-scrollbar": { width: ScrollbarWidth },
+        ".scrollbar-thin::-webkit-scrollbar-thumb": {
+          backgroundColor: BorderColor.DEFAULT,
+          borderRadius: CornerRadius.full,
+        },
+        "@supports not selector(::-webkit-scrollbar)": {
+          ".scrollbar-thin": {
+            scrollbarWidth: "thin",
+            scrollbarColor: `${BorderColor.DEFAULT} transparent`,
+          },
         },
       });
     }),

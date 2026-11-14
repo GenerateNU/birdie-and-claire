@@ -151,14 +151,7 @@ function Onboarding() {
           open={step === "pick-pieces"}
           onClose={() => setStep("add-method")}
           title="Add Items"
-          actions={[
-            {
-              label: "Skip for now",
-              variant: "ghost",
-              disabled: addingPieces,
-              onClick: () => setStep("style"),
-            },
-          ]}
+          actions={[]}
           dismissible={!addingPieces}
           size="lg"
         >

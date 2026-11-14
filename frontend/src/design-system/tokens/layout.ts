@@ -13,6 +13,10 @@ export const OnboardingWidth = {
   stepper: "591px",
 } as const;
 
+// A side panel's fixed width (`w-side-panel`), from Figma: two small item cards, the gap between
+// them, and the padding.
+export const SidePanelWidth = "296px";
+
 // A menu's fixed width (`w-menu`), from Figma.
 export const MenuWidth = "200px";
 
@@ -33,6 +37,9 @@ export const ContentWidth = {
 } as const;
 
 export const ScrollAreaHeight = "384px";
+
+// The thin scroll track (`.scrollbar-thin`), from Figma.
+export const ScrollbarWidth = "4px";
 
 // Fixed width and photo height of an image option card (`w-card-*`, `h-card-*`), from Figma: sm is
 // for neckline, bottoms and shoes, lg for occasion and style vibe. A fixed width makes long labels

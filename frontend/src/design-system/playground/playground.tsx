@@ -63,6 +63,7 @@ import {
   ProgressStepper,
   RadioGroup,
   Scrim,
+  SidePanel,
   SearchField,
   SectionHeader,
   SegmentedControl,
@@ -172,6 +173,7 @@ const sectionTitles = {
   avatar: "Avatar",
   scrim: "Scrim",
   modal: "Modal",
+  "side-panel": "Side panel",
   menu: "Menu",
   toast: "Toast",
   text: "Text",
@@ -228,6 +230,7 @@ const navGroups = [
       "avatar",
       "scrim",
       "modal",
+      "side-panel",
       "menu",
       "toast",
       "text",
@@ -606,6 +609,10 @@ export function Playground() {
               <Stage>
                 <ModalExamples />
               </Stage>
+            </Section>
+
+            <Section id="side-panel">
+              <SidePanelExample />
             </Section>
 
             <Section id="menu">
@@ -1733,6 +1740,7 @@ function ItemCardExamples() {
         />
         <ItemCard name="No detail, no menu" src={samplePhoto} />
         <ItemCard name="No image" detail="Empty photo" src={null} menu={sampleMenu} />
+        <ItemCard name="Removable" src={samplePhoto} size="sm" onRemove={() => {}} />
         <ItemCard
           name="Interactive"
           detail="Click to select"
@@ -1741,7 +1749,7 @@ function ItemCardExamples() {
           menu={sampleMenu}
         />
       </Box>
-      <Label>B&C stamp md · sm · no detail or menu · no image · interactive</Label>
+      <Label>B&C stamp md · sm · no detail or menu · no image · removable · interactive</Label>
     </Box>
   );
 }
@@ -2184,6 +2192,30 @@ function ModalExamples() {
         <TextField label="Outfit name" value={name} onValueChange={setName} />
       </Modal>
     </Box>
+  );
+}
+
+function SidePanelExample() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <Button label="Open side panel" variant="secondary" onClick={() => setOpen(true)} />
+      <SidePanel
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Selected Items"
+        footer={<Button label="Add Items to Owned" onClick={() => setOpen(false)} />}
+      >
+        <Box role="list" className="grid grid-cols-2 gap-lg">
+          {["Wrap midi dress", "Linen shirt", "Wide-leg trouser"].map((name) => (
+            <Box key={name} role="listitem">
+              <ItemCard name={name} src={samplePhoto} size="sm" onRemove={() => {}} />
+            </Box>
+          ))}
+        </Box>
+      </SidePanel>
+    </>
   );
 }
 

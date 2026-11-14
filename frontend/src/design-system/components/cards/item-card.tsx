@@ -1,3 +1,6 @@
+import { Button as BaseButton } from "@base-ui/react/button";
+import { TrashSimpleIcon } from "@phosphor-icons/react";
+
 import stamp from "@/design-system/assets/stamp.png";
 import { CardImage } from "@/design-system/components/cards/card-image";
 import {
@@ -49,6 +52,8 @@ type ItemCardProps = {
   selection?: { selected: boolean; onSelectedChange: (selected: boolean) => void };
   /** The ⋯ menu beside the name. */
   menu?: MenuProps;
+  /** Adds a trash button on the photo and a thin ring around it, for a list of picks. */
+  onRemove?: () => void;
   disabled?: boolean;
 };
 
@@ -61,6 +66,7 @@ export function ItemCard({
   size = "md",
   selection,
   menu,
+  onRemove,
   disabled = false,
 }: ItemCardProps) {
   const {
@@ -83,6 +89,12 @@ export function ItemCard({
         <CardImage src={src} fit="contain" className="size-full" />
         {showHover && <CardWash />}
         {selected && <CardSelectedRing />}
+        {onRemove && (
+          <Box
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-card-ring border border-primary"
+          />
+        )}
         {bcStamp && (
           <img
             src={stamp}
@@ -101,6 +113,18 @@ export function ItemCard({
           onPressedChange={selection.onSelectedChange}
           disabled={disabled}
         />
+      )}
+      {onRemove && (
+        // After the select cover, so it stays clickable above it.
+        <BaseButton
+          type="button"
+          aria-label={`Remove ${name}`}
+          disabled={disabled}
+          onClick={onRemove}
+          className={`absolute left-xs top-xs flex size-control items-center justify-center border bg-background text-error focus-ring ${disabled ? "" : "cursor-pointer hover:bg-error-subtle"}`}
+        >
+          <TrashSimpleIcon size={18} aria-hidden="true" />
+        </BaseButton>
       )}
       <CardFooter menu={menu} className="gap-xxs">
         <Box className={nameClasses}>{name}</Box>
