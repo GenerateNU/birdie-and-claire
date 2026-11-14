@@ -62,7 +62,11 @@ function ToastList() {
     const { variant = "neutral", action, closable } = toast.data ?? {};
 
     return (
-      <BaseToast.Root key={toast.id} toast={toast} className="data-[limited]:hidden">
+      <BaseToast.Root
+        key={toast.id}
+        toast={toast}
+        className="data-[limited]:hidden motion-safe:transition-opacity motion-safe:data-[starting-style]:opacity-0 motion-safe:data-[ending-style]:opacity-0"
+      >
         <Toast
           variant={variant}
           message={<BaseToast.Title render={<span />} />}

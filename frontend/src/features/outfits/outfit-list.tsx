@@ -41,6 +41,7 @@ export function OutfitList({ outfits, nextCursor, onLoadMore }: OutfitListProps)
             mode="browse"
             title={outfit.name}
             src={null}
+            image={null}
             onOpen={() =>
               void navigate({ to: "/outfits/$outfitId", params: { outfitId: outfit.id } })
             }
