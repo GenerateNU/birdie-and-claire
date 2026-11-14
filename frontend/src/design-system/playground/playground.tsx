@@ -1838,6 +1838,7 @@ function OutfitCardExamples() {
                     title="Work outfit 2"
                     pieces={sampleOutfitPieces}
                     src={samplePhoto}
+                    image={null}
                     menu={sampleMenu}
                     onOpen={() => {}}
                   />
@@ -1847,6 +1848,7 @@ function OutfitCardExamples() {
                     title="Work outfit 2"
                     pieces={sampleOutfitPieces}
                     src={samplePhoto}
+                    image={null}
                     selected={state.selected}
                     onSelectedChange={() => {}}
                   />
@@ -1860,12 +1862,19 @@ function OutfitCardExamples() {
         </Box>
       ))}
       <Box className="flex flex-wrap items-start gap-xl">
-        <OutfitCard mode="browse" title="No pieces or menu" src={samplePhoto} onOpen={() => {}} />
+        <OutfitCard
+          mode="browse"
+          title="No pieces or menu"
+          src={samplePhoto}
+          image={null}
+          onOpen={() => {}}
+        />
         <OutfitCard
           mode="browse"
           title="No image"
           pieces="A very long list of pieces that is cut off after two lines, no matter how long it gets"
           src={null}
+          image={null}
           onOpen={() => {}}
         />
         <OutfitCard
@@ -1873,6 +1882,7 @@ function OutfitCardExamples() {
           title="Interactive"
           pieces="Click to select"
           src={samplePhoto}
+          image={null}
           selected={selected}
           onSelectedChange={setSelected}
         />

@@ -18,6 +18,14 @@ const sizeClasses = {
     label: "text-overline",
     iconSize: 20,
   },
+  // As wide as an outfit card, and stretched to the height of its row, but never shorter than a card's image.
+  outfit: {
+    tile: "min-h-outfit w-outfit self-stretch gap-lg",
+    textGap: "gap-sm",
+    title: "font-serif text-heading-m-italic italic",
+    label: "text-overline",
+    iconSize: 28,
+  },
   collection: {
     tile: "h-collection w-collection gap-lg",
     textGap: "gap-sm",
