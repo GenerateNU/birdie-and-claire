@@ -10,7 +10,7 @@ Personalization happens in two places:
 1. In the prompt, the recommender sends the shopper's saved shoes and bottoms picks to `expand_answers`, with one line telling the model that the occasion comes first. The model writes the picks into its search phrases where they fit. This works with today's data.
 2. In the ranking, once ingestion fills a `shoe_type` and a `bottom_type` column for every product, the search gives a small boost to products whose type matches a saved pick, and drops products whose type the request rules out. This waits until those columns pass an accuracy check.
 
-Style, neckline and the Dress pick don't affect recommendations yet. Style words mostly sorted products by gender, nothing in the catalog can show necklines reliably yet, and outfits have no slot for a dress.
+Style, neckline and the Dress pick don't affect recommendations yet. Style words mostly sorted products by gender, nothing in the catalog can show necklines reliably yet, and recommended outfits don't include one-pieces (dresses and jumpsuits) yet.
 
 The tests behind this ran on two models, dev's free model and DeepSeek V4.1 Flash, and on a catalog of 360 products:
 

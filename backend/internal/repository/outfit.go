@@ -28,6 +28,7 @@ type OutfitRepository interface {
 	GetByID(ctx context.Context, id uuid.UUID, userID uuid.UUID) (models.Outfit, []models.ProductResponse, error)
 	GetShared(ctx context.Context, id uuid.UUID) (models.Outfit, string, []models.ProductResponse, error)
 	Update(ctx context.Context, id uuid.UUID, params models.UpdateOutfitParams, userID uuid.UUID) (models.Outfit, []models.ProductResponse, error)
+	Delete(ctx context.Context, id uuid.UUID, userID uuid.UUID) error
 	Share(ctx context.Context, id uuid.UUID, userID uuid.UUID) error
 	Unshare(ctx context.Context, id uuid.UUID, userID uuid.UUID) error
 	List(ctx context.Context, userID uuid.UUID, params pagination.CursorParams) ([]models.Outfit, error)
@@ -67,7 +68,7 @@ func (r *outfitRepository) Create(ctx context.Context, params models.CreateOutfi
 			LIMIT 1
 		) first_image ON true
 		-- Head to toe, the order the outfit pages list pieces in.
-		ORDER BY array_position(ARRAY['top', 'bottom', 'shoe', 'accessory']::product_slot[], p.slot), p.id
+		ORDER BY array_position(ARRAY['top', 'one_piece', 'bottom', 'shoe', 'accessory']::product_slot[], p.slot), p.id
 	`, userID, params.Name, params.ProductIDs, params.Description, params.Tags)
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) && pgErr.Code == foreignKeyViolation && pgErr.ConstraintName == outfitProductFKey {
@@ -126,7 +127,7 @@ func getOutfitByID(ctx context.Context, dbOrTx querier, id uuid.UUID, userID uui
 		WHERE o.id = $1 AND o.user_id = $2
 		-- Head to toe, the order the outfit pages list pieces in. array_position is NULL for the
 		-- LEFT JOIN's empty-outfit row, which then sorts last.
-		ORDER BY array_position(ARRAY['top', 'bottom', 'shoe', 'accessory']::product_slot[], p.slot), p.id
+		ORDER BY array_position(ARRAY['top', 'one_piece', 'bottom', 'shoe', 'accessory']::product_slot[], p.slot), p.id
 	`, id, userID)
 	if err != nil {
 		return models.Outfit{}, nil, fmt.Errorf("get outfit %s: %w", id, err)
@@ -198,6 +199,24 @@ func (r *outfitRepository) Update(ctx context.Context, id uuid.UUID, params mode
 	return outfit, products, nil
 }
 
+// Delete returns ErrNotFound for an outfit userID does not own. The outfit's
+// products and reactions go with it through ON DELETE CASCADE.
+func (r *outfitRepository) Delete(ctx context.Context, id uuid.UUID, userID uuid.UUID) error {
+	var deleted uuid.UUID
+	err := r.db.QueryRowContext(ctx, `
+		DELETE FROM outfits
+		WHERE id = $1 AND user_id = $2
+		RETURNING id
+	`, id, userID).Scan(&deleted)
+	if errors.Is(err, sql.ErrNoRows) {
+		return errs.ErrNotFound
+	}
+	if err != nil {
+		return fmt.Errorf("delete outfit %s: %w", id, err)
+	}
+	return nil
+}
+
 // GetShared returns ErrNotFound for a private outfit as well as a missing one.
 func (r *outfitRepository) GetShared(ctx context.Context, id uuid.UUID) (models.Outfit, string, []models.ProductResponse, error) {
 	rows, err := r.db.QueryContext(ctx, `
@@ -218,7 +237,7 @@ func (r *outfitRepository) GetShared(ctx context.Context, id uuid.UUID) (models.
 		WHERE o.id = $1 AND o.shared_at IS NOT NULL
 		-- Head to toe, the order the outfit pages list pieces in. array_position is NULL for the
 		-- LEFT JOIN's empty-outfit row, which then sorts last.
-		ORDER BY array_position(ARRAY['top', 'bottom', 'shoe', 'accessory']::product_slot[], p.slot), p.id
+		ORDER BY array_position(ARRAY['top', 'one_piece', 'bottom', 'shoe', 'accessory']::product_slot[], p.slot), p.id
 	`, id)
 	if err != nil {
 		return models.Outfit{}, "", nil, fmt.Errorf("get shared outfit %s: %w", id, err)

@@ -52,6 +52,15 @@ const BOTTOM: CanvasSpot = {
   layer: 2,
 };
 
+// Not in the Figma yet, so it takes the top's neckline and width. Below the top, so a jacket worn
+// over a dress covers it.
+const ONE_PIECE: CanvasSpot = {
+  centerX: 466,
+  anchor: { edge: "top", y: 146 },
+  garmentWidth: 196,
+  layer: 3,
+};
+
 const SHOE: CanvasSpot = {
   centerX: 464,
   anchor: { edge: "bottom", y: 748 },
@@ -70,6 +79,7 @@ const ACCESSORIES: CanvasSpot[] = [60, 300, 540].map((y) => ({
 // Each slot lists the spots it can take, in the order it tries them.
 const SPOTS_BY_SLOT: Record<ProductSlot, CanvasSpot[]> = {
   top: [TOP, TOP_BESIDE],
+  one_piece: [ONE_PIECE],
   bottom: [BOTTOM],
   shoe: [SHOE],
   accessory: ACCESSORIES,
