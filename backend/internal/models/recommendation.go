@@ -70,15 +70,16 @@ var DetailPromptLabels = map[RecommendationDetailKey]string{
 
 type RecommendationResponse struct {
 	ExpandedAnswers RecommendationExpandedAnswers `json:"expanded_answers"`
-	Outfits         []RecommendedOutfit           `json:"outfits" nullable:"false" doc:"Up to 3 outfits, best first; fewer when a slot has fewer matching products"`
+	Outfits         []RecommendedOutfit           `json:"outfits" nullable:"false" doc:"Up to 3 outfits, best first; fewer only when every slot has fewer matching products"`
 }
 
-// RecommendedOutfit takes the same rank from each slot's search, so outfit n holds every slot's nth match.
+// RecommendedOutfit takes the same rank from each slot's search, so outfit n holds every slot's nth match. A slot that
+// found fewer than n products is left out, so one empty slot never holds back the others.
 type RecommendedOutfit struct {
-	Top       ProductResponse `json:"top"`
-	Bottom    ProductResponse `json:"bottom"`
-	Accessory ProductResponse `json:"accessory"`
-	Shoe      ProductResponse `json:"shoe"`
+	Top       *ProductResponse `json:"top,omitzero" doc:"Missing when no top matched"`
+	Bottom    *ProductResponse `json:"bottom,omitzero" doc:"Missing when no bottom matched"`
+	Accessory *ProductResponse `json:"accessory,omitzero" doc:"Missing when no accessory matched"`
+	Shoe      *ProductResponse `json:"shoe,omitzero" doc:"Missing when no shoe matched"`
 }
 
 type RecommendationExpandedAnswers struct {

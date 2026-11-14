@@ -430,7 +430,7 @@ async function requestOutfit(
     throwOnError: true,
   });
 
-  // Empty when some slot had no matching product.
+  // Empty only when no slot had a matching product.
   const firstOutfit = recommendation.outfits.at(0);
 
   if (firstOutfit === undefined) {
@@ -441,12 +441,13 @@ async function requestOutfit(
     body: {
       // The endpoint caps name at 100 characters.
       name: `${occasion} outfit`.slice(0, 100),
+      // A slot the catalog couldn't fill is missing from the outfit.
       product_ids: [
-        firstOutfit.top.id,
-        firstOutfit.bottom.id,
-        firstOutfit.accessory.id,
-        firstOutfit.shoe.id,
-      ],
+        firstOutfit.top,
+        firstOutfit.bottom,
+        firstOutfit.accessory,
+        firstOutfit.shoe,
+      ].flatMap((product) => (product === undefined ? [] : [product.id])),
     },
     signal,
     throwOnError: true,
