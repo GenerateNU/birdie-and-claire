@@ -129,7 +129,7 @@ export default {
         "logo-onboarding": LogoSize.onboarding.height,
       },
       maxHeight: { "scroll-area": ScrollAreaHeight },
-      minHeight: { "choice-row": ChoiceRowHeight },
+      minHeight: { "choice-row": ChoiceRowHeight, outfit: OutfitCardSize.imageHeight },
       inset: { "card-ring": CardOverlayInset.ring, "card-hover": CardOverlayInset.hover },
       aspectRatio: AspectRatio,
       size: {

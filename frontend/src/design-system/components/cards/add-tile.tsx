@@ -3,14 +3,16 @@ import { PlusIcon } from "@phosphor-icons/react";
 
 import { Box } from "@/design-system/primitives/box";
 
+const large = {
+  tile: "h-add-tile-lg w-add-tile-lg gap-lg",
+  textGap: "gap-sm",
+  title: "font-serif text-heading-m-italic italic",
+  label: "text-overline",
+  iconSize: 28,
+};
+
 const sizeClasses = {
-  lg: {
-    tile: "h-add-tile-lg w-add-tile-lg gap-lg",
-    textGap: "gap-sm",
-    title: "font-serif text-heading-m-italic italic",
-    label: "text-overline",
-    iconSize: 28,
-  },
+  lg: large,
   sm: {
     tile: "h-add-tile-sm w-add-tile-sm gap-xs",
     textGap: "gap-xxs",
@@ -18,6 +20,8 @@ const sizeClasses = {
     label: "text-overline",
     iconSize: 20,
   },
+  // As wide as an outfit card, and stretched to the height of its row, but never shorter than a card's image.
+  outfit: { ...large, tile: "min-h-outfit w-outfit self-stretch gap-lg" },
   collection: {
     tile: "h-collection w-collection gap-lg",
     textGap: "gap-sm",

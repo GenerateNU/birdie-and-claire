@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import { CardImage } from "@/design-system/components/cards/card-image";
 import {
   CardCheckBox,
@@ -15,8 +17,10 @@ type OutfitCardProps = {
   title: string;
   /** The pieces in the outfit, cut off after two lines. */
   pieces?: string;
-  /** The outfit as one image. */
-  src: string | null;
+  /** The outfit as one image. With neither `src` nor `image`, the image area is empty. */
+  src?: string | null;
+  /** Drawn instead of `src`, such as the outfit canvas. The title names the card, so screen readers skip this. */
+  image?: ReactNode;
 } & (
   | { mode: "browse"; onOpen: () => void; menu?: MenuProps }
   /** `single` picks one outfit and shows only the ring; `multi` also shows a checkbox. */
@@ -29,13 +33,19 @@ type OutfitCardProps = {
 
 /** One saved or suggested outfit. */
 export function OutfitCard(props: OutfitCardProps) {
-  const { title, pieces, src } = props;
+  const { title, pieces, src, image } = props;
   const selected = props.mode !== "browse" && props.selected;
 
   return (
     <Box className="group relative flex w-outfit flex-col gap-sm text-primary">
       <Box className="relative h-outfit w-full shrink-0 bg-surface">
-        <CardImage src={src} fit="contain" className="size-full" />
+        {image === undefined ? (
+          <CardImage src={src ?? null} fit="contain" className="size-full" />
+        ) : (
+          <Box aria-hidden="true" className="size-full">
+            {image}
+          </Box>
+        )}
         <CardWash />
         {selected && <CardSelectedRing />}
         {props.mode === "multi" && (
