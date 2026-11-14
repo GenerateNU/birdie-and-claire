@@ -50,6 +50,7 @@ func TestCreateUserName(t *testing.T) {
 	}{
 		{name: "empty", body: map[string]any{"name": ""}, wantStatus: http.StatusUnprocessableEntity},
 		{name: "whitespace only", body: map[string]any{"name": "   "}, wantStatus: http.StatusUnprocessableEntity},
+		{name: "non-breaking spaces only", body: map[string]any{"name": "  "}, wantStatus: http.StatusUnprocessableEntity},
 		{name: "plain", body: map[string]any{"name": "Claire"}, wantStatus: http.StatusOK, wantName: "Claire"},
 		{name: "surrounding whitespace is trimmed", body: map[string]any{"name": "  Julie  "}, wantStatus: http.StatusOK, wantName: "Julie"},
 		{name: "maximum 100 characters", body: map[string]any{"name": strings.Repeat("n", 100)}, wantStatus: http.StatusOK, wantName: strings.Repeat("n", 100)},
