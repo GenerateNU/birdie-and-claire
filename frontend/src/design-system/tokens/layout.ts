@@ -85,6 +85,19 @@ export const TileSize = { width: "10rem", height: "11rem" } as const;
 // The icon on an option tile, for Phosphor's `size` prop.
 export const TileIconSize = "2.75rem";
 
+// A sidebar's width (`w-sidebar`, `w-sidebar-collapsed`), from Figma.
+export const SidebarWidth = { expanded: "15rem", collapsed: "4.5rem" } as const;
+
+// The page header's height (`h-page-header`), from Figma.
+export const PageHeaderHeight = "5rem";
+
+// The logo's box in the sidebar and the page header (`w-logo-*`, `h-logo-*`), from Figma. The image
+// has an empty top edge that the box crops with `object-cover object-bottom`.
+export const LogoSize = {
+  sidebar: { width: "9.375rem", height: "2.9375rem" },
+  header: { width: "11.25rem", height: "3.5625rem" },
+} as const;
+
 export const AspectRatio = {
   portrait: "3 / 4",
   landscape: "3 / 2",
