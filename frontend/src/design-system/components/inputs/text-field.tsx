@@ -68,7 +68,11 @@ export function TextField({
         )}
       </Box>
       {message && (
-        <Box id={messageId} className={fieldHelperClasses(state)}>
+        <Box
+          id={messageId}
+          role={error ? "alert" : undefined}
+          className={fieldHelperClasses(state)}
+        >
           {message}
         </Box>
       )}
