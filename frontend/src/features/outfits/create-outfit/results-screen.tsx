@@ -1,9 +1,12 @@
 import { ArrowLeftIcon } from "@phosphor-icons/react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
-import { createOutfitMutation } from "@/api/generated/@tanstack/react-query.gen";
+import {
+  createOutfitMutation,
+  listOutfitsInfiniteQueryKey,
+} from "@/api/generated/@tanstack/react-query.gen";
 import type { RecommendationVibe, RecommendedOutfit } from "@/api/generated/types.gen";
 import {
   Box,
@@ -47,16 +50,24 @@ export function ResultsScreen({
   const [detailsOpen, setDetailsOpen] = useState(false);
   const navigate = useNavigate();
   const toast = useToast();
+  const queryClient = useQueryClient();
+  // A second click can land before the re-render that disables Confirm.
+  const saveStarted = useRef(false);
 
   const saveMutation = useMutation({
     ...createOutfitMutation(),
-    onSuccess: (outfit) =>
-      void navigate({
+    // Awaited so the save stays pending, and Confirm disabled, until the outfit page has opened.
+    onSuccess: async (outfit) => {
+      void queryClient.invalidateQueries({ queryKey: listOutfitsInfiniteQueryKey() });
+      await navigate({
         to: saveDestination === "edit" ? "/outfits/$outfitId/edit" : "/outfits/$outfitId",
         params: { outfitId: outfit.id },
-      }),
-    onError: () =>
-      toast.show({ message: "Couldn't save the outfit. Try again.", variant: "error" }),
+      });
+    },
+    onError: () => {
+      saveStarted.current = false;
+      toast.show({ message: "Couldn't save the outfit. Try again.", variant: "error" });
+    },
   });
 
   const suggestedTags = [occasion, ...(weatherLabel ? [`${weatherLabel} Weather`] : [])].filter(
@@ -143,11 +154,16 @@ export function ResultsScreen({
             productsChanged
             saving={saveMutation.isPending}
             onCancel={() => setSaveDestination(null)}
-            onSave={(values) =>
+            onSave={(values) => {
+              if (saveStarted.current) {
+                return;
+              }
+
+              saveStarted.current = true;
               saveMutation.mutate({
                 body: { ...values, product_ids: outfitPieces(selected).map((piece) => piece.id) },
-              })
-            }
+              });
+            }}
           />
         </Box>
       ) : (
