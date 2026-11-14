@@ -45,7 +45,7 @@ export function OwnedPiecesLayout({ onBack, stage, children }: OwnedPiecesLayout
       {/* 400px is the Image frame in Figma's Own Any B&C Items. The hero's subject stands right of
           center, so 73% keeps her in the middle of the strip. Fixed so it sits outside the page's
           padding. */}
-      <CardImage src={hero} className="fixed inset-y-0 left-0 w-[400px] object-[73%_50%]" />
+      <CardImage src={hero} className="fixed left-0 top-0 h-screen w-[400px] object-[73%_50%]" />
       <Box className="ml-[400px] flex flex-1 flex-col items-center gap-xxxl">
         <Box className="relative w-full">
           {onBack && (
