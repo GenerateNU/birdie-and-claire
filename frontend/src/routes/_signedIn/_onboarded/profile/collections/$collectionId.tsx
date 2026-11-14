@@ -84,6 +84,7 @@ function CollectionDetailPage() {
                 title={outfit.name}
                 // Products come head to toe, so the first is the outfit's top piece.
                 src={outfit.products.at(0)?.image_url ?? null}
+                image={null}
                 onOpen={() =>
                   void navigate({ to: "/outfits/$outfitId", params: { outfitId: outfit.id } })
                 }
