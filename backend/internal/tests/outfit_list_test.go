@@ -2,11 +2,17 @@ package tests
 
 import (
 	"context"
+	"database/sql"
+	"math/rand/v2"
 	"testing"
+	"time"
 
 	"birdie-and-claire/internal/auth"
+	"birdie-and-claire/internal/models"
 	"birdie-and-claire/internal/repository"
 	"birdie-and-claire/internal/services"
+
+	"github.com/google/uuid"
 )
 
 // total counts every one of the user's outfits on every page, and only that user's.
@@ -49,5 +55,139 @@ func TestListOutfitsWithNoOutfitsHasZeroTotal(t *testing.T) {
 	}
 	if page.Items == nil || len(page.Items) != 0 || page.HasMore || page.Total != 0 {
 		t.Fatalf("got %v items, has_more %t, total %d; want [], false, 0", page.Items, page.HasMore, page.Total)
+	}
+}
+
+const firstImageURL = "https://example.com/first.png"
+
+// savedOutfits is what insertSavedOutfits stored, newest first.
+type savedOutfits struct {
+	ids []uuid.UUID
+	// products holds each outfit's product IDs head to toe, and is empty for the outfit saved with none.
+	products [][]uuid.UUID
+	// imagedProduct is the one product saved with images, and firstImageURL is the one a list should show for it.
+	imagedProduct uuid.UUID
+}
+
+// insertSavedOutfits saves count outfits of three products each, except the one at emptyIndex, which has none.
+// The newest outfit's top gets two images, and the one at the lower position is firstImageURL.
+func insertSavedOutfits(t *testing.T, db *sql.DB, ownerID uuid.UUID, count, emptyIndex int) savedOutfits {
+	t.Helper()
+
+	ctx := context.Background()
+	outfits := repository.NewOutfitRepository(db)
+	saved := savedOutfits{ids: make([]uuid.UUID, count), products: make([][]uuid.UUID, count)}
+	newest := time.Now().Add(-time.Hour)
+	for i := range count {
+		var outfitID uuid.UUID
+		if i == emptyIndex {
+			err := db.QueryRowContext(ctx, `INSERT INTO outfits (user_id, name) VALUES ($1, 'empty') RETURNING id`, ownerID).Scan(&outfitID)
+			if err != nil {
+				t.Fatalf("insert empty outfit: %v", err)
+			}
+		} else {
+			top := insertSlotProduct(t, db, testProduct{slot: models.SlotTop})
+			bottom := insertSlotProduct(t, db, testProduct{slot: models.SlotBottom})
+			shoe := insertSlotProduct(t, db, testProduct{slot: models.SlotShoe})
+			created, _, err := outfits.Create(ctx, models.CreateOutfitParams{Name: "fit", ProductIDs: []uuid.UUID{shoe, top, bottom}}, ownerID)
+			if err != nil {
+				t.Fatalf("create outfit: %v", err)
+			}
+			outfitID = created.ID
+			saved.products[i] = []uuid.UUID{top, bottom, shoe}
+		}
+		t.Cleanup(func() { _, _ = db.Exec(`DELETE FROM outfits WHERE id = $1`, outfitID) })
+		// Fixed timestamps keep the listed order from depending on how close together the inserts were.
+		if _, err := db.ExecContext(ctx, `UPDATE outfits SET created_at = $2 WHERE id = $1`, outfitID, newest.Add(-time.Duration(i)*time.Minute)); err != nil {
+			t.Fatalf("set created_at: %v", err)
+		}
+		saved.ids[i] = outfitID
+	}
+
+	saved.imagedProduct = saved.products[0][0]
+	for _, image := range []struct {
+		url      string
+		position int
+	}{{"https://example.com/second.png", 2}, {firstImageURL, 1}} {
+		_, err := db.ExecContext(ctx, `INSERT INTO product_images (shopify_id, product_id, url, position) VALUES ($1, $2, $3, $4)`,
+			rand.Int64(), saved.imagedProduct, image.url, image.position)
+		if err != nil {
+			t.Fatalf("insert product image: %v", err)
+		}
+	}
+	return saved
+}
+
+// wantWholeOutfit fails unless got is the index-th saved outfit with all of its products, head to toe, and with
+// firstImageURL on the imaged product and no image on any other.
+func wantWholeOutfit(t *testing.T, got models.OutfitResponse, saved savedOutfits, index int) {
+	t.Helper()
+
+	if got.ID != saved.ids[index] {
+		t.Fatalf("outfit %d: id = %s, want %s", index, got.ID, saved.ids[index])
+	}
+	want := saved.products[index]
+	if got.Products == nil {
+		t.Fatalf("outfit %d: products is nil, want a list of %d", index, len(want))
+	}
+	if len(got.Products) != len(want) {
+		t.Fatalf("outfit %d: %d products, want %d", index, len(got.Products), len(want))
+	}
+	for position, product := range got.Products {
+		if product.ID != want[position] {
+			t.Fatalf("outfit %d: product %d = %s, want %s", index, position, product.ID, want[position])
+		}
+		wantImage := "null"
+		if product.ID == saved.imagedProduct {
+			wantImage = firstImageURL
+		}
+		if gotImage := deref(product.ImageURL); gotImage != wantImage {
+			t.Fatalf("outfit %d: product %d image_url = %s, want %s", index, position, gotImage, wantImage)
+		}
+	}
+}
+
+// deref prints a missing image URL as "null".
+func deref(url *string) string {
+	if url == nil {
+		return "null"
+	}
+	return *url
+}
+
+// A page ends between outfits, never inside one: with three products per outfit, every outfit comes back whole and in
+// order across the page edges, and an outfit with no products still appears, with an empty list.
+func TestListOutfitsPagesKeepEveryOutfitWhole(t *testing.T) {
+	const outfitCount, emptyIndex, pageSize = 6, 2, 2
+	const pageCount = outfitCount / pageSize
+
+	db := openTestDB(t)
+	ownerID := insertTestUser(t, db)
+	saved := insertSavedOutfits(t, db, ownerID, outfitCount, emptyIndex)
+	service := services.NewOutfitService(repository.New(db))
+	ctx := auth.WithUserID(context.Background(), ownerID)
+
+	cursor := ""
+	for page := range pageCount {
+		got, err := service.List(ctx, cursorParams(t, pageSize, cursor))
+		if err != nil {
+			t.Fatalf("list page %d: %v", page, err)
+		}
+		wantMore := page < pageCount-1
+		if len(got.Items) != pageSize {
+			t.Fatalf("page %d: %d outfits, want %d", page, len(got.Items), pageSize)
+		}
+		if got.Total != outfitCount {
+			t.Fatalf("page %d: total = %d, want %d", page, got.Total, outfitCount)
+		}
+		if got.HasMore != wantMore || (got.NextCursor != nil) != wantMore {
+			t.Fatalf("page %d: has_more = %t, next_cursor set = %t, want both %t", page, got.HasMore, got.NextCursor != nil, wantMore)
+		}
+		for i, item := range got.Items {
+			wantWholeOutfit(t, item, saved, page*pageSize+i)
+		}
+		if wantMore {
+			cursor = *got.NextCursor
+		}
 	}
 }

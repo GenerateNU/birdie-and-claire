@@ -70,7 +70,7 @@ func (s *outfitService) List(ctx context.Context, params pagination.CursorParams
 
 	outfits, hasMore := pagination.Split(rows, params.Limit)
 	response := models.ListOutfitsResponse{
-		Page:  pagination.Page[models.Outfit]{Items: outfits, HasMore: hasMore},
+		Page:  pagination.Page[models.OutfitResponse]{Items: outfits, HasMore: hasMore},
 		Total: total,
 	}
 	if !hasMore {
