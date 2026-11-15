@@ -5,9 +5,8 @@ import type { LinkProps } from "@tanstack/react-router";
 import { Link } from "@/design-system/components/links/link";
 import { Logo } from "@/design-system/components/logo/logo";
 
-// tracking-wider is the lofi nav's 0.05em; the type tokens have no letter-spacing.
 const itemBaseClasses =
-  "inline-flex items-center gap-xs border-b-thick pb-xxs text-subheading font-normal uppercase tracking-wider focus-ring";
+  "inline-flex items-center gap-xs border-b-thick pb-xxs text-label-m uppercase focus-ring motion-safe:transition-colors";
 
 const activeItemClasses = `${itemBaseClasses} border-primary`;
 
@@ -26,7 +25,7 @@ type HeaderProps = {
 
 export function Header({ onLogoClick, items }: HeaderProps) {
   return (
-    <header className="flex flex-col items-start gap-md border-b px-md py-lg lg:flex-row lg:px-xxl lg:items-center lg:justify-between">
+    <header className="flex flex-col items-start gap-md border-b px-md py-lg lg:flex-row lg:px-xxxl lg:items-center lg:justify-between">
       <BaseButton type="button" onClick={onLogoClick} className="w-full max-w-xs focus-ring">
         <Logo className="w-full" />
       </BaseButton>
@@ -34,7 +33,7 @@ export function Header({ onLogoClick, items }: HeaderProps) {
         <ul className="flex flex-wrap items-center gap-x-xl gap-y-sm">
           {items.map((item) => (
             <li key={item.label}>
-              <NavItem item={item} />
+              <HeaderNavItem item={item} />
             </li>
           ))}
         </ul>
@@ -43,11 +42,11 @@ export function Header({ onLogoClick, items }: HeaderProps) {
   );
 }
 
-type NavItemProps = {
+type HeaderNavItemProps = {
   item: HeaderItem;
 };
 
-function NavItem({ item }: NavItemProps) {
+function HeaderNavItem({ item }: HeaderNavItemProps) {
   if ("to" in item) {
     return (
       <Link to={item.to} trailingIcon={item.icon} className={inactiveItemClasses}>

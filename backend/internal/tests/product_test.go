@@ -1,8 +1,10 @@
 package tests
 
 import (
+	"cmp"
 	"context"
 	"database/sql"
+	"math"
 	"math/rand/v2"
 	"slices"
 	"testing"
@@ -31,10 +33,11 @@ func productEmbedding(lean float32) []float32 {
 }
 
 type testProduct struct {
-	id        uuid.UUID
-	slot      models.ProductSlot
-	tags      []string
-	embedding []float32
+	id         uuid.UUID
+	slot       models.ProductSlot
+	tags       []string
+	attributes *models.ProductAttributes
+	embedding  []float32
 }
 
 func insertSlotProduct(t *testing.T, db *sql.DB, product testProduct) uuid.UUID {
@@ -51,9 +54,9 @@ func insertSlotProduct(t *testing.T, db *sql.DB, product testProduct) uuid.UUID 
 		embedding = pgvector.NewVector(product.embedding)
 	}
 	_, err := db.ExecContext(context.Background(), `
-		INSERT INTO products (id, shopify_id, handle, title, slot, tags, embedding)
-		VALUES ($1, $2, 'test-product', 'Test product', $3, $4, $5)
-	`, product.id, rand.Int64(), product.slot, product.tags, embedding)
+		INSERT INTO products (id, shopify_id, handle, title, slot, tags, attributes, embedding)
+		VALUES ($1, $2, 'test-product', 'Test product', $3, $4, $5, $6)
+	`, product.id, rand.Int64(), product.slot, product.tags, product.attributes, embedding)
 	if err != nil {
 		t.Fatalf("insert product: %v", err)
 	}
@@ -65,15 +68,20 @@ func insertSlotProduct(t *testing.T, db *sql.DB, product testProduct) uuid.UUID 
 // Seeded embeddings sit far from queryEmbedding, so they rank after every test row and never push one past the limit.
 func findSimilarIDs(t *testing.T, db *sql.DB, ownIDs []uuid.UUID, excludeTags, niceTags []string) []uuid.UUID {
 	t.Helper()
+	return findSimilarIDsWithTypePicks(t, db, ownIDs, excludeTags, niceTags, nil)
+}
 
-	products, err := repository.NewProductRepository(db).FindSimilar(context.Background(), queryEmbedding, models.SlotTop, excludeTags, niceTags, nil, findSimilarLimit)
+func findSimilarIDsWithTypePicks(t *testing.T, db *sql.DB, ownIDs []uuid.UUID, excludeTags, niceTags, typePicks []string) []uuid.UUID {
+	t.Helper()
+
+	products, err := repository.NewProductRepository(db).FindSimilar(context.Background(), queryEmbedding, models.SlotTop, excludeTags, niceTags, typePicks, nil, findSimilarLimit)
 	if err != nil {
 		t.Fatalf("FindSimilar: %v", err)
 	}
 	var ids []uuid.UUID
-	for _, product := range products {
-		if slices.Contains(ownIDs, product.ID) {
-			ids = append(ids, product.ID)
+	for _, scored := range products {
+		if slices.Contains(ownIDs, scored.Product.ID) {
+			ids = append(ids, scored.Product.ID)
 		}
 	}
 	return ids
@@ -125,6 +133,38 @@ func TestFindSimilarNiceTagsReorder(t *testing.T) {
 	}
 }
 
+func TestFindSimilarReturnsEachScore(t *testing.T) {
+	db := openTestDB(t)
+
+	id := insertSlotProduct(t, db, testProduct{slot: models.SlotTop, tags: []string{"pastel"}, embedding: productEmbedding(0.1)})
+
+	plainScore, products := findSimilarScore(t, db, id, nil)
+	// with no tags or picks, the score is the plain cosine distance, so it does not depend on the bonus weights
+	if want := 1 - 1/math.Sqrt(1+0.1*0.1); math.Abs(plainScore-want) > 1e-6 {
+		t.Errorf("score without nice tags = %v, want the cosine distance %v", plainScore, want)
+	}
+	if !slices.IsSortedFunc(products, func(a, b repository.ScoredProduct) int { return cmp.Compare(a.Score, b.Score) }) {
+		t.Error("scores are not in ascending order")
+	}
+	if taggedScore, _ := findSimilarScore(t, db, id, []string{"pastel"}); taggedScore >= plainScore {
+		t.Errorf("score with nice tag pastel = %v, want it below the plain distance %v", taggedScore, plainScore)
+	}
+}
+
+// findSimilarScore returns id's score from a FindSimilar call with niceTags, and everything that call returned.
+func findSimilarScore(t *testing.T, db *sql.DB, id uuid.UUID, niceTags []string) (float64, []repository.ScoredProduct) {
+	t.Helper()
+	products, err := repository.NewProductRepository(db).FindSimilar(context.Background(), queryEmbedding, models.SlotTop, nil, niceTags, nil, nil, findSimilarLimit)
+	if err != nil {
+		t.Fatalf("FindSimilar: %v", err)
+	}
+	index := slices.IndexFunc(products, func(scored repository.ScoredProduct) bool { return scored.Product.ID == id })
+	if index == -1 {
+		t.Fatalf("FindSimilar left out %v", id)
+	}
+	return products[index].Score, products
+}
+
 func TestFindSimilarBreaksTiesByID(t *testing.T) {
 	db := openTestDB(t)
 
@@ -167,17 +207,90 @@ func TestFindSimilarExcludesProductIDs(t *testing.T) {
 	kept := insertSlotProduct(t, db, testProduct{slot: models.SlotTop, embedding: productEmbedding(0.1)})
 	excluded := insertSlotProduct(t, db, testProduct{slot: models.SlotTop, embedding: productEmbedding(0.2)})
 
-	products, err := repository.NewProductRepository(db).FindSimilar(context.Background(), queryEmbedding, models.SlotTop, nil, nil, []uuid.UUID{excluded}, findSimilarLimit)
+	products, err := repository.NewProductRepository(db).FindSimilar(context.Background(), queryEmbedding, models.SlotTop, nil, nil, nil, []uuid.UUID{excluded}, findSimilarLimit)
 	if err != nil {
 		t.Fatalf("FindSimilar: %v", err)
 	}
 	var got []uuid.UUID
-	for _, product := range products {
-		if slices.Contains([]uuid.UUID{kept, excluded}, product.ID) {
-			got = append(got, product.ID)
+	for _, scored := range products {
+		if slices.Contains([]uuid.UUID{kept, excluded}, scored.Product.ID) {
+			got = append(got, scored.Product.ID)
 		}
 	}
 	if want := []uuid.UUID{kept}; !slices.Equal(got, want) {
 		t.Fatalf("own products returned = %v, want %v", got, want)
+	}
+}
+
+// labeledTop stores every unset tag list as [], the way the catalog sync writes them.
+func labeledTop(neckline string, tags models.ProductTags) *models.ProductAttributes {
+	for _, list := range []*[]string{&tags.Colors, &tags.Formality, &tags.Occasions, &tags.Season, &tags.Pattern, &tags.Fabric, &tags.Fit} {
+		if *list == nil {
+			*list = []string{}
+		}
+	}
+	return &models.ProductAttributes{ProductTarget: "women", NecklineType: &neckline, Tags: tags}
+}
+
+func TestFindSimilarRewardsAPickedType(t *testing.T) {
+	db := openTestDB(t)
+
+	// cosine distances of about 0.005 and 0.03, a gap smaller than the type pick bonus
+	near := insertSlotProduct(t, db, testProduct{slot: models.SlotTop, attributes: labeledTop("low", models.ProductTags{}), embedding: productEmbedding(0.1)})
+	far := insertSlotProduct(t, db, testProduct{slot: models.SlotTop, attributes: labeledTop("modest", models.ProductTags{}), embedding: productEmbedding(0.25)})
+	unlabeled := insertSlotProduct(t, db, testProduct{slot: models.SlotTop, embedding: productEmbedding(0.2)})
+	ownIDs := []uuid.UUID{near, far, unlabeled}
+
+	if got := findSimilarIDsWithTypePicks(t, db, ownIDs, nil, nil, nil); !slices.Equal(got, []uuid.UUID{near, unlabeled, far}) {
+		t.Errorf("without type picks: got %v, want nearest first", got)
+	}
+	if got := findSimilarIDsWithTypePicks(t, db, ownIDs, nil, nil, []string{"modest"}); !slices.Equal(got, []uuid.UUID{far, near, unlabeled}) {
+		t.Errorf("picking modest: got %v, want the modest top first and the unlabeled one kept", got)
+	}
+}
+
+func TestFindSimilarMatchesLabeledTags(t *testing.T) {
+	db := openTestDB(t)
+
+	near := insertSlotProduct(t, db, testProduct{slot: models.SlotTop, attributes: labeledTop("low", models.ProductTags{Pattern: []string{"floral"}}), embedding: productEmbedding(0.1)})
+	far := insertSlotProduct(t, db, testProduct{slot: models.SlotTop, attributes: labeledTop("low", models.ProductTags{Occasions: []string{"date_night"}}), embedding: productEmbedding(0.17)})
+	ownIDs := []uuid.UUID{near, far}
+
+	if got := findSimilarIDs(t, db, ownIDs, nil, []string{"date_night"}); !slices.Equal(got, []uuid.UUID{far, near}) {
+		t.Errorf("with nice tag date_night: got %v, want the date_night row first", got)
+	}
+	if got := findSimilarIDs(t, db, ownIDs, []string{"floral"}, nil); !slices.Equal(got, []uuid.UUID{far}) {
+		t.Errorf("excluding floral: got %v, want only %v", got, far)
+	}
+}
+
+func TestFindSimilarCountsATagOnBothListsOnce(t *testing.T) {
+	db := openTestDB(t)
+
+	// cosine distances of about 0.005 and 0.03: one tag's bonus does not close the gap, two would
+	near := insertSlotProduct(t, db, testProduct{slot: models.SlotTop, embedding: productEmbedding(0.1)})
+	far := insertSlotProduct(t, db, testProduct{slot: models.SlotTop, tags: []string{"Knit"},
+		attributes: labeledTop("low", models.ProductTags{Fabric: []string{"knit"}}), embedding: productEmbedding(0.25)})
+	ownIDs := []uuid.UUID{near, far}
+
+	if got := findSimilarIDs(t, db, ownIDs, nil, []string{"knit"}); !slices.Equal(got, []uuid.UUID{near, far}) {
+		t.Errorf("with nice tag knit: got %v, want the nearer row still first", got)
+	}
+}
+
+func TestFindSimilarNeverExcludesALabeledColor(t *testing.T) {
+	db := openTestDB(t)
+
+	// sold in white and black, so a shopper who rules out white can still buy it
+	offeredInWhite := insertSlotProduct(t, db, testProduct{slot: models.SlotTop,
+		attributes: labeledTop("high", models.ProductTags{Colors: []string{"white", "black"}}), embedding: productEmbedding(0.1)})
+	storeTaggedWhite := insertSlotProduct(t, db, testProduct{slot: models.SlotTop, tags: []string{"White"}, embedding: productEmbedding(0.2)})
+	ownIDs := []uuid.UUID{offeredInWhite, storeTaggedWhite}
+
+	if got := findSimilarIDs(t, db, ownIDs, []string{"white"}, nil); !slices.Equal(got, []uuid.UUID{offeredInWhite}) {
+		t.Errorf("excluding white: got %v, want only the product that is also sold in black", got)
+	}
+	if got := findSimilarIDs(t, db, []uuid.UUID{offeredInWhite}, nil, []string{"black"}); !slices.Equal(got, []uuid.UUID{offeredInWhite}) {
+		t.Errorf("with nice tag black: got %v, want the labeled color to still match", got)
 	}
 }

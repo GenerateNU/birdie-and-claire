@@ -25,6 +25,9 @@ type OwnedProductRepository interface {
 	ListOwnedProducts(ctx context.Context, userID uuid.UUID, params pagination.CursorParams) (pagination.Page[models.OwnedProductResponse], error)
 	// AddOwnedProducts skips products userID already owns, so adding one twice changes nothing.
 	AddOwnedProducts(ctx context.Context, userID uuid.UUID, productIDs []uuid.UUID) error
+	// UpdateOwnedProducts adds addIDs and removes removeIDs in one statement, so both apply or neither does. Adding a
+	// product userID already owns, or removing one it doesn't, changes nothing.
+	UpdateOwnedProducts(ctx context.Context, userID uuid.UUID, addIDs, removeIDs []uuid.UUID) error
 	// RemoveOwnedProduct returns ErrNotFound when userID doesn't own the product.
 	RemoveOwnedProduct(ctx context.Context, userID uuid.UUID, productID uuid.UUID) error
 }
@@ -38,11 +41,13 @@ func NewOwnedProductRepository(database *sql.DB) OwnedProductRepository {
 }
 
 func (r *ownedProductRepository) ListOwnedProducts(ctx context.Context, userID uuid.UUID, params pagination.CursorParams) (pagination.Page[models.OwnedProductResponse], error) {
-	return listProductPage(ctx, r.db, `
-		SELECT product_id AS id, created_at AS sorted_at
-		FROM owned_products
-		WHERE user_id = $1
-	`, userID, params, func(product models.ProductResponse, addedAt time.Time) models.OwnedProductResponse {
+	return listProductPage(ctx, r.db, func([]string) string {
+		return `
+			SELECT product_id AS id, created_at AS sorted_at
+			FROM owned_products
+			WHERE user_id = $1
+		`
+	}, userID, params, func(product models.ProductResponse, addedAt time.Time, _ bool) models.OwnedProductResponse {
 		return models.OwnedProductResponse{ProductResponse: product, AddedAt: addedAt}
 	})
 }
@@ -62,6 +67,29 @@ func (r *ownedProductRepository) AddOwnedProducts(ctx context.Context, userID uu
 	}
 	if err != nil {
 		return fmt.Errorf("add owned products for user %s: %w", userID, err)
+	}
+	return nil
+}
+
+func (r *ownedProductRepository) UpdateOwnedProducts(ctx context.Context, userID uuid.UUID, addIDs, removeIDs []uuid.UUID) error {
+	_, err := r.db.ExecContext(ctx, `
+		WITH removed AS (
+			DELETE FROM owned_products
+			WHERE user_id = $1 AND product_id = ANY($3::uuid[])
+		)
+		INSERT INTO owned_products (user_id, product_id)
+		SELECT $1, unnest($2::uuid[])
+		ON CONFLICT (user_id, product_id) DO NOTHING
+	`, userID, addIDs, removeIDs)
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == foreignKeyViolation && pgErr.ConstraintName == ownedProductProductFKey {
+		return fmt.Errorf("update owned products for user %s: unknown product: %w", userID, errs.ErrConflict)
+	}
+	if errors.As(err, &pgErr) && pgErr.Code == foreignKeyViolation && pgErr.ConstraintName == ownedProductUserFKey {
+		return fmt.Errorf("update owned products: unknown user %s: %w", userID, errs.ErrNotFound)
+	}
+	if err != nil {
+		return fmt.Errorf("update owned products for user %s: %w", userID, err)
 	}
 	return nil
 }

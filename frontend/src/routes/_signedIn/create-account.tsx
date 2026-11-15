@@ -6,7 +6,8 @@ import { createCurrentUserMutation } from "@/api/generated/@tanstack/react-query
 import type { ErrorModel } from "@/api/generated/types.gen";
 import { zCreateUserInputBody } from "@/api/generated/zod.gen";
 import { Button, Form, Page, Text, TextField } from "@/design-system";
-import { AccountError, requireAccountStatus } from "@/features/account/account";
+import { AccountError, NAME_ERROR, requireAccountStatus } from "@/features/account/account";
+import { takeReturnPath } from "@/features/auth/return-path";
 
 export const Route = createFileRoute("/_signedIn/create-account")({
   beforeLoad: ({ context }) => requireAccountStatus(context, ["none"]),
@@ -16,8 +17,8 @@ export const Route = createFileRoute("/_signedIn/create-account")({
 
 // Has to stay a full page load. The cached "none" status never expires, so a router navigation
 // would send the user straight back here.
-function goHome() {
-  window.location.assign("/");
+function finishAccountCreation() {
+  window.location.assign(takeReturnPath() ?? "/");
 }
 
 // 409: the account already exists, which is where this page was headed anyway.
@@ -28,10 +29,10 @@ function alreadyCreated(error: ErrorModel | null) {
 function CreateAccount() {
   const createMutation = useMutation({
     ...createCurrentUserMutation(),
-    onSuccess: goHome,
+    onSuccess: finishAccountCreation,
     onError: (error) => {
       if (alreadyCreated(error)) {
-        goHome();
+        finishAccountCreation();
       }
     },
   });
@@ -60,11 +61,13 @@ function CreateAccount() {
           {(field) => (
             <TextField
               label="Name"
-              required
+              // The endpoint caps name at 100 characters.
+              maxLength={100}
+              aria-required
               value={field.state.value}
               onValueChange={field.handleChange}
               onBlur={field.handleBlur}
-              error={field.state.meta.errors.at(0)?.message}
+              error={field.state.meta.isValid ? undefined : NAME_ERROR}
             />
           )}
         </form.Field>

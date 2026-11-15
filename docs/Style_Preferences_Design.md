@@ -10,7 +10,7 @@ Personalization happens in two places:
 1. In the prompt, the recommender sends the shopper's saved shoes and bottoms picks to `expand_answers`, with one line telling the model that the occasion comes first. The model writes the picks into its search phrases where they fit. This works with today's data.
 2. In the ranking, once ingestion fills a `shoe_type` and a `bottom_type` column for every product, the search gives a small boost to products whose type matches a saved pick, and drops products whose type the request rules out. This waits until those columns pass an accuracy check.
 
-Style, neckline and the Dress pick don't affect recommendations yet. Style words mostly sorted products by gender, nothing in the catalog can show necklines reliably yet, and outfits have no slot for a dress.
+Style and neckline don't affect recommendations yet. Style words mostly sorted products by gender, and nothing in the catalog can show necklines reliably yet. Dress used to be a bottoms pick. It is now `include_one_pieces`, a yes or no on whether recommendations may offer a one-piece (a dress or jumpsuit) in place of a top and bottom. It starts on, and a shopper without saved preferences gets one-pieces too.
 
 The tests behind this ran on two models, dev's free model and DeepSeek V4.1 Flash, and on a catalog of 360 products:
 
@@ -30,7 +30,7 @@ Each product needs these labels, written by a multimodal LLM or a decision model
 |||||
 | `slot` | top, bottom, accessory, shoe | every product | which search a product is in |
 | `shoe_type` | sneakers, boots, sandals, heels, flats | shoes only, otherwise null | type boost and exclusions |
-| `bottom_type` | pants, skirt, shorts, dress | bottoms only, otherwise null | type boost and exclusions |
+| `bottom_type` | pants, skirt, shorts | bottoms only, otherwise null | type boost and exclusions |
 | `neckline_type` | high, modest, low | tops only, otherwise null | a neckline boost later |
 | `product_target` | women, men, girls, boys, unisex | every product | keeping products B&C doesn't sell out of outfits |
 | `ai_tags` | colors, formality, occasions, season, pattern, fabric and fit, from the lists below | every product | nice-tag and exclude-tag matching, and the embedded text |
@@ -101,7 +101,7 @@ expanded, err := llm.ExpandAnswers(ctx, s.llm, answers, formatStylePreferences(p
 // each slot: embed the phrase, then search with expanded.ExcludeTags and expanded.NiceTags
 ```
 
-`formatStylePreferences` uses the stored values as they are, drops Dress, and lists bottoms and shoes in onboarding's order no matter what order they were saved in. It returns an empty string for nil, for empty lists, and for a shopper who only picked Dress. When the text isn't empty, `ExpandAnswers` adds it to the answers under a `saved preferences` key and sets a flag for the template, since the template can't see inside the encoded answers. Both come from the same string, so they can't disagree.
+`formatStylePreferences` uses the stored values as they are, and lists bottoms and shoes in onboarding's order no matter what order they were saved in. It returns an empty string for nil and for empty lists. When the text isn't empty, `ExpandAnswers` adds it to the answers under a `saved preferences` key and sets a flag for the template, since the template can't see inside the encoded answers. Both come from the same string, so they can't disagree.
 
 The model gets one more key, and the prompt gets one more line, right after "When weather or vibe is missing, infer it from the occasion.":
 
@@ -250,8 +250,8 @@ and those results meet the expectation: the rendered prompt is byte for byte tod
 Phase 2 ships only the prompt change, and none of its tests call the LLM:
 
 - In `package llm`, the stub-client test renders the request. With no saved preferences, the rendered messages match a golden file captured from main's prompt before the template changed. With saved preferences, they have the `saved preferences` key and the extra line.
-- In `package services`, a test checks the text for nil, empty lists, Dress only and real picks (`"bottoms: skirt; shoes: flats"`). Nil covers both a NULL `style_preferences` and a missing `users` row. The test also reads each of the 20 pairs in the eval fixture, `backend/internal/tests/testdata/style_preferences_eval.json`, and checks its text against an expected string written in the test, since the fixture doesn't store one.
-- Another test in `package services` reads the `enum` tags on `StylePreferences.Bottoms` and `StylePreferences.Shoes`, and fails when a value is missing from the order lists the text uses. Dress is the one value left out on purpose.
+- In `package services`, a test checks the text for nil, empty lists and real picks (`"bottoms: skirt; shoes: flats"`). Nil covers both a NULL `style_preferences` and a missing `users` row. The test also reads each of the 20 pairs in the eval fixture, `backend/internal/tests/testdata/style_preferences_eval.json`, and checks its text against an expected string written in the test, since the fixture doesn't store one.
+- Another test in `package services` reads the `enum` tags on `StylePreferences.Bottoms` and `StylePreferences.Shoes`, and fails when a value is missing from the order lists the text uses.
 - In `internal/tests`, a shopper with no `users` row still gets outfits, and a user lookup that fails for any other reason returns that error.
 
 The ranking tests move to the type boost's PR, since they need the type columns:
@@ -267,7 +267,7 @@ The ranking tests move to the type boost's PR, since they need the type columns:
 1. Ship the prompt change first, since it needs no new data and worked on both models tested.
 2. Add the ingestion labels above, and add the same tag lists to the `expand_answers` prompt.
 3. Hand-check a sample of `shoe_type` and `bottom_type`, and once they pass, turn on the type boost and the type exclusions and tune the weight on B&C's catalog with the research's weight rule.
-4. Once `neckline_type` passes the same check, add a neckline boost for tops the same way. Style and Dress stay out until there's a way to test them, since style needs labels that tell products apart (the prototype put Comfortable & relaxed on 222 of 300 products) and Dress needs an outfit slot.
+4. Once `neckline_type` passes the same check, add a neckline boost for tops the same way. Style stays out until there's a way to test it, since it needs labels that tell products apart (the prototype put Comfortable & relaxed on 222 of 300 products).
 
 
 

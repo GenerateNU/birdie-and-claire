@@ -1,23 +1,22 @@
 import {
-  ChatCircleText,
-  EnvelopeSimple,
-  InstagramLogo,
-  RedditLogo,
-  ShareNetwork,
-  XLogo,
+  ChatCircleTextIcon,
+  EnvelopeSimpleIcon,
+  ExportIcon,
+  InstagramLogoIcon,
+  RedditLogoIcon,
+  XLogoIcon,
 } from "@phosphor-icons/react";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { shareOutfitMutation } from "@/api/generated/@tanstack/react-query.gen";
 import {
-  Box,
   Button,
-  Dialog,
+  CopyField,
   ErrorState,
   IconButton,
+  Modal,
   Spinner,
-  TextField,
   useToast,
 } from "@/design-system";
 
@@ -27,11 +26,11 @@ type ShareOutfitProps = {
 
 // Shown but disabled until sharing to each app is built.
 const SHARE_TARGETS = [
-  { name: "Messages", Icon: ChatCircleText },
-  { name: "Instagram", Icon: InstagramLogo },
-  { name: "X", Icon: XLogo },
-  { name: "Gmail", Icon: EnvelopeSimple },
-  { name: "Reddit", Icon: RedditLogo },
+  { name: "Messages", Icon: ChatCircleTextIcon },
+  { name: "Instagram", Icon: InstagramLogoIcon },
+  { name: "X", Icon: XLogoIcon },
+  { name: "Gmail", Icon: EnvelopeSimpleIcon },
+  { name: "Reddit", Icon: RedditLogoIcon },
 ];
 
 /** The Share button and the dialog it opens, which holds the outfit's public link. */
@@ -58,33 +57,26 @@ export function ShareOutfit({ outfitId }: ShareOutfitProps) {
       await navigator.clipboard.writeText(url);
       toast.show({ message: "Link copied", variant: "success" });
     } catch {
-      toast.show({ message: "Couldn't copy the link. Select it and copy it yourself." });
+      toast.show({
+        message: "Couldn't copy the link. Select it and copy it yourself.",
+        variant: "error",
+      });
     }
   }
 
+  // The API answers with a path, so the link works on whichever deploy made it, previews included.
+  const shareLink = share.isSuccess ? `${window.location.origin}${share.data.url}` : null;
+
   return (
     <>
-      <Button label="Share" leadingIcon={ShareNetwork} onClick={openDialog} />
-      <Dialog open={open} onClose={() => setOpen(false)} title="Share" actions={[]} dismissible>
+      <Button label="Share" size="sm" leadingIcon={ExportIcon} onClick={openDialog} />
+      <Modal open={open} onClose={() => setOpen(false)} title="Share" actions={[]} dismissible>
         {share.isPending && <Spinner />}
         {share.isError && (
           <ErrorState message="Couldn't make a share link. Try again." onRetry={makeLink} />
         )}
-        {share.isSuccess && (
-          <Box className="flex items-end gap-xs">
-            <TextField
-              label="Link"
-              value={share.data.url}
-              readOnly
-              onFocus={(event) => event.currentTarget.select()}
-              className="min-w-0 flex-1"
-            />
-            <Button
-              label="Copy"
-              variant="secondary"
-              onClick={() => void copyLink(share.data.url)}
-            />
-          </Box>
+        {shareLink !== null && (
+          <CopyField label="Share link" value={shareLink} onCopy={() => void copyLink(shareLink)} />
         )}
         <ul className="flex justify-center gap-md">
           {SHARE_TARGETS.map(({ name, Icon }) => (
@@ -92,14 +84,14 @@ export function ShareOutfit({ outfitId }: ShareOutfitProps) {
               <IconButton
                 icon={Icon}
                 label={`Share to ${name}, coming soon`}
-                variant="plain"
+                variant="ghost"
                 disabled
                 title="Coming soon"
               />
             </li>
           ))}
         </ul>
-      </Dialog>
+      </Modal>
     </>
   );
 }

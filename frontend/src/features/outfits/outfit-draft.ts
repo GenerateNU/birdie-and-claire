@@ -3,8 +3,8 @@ import { useReducer } from "react";
 import type { Product } from "@/features/outfits/outfit-items";
 
 /**
- * A product in the draft. `original` is the product that held its spot when the editor loaded; its
- * id identifies the spot through swaps.
+ * A product in the draft. `original` is the product that first held its spot, when the editor
+ * loaded or when the spot was added; its id identifies the spot through swaps.
  */
 export type DraftItem = { product: Product; original: Product };
 
@@ -16,6 +16,7 @@ type DraftState = {
 };
 
 type DraftAction =
+  | { type: "add"; product: Product }
   | { type: "swap"; originId: string; product: Product }
   | { type: "remove"; originId: string }
   | { type: "undo" }
@@ -32,8 +33,27 @@ function edit(state: DraftState, items: DraftItem[]): DraftState {
   return { ...state, items, past: [...state.past, state.items], future: [] };
 }
 
+// A one-piece takes the place of a top and a bottom, so adding either side clears the other.
+function clashes(added: Product["slot"], existing: Product["slot"]) {
+  if (added === "one_piece") {
+    return existing === "top" || existing === "bottom";
+  }
+
+  return existing === "one_piece" && (added === "top" || added === "bottom");
+}
+
 export function draftReducer(state: DraftState, action: DraftAction): DraftState {
   switch (action.type) {
+    case "add": {
+      if (state.items.some((item) => item.product.id === action.product.id)) {
+        return state;
+      }
+
+      const kept = state.items.filter((item) => !clashes(action.product.slot, item.product.slot));
+
+      return edit(state, [...kept, { product: action.product, original: action.product }]);
+    }
+
     case "swap": {
       const index = state.items.findIndex((item) => item.original.id === action.originId);
       const alreadyInDraft = state.items.some((item) => item.product.id === action.product.id);
@@ -52,7 +72,7 @@ export function draftReducer(state: DraftState, action: DraftAction): DraftState
     case "remove": {
       const items = state.items.filter((item) => item.original.id !== action.originId);
 
-      if (items.length === state.items.length || items.length === 0) {
+      if (items.length === state.items.length) {
         return state;
       }
 
@@ -112,17 +132,9 @@ export function useOutfitDraft(saved: { products: Product[] }) {
 
   return {
     items: state.items,
+    add: (product: Product) => dispatch({ type: "add", product }),
     swap: (originId: string, product: Product) => dispatch({ type: "swap", originId, product }),
-    /** Returns false, and changes nothing, when the item is the last one left. */
-    remove: (originId: string) => {
-      if (state.items.length <= 1) {
-        return false;
-      }
-
-      dispatch({ type: "remove", originId });
-
-      return true;
-    },
+    remove: (originId: string) => dispatch({ type: "remove", originId }),
     undo: () => dispatch({ type: "undo" }),
     redo: () => dispatch({ type: "redo" }),
     canUndo: state.past.length > 0,

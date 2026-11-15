@@ -22,7 +22,7 @@ There's a second step for later. If the ingestion step adds accurate `shoe_type`
 
 ## What the search can match
 
-Before comparing options, I checked what the product embeddings can actually pick up. I embedded each preference word with FashionCLIP, the same model `ml/embedder` serves, and compared it with the stored vectors of the 60 products in `backend/cmd/tasks/seeds/products.sql`.
+Before comparing options, I checked what the product embeddings can actually pick up. I embedded each preference word with FashionCLIP, the same model `ml/embedder` serves, and compared it with the stored vectors of the 60 demo products. Those came from a seed file, `backend/cmd/tasks/seeds/products.sql`, which was removed once the Shopify sync became the only way products get into the database. It is still in git history.
 
 Some products sit close to almost any query in their slot. To keep them from winning every comparison, each word's score is its similarity to a product minus that product's similarity to a plain word for the slot ("shoes", "a bottom" or "a top"). This is the contrast score. To measure how well a word separates products, I used AUC. That's the chance that a product matching the word scores higher than one that doesn't, so 0.5 is a coin flip and 1.0 is perfect. Whether a product matches comes from its title or product type.
 
@@ -350,4 +350,4 @@ That includes the prompt's own rule for "no heels". The model now puts `heels` i
 ## Sources
 
 - [FashionCLIP model card](https://huggingface.co/patrickjohncyh/fashion-clip): the model `ml/embedder` serves
-- `backend/cmd/tasks/seeds/products.sql`: the 60 products and their stored vectors
+- `backend/cmd/tasks/seeds/products.sql` (removed, in git history): the 60 products and their stored vectors

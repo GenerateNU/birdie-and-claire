@@ -18,24 +18,47 @@ import (
 
 type ProductRepository interface {
 	Exists(ctx context.Context, productID uuid.UUID) (bool, error)
-	// FindSimilar ranks a slot's products by distance to embedding, less a bonus per matching niceTag; pass the tags lowercase.
-	// excludeProductIDs may be nil.
-	FindSimilar(ctx context.Context, embedding []float32, slot models.ProductSlot, excludeTags, niceTags []string, excludeProductIDs []uuid.UUID, limit int) ([]models.ProductResponse, error)
+	// FindSimilar ranks a slot's products by distance to embedding, less a bonus per matching niceTag and a bonus when the
+	// product's labeled type is one of typePicks. Tags match both the store's tags and the labeled tag lists, except
+	// that a labeled color never excludes; pass them lowercase. typePicks and excludeProductIDs may be nil.
+	FindSimilar(ctx context.Context, embedding []float32, slot models.ProductSlot, excludeTags, niceTags, typePicks []string, excludeProductIDs []uuid.UUID, limit int) ([]ScoredProduct, error)
 	// GetEmbedding returns a nil embedding for a product that has none yet, and ErrNotFound for a missing product.
 	GetEmbedding(ctx context.Context, productID uuid.UUID) ([]float32, models.ProductSlot, error)
-	// UpsertShopifyProduct inserts or updates the product as a Birdie & Claire product and marks it active. It returns the product's id and the
-	// hash its stored embedding was built from, which is nil when the sync has not embedded it yet.
-	UpsertShopifyProduct(ctx context.Context, product shopify.ShopifyProduct, slot models.ProductSlot) (uuid.UUID, *string, error)
+	// UpsertShopifyProduct inserts or updates the product as a Birdie & Claire product and marks it active.
+	UpsertShopifyProduct(ctx context.Context, product shopify.ShopifyProduct, slot models.ProductSlot) (SyncedProduct, error)
+	SaveAttributes(ctx context.Context, productID uuid.UUID, attributes models.ProductAttributes, attributesHash string) error
 	SaveEmbedding(ctx context.Context, productID uuid.UUID, embedding []float32, embeddingHash string) error
 	ClearEmbedding(ctx context.Context, productID uuid.UUID) error
 	// DeactivateShopifyProductsExcept marks inactive every active Birdie & Claire product whose shopify_id is not in
 	// keepShopifyIDs, and returns how many it marked. Demo products are left alone.
 	DeactivateShopifyProductsExcept(ctx context.Context, keepShopifyIDs []int64) (int64, error)
 	ListUnownedProducts(ctx context.Context, userID uuid.UUID, params pagination.CursorParams) (pagination.Page[models.ProductResponse], error)
+	// ListBirdieAndClaireProducts lists the active store products that match filter, marking the ones userID owns.
+	ListBirdieAndClaireProducts(ctx context.Context, userID uuid.UUID, filter models.BirdieAndClaireProductFilter, params pagination.CursorParams) (models.BirdieAndClaireProductPage, error)
+	// FindPurchaseInfo maps each of productIDs that exists to what decides whether userID can buy it.
+	FindPurchaseInfo(ctx context.Context, userID uuid.UUID, productIDs []uuid.UUID) (map[uuid.UUID]models.ProductPurchaseInfo, error)
 }
 
-// untuned: a guess at how much one matching nice tag is worth in cosine distance
-const bonusPerTag = 0.02
+const (
+	// untuned: a guess at how much one matching nice tag is worth in cosine distance
+	bonusPerTag = 0.02
+	// untuned: docs/Style_Preferences_Design.md's starting point for a product whose type the shopper picked
+	typePickBonus = 0.05
+)
+
+// ScoredProduct is a FindSimilar result. A lower score is a better match.
+type ScoredProduct struct {
+	Product models.ProductResponse
+	Score   float64
+}
+
+// SyncedProduct is what the catalog sync needs to know about a product it just upserted. Each hash is of what the stored
+// value was built from, and nil when the sync has not built it yet.
+type SyncedProduct struct {
+	ID             uuid.UUID
+	AttributesHash *string
+	EmbeddingHash  *string
+}
 
 type productRepository struct {
 	db *sql.DB
@@ -76,27 +99,76 @@ func (r *productRepository) GetEmbedding(ctx context.Context, productID uuid.UUI
 	return embedding.Slice(), slot, nil
 }
 
-func (r *productRepository) FindSimilar(ctx context.Context, embedding []float32, slot models.ProductSlot, excludeTags, niceTags []string, excludeProductIDs []uuid.UUID, limit int) ([]models.ProductResponse, error) {
+func (r *productRepository) FindPurchaseInfo(ctx context.Context, userID uuid.UUID, productIDs []uuid.UUID) (map[uuid.UUID]models.ProductPurchaseInfo, error) {
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT
+			p.id,
+			EXISTS (SELECT 1 FROM owned_products o WHERE o.user_id = $1 AND o.product_id = p.id),
+			p.active,
+			(
+				SELECT v.shopify_id FROM product_variants v
+				WHERE v.product_id = p.id AND v.available
+				ORDER BY v.position, v.id
+				LIMIT 1
+			)
+		FROM products p
+		WHERE p.id = ANY($2)
+	`, userID, productIDs)
+	if err != nil {
+		return nil, fmt.Errorf("query purchase info for user %s: %w", userID, err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	infos := make(map[uuid.UUID]models.ProductPurchaseInfo)
+	for rows.Next() {
+		var productID uuid.UUID
+		var info models.ProductPurchaseInfo
+		if err := rows.Scan(&productID, &info.Owned, &info.Active, &info.VariantShopifyID); err != nil {
+			return nil, fmt.Errorf("scan purchase info: %w", err)
+		}
+		infos[productID] = info
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate purchase info for user %s: %w", userID, err)
+	}
+	return infos, nil
+}
+
+func (r *productRepository) FindSimilar(ctx context.Context, embedding []float32, slot models.ProductSlot, excludeTags, niceTags, typePicks []string, excludeProductIDs []uuid.UUID, limit int) ([]ScoredProduct, error) {
 	rows, err := r.db.QueryContext(ctx, `
 		-- Ranked and limited before the image join, so only the returned products look up an image.
 		WITH ranked AS (
 			SELECT p.id, p.shopify_id, p.handle, p.title, p.product_type, p.slot, p.source, p.tags, p.created_at, p.updated_at,
 				-- <=> is pgvector's cosine distance, so smaller means more similar.
 				(p.embedding <=> $1)
-					- $4::float8 * (SELECT count(*) FROM unnest(p.tags) tag WHERE lower(tag) = ANY($5::text[])) AS score
+					- $4::float8 * (SELECT count(*) FROM unnest(all_tags.tags) tag WHERE tag = ANY($5::text[]))
+					-- only the slot's own type is ever set, so the first non-null one is the product's type
+					- $8::float8 * COALESCE(COALESCE(p.attributes->>'neckline_type', p.attributes->>'bottom_type', p.attributes->>'shoe_type')
+						= ANY($9::text[]), false)::int AS score
 			FROM products p
+			CROSS JOIN LATERAL (
+				-- stored tags keep the catalog's casing, so they are lowered; labeled tags are already lowercase
+				SELECT array_agg(DISTINCT tag) AS tags,
+					-- a product is sold in every color it lists, so offering one never rules it out
+					array_agg(DISTINCT tag) FILTER (WHERE excludable) AS excludable_tags
+				FROM (
+					SELECT lower(store_tag), true FROM unnest(p.tags) store_tag
+					UNION ALL
+					SELECT jsonb_array_elements_text(tag_list), name <> 'colors' FROM jsonb_each(p.attributes->'tags') labels(name, tag_list)
+				) every_tag(tag, excludable)
+			) all_tags
 			WHERE p.embedding IS NOT NULL
 				AND p.active
 				AND p.slot = $2
-				-- stored tags keep the catalog's casing, so only that side is lowered; a NULL list matches no tag
-				AND NOT EXISTS (SELECT 1 FROM unnest(p.tags) tag WHERE lower(tag) = ANY($3::text[]))
+				-- a NULL list matches no tag
+				AND NOT EXISTS (SELECT 1 FROM unnest(all_tags.excludable_tags) tag WHERE tag = ANY($3::text[]))
 				-- <> ALL over a NULL array is NULL and would drop every row, so a nil list becomes an empty one
 				AND p.id <> ALL(COALESCE($7::uuid[], '{}'))
 			ORDER BY score, p.id
 			LIMIT $6
 		)
 		SELECT r.id, r.shopify_id, r.handle, r.title, r.product_type, r.slot, r.source, r.tags, r.created_at, r.updated_at,
-			first_image.url
+			first_image.url, r.score
 		FROM ranked r
 		LEFT JOIN LATERAL (
 			SELECT pi.url
@@ -106,31 +178,32 @@ func (r *productRepository) FindSimilar(ctx context.Context, embedding []float32
 			LIMIT 1
 		) first_image ON true
 		ORDER BY r.score, r.id
-	`, pgvector.NewVector(embedding), slot, excludeTags, bonusPerTag, niceTags, limit, excludeProductIDs)
+	`, pgvector.NewVector(embedding), slot, excludeTags, bonusPerTag, niceTags, limit, excludeProductIDs, typePickBonus, typePicks)
 	if err != nil {
 		return nil, fmt.Errorf("find similar products in slot %s: %w", slot, err)
 	}
 	defer func() { _ = rows.Close() }()
 
-	products := make([]models.ProductResponse, 0)
+	products := make([]ScoredProduct, 0)
 	for rows.Next() {
-		var product models.ProductResponse
+		var scored ScoredProduct
 		if err := rows.Scan(
-			&product.ID,
-			&product.ShopifyID,
-			&product.Handle,
-			&product.Title,
-			&product.ProductType,
-			&product.Slot,
-			&product.Source,
-			&product.Tags,
-			&product.CreatedAt,
-			&product.UpdatedAt,
-			&product.ImageURL,
+			&scored.Product.ID,
+			&scored.Product.ShopifyID,
+			&scored.Product.Handle,
+			&scored.Product.Title,
+			&scored.Product.ProductType,
+			&scored.Product.Slot,
+			&scored.Product.Source,
+			&scored.Product.Tags,
+			&scored.Product.CreatedAt,
+			&scored.Product.UpdatedAt,
+			&scored.Product.ImageURL,
+			&scored.Score,
 		); err != nil {
 			return nil, fmt.Errorf("scan similar product in slot %s: %w", slot, err)
 		}
-		products = append(products, product)
+		products = append(products, scored)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("iterate similar products in slot %s: %w", slot, err)
@@ -138,9 +211,8 @@ func (r *productRepository) FindSimilar(ctx context.Context, embedding []float32
 	return products, nil
 }
 
-func (r *productRepository) UpsertShopifyProduct(ctx context.Context, product shopify.ShopifyProduct, slot models.ProductSlot) (uuid.UUID, *string, error) {
-	var id uuid.UUID
-	var embeddingHash *string
+func (r *productRepository) UpsertShopifyProduct(ctx context.Context, product shopify.ShopifyProduct, slot models.ProductSlot) (SyncedProduct, error) {
+	var synced SyncedProduct
 	err := r.db.QueryRowContext(ctx, `
 		WITH upserted AS (
 			INSERT INTO products (shopify_id, handle, title, product_type, tags, slot, source)
@@ -156,17 +228,30 @@ func (r *productRepository) UpsertShopifyProduct(ctx context.Context, product sh
 			-- an unchanged product keeps its updated_at, so a rerun changes nothing
 			WHERE (products.handle, products.title, products.product_type, products.tags, products.slot, products.active)
 				IS DISTINCT FROM (EXCLUDED.handle, EXCLUDED.title, EXCLUDED.product_type, EXCLUDED.tags, EXCLUDED.slot, true)
-			RETURNING id, embedding_hash
+			RETURNING id, attributes_hash, embedding_hash
 		)
-		SELECT id, embedding_hash FROM upserted
+		SELECT id, attributes_hash, embedding_hash FROM upserted
 		UNION ALL
 		-- the skipped update returns no row, and this select still sees the row as it was before the statement
-		SELECT id, embedding_hash FROM products WHERE shopify_id = $1 AND NOT EXISTS (SELECT 1 FROM upserted)
-	`, product.ID, product.Handle, product.Title, product.ProductType, product.Tags, slot).Scan(&id, &embeddingHash)
+		SELECT id, attributes_hash, embedding_hash FROM products WHERE shopify_id = $1 AND NOT EXISTS (SELECT 1 FROM upserted)
+	`, product.ID, product.Handle, product.Title, product.ProductType, product.Tags, slot).Scan(
+		&synced.ID, &synced.AttributesHash, &synced.EmbeddingHash)
 	if err != nil {
-		return uuid.Nil, nil, fmt.Errorf("upsert shopify product %d: %w", product.ID, err)
+		return SyncedProduct{}, fmt.Errorf("upsert shopify product %d: %w", product.ID, err)
 	}
-	return id, embeddingHash, nil
+	return synced, nil
+}
+
+func (r *productRepository) SaveAttributes(ctx context.Context, productID uuid.UUID, attributes models.ProductAttributes, attributesHash string) error {
+	_, err := r.db.ExecContext(ctx, `
+		UPDATE products
+		SET attributes = $2, attributes_hash = $3
+		WHERE id = $1
+	`, productID, attributes, attributesHash)
+	if err != nil {
+		return fmt.Errorf("save attributes of product %s: %w", productID, err)
+	}
+	return nil
 }
 
 func (r *productRepository) SaveEmbedding(ctx context.Context, productID uuid.UUID, embedding []float32, embeddingHash string) error {
@@ -210,25 +295,77 @@ func (r *productRepository) DeactivateShopifyProductsExcept(ctx context.Context,
 }
 
 func (r *productRepository) ListUnownedProducts(ctx context.Context, userID uuid.UUID, params pagination.CursorParams) (pagination.Page[models.ProductResponse], error) {
-	return listProductPage(ctx, r.db, `
-		SELECT p.id, p.created_at AS sorted_at
-		FROM products p
-		WHERE NOT EXISTS (SELECT 1 FROM owned_products op WHERE op.user_id = $1 AND op.product_id = p.id)
-	`, userID, params, func(product models.ProductResponse, _ time.Time) models.ProductResponse {
+	return listProductPage(ctx, r.db, func([]string) string {
+		return `
+			SELECT p.id, p.created_at AS sorted_at
+			FROM products p
+			WHERE NOT EXISTS (SELECT 1 FROM owned_products op WHERE op.user_id = $1 AND op.product_id = p.id)
+		`
+	}, userID, params, func(product models.ProductResponse, _ time.Time, _ bool) models.ProductResponse {
 		return product
 	})
 }
 
-// listProductPage is the paging query behind every product list. rowSource selects the list's rows as
-// (id, sorted_at) and may use $1, the user's ID; it is always a constant in this package, never input.
-// Rows come newest sorted_at first, then by id, and toItem shapes each one for the response.
+func (r *productRepository) ListBirdieAndClaireProducts(ctx context.Context, userID uuid.UUID, filter models.BirdieAndClaireProductFilter, params pagination.CursorParams) (models.BirdieAndClaireProductPage, error) {
+	rowSource := func(sourceParams []string) string {
+		slots, productType, excludeProductType, ownedOnly := sourceParams[0], sourceParams[1], sourceParams[2], sourceParams[3]
+		// product_type is NULL for some products, and IS DISTINCT FROM keeps those when a type is excluded.
+		return `
+			SELECT p.id, p.created_at AS sorted_at
+			FROM products p
+			WHERE p.source = 'birdie_and_claire'
+				AND p.active
+				AND p.slot::text = ANY(` + slots + `::text[])
+				AND (` + productType + `::text = '' OR p.product_type = ` + productType + `::text)
+				AND (` + excludeProductType + `::text = '' OR p.product_type IS DISTINCT FROM ` + excludeProductType + `::text)
+				AND (NOT ` + ownedOnly + `::bool
+					OR EXISTS (SELECT 1 FROM owned_products op WHERE op.user_id = $1 AND op.product_id = p.id))
+		`
+	}
+	sourceArgs := []any{filter.Slots, filter.ProductType, filter.ExcludeProductType, filter.OwnedOnly}
+
+	page, err := listProductPage(ctx, r.db, rowSource, userID, params, func(product models.ProductResponse, _ time.Time, owned bool) models.BirdieAndClaireProductResponse {
+		return models.BirdieAndClaireProductResponse{ProductResponse: product, Owned: owned}
+	}, sourceArgs...)
+	if err != nil {
+		return models.BirdieAndClaireProductPage{}, err
+	}
+
+	var total int
+	err = r.db.QueryRowContext(ctx, `
+		SELECT count(*) FROM (`+rowSource(numberedPlaceholders(2, len(sourceArgs)))+`) source
+	`, append([]any{userID}, sourceArgs...)...).Scan(&total)
+	if err != nil {
+		return models.BirdieAndClaireProductPage{}, fmt.Errorf("count birdie and claire products for user %s: %w", userID, err)
+	}
+	return models.BirdieAndClaireProductPage{Page: page, Total: total}, nil
+}
+
+// productRowSource selects a product list's rows as (id, sorted_at). It may use $1, the user's ID, and gets one
+// placeholder per extra query arg, in order, so it never has to count the arguments that come before them. The SQL it
+// returns is always built from constants in this package, never from input.
+type productRowSource func(sourceParams []string) string
+
+// numberedPlaceholders returns count placeholders starting at $first.
+func numberedPlaceholders(first, count int) []string {
+	placeholders := make([]string, 0, count)
+	for position := first; position < first+count; position++ {
+		placeholders = append(placeholders, fmt.Sprintf("$%d", position))
+	}
+	return placeholders
+}
+
+// listProductPage is the paging query behind every product list. rowSource picks the rows and gets a placeholder for
+// each of sourceArgs. Rows come newest sorted_at first, then by id, and toItem shapes each one for the response, given
+// whether the user owns the product.
 func listProductPage[T any](
 	ctx context.Context,
 	db *sql.DB,
-	rowSource string,
+	rowSource productRowSource,
 	userID uuid.UUID,
 	params pagination.CursorParams,
-	toItem func(product models.ProductResponse, sortedAt time.Time) T,
+	toItem func(product models.ProductResponse, sortedAt time.Time, owned bool) T,
+	sourceArgs ...any,
 ) (pagination.Page[T], error) {
 	afterSortedAt, err := params.After().Time("sorted_at")
 	if err != nil {
@@ -243,13 +380,14 @@ func listProductPage[T any](
 		-- Paged before the product and image joins, so only the returned rows look them up.
 		WITH page AS (
 			SELECT id, sorted_at
-			FROM (`+rowSource+`) source
+			FROM (`+rowSource(numberedPlaceholders(5, len(sourceArgs)))+`) source
 			WHERE ($2::timestamptz IS NULL OR (sorted_at, id) < ($2::timestamptz, $3::uuid))
 			ORDER BY sorted_at DESC, id DESC
 			LIMIT $4
 		)
 		SELECT p.id, p.shopify_id, p.handle, p.title, p.product_type, p.slot, p.source, p.tags, p.created_at, p.updated_at,
-			first_image.url, page.sorted_at
+			first_image.url, page.sorted_at,
+			EXISTS (SELECT 1 FROM owned_products op WHERE op.user_id = $1 AND op.product_id = p.id)
 		FROM page
 		JOIN products p ON p.id = page.id
 		LEFT JOIN LATERAL (
@@ -260,7 +398,7 @@ func listProductPage[T any](
 			LIMIT 1
 		) first_image ON true
 		ORDER BY page.sorted_at DESC, page.id DESC
-	`, userID, afterSortedAt, afterID, params.Limit+1)
+	`, append([]any{userID, afterSortedAt, afterID, params.Limit + 1}, sourceArgs...)...)
 	if err != nil {
 		return pagination.Page[T]{}, fmt.Errorf("list products for user %s: %w", userID, err)
 	}
@@ -269,11 +407,12 @@ func listProductPage[T any](
 	type row struct {
 		product  models.ProductResponse
 		sortedAt time.Time
+		owned    bool
 	}
 	fetched := make([]row, 0, params.Limit+1)
 	for rows.Next() {
 		var next row
-		if err := rows.Scan(append(productScanTargets(&next.product), &next.sortedAt)...); err != nil {
+		if err := rows.Scan(append(productScanTargets(&next.product), &next.sortedAt, &next.owned)...); err != nil {
 			return pagination.Page[T]{}, fmt.Errorf("list products for user %s: scan: %w", userID, err)
 		}
 		fetched = append(fetched, next)
@@ -286,7 +425,7 @@ func listProductPage[T any](
 	// Non-nil so an empty page encodes as [] rather than null.
 	items := make([]T, 0, len(pageRows))
 	for _, pageRow := range pageRows {
-		items = append(items, toItem(pageRow.product, pageRow.sortedAt))
+		items = append(items, toItem(pageRow.product, pageRow.sortedAt, pageRow.owned))
 	}
 	page := pagination.Page[T]{Items: items, HasMore: hasMore}
 	if !hasMore {

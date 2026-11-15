@@ -74,7 +74,7 @@ export function EditableOutfitCanvas({ products, editing, children }: EditableOu
   }
 
   return (
-    <CanvasStage controls={children} onClick={clearSelectionOnEmptyClick}>
+    <CanvasStage controls={children} onClick={clearSelectionOnEmptyClick} variant="panel">
       {drawnGarments.map((drawn) => {
         const originId = originIdByProductId.get(drawn.product.id);
 
@@ -147,7 +147,7 @@ function SelectionOverlay({ drawn, layer, onRemove }: SelectionOverlayProps) {
         className="pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 rounded-full bg-error p-xxs text-inverse focus-ring"
         style={{ left: percent(drawn.garment.right), top: percent(drawn.garment.top) }}
       >
-        <XIcon aria-hidden="true" weight="bold" />
+        <XIcon aria-hidden="true" />
       </button>
     </Box>
   );

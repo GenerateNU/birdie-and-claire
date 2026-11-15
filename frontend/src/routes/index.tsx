@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { AccountError, requireAccountStatus } from "@/features/account/account";
+import { AccountError, getAccountStatus, requireAccountStatus } from "@/features/account/account";
+import { Home } from "@/features/home/home";
 import { Landing } from "@/features/landing/landing";
 import { supabase } from "@/lib/supabase";
 
@@ -12,21 +13,30 @@ export const Route = createFileRoute("/")({
     } = await supabase.auth.getSession();
 
     if (!session) {
-      return { signedIn: false };
+      return { signedIn: false, onboarded: false };
     }
 
+    // Someone partway through onboarding can land here from its X. The landing's links lead to
+    // onboarded-only pages, whose guard sends them back to finish.
     await requireAccountStatus({ queryClient: context.queryClient, userId: session.user.id }, [
       "onboarded",
+      "needs-preferences",
     ]);
 
-    return { signedIn: true };
+    // Cached by the guard above, so this is no new request.
+    const status = await getAccountStatus({
+      queryClient: context.queryClient,
+      userId: session.user.id,
+    });
+
+    return { signedIn: true, onboarded: status === "onboarded" };
   },
   errorComponent: AccountError,
-  component: LandingPage,
+  component: IndexPage,
 });
 
-function LandingPage() {
-  const { signedIn } = Route.useRouteContext();
+function IndexPage() {
+  const { signedIn, onboarded } = Route.useRouteContext();
 
-  return <Landing signedIn={signedIn} />;
+  return onboarded ? <Home /> : <Landing signedIn={signedIn} />;
 }

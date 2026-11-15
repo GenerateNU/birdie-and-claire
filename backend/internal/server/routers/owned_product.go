@@ -34,6 +34,16 @@ func OwnedProductRoutes(api huma.API, params types.RouteParams) {
 	}, controller.AddOwnedProducts)
 
 	huma.Register(api, huma.Operation{
+		OperationID:   "update-current-user-pieces",
+		Method:        http.MethodPatch,
+		Path:          "/api/v1/users/me/pieces",
+		DefaultStatus: http.StatusNoContent,
+		Summary:       "Add and remove products the authenticated user owns in one change",
+		Description:   "Both lists apply together or not at all. Adding an owned product or removing one not owned is skipped. An added product not in the catalog fails the whole request with 409.",
+		Tags:          []string{"pieces"},
+	}, controller.UpdateOwnedProducts)
+
+	huma.Register(api, huma.Operation{
 		OperationID:   "remove-current-user-piece",
 		Method:        http.MethodDelete,
 		Path:          "/api/v1/users/me/pieces/{product_id}",

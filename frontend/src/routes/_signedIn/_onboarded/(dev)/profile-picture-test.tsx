@@ -1,4 +1,4 @@
-import { CaretLeft } from "@phosphor-icons/react";
+import { ArrowLeftIcon } from "@phosphor-icons/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useRef, useState, type ChangeEvent } from "react";
@@ -81,7 +81,7 @@ function ProfilePictureTest() {
 
   return (
     <Page>
-      <Link variant="text" to="/dev" leadingIcon={CaretLeft}>
+      <Link to="/dev" variant="ghost" size="sm" leadingIcon={ArrowLeftIcon}>
         Dev
       </Link>
       <Text variant="heading" className="mt-md mb-xs">
@@ -124,7 +124,7 @@ function ProfilePictureTest() {
         )}
 
         {user && (
-          <Box className="rounded-lg border bg-surface p-md">
+          <Box className="border bg-surface p-md">
             <Text variant="body" className="font-semibold">
               {user.name || "(no name)"}
             </Text>

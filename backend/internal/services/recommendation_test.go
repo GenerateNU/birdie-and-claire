@@ -19,9 +19,8 @@ func TestFormatStylePreferences(t *testing.T) {
 	}{
 		{name: "NULL or no users row", preferences: nil, want: ""},
 		{name: "empty lists", preferences: &models.StylePreferences{Style: []string{}, Neckline: []string{}, Bottoms: []string{}, Shoes: []string{}}, want: ""},
-		{name: "dress only", preferences: &models.StylePreferences{Bottoms: []string{"dress"}}, want: ""},
 		{name: "bottoms and shoes", preferences: &models.StylePreferences{Bottoms: []string{"skirt"}, Shoes: []string{"flats"}}, want: "bottoms: skirt; shoes: flats"},
-		{name: "saved out of order", preferences: &models.StylePreferences{Bottoms: []string{"shorts", "dress", "pants"}, Shoes: []string{"flats", "sneakers"}},
+		{name: "saved out of order", preferences: &models.StylePreferences{Bottoms: []string{"shorts", "pants"}, Shoes: []string{"flats", "sneakers"}},
 			want: "bottoms: pants, shorts; shoes: sneakers, flats"},
 	}
 
@@ -97,10 +96,6 @@ func TestOnboardingOrdersCoverEveryValue(t *testing.T) {
 			t.Fatalf("StylePreferences has no %s field", fieldName)
 		}
 		for _, value := range strings.Split(field.Tag.Get("enum"), ",") {
-			// left out on purpose, since outfits have no slot for a dress
-			if value == "dress" {
-				continue
-			}
 			if !slices.Contains(order, value) {
 				t.Errorf("%s value %q is missing from its onboarding order list", fieldName, value)
 			}

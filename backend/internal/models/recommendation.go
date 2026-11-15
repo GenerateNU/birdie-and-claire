@@ -1,6 +1,10 @@
 package models
 
-import "github.com/danielgtaylor/huma/v2"
+import (
+	"reflect"
+
+	"github.com/danielgtaylor/huma/v2"
+)
 
 type RecommendationRequest struct {
 	Occasion string                 `json:"occasion" required:"true" minLength:"1" maxLength:"100" doc:"A preset such as \"Workday\" or the shopper's own words"`
@@ -8,17 +12,19 @@ type RecommendationRequest struct {
 }
 
 type RecommendationDetail struct {
-	Key RecommendationDetailKey `json:"key" enum:"weather,vibe,custom"`
-	// 200 is the custom limit; weather and vibe values are checked against their lists
-	Value string `json:"value" minLength:"1" maxLength:"200" doc:"For weather, one of RecommendationWeather; for vibe, one of RecommendationVibe; free text for custom. The server checks the value against its key"`
+	Key RecommendationDetailKey `json:"key" enum:"weather,setting,conditions,vibe,custom"`
+	// 200 is the custom limit; weather, setting, conditions, and vibe values are checked against their lists
+	Value string `json:"value" minLength:"1" maxLength:"200" doc:"For weather, one of RecommendationWeather; for setting, one of RecommendationSetting; for conditions, distinct RecommendationCondition values separated by commas, such as \"humid,rainy\"; for vibe, one of RecommendationVibe; free text for custom. The server checks the value against its key"`
 }
 
-// TransformSchema points value at the RecommendationWeather and RecommendationVibe schemas from
+// TransformSchema points value at the RecommendationWeather, RecommendationSetting, RecommendationCondition, and RecommendationVibe schemas from
 // RegisterRecommendationEnums. The free-text branch keeps validation as it was: the controller
 // checks a value against its key's list.
 func (RecommendationDetail) TransformSchema(_ huma.Registry, s *huma.Schema) *huma.Schema {
 	s.Properties["value"].AnyOf = []*huma.Schema{
 		{Ref: "#/components/schemas/RecommendationWeather"},
+		{Ref: "#/components/schemas/RecommendationSetting"},
+		{Ref: "#/components/schemas/RecommendationCondition"},
 		{Ref: "#/components/schemas/RecommendationVibe"},
 		{Type: huma.TypeString},
 	}
@@ -26,11 +32,13 @@ func (RecommendationDetail) TransformSchema(_ huma.Registry, s *huma.Schema) *hu
 	return s
 }
 
-// RegisterRecommendationEnums adds the weather and vibe lists to the spec as named schemas, so the
+// RegisterRecommendationEnums adds the weather, setting, condition, and vibe lists to the spec as named schemas, so the
 // frontend can generate its buttons from them.
 func RegisterRecommendationEnums(r huma.Registry) {
 	schemas := r.Map()
 	schemas["RecommendationWeather"] = &huma.Schema{Type: huma.TypeString, Enum: enumValues(RecommendationWeathers)}
+	schemas["RecommendationSetting"] = &huma.Schema{Type: huma.TypeString, Enum: enumValues(RecommendationSettings)}
+	schemas["RecommendationCondition"] = &huma.Schema{Type: huma.TypeString, Enum: enumValues(RecommendationConditions)}
 	schemas["RecommendationVibe"] = &huma.Schema{Type: huma.TypeString, Enum: enumValues(RecommendationVibes)}
 }
 
@@ -46,39 +54,87 @@ func enumValues(values []string) []any {
 type RecommendationDetailKey string
 
 const (
-	DetailWeather RecommendationDetailKey = "weather"
-	DetailVibe    RecommendationDetailKey = "vibe"
-	DetailCustom  RecommendationDetailKey = "custom"
+	DetailWeather    RecommendationDetailKey = "weather"
+	DetailSetting    RecommendationDetailKey = "setting"
+	DetailConditions RecommendationDetailKey = "conditions"
+	DetailVibe       RecommendationDetailKey = "vibe"
+	DetailCustom     RecommendationDetailKey = "custom"
 )
 
-// RecommendationWeathers and RecommendationVibes are the values the occasion flow's buttons send.
-// The spec publishes them as the RecommendationWeather and RecommendationVibe schemas, which the
-// frontend client is generated from.
+// RecommendationWeathers, RecommendationSettings, RecommendationConditions, and RecommendationVibes are
+// the values the occasion flow's buttons send. The spec publishes them as the RecommendationWeather,
+// RecommendationSetting, RecommendationCondition, and RecommendationVibe schemas, which the frontend
+// client is generated from.
 var (
-	RecommendationWeathers = []string{"hot", "warm", "chilly", "cold", "rainy", "windy", "snowy", "storm"}
-	RecommendationVibes    = []string{"professional", "chic", "casual", "sophisticated", "colorful"}
+	RecommendationWeathers   = []string{"hot", "warm", "chilly", "cold", "rainy", "windy", "snowy", "storm"}
+	RecommendationSettings   = []string{"outdoors", "indoors"}
+	RecommendationConditions = []string{"humid", "rainy", "snowy", "stormy", "windy"}
+	RecommendationVibes      = []string{"professional", "chic", "casual", "sophisticated", "colorful"}
 )
 
 // OccasionPromptLabel and DetailPromptLabels name each answer in the prompt.
 const OccasionPromptLabel = "occasion"
 
 var DetailPromptLabels = map[RecommendationDetailKey]string{
-	DetailWeather: "weather",
-	DetailVibe:    "vibe",
-	DetailCustom:  "custom",
+	DetailWeather:    "weather",
+	DetailSetting:    "setting",
+	DetailConditions: "conditions",
+	DetailVibe:       "vibe",
+	DetailCustom:     "custom",
 }
 
 type RecommendationResponse struct {
 	ExpandedAnswers RecommendationExpandedAnswers `json:"expanded_answers"`
-	Outfits         []RecommendedOutfit           `json:"outfits" nullable:"false" doc:"Up to 3 outfits, best first; fewer when a slot has fewer matching products"`
+	Outfits         []RecommendedOutfit           `json:"outfits" nullable:"false" doc:"Up to 3 outfits, best first; fewer only when every slot has fewer matching products"`
 }
 
-// RecommendedOutfit takes the same rank from each slot's search, so outfit n holds every slot's nth match.
+// OutfitKind says which shape a RecommendedOutfit has.
+type OutfitKind string
+
+const (
+	OutfitSeparates OutfitKind = "separates"
+	OutfitOnePiece  OutfitKind = "one_piece"
+)
+
+// RecommendedOutfit takes the same rank from each slot's search, so outfit n holds every slot's nth match. Kind says
+// whether it holds a top and bottom or a one-piece, never both. A slot that found fewer than n products is left out,
+// so one empty slot never holds back the others. The spec describes it as SeparatesOutfit or OnePieceOutfit.
 type RecommendedOutfit struct {
-	Top       ProductResponse `json:"top"`
-	Bottom    ProductResponse `json:"bottom"`
-	Accessory ProductResponse `json:"accessory"`
-	Shoe      ProductResponse `json:"shoe"`
+	Kind      OutfitKind       `json:"kind"`
+	Top       *ProductResponse `json:"top,omitzero"`
+	Bottom    *ProductResponse `json:"bottom,omitzero"`
+	OnePiece  *ProductResponse `json:"one_piece,omitzero"`
+	Accessory *ProductResponse `json:"accessory,omitzero"`
+	Shoe      *ProductResponse `json:"shoe,omitzero"`
+}
+
+// SeparatesOutfit and OnePieceOutfit exist only to describe RecommendedOutfit's two shapes in the spec.
+type SeparatesOutfit struct {
+	Kind      OutfitKind       `json:"kind" enum:"separates"`
+	Top       *ProductResponse `json:"top,omitzero" doc:"Missing when no top matched"`
+	Bottom    *ProductResponse `json:"bottom,omitzero" doc:"Missing when no bottom matched"`
+	Accessory *ProductResponse `json:"accessory,omitzero" doc:"Missing when no accessory matched"`
+	Shoe      *ProductResponse `json:"shoe,omitzero" doc:"Missing when no shoe matched"`
+}
+
+type OnePieceOutfit struct {
+	Kind      OutfitKind       `json:"kind" enum:"one_piece"`
+	OnePiece  *ProductResponse `json:"one_piece" doc:"A dress or jumpsuit in place of the top and bottom"`
+	Accessory *ProductResponse `json:"accessory,omitzero" doc:"Missing when no accessory matched"`
+	Shoe      *ProductResponse `json:"shoe,omitzero" doc:"Missing when no shoe matched"`
+}
+
+// Schema makes kind a discriminator, so a generated client can narrow an outfit to one shape.
+func (RecommendedOutfit) Schema(r huma.Registry) *huma.Schema {
+	separates := r.Schema(reflect.TypeFor[SeparatesOutfit](), true, "")
+	onePiece := r.Schema(reflect.TypeFor[OnePieceOutfit](), true, "")
+	return &huma.Schema{
+		OneOf: []*huma.Schema{separates, onePiece},
+		Discriminator: &huma.Discriminator{
+			PropertyName: "kind",
+			Mapping:      map[string]string{string(OutfitSeparates): separates.Ref, string(OutfitOnePiece): onePiece.Ref},
+		},
+	}
 }
 
 type RecommendationExpandedAnswers struct {
@@ -90,6 +146,7 @@ type RecommendationExpandedAnswers struct {
 type RecommendationExpandedSlots struct {
 	Top       string `json:"top"`
 	Bottom    string `json:"bottom"`
+	OnePiece  string `json:"one_piece" doc:"Searched only when the shopper includes one-pieces"`
 	Accessory string `json:"accessory"`
 	Shoe      string `json:"shoe"`
 }

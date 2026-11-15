@@ -84,7 +84,7 @@ export function FeatureCarousel() {
   });
 
   return (
-    <Box className="flex flex-col items-center gap-xl px-md py-xxl lg:px-xxl">
+    <Box className="flex flex-col items-center gap-xl px-md py-xxxl lg:px-xxxl">
       <Text variant="heading" className="sr-only">
         Features
       </Text>
@@ -97,7 +97,7 @@ export function FeatureCarousel() {
           ref={previousRef}
           icon={CaretLeftIcon}
           label="Previous feature"
-          variant="outlined"
+          variant="secondary"
           onClick={() => goTo(index - 1)}
           className={isFirst ? "invisible shrink-0" : "shrink-0"}
         />
@@ -110,7 +110,7 @@ export function FeatureCarousel() {
           ref={nextRef}
           icon={CaretRightIcon}
           label="Next feature"
-          variant="outlined"
+          variant="secondary"
           onClick={() => goTo(index + 1)}
           className={isLast ? "invisible shrink-0" : "shrink-0"}
         />

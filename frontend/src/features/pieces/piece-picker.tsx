@@ -1,116 +1,256 @@
+import { MagnifyingGlassIcon } from "@phosphor-icons/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
 
 import {
-  addCurrentUserPiecesMutation,
+  listBirdieAndClaireProductsInfiniteOptions,
   listCurrentUserPiecesInfiniteQueryKey,
-  listProductsInfiniteOptions,
-  listProductsInfiniteQueryKey,
+  updateCurrentUserPiecesMutation,
 } from "@/api/generated/@tanstack/react-query.gen";
-import type { ProductResponse } from "@/api/generated/types.gen";
-import { zAddOwnedProductsInputBody } from "@/api/generated/zod.gen";
-import { Box, Button, Empty, ErrorState, ImageCard, Spinner, Text } from "@/design-system";
+import type {
+  BirdieAndClaireProductResponse,
+  ListBirdieAndClaireProductsData,
+} from "@/api/generated/types.gen";
+import {
+  Box,
+  Button,
+  EmptyState,
+  ErrorState,
+  ItemCard,
+  SearchField,
+  SidePanel,
+  Skeleton,
+  TabBar,
+  Text,
+} from "@/design-system";
+import {
+  catalogTabs,
+  invalidateBirdieAndClaireCatalog,
+  ownedCatalogFilter,
+} from "@/features/pieces/birdie-and-claire-catalog";
 import { LoadMoreSentinel } from "@/features/pieces/load-more-sentinel";
+import {
+  hasChanges,
+  isAtAddLimit,
+  isPicked,
+  noChanges,
+  pickedCount,
+  pickedPieces,
+  withPicked,
+  type PieceSelection,
+} from "@/features/pieces/piece-selection";
 import { usePagination } from "@/lib/use-pagination";
 
+// The generated mutation options carry no key, so this names the picker's save for callers that
+// need to know it is in flight, through useIsMutating.
+export const saveOwnedPiecesMutationKey = ["save-owned-pieces"];
+
+// Three rows of the four-column grid, and twelve of the panel's two.
+const pageSize = 24;
+
 type PiecePickerProps = {
-  onAdded: () => void;
+  onSaved: () => void;
 };
 
-/** Picks catalog pieces the shopper owns and saves them. Onboarding and /pieces/add both use it. */
-export function PiecePicker({ onAdded }: PiecePickerProps) {
+/** Picks the catalog pieces the shopper owns and saves the change. Pieces they already own start
+ * selected, and unselecting one removes it. Onboarding and /pieces/add both use it. */
+export function PiecePicker({ onSaved }: PiecePickerProps) {
   const queryClient = useQueryClient();
-  const [selected, setSelected] = useState<ProductResponse[]>([]);
+  const [selection, setSelection] = useState<PieceSelection>(noChanges);
+  const [showingSelectedItems, setShowingSelectedItems] = useState(false);
+  const [tabValue, setTabValue] = useState(catalogTabs[0].value);
+  const tab = catalogTabs.find((catalogTab) => catalogTab.value === tabValue) ?? catalogTabs[0];
 
-  const addMutation = useMutation({
-    ...addCurrentUserPiecesMutation(),
-    // The catalog leaves owned pieces out, so both lists change.
+  const {
+    data: ownedData,
+    hasNextPage: hasMoreOwned,
+    isFetchingNextPage: isFetchingMoreOwned,
+    isFetchNextPageError: isOwnedPageError,
+    fetchNextPage: fetchMoreOwned,
+  } = usePagination(
+    listBirdieAndClaireProductsInfiniteOptions({
+      query: { ...ownedCatalogFilter, limit: pageSize },
+    }),
+  );
+
+  const loadMoreOwned = useCallback(() => {
+    // The observer re-fires on rebuild, so fetching while errored would retry in a loop.
+    if (!isFetchingMoreOwned && !isOwnedPageError) {
+      void fetchMoreOwned();
+    }
+  }, [fetchMoreOwned, isFetchingMoreOwned, isOwnedPageError]);
+
+  const ownedPieces = ownedData?.pages.flatMap((page) => page.items) ?? [];
+  const ownedTotal = ownedData?.pages[0]?.total ?? 0;
+
+  const saveMutation = useMutation({
+    ...updateCurrentUserPiecesMutation(),
+    mutationKey: saveOwnedPiecesMutationKey,
+    // The owned list and the catalog's owned marks both change.
     onSuccess: () =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: listCurrentUserPiecesInfiniteQueryKey() }),
-        queryClient.invalidateQueries({ queryKey: listProductsInfiniteQueryKey() }),
+        invalidateBirdieAndClaireCatalog(queryClient),
       ]),
   });
 
-  function toggle(product: ProductResponse, pressed: boolean) {
-    setSelected((current) =>
-      pressed ? [...current, product] : current.filter((picked) => picked.id !== product.id),
-    );
+  // A failed save's error is about the change that was sent, so it clears once that changes.
+  function changeSelection(nextSelection: PieceSelection) {
+    saveMutation.reset();
+    setSelection(nextSelection);
+
+    if (pickedCount(nextSelection, ownedTotal) === 0) {
+      setShowingSelectedItems(false);
+    }
   }
 
-  function addSelected() {
+  function save() {
+    // Pieces already owned and left as they are need no request, only the move on.
+    if (!hasChanges(selection)) {
+      onSaved();
+
+      return;
+    }
+
     // On mutate, not useMutation: TanStack skips it once the picker unmounts, so leaving mid-save
     // doesn't move the user on.
-    addMutation.mutate(
-      { body: { product_ids: selected.map((product) => product.id) } },
-      { onSuccess: onAdded },
+    saveMutation.mutate(
+      {
+        body: {
+          add_product_ids: selection.added.map((product) => product.id),
+          remove_product_ids: selection.removedIds,
+        },
+      },
+      { onSuccess: onSaved },
     );
   }
 
   // Still saving while the caller moves on, so the button doesn't come back on in between.
-  const saving = addMutation.isPending || addMutation.isSuccess;
-
-  // Asks the add endpoint's own schema whether one more piece still fits in a request. The extra id's
-  // value doesn't matter: only the count can fail.
-  const atLimit = !zAddOwnedProductsInputBody.shape.product_ids.safeParse([
-    ...selected.map((product) => product.id),
-    "",
-  ]).success;
+  const saving = saveMutation.isPending || saveMutation.isSuccess;
+  const atLimit = isAtAddLimit(selection);
+  const selectedCount = pickedCount(selection, ownedTotal);
+  // Changes with no picks left still save: unpicking every owned piece removes them all.
+  const nothingToSave = !hasChanges(selection) && selectedCount === 0;
 
   return (
     <Box className="flex flex-col gap-lg">
-      <Text variant="heading">Add B&C Clothes You Own</Text>
-
-      <Box className="flex flex-col gap-lg lg:flex-row lg:items-start">
-        <Box className="min-w-0 flex-1">
-          <Catalog selected={selected} onToggle={toggle} disabled={saving} atLimit={atLimit} />
-        </Box>
-
-        <Box className="flex flex-col gap-sm border p-md lg:sticky lg:top-md lg:w-1/4">
-          <Text variant="body">
-            {selected.length} {selected.length === 1 ? "item" : "items"} selected
-          </Text>
-          {atLimit && (
-            <Text variant="caption" className="text-secondary">
-              That's the most you can add at once.
-            </Text>
-          )}
-          {selected.length > 0 && (
-            <ul className="grid grid-cols-2 gap-xs">
-              {selected.map((product) => (
-                <li key={product.id}>
-                  <Text variant="caption">{product.title}</Text>
-                </li>
-              ))}
-            </ul>
-          )}
-          <Button
-            label="Add Items to Owned"
-            loading={saving}
-            loadingLabel="Adding…"
-            disabled={selected.length === 0}
-            onClick={addSelected}
+      <TabBar
+        tabs={catalogTabs}
+        value={tab.value}
+        onValueChange={setTabValue}
+        disabled={saving}
+        trailing={
+          // Disabled until the API can search products (#194).
+          <SearchField
+            variant="bare"
+            leadingIcon={MagnifyingGlassIcon}
+            label="Search items"
+            placeholder="Search items"
+            value=""
+            onValueChange={() => {}}
+            onSubmit={() => {}}
+            disabled
+            className="w-full"
           />
-          {addMutation.isError && (
-            <Text variant="body" className="text-error">
-              Couldn't add your pieces. Try again.
-            </Text>
-          )}
+        }
+      >
+        {/* A fixed height, so the modal keeps one size whichever tab is open. A scroll box clips
+            on every side, so the padding leaves room for the selected ring and hover outline
+            outside the cards, and the negative margin keeps the grid where Figma puts it. */}
+        <Box className="scrollbar-thin -m-sm h-item-grid overflow-y-auto p-sm">
+          <Catalog
+            filter={tab.filter}
+            isSelected={(product) => isPicked(selection, product)}
+            onToggle={(product, pressed) =>
+              changeSelection(withPicked(selection, product, pressed))
+            }
+            disabled={saving}
+            atLimit={atLimit}
+          />
         </Box>
+      </TabBar>
+      {atLimit && (
+        <Text variant="caption" className="text-center text-secondary">
+          That's the most you can add at once.
+        </Text>
+      )}
+      <Box className="flex justify-end gap-sm">
+        <Button
+          label={`${selectedCount} ${selectedCount === 1 ? "Item" : "Items"} Selected`}
+          variant="secondary"
+          disabled={selectedCount === 0 || saving}
+          onClick={() => setShowingSelectedItems(true)}
+        />
+        <AddItemsButton saving={saving} nothingToSave={nothingToSave} onClick={save} />
       </Box>
+      {/* The panel covers this footer, so the error shows in the panel while it is open. */}
+      {saveMutation.isError && !showingSelectedItems && <SaveError />}
+      <SidePanel
+        open={showingSelectedItems}
+        onClose={() => setShowingSelectedItems(false)}
+        title="Selected Items"
+        footer={
+          <>
+            <AddItemsButton saving={saving} nothingToSave={nothingToSave} onClick={save} />
+            {saveMutation.isError && <SaveError />}
+          </>
+        }
+      >
+        <ul className="grid grid-cols-2 gap-lg">
+          {pickedPieces(selection, ownedPieces).map((product) => (
+            <li key={product.id}>
+              <ItemCard
+                name={product.title}
+                src={product.image_url}
+                size="sm"
+                onRemove={() => changeSelection(withPicked(selection, product, false))}
+                disabled={saving}
+              />
+            </li>
+          ))}
+          {hasMoreOwned && <LoadMoreSentinel onVisible={loadMoreOwned} />}
+        </ul>
+      </SidePanel>
     </Box>
   );
 }
 
+type AddItemsButtonProps = {
+  saving: boolean;
+  nothingToSave: boolean;
+  onClick: () => void;
+};
+
+function AddItemsButton({ saving, nothingToSave, onClick }: AddItemsButtonProps) {
+  return (
+    <Button
+      label="Add Items to Owned"
+      loading={saving}
+      loadingLabel="Saving…"
+      disabled={nothingToSave}
+      onClick={onClick}
+    />
+  );
+}
+
+function SaveError() {
+  return (
+    <Text variant="body" className="text-center text-error">
+      Couldn't save your pieces. Try again.
+    </Text>
+  );
+}
+
 type CatalogProps = {
-  selected: ProductResponse[];
-  onToggle: (product: ProductResponse, pressed: boolean) => void;
+  filter: Omit<ListBirdieAndClaireProductsData["query"], "limit" | "cursor">;
+  isSelected: (product: BirdieAndClaireProductResponse) => boolean;
+  onToggle: (product: BirdieAndClaireProductResponse, pressed: boolean) => void;
   disabled: boolean;
-  // A selected card can still be unselected at the limit.
+  // Only blocks new pieces: a selected card can still be unselected, and an owned one reselected.
   atLimit: boolean;
 };
 
-function Catalog({ selected, onToggle, disabled, atLimit }: CatalogProps) {
+function Catalog({ filter, isSelected, onToggle, disabled, atLimit }: CatalogProps) {
   const {
     data,
     isPending,
@@ -119,7 +259,9 @@ function Catalog({ selected, onToggle, disabled, atLimit }: CatalogProps) {
     isFetchingNextPage,
     isFetchNextPageError,
     refetch,
-  } = usePagination(listProductsInfiniteOptions({ query: { limit: 24 } }));
+  } = usePagination(
+    listBirdieAndClaireProductsInfiniteOptions({ query: { ...filter, limit: pageSize } }),
+  );
 
   const loadMore = useCallback(() => {
     // The observer re-fires on rebuild, so fetching while errored would retry in a loop.
@@ -129,7 +271,13 @@ function Catalog({ selected, onToggle, disabled, atLimit }: CatalogProps) {
   }, [fetchNextPage, isFetchingNextPage, isFetchNextPageError]);
 
   if (isPending) {
-    return <Spinner />;
+    return (
+      <Box role="status" aria-label="Loading pieces" className="grid grid-cols-4 gap-lg">
+        {[0, 1, 2, 3, 4, 5, 6, 7].map((item) => (
+          <Skeleton key={item} className="h-item-md w-item-md" />
+        ))}
+      </Box>
+    );
   }
 
   if (!data) {
@@ -139,23 +287,25 @@ function Catalog({ selected, onToggle, disabled, atLimit }: CatalogProps) {
   const products = data.pages.flatMap((page) => page.items);
 
   if (products.length === 0) {
-    return <Empty title="You own every piece we have." />;
+    return <EmptyState title="No pieces in this category yet." />;
   }
 
   return (
     <>
-      <ul className="grid grid-cols-2 gap-md md:grid-cols-3">
+      <ul className="grid grid-cols-4 gap-lg">
         {products.map((product) => {
-          const pressed = selected.some((picked) => picked.id === product.id);
+          const pressed = isSelected(product);
 
           return (
             <li key={product.id}>
-              <ImageCard
-                label={product.title}
+              <ItemCard
+                name={product.title}
                 src={product.image_url}
-                pressed={pressed}
-                onPressedChange={(nextPressed) => onToggle(product, nextPressed)}
-                disabled={disabled || (atLimit && !pressed)}
+                selection={{
+                  selected: pressed,
+                  onSelectedChange: (nextPressed) => onToggle(product, nextPressed),
+                }}
+                disabled={disabled || (atLimit && !pressed && !product.owned)}
               />
             </li>
           );

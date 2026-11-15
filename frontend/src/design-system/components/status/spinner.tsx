@@ -6,7 +6,7 @@ type SpinnerProps = {
 };
 
 const circleClasses =
-  "inline-block size-md animate-spin rounded-full border-thick border-primary border-t-transparent";
+  "inline-block size-md rounded-full border-thick border-primary border-t-transparent motion-safe:animate-spin";
 
 export function Spinner({ label = "Loading…", className }: SpinnerProps) {
   return (

@@ -1,6 +1,6 @@
-import { ArrowUUpLeftIcon, ArrowUUpRightIcon } from "@phosphor-icons/react";
+import { ArrowClockwiseIcon, ArrowCounterClockwiseIcon } from "@phosphor-icons/react";
 
-import { Box, IconButton } from "@/design-system";
+import { Box, Button } from "@/design-system";
 
 type UndoRedoControlsProps = {
   canUndo: boolean;
@@ -11,18 +11,20 @@ type UndoRedoControlsProps = {
 
 export function UndoRedoControls({ canUndo, canRedo, onUndo, onRedo }: UndoRedoControlsProps) {
   return (
-    <Box className="flex items-center gap-xxs">
-      <IconButton
-        icon={ArrowUUpLeftIcon}
+    <Box className="flex items-center gap-xs">
+      <Button
         label="Undo"
-        variant="plain"
+        variant="ghost"
+        size="sm"
+        leadingIcon={ArrowCounterClockwiseIcon}
         disabled={!canUndo}
         onClick={onUndo}
       />
-      <IconButton
-        icon={ArrowUUpRightIcon}
+      <Button
         label="Redo"
-        variant="plain"
+        variant="ghost"
+        size="sm"
+        leadingIcon={ArrowClockwiseIcon}
         disabled={!canRedo}
         onClick={onRedo}
       />

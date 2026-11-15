@@ -25,7 +25,18 @@ export type CanvasSpot = {
   layer: number;
 };
 
-type ProductSlot = ProductResponse["slot"];
+export type ProductSlot = ProductResponse["slot"];
+
+/** The editor's slot cards, in the order they show. */
+export const SLOT_ORDER: ProductSlot[] = ["top", "one_piece", "bottom", "shoe", "accessory"];
+
+export const SLOT_NAMES: Record<ProductSlot, { title: string; plural: string }> = {
+  top: { title: "Top", plural: "tops" },
+  one_piece: { title: "One-piece", plural: "one-pieces" },
+  bottom: { title: "Bottoms", plural: "bottoms" },
+  shoe: { title: "Shoes", plural: "shoes" },
+  accessory: { title: "Accessory", plural: "accessories" },
+};
 
 // Measured from silhouette.png as drawn on the canvas: centered on x 466, head y 46-150 and about
 // 95px wide, shoulders at y 171, hips at y 408-436, feet at y 743. Robiya may tune these.
@@ -52,6 +63,15 @@ const BOTTOM: CanvasSpot = {
   layer: 2,
 };
 
+// Not in the Figma yet, so it takes the top's neckline and width. Below the top, so a jacket worn
+// over a dress covers it.
+const ONE_PIECE: CanvasSpot = {
+  centerX: 466,
+  anchor: { edge: "top", y: 146 },
+  garmentWidth: 196,
+  layer: 3,
+};
+
 const SHOE: CanvasSpot = {
   centerX: 464,
   anchor: { edge: "bottom", y: 748 },
@@ -70,6 +90,7 @@ const ACCESSORIES: CanvasSpot[] = [60, 300, 540].map((y) => ({
 // Each slot lists the spots it can take, in the order it tries them.
 const SPOTS_BY_SLOT: Record<ProductSlot, CanvasSpot[]> = {
   top: [TOP, TOP_BESIDE],
+  one_piece: [ONE_PIECE],
   bottom: [BOTTOM],
   shoe: [SHOE],
   accessory: ACCESSORIES,

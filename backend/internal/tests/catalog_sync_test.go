@@ -5,10 +5,13 @@ import (
 	"database/sql"
 	"errors"
 	"math/rand/v2"
+	"reflect"
 	"slices"
 	"testing"
 	"time"
 
+	"birdie-and-claire/internal/llm"
+	"birdie-and-claire/internal/llm/llmtest"
 	"birdie-and-claire/internal/models"
 	"birdie-and-claire/internal/repository"
 	"birdie-and-claire/internal/services"
@@ -19,10 +22,30 @@ import (
 
 const (
 	// more than the dev database holds, so FindSimilar returns every match
-	everyProduct    = 1000
-	topsCategory    = "Apparel & Accessories > Clothing > Clothing Tops > Sweaters"
-	dressesCategory = "Apparel & Accessories > Clothing > Dresses"
+	everyProduct = 1000
+	topsCategory = "Apparel & Accessories > Clothing > Clothing Tops > Sweaters"
 )
+
+// a valid label with nothing on any list
+const emptyLabels = `{"product_target":"women","neckline_type":"","bottom_type":"","shoe_type":"","tags":` + emptyTagLists + `}`
+
+func emptyLabeler() *llmtest.Fake {
+	return &llmtest.Fake{Text: emptyLabels}
+}
+
+// failingOnceLabeler fails its first call, then answers like its Fake.
+type failingOnceLabeler struct {
+	llmtest.Fake
+	failed bool
+}
+
+func (l *failingOnceLabeler) Generate(ctx context.Context, req llm.Request) (llm.Response, error) {
+	if !l.failed {
+		l.failed = true
+		return llm.Response{}, errors.New("gateway unavailable")
+	}
+	return l.Fake.Generate(ctx, req)
+}
 
 type fakeCatalog struct {
 	products []shopify.ShopifyProduct
@@ -108,6 +131,7 @@ func newSyncProduct(t *testing.T, db *sql.DB, category string, imageCount int) s
 		Category: category,
 		Tags:     []string{"Knitwear"},
 		Images:   []shopify.ShopifyImage{},
+		Variants: []shopify.ShopifyVariant{{ID: rand.Int64(), Available: true, Position: 1}},
 	}
 	for position := 1; position <= imageCount; position++ {
 		product.Images = append(product.Images, shopify.ShopifyImage{
@@ -123,11 +147,51 @@ func newSyncProduct(t *testing.T, db *sql.DB, category string, imageCount int) s
 
 func runSync(t *testing.T, db *sql.DB, emb *recordingEmbedder, products ...shopify.ShopifyProduct) {
 	t.Helper()
+	runSyncWithLabeler(t, db, emb, emptyLabeler(), products...)
+}
+
+func runSyncWithLabeler(t *testing.T, db *sql.DB, emb *recordingEmbedder, labeler llm.Client, products ...shopify.ShopifyProduct) {
+	t.Helper()
 
 	catalog := &fakeCatalog{products: products}
-	if err := services.NewCatalogSyncService(repository.New(db), catalog, emb).Sync(context.Background()); err != nil {
+	if err := services.NewCatalogSyncService(repository.New(db), catalog, emb, labeler).Sync(context.Background()); err != nil {
 		t.Fatalf("Sync: %v", err)
 	}
+}
+
+type syncedVariant struct {
+	shopifyID int64
+	available bool
+	position  int
+	updatedAt time.Time
+}
+
+func findSyncedVariants(t *testing.T, db *sql.DB, productID uuid.UUID) []syncedVariant {
+	t.Helper()
+
+	rows, err := db.Query(`
+		SELECT shopify_id, available, position, updated_at
+		FROM product_variants
+		WHERE product_id = $1
+		ORDER BY position, id
+	`, productID)
+	if err != nil {
+		t.Fatalf("query synced variants: %v", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var variants []syncedVariant
+	for rows.Next() {
+		var variant syncedVariant
+		if err := rows.Scan(&variant.shopifyID, &variant.available, &variant.position, &variant.updatedAt); err != nil {
+			t.Fatalf("scan synced variant: %v", err)
+		}
+		variants = append(variants, variant)
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatalf("iterate synced variants: %v", err)
+	}
+	return variants
 }
 
 type syncedRow struct {
@@ -248,6 +312,88 @@ func TestCatalogSyncDeletesRemovedImages(t *testing.T) {
 	}
 }
 
+func TestCatalogSyncStoresVariants(t *testing.T) {
+	db := openSyncTestDB(t)
+	product := newSyncProduct(t, db, topsCategory, 1)
+	product.Variants = []shopify.ShopifyVariant{
+		{ID: rand.Int64(), Available: false, Position: 1},
+		{ID: rand.Int64(), Available: true, Position: 2},
+	}
+
+	runSync(t, db, &recordingEmbedder{}, product)
+
+	variants := findSyncedVariants(t, db, mustFindSyncedRow(t, db, product.ID).id)
+	if len(variants) != 2 {
+		t.Fatalf("stored %d variants, want 2", len(variants))
+	}
+	for i, variant := range variants {
+		want := product.Variants[i]
+		if variant.shopifyID != want.ID || variant.available != want.Available || variant.position != want.Position {
+			t.Fatalf("variant %d = %+v, want %+v", i, variant, want)
+		}
+	}
+}
+
+func TestCatalogSyncRerunLeavesVariantsAlone(t *testing.T) {
+	db := openSyncTestDB(t)
+	product := newSyncProduct(t, db, topsCategory, 1)
+	emb := &recordingEmbedder{}
+
+	runSync(t, db, emb, product)
+	productID := mustFindSyncedRow(t, db, product.ID).id
+	first := findSyncedVariants(t, db, productID)
+	runSync(t, db, emb, product)
+	second := findSyncedVariants(t, db, productID)
+
+	if !reflect.DeepEqual(first, second) {
+		t.Fatalf("rerun touched the variants: %+v -> %+v", first, second)
+	}
+}
+
+func TestCatalogSyncUpdatesChangedVariant(t *testing.T) {
+	db := openSyncTestDB(t)
+	product := newSyncProduct(t, db, topsCategory, 1)
+
+	runSync(t, db, &recordingEmbedder{}, product)
+	productID := mustFindSyncedRow(t, db, product.ID).id
+	before := findSyncedVariants(t, db, productID)[0]
+	product.Variants[0].Available = false
+	product.Variants[0].Position = 3
+	runSync(t, db, &recordingEmbedder{}, product)
+	after := findSyncedVariants(t, db, productID)[0]
+
+	if after.available || after.position != 3 || !after.updatedAt.After(before.updatedAt) {
+		t.Fatalf("variant = %+v after the change, was %+v, want it unavailable at position 3 with a newer updated_at", after, before)
+	}
+}
+
+func TestCatalogSyncDeletesRemovedVariants(t *testing.T) {
+	db := openSyncTestDB(t)
+	product := newSyncProduct(t, db, topsCategory, 1)
+	product.Variants = append(product.Variants, shopify.ShopifyVariant{ID: rand.Int64(), Available: true, Position: 2})
+
+	runSync(t, db, &recordingEmbedder{}, product)
+	product.Variants = product.Variants[:1]
+	runSync(t, db, &recordingEmbedder{}, product)
+
+	variants := findSyncedVariants(t, db, mustFindSyncedRow(t, db, product.ID).id)
+	if len(variants) != 1 || variants[0].shopifyID != product.Variants[0].ID {
+		t.Fatalf("variants = %+v, want only %d", variants, product.Variants[0].ID)
+	}
+}
+
+func TestCatalogSyncStoresVariantsWhileShopifyProcessesAnImage(t *testing.T) {
+	db := openSyncTestDB(t)
+	product := newSyncProduct(t, db, topsCategory, 1)
+	product.HasProcessingImages = true
+
+	runSync(t, db, &recordingEmbedder{}, product)
+
+	if variants := findSyncedVariants(t, db, mustFindSyncedRow(t, db, product.ID).id); len(variants) != 1 {
+		t.Fatalf("stored %d variants, want 1", len(variants))
+	}
+}
+
 func TestCatalogSyncDropsMarketingTagsAndResizesImage(t *testing.T) {
 	db := openSyncTestDB(t)
 	product := newSyncProduct(t, db, topsCategory, 1)
@@ -299,7 +445,7 @@ func TestCatalogSyncRetriesFailedEmbeddingNextRun(t *testing.T) {
 	ctx := context.Background()
 	product := newSyncProduct(t, db, topsCategory, 1)
 	catalog := &fakeCatalog{products: []shopify.ShopifyProduct{product}}
-	catalogSync := services.NewCatalogSyncService(repository.New(db), catalog, &failingOnceEmbedder{})
+	catalogSync := services.NewCatalogSyncService(repository.New(db), catalog, &failingOnceEmbedder{}, emptyLabeler())
 
 	if err := catalogSync.Sync(ctx); err == nil {
 		t.Fatal("Sync with a failing embedder returned nil, want the embed error")
@@ -313,6 +459,108 @@ func TestCatalogSyncRetriesFailedEmbeddingNextRun(t *testing.T) {
 	}
 	if !mustFindSyncedRow(t, db, product.ID).hasEmbedding {
 		t.Fatal("the next run did not retry the failed embed")
+	}
+}
+
+func storedAttributes(t *testing.T, db *sql.DB, shopifyID int64) *models.ProductAttributes {
+	t.Helper()
+
+	var attributes *models.ProductAttributes
+	if err := db.QueryRow(`SELECT attributes FROM products WHERE shopify_id = $1`, shopifyID).Scan(&attributes); err != nil {
+		t.Fatalf("get attributes of product %d: %v", shopifyID, err)
+	}
+	return attributes
+}
+
+func TestCatalogSyncLabelsProductButEmbedsOnlyTitleAndTags(t *testing.T) {
+	db := openSyncTestDB(t)
+	product := newSyncProduct(t, db, topsCategory, 1)
+	product.Description = "A soft crew neck sweater."
+	product.Options = []shopify.ShopifyOption{{Name: "Color", Values: []string{"Navy", "Ivory"}}}
+	product.FabricInfo = "100% merino wool"
+	labels := `{"product_target":"women","neckline_type":"modest","bottom_type":"skirt","shoe_type":"","tags":` +
+		`{"colors":["navy","cream"],"formality":["casual"],"occasions":[],"season":["winter"],"pattern":["solid"],"fabric":["wool"],"fit":["regular"]}}`
+	labeler := &llmtest.Fake{Text: labels}
+	emb := &recordingEmbedder{}
+
+	runSyncWithLabeler(t, db, emb, labeler, product)
+
+	requests := labeler.Requests()
+	if len(requests) != 1 {
+		t.Fatalf("made %d label calls, want 1", len(requests))
+	}
+	attributes := storedAttributes(t, db, product.ID)
+	if attributes == nil || attributes.NecklineType == nil || *attributes.NecklineType != "modest" || attributes.BottomType != nil {
+		t.Fatalf("attributes = %+v, want a modest neckline and no bottom type on a top", attributes)
+	}
+	if want := "Sync test sweater, Knitwear"; emb.lastText != want {
+		t.Fatalf("embedded text = %q, want %q", emb.lastText, want)
+	}
+}
+
+func TestCatalogSyncRelabelsOnlyAChangedProduct(t *testing.T) {
+	db := openSyncTestDB(t)
+	product := newSyncProduct(t, db, topsCategory, 1)
+	labeler := emptyLabeler()
+
+	runSyncWithLabeler(t, db, &recordingEmbedder{}, labeler, product)
+	runSyncWithLabeler(t, db, &recordingEmbedder{}, labeler, product)
+	if calls := len(labeler.Requests()); calls != 1 {
+		t.Fatalf("an unchanged product made %d label calls, want 1", calls)
+	}
+
+	product.Description = "Now with pockets."
+	runSyncWithLabeler(t, db, &recordingEmbedder{}, labeler, product)
+	if calls := len(labeler.Requests()); calls != 2 {
+		t.Fatalf("a changed description made %d label calls in total, want 2", calls)
+	}
+}
+
+func TestCatalogSyncEmbedsAndRetriesAProductThatFailedToLabel(t *testing.T) {
+	db := openSyncTestDB(t)
+	ctx := context.Background()
+	product := newSyncProduct(t, db, topsCategory, 1)
+	catalog := &fakeCatalog{products: []shopify.ShopifyProduct{product}}
+	emb := &recordingEmbedder{}
+	catalogSync := services.NewCatalogSyncService(repository.New(db), catalog, emb, &failingOnceLabeler{Fake: llmtest.Fake{Text: emptyLabels}})
+
+	if err := catalogSync.Sync(ctx); err == nil {
+		t.Fatal("Sync with a failing labeler returned nil, want the label error")
+	}
+	if row := mustFindSyncedRow(t, db, product.ID); !row.active || !row.hasEmbedding {
+		t.Fatalf("after a failed label, row = %+v, want an active product that was still embedded", row)
+	}
+	if attributes := storedAttributes(t, db, product.ID); attributes != nil {
+		t.Fatalf("after a failed label, attributes = %+v, want none", attributes)
+	}
+
+	if err := catalogSync.Sync(ctx); err != nil {
+		t.Fatalf("second Sync: %v", err)
+	}
+	if storedAttributes(t, db, product.ID) == nil {
+		t.Fatal("the next run did not retry the failed label")
+	}
+}
+
+func TestCatalogSyncKeepsOldLabelsWhenRelabelingFails(t *testing.T) {
+	db := openSyncTestDB(t)
+	product := newSyncProduct(t, db, topsCategory, 1)
+	labels := `{"product_target":"women","neckline_type":"modest","bottom_type":"","shoe_type":"","tags":` + emptyTagLists + `}`
+	runSyncWithLabeler(t, db, &recordingEmbedder{}, &llmtest.Fake{Text: labels}, product)
+
+	product.Description = "Now with pockets."
+	catalog := &fakeCatalog{products: []shopify.ShopifyProduct{product}}
+	failing := &llmtest.Fake{Err: errors.New("gateway unavailable")}
+	if err := services.NewCatalogSyncService(repository.New(db), catalog, &recordingEmbedder{}, failing).Sync(context.Background()); err == nil {
+		t.Fatal("Sync with a failing labeler returned nil, want the label error")
+	}
+
+	attributes := storedAttributes(t, db, product.ID)
+	if attributes == nil || attributes.NecklineType == nil || *attributes.NecklineType != "modest" {
+		t.Fatalf("after a failed relabel, attributes = %+v, want the earlier modest neckline kept", attributes)
+	}
+	if !mustFindSyncedRow(t, db, product.ID).hasEmbedding {
+		t.Fatal("a failed relabel cleared the product's embedding")
 	}
 }
 
@@ -346,11 +594,17 @@ func TestCatalogSyncMapsCategoryToSlot(t *testing.T) {
 	}{
 		{topsCategory, models.SlotTop},
 		{"Apparel & Accessories > Clothing > Swimwear > Cover Ups", models.SlotTop},
+		{"Apparel & Accessories > Clothing > Outerwear > Coats & Jackets > Blazers", models.SlotTop},
 		{"Apparel & Accessories > Clothing > Skirts", models.SlotBottom},
+		{"Apparel & Accessories > Clothing > Pants > Jeans", models.SlotBottom},
+		{"Apparel & Accessories > Clothing > Dresses", models.SlotOnePiece},
+		{"Apparel & Accessories > Clothing > One-Pieces", models.SlotOnePiece},
+		{"Apparel & Accessories > Shoes > Sneakers", models.SlotShoe},
 		{"Apparel & Accessories > Clothing Accessories > Hats > Beanies", models.SlotAccessory},
+		{"Apparel & Accessories > Jewelry > Necklaces", models.SlotAccessory},
 		{"Luggage & Bags > Tote Bags", models.SlotAccessory},
-		{dressesCategory, ""},
-		{"Apparel & Accessories > Clothing > One-Pieces", ""},
+		{"Apparel & Accessories > Shoe Accessories > Shoelaces", ""},
+		{"Apparel & Accessories > Clothing > Swimwear > Classic Bikinis", ""},
 		{"Gift Cards", ""},
 		{"", ""},
 	}
@@ -405,12 +659,12 @@ func TestCatalogSyncDeactivatesMissingProductAndKeepsSavedOutfit(t *testing.T) {
 	if !mustFindSyncedRow(t, db, kept.ID).active {
 		t.Fatal("a product still in the store was deactivated")
 	}
-	similar, err := repository.NewProductRepository(db).FindSimilar(ctx, productEmbedding(0), models.SlotTop, nil, nil, nil, everyProduct)
+	similar, err := repository.NewProductRepository(db).FindSimilar(ctx, productEmbedding(0), models.SlotTop, nil, nil, nil, nil, everyProduct)
 	if err != nil {
 		t.Fatalf("FindSimilar: %v", err)
 	}
-	for _, product := range similar {
-		if product.ID == removedID {
+	for _, scored := range similar {
+		if scored.Product.ID == removedID {
 			t.Fatal("FindSimilar returned an inactive product")
 		}
 	}
@@ -473,7 +727,7 @@ func TestCatalogSyncRefusesCatalogWithNothingToSync(t *testing.T) {
 			runSync(t, db, &recordingEmbedder{}, product)
 
 			catalog := &fakeCatalog{products: tc.products}
-			err := services.NewCatalogSyncService(repository.New(db), catalog, &recordingEmbedder{}).Sync(context.Background())
+			err := services.NewCatalogSyncService(repository.New(db), catalog, &recordingEmbedder{}, emptyLabeler()).Sync(context.Background())
 			if err == nil {
 				t.Fatal("Sync returned nil, want an error")
 			}

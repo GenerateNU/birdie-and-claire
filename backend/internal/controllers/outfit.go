@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"strings"
 
 	"birdie-and-claire/internal/errs"
 	"birdie-and-claire/internal/models"
@@ -22,8 +23,10 @@ func NewOutfitController(service services.OutfitService) *OutfitController {
 
 type CreateOutfitInput struct {
 	Body struct {
-		Name       string      `json:"name" required:"true" minLength:"1" maxLength:"100" doc:"Display name for the outfit"`
-		ProductIDs []uuid.UUID `json:"product_ids" required:"true" nullable:"false" minItems:"1" doc:"IDs of the products in the outfit"`
+		Name        string      `json:"name" required:"true" minLength:"1" maxLength:"100" doc:"Display name for the outfit"`
+		Description string      `json:"description,omitempty" maxLength:"500" doc:"Free-text description of the outfit"`
+		Tags        []string    `json:"tags,omitempty" nullable:"false" maxItems:"10" minLength:"1" maxLength:"30" doc:"Free-text labels such as weather or occasion; each is 1 to 30 characters and unique ignoring case"`
+		ProductIDs  []uuid.UUID `json:"product_ids" required:"true" nullable:"false" minItems:"1" doc:"IDs of the products in the outfit"`
 	}
 }
 
@@ -41,72 +44,105 @@ func checkDuplicateProductIDs(ids []uuid.UUID) error {
 	return nil
 }
 
+// cleanTags trims each tag in place, since the length limits in the struct tags run before this and
+// a tag of spaces would pass them. A tag left empty or repeating another ignoring case is rejected.
+func cleanTags(tags []string) error {
+	seen := make(map[string]bool, len(tags))
+	for i, tag := range tags {
+		tag = strings.TrimSpace(tag)
+		if tag == "" {
+			return huma.Error400BadRequest("tag must not be blank")
+		}
+		key := strings.ToLower(tag)
+		if seen[key] {
+			return huma.Error400BadRequest("duplicate tag")
+		}
+		seen[key] = true
+		tags[i] = tag
+	}
+	return nil
+}
+
 func (input *CreateOutfitInput) Resolve(huma.Context) []error {
 	if err := checkDuplicateProductIDs(input.Body.ProductIDs); err != nil {
+		return []error{err}
+	}
+	if err := cleanTags(input.Body.Tags); err != nil {
 		return []error{err}
 	}
 	return nil
 }
 
-type OutfitOutput struct {
-	Body models.OutfitResponse
-}
-
-// Create saves an outfit for the authenticated user and returns it with its products.
-func (c *OutfitController) Create(ctx context.Context, input *CreateOutfitInput) (*OutfitOutput, error) {
+// Create saves an outfit for the authenticated user and returns it with its products and their cart links.
+func (c *OutfitController) Create(ctx context.Context, input *CreateOutfitInput) (*OutfitDetailOutput, error) {
 	outfit, err := c.service.Create(ctx, models.CreateOutfitParams{
-		Name:       input.Body.Name,
-		ProductIDs: input.Body.ProductIDs,
+		Name:        input.Body.Name,
+		Description: input.Body.Description,
+		Tags:        input.Body.Tags,
+		ProductIDs:  input.Body.ProductIDs,
 	})
 	if err != nil {
 		return nil, errs.ToHuma(ctx, err)
 	}
-	return &OutfitOutput{Body: outfit}, nil
+	return &OutfitDetailOutput{Body: outfit}, nil
 }
 
 type OutfitIDInput struct {
 	ID uuid.UUID `path:"id" doc:"Outfit ID"`
 }
 
-// Get returns one of the authenticated user's outfits with its products.
-func (c *OutfitController) Get(ctx context.Context, input *OutfitIDInput) (*OutfitOutput, error) {
+// Get returns one of the authenticated user's outfits with its products and their cart links.
+func (c *OutfitController) Get(ctx context.Context, input *OutfitIDInput) (*OutfitDetailOutput, error) {
 	outfit, err := c.service.Get(ctx, input.ID)
 	if err != nil {
 		return nil, errs.ToHuma(ctx, err)
 	}
-	return &OutfitOutput{Body: outfit}, nil
+	return &OutfitDetailOutput{Body: outfit}, nil
+}
+
+type OutfitDetailOutput struct {
+	Body models.OutfitDetailResponse
 }
 
 type UpdateOutfitInput struct {
 	OutfitIDInput
 	// An empty name or product list is not a meaningful update, so a zero value means not provided.
+	// An empty description or tags is meaningful: it clears them, and only an absent or null field leaves them alone.
 	Body struct {
-		Name       string      `json:"name,omitempty" minLength:"1" maxLength:"100" doc:"New display name for the outfit"`
-		ProductIDs []uuid.UUID `json:"product_ids,omitempty" nullable:"true" minItems:"1" doc:"IDs of every product in the outfit; replaces the current set"`
+		Name        string      `json:"name,omitempty" minLength:"1" maxLength:"100" doc:"New display name for the outfit"`
+		Description *string     `json:"description,omitempty" maxLength:"500" doc:"New description; an empty string clears it"`
+		Tags        []string    `json:"tags,omitempty" nullable:"true" maxItems:"10" minLength:"1" maxLength:"30" doc:"Every tag on the outfit; replaces the current set, and an empty list clears it. Each is 1 to 30 characters and unique ignoring case"`
+		ProductIDs  []uuid.UUID `json:"product_ids,omitempty" nullable:"true" minItems:"1" doc:"IDs of every product in the outfit; replaces the current set"`
 	}
 }
 
 var _ huma.Resolver = (*UpdateOutfitInput)(nil)
 
 func (input *UpdateOutfitInput) Resolve(huma.Context) []error {
-	if input.Body.Name == "" && len(input.Body.ProductIDs) == 0 {
-		return []error{&huma.ErrorDetail{Location: "body", Message: "body must set name or product_ids"}}
+	body := input.Body
+	if body.Name == "" && len(body.ProductIDs) == 0 && body.Description == nil && body.Tags == nil {
+		return []error{&huma.ErrorDetail{Location: "body", Message: "body must set name, description, tags, or product_ids"}}
 	}
-	if err := checkDuplicateProductIDs(input.Body.ProductIDs); err != nil {
+	if err := checkDuplicateProductIDs(body.ProductIDs); err != nil {
+		return []error{err}
+	}
+	if err := cleanTags(body.Tags); err != nil {
 		return []error{err}
 	}
 	return nil
 }
 
-func (c *OutfitController) Update(ctx context.Context, input *UpdateOutfitInput) (*OutfitOutput, error) {
+func (c *OutfitController) Update(ctx context.Context, input *UpdateOutfitInput) (*OutfitDetailOutput, error) {
 	outfit, err := c.service.Update(ctx, input.ID, models.UpdateOutfitParams{
-		Name:       input.Body.Name,
-		ProductIDs: input.Body.ProductIDs,
+		Name:        input.Body.Name,
+		Description: input.Body.Description,
+		Tags:        input.Body.Tags,
+		ProductIDs:  input.Body.ProductIDs,
 	})
 	if err != nil {
 		return nil, errs.ToHuma(ctx, err)
 	}
-	return &OutfitOutput{Body: outfit}, nil
+	return &OutfitDetailOutput{Body: outfit}, nil
 }
 
 type ShareOutfitOutput struct {
@@ -130,6 +166,14 @@ func (c *OutfitController) Unshare(ctx context.Context, input *OutfitIDInput) (*
 	return nil, nil
 }
 
+// Delete removes one of the authenticated user's outfits.
+func (c *OutfitController) Delete(ctx context.Context, input *OutfitIDInput) (*struct{}, error) {
+	if err := c.service.Delete(ctx, input.ID); err != nil {
+		return nil, errs.ToHuma(ctx, err)
+	}
+	return nil, nil
+}
+
 type SharedOutfitOutput struct {
 	Body models.SharedOutfitResponse
 }
@@ -148,7 +192,7 @@ type ListOutfitsInput struct {
 }
 
 type ListOutfitsOutput struct {
-	Body pagination.Page[models.Outfit]
+	Body models.ListOutfitsResponse
 }
 
 // List returns a page of the authenticated user's outfits, newest first.

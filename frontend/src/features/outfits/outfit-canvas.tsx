@@ -5,35 +5,41 @@ import {
   CanvasStage,
   GarmentImage,
   useDrawnGarments,
+  type CanvasVariant,
 } from "@/features/outfits/outfit-canvas-stage";
 import type { Product } from "@/features/outfits/outfit-items";
 
-type OutfitCanvasProps = {
+type OutfitCanvasProps =
+  | {
+      products: Product[];
+      editing: CanvasEditing;
+      /** Controls drawn over the panel, placed by the caller with absolute positioning. */
+      children: ReactNode;
+    }
+  | { products: Product[]; editing?: undefined; variant: CanvasVariant; children?: never };
+
+type ReadOnlyOutfitCanvasProps = {
   products: Product[];
-  editing?: CanvasEditing;
-  /** Controls drawn over the panel, placed by the caller with absolute positioning. */
-  children: ReactNode;
+  variant: CanvasVariant;
 };
 
-type ReadOnlyOutfitCanvasProps = Omit<OutfitCanvasProps, "editing">;
-
-export function OutfitCanvas({ products, editing, children }: OutfitCanvasProps) {
-  if (editing !== undefined) {
+export function OutfitCanvas(props: OutfitCanvasProps) {
+  if (props.editing !== undefined) {
     return (
-      <EditableOutfitCanvas products={products} editing={editing}>
-        {children}
+      <EditableOutfitCanvas products={props.products} editing={props.editing}>
+        {props.children}
       </EditableOutfitCanvas>
     );
   }
 
-  return <ReadOnlyOutfitCanvas products={products}>{children}</ReadOnlyOutfitCanvas>;
+  return <ReadOnlyOutfitCanvas products={props.products} variant={props.variant} />;
 }
 
-function ReadOnlyOutfitCanvas({ products, children }: ReadOnlyOutfitCanvasProps) {
+function ReadOnlyOutfitCanvas({ products, variant }: ReadOnlyOutfitCanvasProps) {
   const drawnGarments = useDrawnGarments(products);
 
   return (
-    <CanvasStage controls={children}>
+    <CanvasStage controls={null} variant={variant}>
       {drawnGarments.map((drawn) => (
         <GarmentImage key={drawn.product.id} drawn={drawn} />
       ))}
