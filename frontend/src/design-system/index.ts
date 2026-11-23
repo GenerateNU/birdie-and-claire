@@ -74,6 +74,8 @@ export { NavItem } from "@/design-system/components/navigation/nav-item";
 
 export { Sidebar } from "@/design-system/components/navigation/sidebar";
 
+export { FilterMenu } from "@/design-system/components/menu/filter-menu";
+
 export { Menu } from "@/design-system/components/menu/menu";
 
 export { MenuItem } from "@/design-system/components/menu/menu-item";

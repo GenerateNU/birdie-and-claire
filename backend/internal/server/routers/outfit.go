@@ -64,6 +64,7 @@ func OutfitRoutes(api huma.API, params types.RouteParams) {
 		Method:      http.MethodGet,
 		Path:        "/api/v1/outfits",
 		Summary:     "List the authenticated user's outfits",
+		Description: "Newest first. With collection_id, only that collection's outfits; someone else's collection and a missing one both return 404.",
 		Tags:        []string{"outfits"},
 	}, controller.List)
 

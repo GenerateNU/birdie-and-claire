@@ -45,7 +45,7 @@ func insertOutfitWithImage(t *testing.T, db *sql.DB, userID uuid.UUID, imageURL 
 	return outfit.ID
 }
 
-// addToCollection writes the join row directly, since no route adds outfits to a collection yet.
+// addToCollection writes the join row directly, so a test can choose when the outfit was added.
 func addToCollection(t *testing.T, db *sql.DB, collectionID, outfitID uuid.UUID, addedAt time.Time) {
 	t.Helper()
 
@@ -108,7 +108,7 @@ func TestListCollectionsCountsOutfitsAndTakesThumbnailsFromTheFourNewest(t *test
 	strangerID := insertTestUser(t, db)
 	createCollection(t, repo, strangerID, "stranger's")
 
-	got, err := repo.ListByUser(context.Background(), userID, cursorParams(t, 20, ""))
+	got, err := repo.ListByUser(context.Background(), userID, nil, cursorParams(t, 20, ""))
 	if err != nil {
 		t.Fatalf("ListByUser: %v", err)
 	}
@@ -142,7 +142,7 @@ func TestListCollectionsOutfitWithoutImageLeavesAGap(t *testing.T) {
 		addToCollection(t, db, collection.ID, insertOutfitWithImage(t, db, userID, url), base.Add(time.Duration(i)*time.Minute))
 	}
 
-	got, err := repo.ListByUser(context.Background(), userID, cursorParams(t, 20, ""))
+	got, err := repo.ListByUser(context.Background(), userID, nil, cursorParams(t, 20, ""))
 	if err != nil {
 		t.Fatalf("ListByUser: %v", err)
 	}
@@ -204,14 +204,14 @@ func TestListCollectionsPagesNewestFirst(t *testing.T) {
 		newestFirst = slices.Insert(newestFirst, 0, collection.ID)
 	}
 
-	first, err := service.ListUserCollections(ctx, cursorParams(t, 2, ""))
+	first, err := service.ListUserCollections(ctx, nil, cursorParams(t, 2, ""))
 	if err != nil {
 		t.Fatalf("list first page: %v", err)
 	}
 	if len(first.Items) != 2 || first.Items[0].ID != newestFirst[0] || first.Items[1].ID != newestFirst[1] || !first.HasMore || first.NextCursor == nil {
 		t.Fatalf("first page = %+v, want the two newest and a cursor", first)
 	}
-	second, err := service.ListUserCollections(ctx, cursorParams(t, 2, *first.NextCursor))
+	second, err := service.ListUserCollections(ctx, nil, cursorParams(t, 2, *first.NextCursor))
 	if err != nil {
 		t.Fatalf("list second page: %v", err)
 	}
@@ -325,7 +325,7 @@ func TestDeletingAnOutfitRemovesItFromItsCollections(t *testing.T) {
 		t.Fatalf("delete outfit: %v", err)
 	}
 
-	got, err := repo.ListByUser(ctx, userID, cursorParams(t, 20, ""))
+	got, err := repo.ListByUser(ctx, userID, nil, cursorParams(t, 20, ""))
 	if err != nil || len(got) != 1 || got[0].OutfitCount != 0 || len(got[0].ThumbnailURLs) != 0 {
 		t.Fatalf("ListByUser = %+v, %v, want the collection with no outfits", got, err)
 	}
@@ -374,6 +374,231 @@ func TestCollectionRoutesValidateTheirBodies(t *testing.T) {
 			}
 			if response.Code != test.want {
 				t.Fatalf("status = %d, want %d: %s", response.Code, test.want, response.Body)
+			}
+		})
+	}
+}
+
+// A repeated add keeps the outfit where it was in the collection, so a client can safely send it again.
+func TestAddOutfitToCollectionThenRepeatKeepsItsPlace(t *testing.T) {
+	db := openTestDB(t)
+	userID := insertTestUser(t, db)
+	collection := createCollection(t, repository.NewCollectionRepository(db), userID, "fits")
+	service := services.NewCollectionService(repository.New(db))
+	ctx := auth.WithUserID(context.Background(), userID)
+	first := insertOutfitWithImage(t, db, userID, "https://example.com/first.png")
+	second := insertOutfitWithImage(t, db, userID, "https://example.com/second.png")
+
+	for _, outfitID := range []uuid.UUID{first, second, first} {
+		if err := service.AddOutfit(ctx, collection.ID, outfitID); err != nil {
+			t.Fatalf("AddOutfit %s: %v", outfitID, err)
+		}
+	}
+
+	page, err := service.ListCollectionOutfits(ctx, collection.ID, cursorParams(t, 20, ""))
+	if err != nil {
+		t.Fatalf("ListCollectionOutfits: %v", err)
+	}
+	if len(page.Items) != 2 || page.Items[0].ID != second || page.Items[1].ID != first {
+		t.Fatalf("outfits = %+v, want second then first, each once", page.Items)
+	}
+	collections, err := service.ListUserCollections(ctx, nil, cursorParams(t, 20, ""))
+	if err != nil || len(collections.Items) != 1 || collections.Items[0].OutfitCount != 2 {
+		t.Fatalf("collections = %+v, %v, want one collection counting 2 outfits", collections.Items, err)
+	}
+}
+
+// Without both checks, someone could put another user's outfit in their own collection and read it from there.
+func TestAddOutfitNeedsTheUsersCollectionAndOutfit(t *testing.T) {
+	db := openTestDB(t)
+	repo := repository.NewCollectionRepository(db)
+	service := services.NewCollectionService(repository.New(db))
+	userID := insertTestUser(t, db)
+	strangerID := insertTestUser(t, db)
+	mine := createCollection(t, repo, userID, "mine")
+	theirs := createCollection(t, repo, strangerID, "theirs")
+	myOutfit := insertTestOutfitFor(t, db, userID)
+	theirOutfit := insertTestOutfitFor(t, db, strangerID)
+	ctx := auth.WithUserID(context.Background(), userID)
+
+	tests := []struct {
+		name         string
+		collectionID uuid.UUID
+		outfitID     uuid.UUID
+	}{
+		{"someone else's outfit", mine.ID, theirOutfit},
+		{"a missing outfit", mine.ID, uuid.New()},
+		{"someone else's collection", theirs.ID, myOutfit},
+		{"a missing collection", uuid.New(), myOutfit},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			wantNotFound(t, service.AddOutfit(ctx, test.collectionID, test.outfitID))
+		})
+	}
+
+	var links int
+	if err := db.QueryRow(`SELECT count(*) FROM collection_outfits WHERE collection_id = ANY($1)`, []uuid.UUID{mine.ID, theirs.ID}).Scan(&links); err != nil {
+		t.Fatalf("count links: %v", err)
+	}
+	if links != 0 {
+		t.Fatalf("links = %d, want none added", links)
+	}
+}
+
+func TestRemoveOutfitFromCollectionKeepsTheOutfitThenRepeatSucceeds(t *testing.T) {
+	db := openTestDB(t)
+	repo := repository.NewCollectionRepository(db)
+	service := services.NewCollectionService(repository.New(db))
+	userID := insertTestUser(t, db)
+	collection := createCollection(t, repo, userID, "fits")
+	outfitID := insertOutfitWithImage(t, db, userID, "https://example.com/a.png")
+	addToCollection(t, db, collection.ID, outfitID, time.Now())
+	ctx := auth.WithUserID(context.Background(), userID)
+
+	for range 2 {
+		if err := service.RemoveOutfit(ctx, collection.ID, outfitID); err != nil {
+			t.Fatalf("RemoveOutfit: %v", err)
+		}
+	}
+
+	got, err := repo.ListByUser(ctx, userID, nil, cursorParams(t, 20, ""))
+	if err != nil || len(got) != 1 || got[0].OutfitCount != 0 {
+		t.Fatalf("ListByUser = %+v, %v, want the collection with no outfits", got, err)
+	}
+	if _, _, err := repository.NewOutfitRepository(db).GetByID(ctx, outfitID, userID); err != nil {
+		t.Errorf("outfit after removing it from its collection: %v, want it kept", err)
+	}
+}
+
+func TestRemoveOutfitFromAnotherUsersOrMissingCollectionIsNotFound(t *testing.T) {
+	db := openTestDB(t)
+	repo := repository.NewCollectionRepository(db)
+	service := services.NewCollectionService(repository.New(db))
+	ownerID := insertTestUser(t, db)
+	strangerCtx := auth.WithUserID(context.Background(), insertTestUser(t, db))
+	collection := createCollection(t, repo, ownerID, "mine")
+	outfitID := insertOutfitWithImage(t, db, ownerID, "https://example.com/a.png")
+	addToCollection(t, db, collection.ID, outfitID, time.Now())
+
+	wantNotFound(t, service.RemoveOutfit(strangerCtx, collection.ID, outfitID))
+	wantNotFound(t, service.RemoveOutfit(strangerCtx, uuid.New(), outfitID))
+
+	got, err := repo.ListByUser(context.Background(), ownerID, nil, cursorParams(t, 20, ""))
+	if err != nil || len(got) != 1 || got[0].OutfitCount != 1 {
+		t.Fatalf("owner's collections = %+v, %v, want the outfit still in it", got, err)
+	}
+}
+
+func TestListCollectionsSaysWhichHoldTheOutfitOnlyWhenAsked(t *testing.T) {
+	db := openTestDB(t)
+	repo := repository.NewCollectionRepository(db)
+	service := services.NewCollectionService(repository.New(db))
+	userID := insertTestUser(t, db)
+	holding := createCollection(t, repo, userID, "holding")
+	other := createCollection(t, repo, userID, "other")
+	outfitID := insertOutfitWithImage(t, db, userID, "https://example.com/a.png")
+	addToCollection(t, db, holding.ID, outfitID, time.Now())
+	addToCollection(t, db, other.ID, insertOutfitWithImage(t, db, userID, "https://example.com/b.png"), time.Now())
+	strangersOutfit, _ := insertTestOutfit(t, db)
+	ctx := auth.WithUserID(context.Background(), userID)
+
+	containsByID := func(outfitID *uuid.UUID) map[uuid.UUID]*bool {
+		t.Helper()
+		page, err := service.ListUserCollections(ctx, outfitID, cursorParams(t, 20, ""))
+		if err != nil {
+			t.Fatalf("ListUserCollections: %v", err)
+		}
+		contains := map[uuid.UUID]*bool{}
+		for _, collection := range page.Items {
+			contains[collection.ID] = collection.ContainsOutfit
+		}
+		return contains
+	}
+
+	asked := containsByID(&outfitID)
+	if asked[holding.ID] == nil || !*asked[holding.ID] || asked[other.ID] == nil || *asked[other.ID] {
+		t.Errorf("with the outfit: holding %v, other %v, want true and false", asked[holding.ID], asked[other.ID])
+	}
+	for id, contains := range containsByID(nil) {
+		if contains != nil {
+			t.Errorf("without an outfit: collection %s contains_outfit = %v, want it left out", id, *contains)
+		}
+	}
+	for id, contains := range containsByID(&strangersOutfit) {
+		if contains == nil || *contains {
+			t.Errorf("with someone else's outfit: collection %s contains_outfit = %v, want false", id, contains)
+		}
+	}
+}
+
+func TestCollectionOutfitRoutes(t *testing.T) {
+	db := openTestDB(t)
+	userID := insertTestUser(t, db)
+	collection := createCollection(t, repository.NewCollectionRepository(db), userID, "fits")
+	outfitID := insertTestOutfitFor(t, db, userID)
+	strangersOutfit, _ := insertTestOutfit(t, db)
+	controller := controllers.NewCollectionController(services.NewCollectionService(repository.New(db)))
+
+	_, api := humatest.New(t, server.APIConfig(&config.Configuration{}))
+	// Each handler stands in for the auth middleware, which the test API does not run.
+	huma.Register(api, huma.Operation{
+		OperationID: "add-collection-outfit", Method: http.MethodPut, Path: "/api/v1/collections/{id}/outfits/{outfit_id}", DefaultStatus: http.StatusNoContent,
+	}, func(ctx context.Context, input *controllers.CollectionOutfitInput) (*struct{}, error) {
+		return controller.AddOutfit(auth.WithUserID(ctx, userID), input)
+	})
+	huma.Register(api, huma.Operation{
+		OperationID: "remove-collection-outfit", Method: http.MethodDelete, Path: "/api/v1/collections/{id}/outfits/{outfit_id}", DefaultStatus: http.StatusNoContent,
+	}, func(ctx context.Context, input *controllers.CollectionOutfitInput) (*struct{}, error) {
+		return controller.RemoveOutfit(auth.WithUserID(ctx, userID), input)
+	})
+	huma.Register(api, huma.Operation{
+		OperationID: "list-collections", Method: http.MethodGet, Path: "/api/v1/collections",
+	}, func(ctx context.Context, input *controllers.ListUserCollectionsInput) (*controllers.ListUserCollectionsOutput, error) {
+		return controller.ListUserCollections(auth.WithUserID(ctx, userID), input)
+	})
+
+	path := "/api/v1/collections/" + collection.ID.String() + "/outfits/"
+	tests := []struct {
+		name         string
+		send         func() *httptest.ResponseRecorder
+		want         int
+		wantBodyHas  string
+		wantBodyLack string
+	}{
+		{name: "add", send: func() *httptest.ResponseRecorder { return api.Put(path + outfitID.String()) }, want: http.StatusNoContent},
+		{name: "add again", send: func() *httptest.ResponseRecorder { return api.Put(path + outfitID.String()) }, want: http.StatusNoContent},
+		{name: "add someone else's outfit", send: func() *httptest.ResponseRecorder { return api.Put(path + strangersOutfit.String()) }, want: http.StatusNotFound},
+		{
+			name: "list asking about the outfit",
+			send: func() *httptest.ResponseRecorder {
+				return api.Get("/api/v1/collections?outfit_id=" + outfitID.String())
+			},
+			want:        http.StatusOK,
+			wantBodyHas: `"contains_outfit":true`,
+		},
+		{
+			name:         "list without asking",
+			send:         func() *httptest.ResponseRecorder { return api.Get("/api/v1/collections") },
+			want:         http.StatusOK,
+			wantBodyLack: "contains_outfit",
+		},
+		{name: "list with a malformed outfit_id", send: func() *httptest.ResponseRecorder { return api.Get("/api/v1/collections?outfit_id=nope") }, want: http.StatusUnprocessableEntity},
+		{name: "remove", send: func() *httptest.ResponseRecorder { return api.Delete(path + outfitID.String()) }, want: http.StatusNoContent},
+		{name: "remove again", send: func() *httptest.ResponseRecorder { return api.Delete(path + outfitID.String()) }, want: http.StatusNoContent},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			response := test.send()
+			body := response.Body.String()
+			if response.Code != test.want {
+				t.Fatalf("status = %d, want %d: %s", response.Code, test.want, body)
+			}
+			if test.wantBodyHas != "" && !strings.Contains(body, test.wantBodyHas) {
+				t.Errorf("body = %s, want it to contain %s", body, test.wantBodyHas)
+			}
+			if test.wantBodyLack != "" && strings.Contains(body, test.wantBodyLack) {
+				t.Errorf("body = %s, want no %s", body, test.wantBodyLack)
 			}
 		})
 	}
