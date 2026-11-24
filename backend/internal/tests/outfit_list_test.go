@@ -4,14 +4,20 @@ import (
 	"context"
 	"database/sql"
 	"math/rand/v2"
+	"net/http"
 	"testing"
 	"time"
 
 	"birdie-and-claire/internal/auth"
+	"birdie-and-claire/internal/config"
+	"birdie-and-claire/internal/controllers"
 	"birdie-and-claire/internal/models"
 	"birdie-and-claire/internal/repository"
+	"birdie-and-claire/internal/server"
 	"birdie-and-claire/internal/services"
 
+	"github.com/danielgtaylor/huma/v2"
+	"github.com/danielgtaylor/huma/v2/humatest"
 	"github.com/google/uuid"
 )
 
@@ -235,6 +241,39 @@ func TestListOutfitsInAnotherUsersOrMissingCollectionIsNotFound(t *testing.T) {
 		t.Run(label, func(t *testing.T) {
 			_, err := service.List(strangerCtx, &id, cursorParams(t, 20, ""))
 			wantNotFound(t, err)
+		})
+	}
+}
+
+// A collection_id sent as the nil UUID names a collection that doesn't exist, so it is a 404 rather than every outfit.
+func TestListOutfitsRouteTellsANilCollectionIDFromNone(t *testing.T) {
+	db := openTestDB(t)
+	userID := insertTestUser(t, db)
+	insertTestOutfitFor(t, db, userID)
+	controller := controllers.NewOutfitController(services.NewOutfitService(repository.New(db), ""))
+
+	_, api := humatest.New(t, server.APIConfig(&config.Configuration{}))
+	// The handler stands in for the auth middleware, which the test API does not run.
+	huma.Register(api, huma.Operation{
+		OperationID: "list-outfits", Method: http.MethodGet, Path: "/api/v1/outfits",
+	}, func(ctx context.Context, input *controllers.ListOutfitsInput) (*controllers.ListOutfitsOutput, error) {
+		return controller.List(auth.WithUserID(ctx, userID), input)
+	})
+
+	tests := []struct {
+		name  string
+		query string
+		want  int
+	}{
+		{name: "no collection_id", query: "", want: http.StatusOK},
+		{name: "the nil UUID", query: "?collection_id=" + uuid.Nil.String(), want: http.StatusNotFound},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			response := api.Get("/api/v1/outfits" + test.query)
+			if response.Code != test.want {
+				t.Fatalf("status = %d, want %d: %s", response.Code, test.want, response.Body)
+			}
 		})
 	}
 }

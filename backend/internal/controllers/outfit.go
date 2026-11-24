@@ -189,7 +189,7 @@ func (c *OutfitController) GetShared(ctx context.Context, input *OutfitIDInput) 
 
 type ListOutfitsInput struct {
 	pagination.CursorParams
-	CollectionID uuid.UUID `query:"collection_id" doc:"Only outfits in this collection; total then counts only those"`
+	CollectionID OptionalParam[uuid.UUID] `query:"collection_id" doc:"Only outfits in this collection; total then counts only those"`
 }
 
 type ListOutfitsOutput struct {
@@ -198,12 +198,7 @@ type ListOutfitsOutput struct {
 
 // List returns a page of the authenticated user's outfits, newest first.
 func (c *OutfitController) List(ctx context.Context, input *ListOutfitsInput) (*ListOutfitsOutput, error) {
-	// huma has no pointer query params, so an absent collection_id arrives as the zero UUID.
-	var collectionID *uuid.UUID
-	if input.CollectionID != uuid.Nil {
-		collectionID = &input.CollectionID
-	}
-	page, err := c.service.List(ctx, collectionID, input.CursorParams)
+	page, err := c.service.List(ctx, input.CollectionID.Pointer(), input.CursorParams)
 	if err != nil {
 		return nil, errs.ToHuma(ctx, err)
 	}

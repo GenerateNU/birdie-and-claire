@@ -44,7 +44,7 @@ func (c *CollectionController) Create(ctx context.Context, input *CreateCollecti
 
 type ListUserCollectionsInput struct {
 	pagination.CursorParams
-	OutfitID uuid.UUID `query:"outfit_id" doc:"Outfit to look for in each collection, which sets contains_outfit"`
+	OutfitID OptionalParam[uuid.UUID] `query:"outfit_id" doc:"Outfit to look for in each collection, which sets contains_outfit"`
 }
 
 type ListUserCollectionsOutput struct {
@@ -52,12 +52,7 @@ type ListUserCollectionsOutput struct {
 }
 
 func (c *CollectionController) ListUserCollections(ctx context.Context, input *ListUserCollectionsInput) (*ListUserCollectionsOutput, error) {
-	// huma has no pointer query params, so an absent outfit_id arrives as the zero UUID.
-	var outfitID *uuid.UUID
-	if input.OutfitID != uuid.Nil {
-		outfitID = &input.OutfitID
-	}
-	page, err := c.service.ListUserCollections(ctx, outfitID, input.CursorParams)
+	page, err := c.service.ListUserCollections(ctx, input.OutfitID.Pointer(), input.CursorParams)
 	if err != nil {
 		return nil, errs.ToHuma(ctx, err)
 	}

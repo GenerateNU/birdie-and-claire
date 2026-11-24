@@ -584,6 +584,14 @@ func TestCollectionOutfitRoutes(t *testing.T) {
 			wantBodyLack: "contains_outfit",
 		},
 		{name: "list with a malformed outfit_id", send: func() *httptest.ResponseRecorder { return api.Get("/api/v1/collections?outfit_id=nope") }, want: http.StatusUnprocessableEntity},
+		{
+			name: "list asking about the nil UUID",
+			send: func() *httptest.ResponseRecorder {
+				return api.Get("/api/v1/collections?outfit_id=" + uuid.Nil.String())
+			},
+			want:        http.StatusOK,
+			wantBodyHas: `"contains_outfit":false`,
+		},
 		{name: "remove", send: func() *httptest.ResponseRecorder { return api.Delete(path + outfitID.String()) }, want: http.StatusNoContent},
 		{name: "remove again", send: func() *httptest.ResponseRecorder { return api.Delete(path + outfitID.String()) }, want: http.StatusNoContent},
 	}

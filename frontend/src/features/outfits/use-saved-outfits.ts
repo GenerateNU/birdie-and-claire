@@ -60,12 +60,22 @@ export function useSavedOutfits(collectionId?: string): SavedOutfitsFlow {
     return { status: "loading" };
   }
 
+  // Before the data check: a refetch that finds the collection gone keeps the old pages in data.
+  if (collectionId !== undefined && isCollectionNotFound(error)) {
+    return {
+      status: "error",
+      message: "Couldn't load your outfits.",
+      retry: () => void refetch(),
+      collectionNotFound: true,
+    };
+  }
+
   if (!data) {
     return {
       status: "error",
       message: "Couldn't load your outfits.",
       retry: () => void refetch(),
-      collectionNotFound: collectionId !== undefined && isCollectionNotFound(error),
+      collectionNotFound: false,
     };
   }
 

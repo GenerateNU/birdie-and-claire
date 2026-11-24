@@ -1,24 +1,30 @@
 import { useForm } from "@tanstack/react-form";
-import {
-  type MutationFunctionContext,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
-import { useState } from "react";
+import { type MutationFunctionContext, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useState } from "react";
 import { z } from "zod";
 
 import {
   addCollectionOutfitMutation,
   listCollectionOutfitsInfiniteQueryKey,
-  listCollectionsOptions,
+  listCollectionsInfiniteOptions,
   listCollectionsQueryKey,
   listOutfitsInfiniteQueryKey,
   removeCollectionOutfitMutation,
 } from "@/api/generated/@tanstack/react-query.gen";
-import { CheckboxList, ErrorState, Form, Modal, Spinner, Text, TextField } from "@/design-system";
+import {
+  CheckboxList,
+  ErrorState,
+  Form,
+  LoadMoreSentinel,
+  Modal,
+  Spinner,
+  Text,
+  TextField,
+} from "@/design-system";
 import { collectionNameSchema } from "@/features/collections/collection-form-dialog";
 import { useCreateCollection } from "@/features/collections/use-create-collection";
+import { canFetchNextPage } from "@/features/outfits/saved-outfits";
+import { usePagination } from "@/lib/use-pagination";
 
 type CollectionChange = { collectionId: string; checked: boolean };
 
@@ -33,8 +39,13 @@ type SaveToCollectionsProps = {
  */
 export function SaveToCollections({ outfitId, onClose }: SaveToCollectionsProps) {
   const queryClient = useQueryClient();
-  // Only the first page of collections, the newest ones.
-  const collectionsQuery = useQuery(listCollectionsOptions({ query: { outfit_id: outfitId } }));
+
+  const collectionsQuery = usePagination(
+    listCollectionsInfiniteOptions({ query: { outfit_id: outfitId } }),
+  );
+
+  const { fetchNextPage, isFetchingNextPage, isFetchNextPageError } = collectionsQuery;
+
   // How the user left each box they touched, by collection ID, so the rest keep following what's
   // saved. A box ticked and unticked again is here too, matching what's saved.
   const [userChecks, setUserChecks] = useState<Record<string, boolean>>({});
@@ -74,6 +85,12 @@ export function SaveToCollections({ outfitId, onClose }: SaveToCollectionsProps)
     },
   });
 
+  const loadMore = useCallback(() => {
+    if (canFetchNextPage({ isFetchingNextPage, isFetchNextPageError })) {
+      void fetchNextPage();
+    }
+  }, [fetchNextPage, isFetchingNextPage, isFetchNextPageError]);
+
   if (createDialogOpen) {
     return (
       <CreateCollectionDialog
@@ -86,15 +103,19 @@ export function SaveToCollections({ outfitId, onClose }: SaveToCollectionsProps)
     );
   }
 
-  const collections = collectionsQuery.data?.items ?? [];
+  const collections = collectionsQuery.data?.pages.flatMap((page) => page.items) ?? [];
 
-  const unsavedChanges = collections
-    .filter(
-      (collection) =>
-        collection.id in userChecks &&
-        userChecks[collection.id] !== (collection.contains_outfit === true),
-    )
-    .map((collection) => ({ collectionId: collection.id, checked: userChecks[collection.id] }));
+  const savedCollectionIds = new Set(
+    collections
+      .filter((collection) => collection.contains_outfit === true)
+      .map((collection) => collection.id),
+  );
+
+  // From the boxes touched rather than the list, so one made with Create New still saves when the
+  // list failed to refresh after it and doesn't show it.
+  const unsavedChanges = Object.entries(userChecks)
+    .filter(([collectionId, checked]) => checked !== savedCollectionIds.has(collectionId))
+    .map(([collectionId, checked]) => ({ collectionId, checked }));
 
   function save() {
     if (unsavedChanges.length === 0) {
@@ -135,19 +156,29 @@ export function SaveToCollections({ outfitId, onClose }: SaveToCollectionsProps)
     }
 
     return (
-      <CheckboxList
-        label="Collections"
-        items={collections.map((collection) => ({
-          value: collection.id,
-          label: `${collection.name} (${collection.outfit_count})`,
-          checked: userChecks[collection.id] ?? collection.contains_outfit === true,
-        }))}
-        onCheckedChange={(collectionId, checked) =>
-          setUserChecks((current) => ({ ...current, [collectionId]: checked }))
-        }
-        // A box changed now would be left out of the save that's running.
-        disabled={saveMutation.isPending}
-      />
+      <>
+        <CheckboxList
+          label="Collections"
+          items={collections.map((collection) => ({
+            value: collection.id,
+            label: `${collection.name} (${collection.outfit_count})`,
+            checked: userChecks[collection.id] ?? collection.contains_outfit === true,
+          }))}
+          onCheckedChange={(collectionId, checked) =>
+            setUserChecks((current) => ({ ...current, [collectionId]: checked }))
+          }
+          // A box changed now would be left out of the save that's running.
+          disabled={saveMutation.isPending}
+        />
+        {collectionsQuery.hasNextPage && <LoadMoreSentinel as="div" onVisible={loadMore} />}
+        {isFetchNextPageError && (
+          <ErrorState
+            message="Couldn't load more collections."
+            onRetry={() => void fetchNextPage()}
+            retryLabel="Retry"
+          />
+        )}
+      </>
     );
   }
 

@@ -1,7 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
+import { useCallback } from "react";
 
-import { listCollectionsOptions } from "@/api/generated/@tanstack/react-query.gen";
-import { FilterMenu } from "@/design-system";
+import { listCollectionsInfiniteOptions } from "@/api/generated/@tanstack/react-query.gen";
+import { ErrorState, FilterMenu } from "@/design-system";
+import { canFetchNextPage } from "@/features/outfits/saved-outfits";
+import { usePagination } from "@/lib/use-pagination";
 
 type CollectionFilterProps = {
   /** The collection the list is filtered to, or undefined for all outfits. */
@@ -9,10 +11,36 @@ type CollectionFilterProps = {
   onCollectionIdChange: (collectionId: string | undefined) => void;
 };
 
-/** The Saved outfits Filter. It lists only the first page of collections, the newest ones. */
+/** The Saved outfits Filter. It loads more collections as its list scrolls to the end. */
 export function CollectionFilter({ collectionId, onCollectionIdChange }: CollectionFilterProps) {
-  const collectionsQuery = useQuery(listCollectionsOptions());
-  const collections = collectionsQuery.data?.items ?? [];
+  const {
+    data,
+    isError,
+    refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isFetchNextPageError,
+  } = usePagination(listCollectionsInfiniteOptions());
+
+  const loadMore = useCallback(() => {
+    if (canFetchNextPage({ isFetchingNextPage, isFetchNextPageError })) {
+      void fetchNextPage();
+    }
+  }, [fetchNextPage, isFetchingNextPage, isFetchNextPageError]);
+
+  // Checked with data, so a failed background refetch keeps the filter usable.
+  if (data === undefined && isError) {
+    return (
+      <ErrorState
+        message="Couldn't load your collections."
+        onRetry={() => void refetch()}
+        retryLabel="Retry"
+      />
+    );
+  }
+
+  const collections = data?.pages.flatMap((page) => page.items) ?? [];
 
   return (
     <FilterMenu
@@ -24,6 +52,8 @@ export function CollectionFilter({ collectionId, onCollectionIdChange }: Collect
       value={collectionId ?? null}
       onValueChange={(value) => onCollectionIdChange(value ?? undefined)}
       disabled={collections.length === 0}
+      onLoadMore={hasNextPage ? loadMore : undefined}
+      onRetryLoadMore={isFetchNextPageError ? () => void fetchNextPage() : undefined}
     />
   );
 }
