@@ -28,6 +28,9 @@ import { usePagination } from "@/lib/use-pagination";
 
 type CollectionChange = { collectionId: string; checked: boolean };
 
+/** How the user left a box, and whether its collection held the outfit when they touched it. */
+type CollectionCheck = { checked: boolean; saved: boolean };
+
 type SaveToCollectionsProps = {
   outfitId: string;
   onClose: () => void;
@@ -46,9 +49,9 @@ export function SaveToCollections({ outfitId, onClose }: SaveToCollectionsProps)
 
   const { fetchNextPage, isFetchingNextPage, isFetchNextPageError } = collectionsQuery;
 
-  // How the user left each box they touched, by collection ID, so the rest keep following what's
-  // saved. A box ticked and unticked again is here too, matching what's saved.
-  const [userChecks, setUserChecks] = useState<Record<string, boolean>>({});
+  // Each box the user touched, by collection ID, so the rest keep following what's saved. A box
+  // ticked and unticked again is here too, matching what's saved.
+  const [userChecks, setUserChecks] = useState<Record<string, CollectionCheck>>({});
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   const addOptions = addCollectionOutfitMutation();
@@ -96,7 +99,10 @@ export function SaveToCollections({ outfitId, onClose }: SaveToCollectionsProps)
       <CreateCollectionDialog
         onBack={() => setCreateDialogOpen(false)}
         onCreated={(collectionId) => {
-          setUserChecks((current) => ({ ...current, [collectionId]: true }));
+          setUserChecks((current) => ({
+            ...current,
+            [collectionId]: { checked: true, saved: false },
+          }));
           setCreateDialogOpen(false);
         }}
       />
@@ -105,17 +111,12 @@ export function SaveToCollections({ outfitId, onClose }: SaveToCollectionsProps)
 
   const collections = collectionsQuery.data?.pages.flatMap((page) => page.items) ?? [];
 
-  const savedCollectionIds = new Set(
-    collections
-      .filter((collection) => collection.contains_outfit === true)
-      .map((collection) => collection.id),
-  );
-
-  // From the boxes touched rather than the list, so one made with Create New still saves when the
-  // list failed to refresh after it and doesn't show it.
+  // From the boxes touched rather than the list, so a change still saves when its collection isn't
+  // in the loaded pages: one made with Create New whose refresh failed, or one a refresh pushed
+  // past the last loaded page.
   const unsavedChanges = Object.entries(userChecks)
-    .filter(([collectionId, checked]) => checked !== savedCollectionIds.has(collectionId))
-    .map(([collectionId, checked]) => ({ collectionId, checked }));
+    .filter(([, check]) => check.checked !== check.saved)
+    .map(([collectionId, { checked }]) => ({ collectionId, checked }));
 
   function save() {
     if (unsavedChanges.length === 0) {
@@ -162,11 +163,15 @@ export function SaveToCollections({ outfitId, onClose }: SaveToCollectionsProps)
           items={collections.map((collection) => ({
             value: collection.id,
             label: `${collection.name} (${collection.outfit_count})`,
-            checked: userChecks[collection.id] ?? collection.contains_outfit === true,
+            checked: userChecks[collection.id]?.checked ?? collection.contains_outfit === true,
           }))}
-          onCheckedChange={(collectionId, checked) =>
-            setUserChecks((current) => ({ ...current, [collectionId]: checked }))
-          }
+          onCheckedChange={(collectionId, checked) => {
+            const saved = collections.some(
+              (collection) => collection.id === collectionId && collection.contains_outfit === true,
+            );
+
+            setUserChecks((current) => ({ ...current, [collectionId]: { checked, saved } }));
+          }}
           // A box changed now would be left out of the save that's running.
           disabled={saveMutation.isPending}
         />
