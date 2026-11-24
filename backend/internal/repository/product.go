@@ -309,15 +309,13 @@ func (r *productRepository) ListUnownedProducts(ctx context.Context, userID uuid
 func (r *productRepository) ListBirdieAndClaireProducts(ctx context.Context, userID uuid.UUID, filter models.BirdieAndClaireProductFilter, params pagination.CursorParams) (models.BirdieAndClaireProductPage, error) {
 	rowSource := func(sourceParams []string) string {
 		slots, productType, excludeProductType, ownedOnly := sourceParams[0], sourceParams[1], sourceParams[2], sourceParams[3]
-		// product_type is NULL for some products, and IS DISTINCT FROM keeps those when a type is excluded.
 		return `
 			SELECT p.id, p.created_at AS sorted_at
 			FROM products p
 			WHERE p.source = 'birdie_and_claire'
 				AND p.active
 				AND p.slot::text = ANY(` + slots + `::text[])
-				AND (` + productType + `::text = '' OR p.product_type = ` + productType + `::text)
-				AND (` + excludeProductType + `::text = '' OR p.product_type IS DISTINCT FROM ` + excludeProductType + `::text)
+				AND ` + productTypeConditions(productType, excludeProductType) + `
 				AND (NOT ` + ownedOnly + `::bool
 					OR EXISTS (SELECT 1 FROM owned_products op WHERE op.user_id = $1 AND op.product_id = p.id))
 		`
@@ -339,6 +337,14 @@ func (r *productRepository) ListBirdieAndClaireProducts(ctx context.Context, use
 		return models.BirdieAndClaireProductPage{}, fmt.Errorf("count birdie and claire products for user %s: %w", userID, err)
 	}
 	return models.BirdieAndClaireProductPage{Page: page, Total: total}, nil
+}
+
+// productTypeConditions is the SQL for a models.ProductTypeFilter on products p, given its two placeholders, so the
+// catalog and pieces lists apply a tab's type rule the same way. product_type is NULL for some products, and
+// IS DISTINCT FROM keeps those when a type is excluded.
+func productTypeConditions(productType, excludeProductType string) string {
+	return `(` + productType + `::text = '' OR p.product_type = ` + productType + `::text)
+		AND (` + excludeProductType + `::text = '' OR p.product_type IS DISTINCT FROM ` + excludeProductType + `::text)`
 }
 
 // productRowSource selects a product list's rows as (id, sorted_at). It may use $1, the user's ID, and gets one

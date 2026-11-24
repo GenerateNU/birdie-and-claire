@@ -22,7 +22,9 @@ const (
 )
 
 type OwnedProductRepository interface {
-	ListOwnedProducts(ctx context.Context, userID uuid.UUID, params pagination.CursorParams) (pagination.Page[models.OwnedProductResponse], error)
+	// ListOwnedProducts lists the products userID owns that match filter, most recently added first. Unlike the catalog
+	// list, it keeps demo and inactive products.
+	ListOwnedProducts(ctx context.Context, userID uuid.UUID, filter models.OwnedProductFilter, params pagination.CursorParams) (pagination.Page[models.OwnedProductResponse], error)
 	// AddOwnedProducts skips products userID already owns, so adding one twice changes nothing.
 	AddOwnedProducts(ctx context.Context, userID uuid.UUID, productIDs []uuid.UUID) error
 	// UpdateOwnedProducts adds addIDs and removes removeIDs in one statement, so both apply or neither does. Adding a
@@ -40,16 +42,24 @@ func NewOwnedProductRepository(database *sql.DB) OwnedProductRepository {
 	return &ownedProductRepository{db: database}
 }
 
-func (r *ownedProductRepository) ListOwnedProducts(ctx context.Context, userID uuid.UUID, params pagination.CursorParams) (pagination.Page[models.OwnedProductResponse], error) {
-	return listProductPage(ctx, r.db, func([]string) string {
+func (r *ownedProductRepository) ListOwnedProducts(ctx context.Context, userID uuid.UUID, filter models.OwnedProductFilter, params pagination.CursorParams) (pagination.Page[models.OwnedProductResponse], error) {
+	rowSource := func(sourceParams []string) string {
+		slots, productType, excludeProductType := sourceParams[0], sourceParams[1], sourceParams[2]
+		// A nil Slots arrives as NULL, whose cardinality is NULL too.
 		return `
-			SELECT product_id AS id, created_at AS sorted_at
-			FROM owned_products
-			WHERE user_id = $1
+			SELECT op.product_id AS id, op.created_at AS sorted_at
+			FROM owned_products op
+			JOIN products p ON p.id = op.product_id
+			WHERE op.user_id = $1
+				AND (coalesce(cardinality(` + slots + `::text[]), 0) = 0 OR p.slot::text = ANY(` + slots + `::text[]))
+				AND ` + productTypeConditions(productType, excludeProductType) + `
 		`
-	}, userID, params, func(product models.ProductResponse, addedAt time.Time, _ bool) models.OwnedProductResponse {
+	}
+	sourceArgs := []any{filter.Slots, filter.ProductType, filter.ExcludeProductType}
+
+	return listProductPage(ctx, r.db, rowSource, userID, params, func(product models.ProductResponse, addedAt time.Time, _ bool) models.OwnedProductResponse {
 		return models.OwnedProductResponse{ProductResponse: product, AddedAt: addedAt}
-	})
+	}, sourceArgs...)
 }
 
 func (r *ownedProductRepository) AddOwnedProducts(ctx context.Context, userID uuid.UUID, productIDs []uuid.UUID) error {

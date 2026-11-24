@@ -74,10 +74,10 @@ components:
         slot:
           enum:
             - top
-            - bottom
-            - accessory
-            - shoe
             - one_piece
+            - bottom
+            - shoe
+            - accessory
           type: string
         source:
           description: birdie_and_claire for a product sold in the store, demo for seeded filler that is not for sale
@@ -393,10 +393,10 @@ components:
         slot:
           enum:
             - top
-            - bottom
-            - accessory
-            - shoe
             - one_piece
+            - bottom
+            - shoe
+            - accessory
           type: string
         source:
           description: birdie_and_claire for a product sold in the store, demo for seeded filler that is not for sale
@@ -561,10 +561,10 @@ components:
         slot:
           enum:
             - top
-            - bottom
-            - accessory
-            - shoe
             - one_piece
+            - bottom
+            - shoe
+            - accessory
           type: string
         source:
           description: birdie_and_claire for a product sold in the store, demo for seeded filler that is not for sale
@@ -732,10 +732,10 @@ components:
         slot:
           enum:
             - top
-            - bottom
-            - accessory
-            - shoe
             - one_piece
+            - bottom
+            - shoe
+            - accessory
           type: string
         source:
           description: birdie_and_claire for a product sold in the store, demo for seeded filler that is not for sale
@@ -1888,10 +1888,10 @@ paths:
             items:
               enum:
                 - top
-                - bottom
                 - one_piece
-                - accessory
+                - bottom
                 - shoe
+                - accessory
               type: string
             minItems: 1
             type: array
@@ -2043,7 +2043,7 @@ paths:
         - users
   /api/v1/users/me/pieces:
     get:
-      description: Most recently added first.
+      description: Most recently added first, demo and inactive products included. product_type and exclude_product_type work as they do on list-birdie-and-claire-products.
       operationId: list-current-user-pieces
       parameters:
         - description: Max items to return
@@ -2063,6 +2063,35 @@ paths:
           name: cursor
           schema:
             description: Opaque cursor from a previous page's next_cursor
+            type: string
+        - description: Only these slots; repeat the parameter for more than one. Every slot when left out.
+          explode: true
+          in: query
+          name: slot
+          schema:
+            description: Only these slots; repeat the parameter for more than one. Every slot when left out.
+            items:
+              enum:
+                - top
+                - one_piece
+                - bottom
+                - shoe
+                - accessory
+              type: string
+            type: array
+        - description: Only products of this product type
+          explode: false
+          in: query
+          name: product_type
+          schema:
+            description: Only products of this product type
+            type: string
+        - description: Leave out products of this product type. Products with no type stay in.
+          explode: false
+          in: query
+          name: exclude_product_type
+          schema:
+            description: Leave out products of this product type. Products with no type stay in.
             type: string
       responses:
         "200":
