@@ -23,6 +23,8 @@ func NewOwnedProductController(service services.OwnedProductService) *OwnedProdu
 
 type ListOwnedProductsInput struct {
 	pagination.CursorParams
+	Slots []models.ProductSlot `query:"slot,explode" nullable:"false" doc:"Only these slots; repeat the parameter for more than one. Every slot when left out."`
+	models.ProductTypeFilter
 }
 
 type ListOwnedProductsOutput struct {
@@ -30,7 +32,8 @@ type ListOwnedProductsOutput struct {
 }
 
 func (c *OwnedProductController) ListOwnedProducts(ctx context.Context, input *ListOwnedProductsInput) (*ListOwnedProductsOutput, error) {
-	page, err := c.service.ListOwnedProducts(ctx, input.CursorParams)
+	filter := models.OwnedProductFilter{Slots: input.Slots, ProductTypeFilter: input.ProductTypeFilter}
+	page, err := c.service.ListOwnedProducts(ctx, filter, input.CursorParams)
 	if err != nil {
 		return nil, errs.ToHuma(ctx, err)
 	}

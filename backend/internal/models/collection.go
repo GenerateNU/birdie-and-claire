@@ -21,6 +21,9 @@ type CollectionSummaryResponse struct {
 	Collection
 	OutfitCount   int      `json:"outfit_count"`
 	ThumbnailURLs []string `json:"thumbnail_urls" nullable:"false" doc:"One image for each of the up to 4 most recently added outfits, newest first"`
+	// Left out rather than false for a request that names no outfit, so a caller that never asked can't mistake
+	// it for an answer.
+	ContainsOutfit *bool `json:"contains_outfit,omitempty" doc:"Whether the collection holds the outfit the request's outfit_id names. Left out when the request names no outfit."`
 }
 
 // CollectionOutfit is one outfit's link to a collection, which a page of the collection's outfits is cut from.

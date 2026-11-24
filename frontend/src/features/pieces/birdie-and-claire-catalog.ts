@@ -1,20 +1,30 @@
 import type { QueryClient } from "@tanstack/react-query";
 
 import { listBirdieAndClaireProductsInfiniteQueryKey } from "@/api/generated/@tanstack/react-query.gen";
-import type { ListBirdieAndClaireProductsData } from "@/api/generated/types.gen";
+import type {
+  ListBirdieAndClaireProductsData,
+  ListCurrentUserPiecesData,
+} from "@/api/generated/types.gen";
 
 type CatalogFilter = Omit<ListBirdieAndClaireProductsData["query"], "limit" | "cursor">;
+
+type CatalogTabParam = "slot" | "product_type" | "exclude_product_type";
+
+/** What a tab picks by. It filters My Pieces too, so it is checked against both lists' params, and a
+ * param either list drops or renames fails the build. */
+export type CatalogTabFilter = Pick<CatalogFilter, CatalogTabParam> &
+  Pick<NonNullable<ListCurrentUserPiecesData["query"]>, CatalogTabParam>;
 
 type CatalogTab = {
   label: string;
   value: string;
-  filter: CatalogFilter;
+  filter: CatalogTabFilter;
 };
 
 // Shopify's product type for sweaters, which sit in the top slot with every other top.
 const sweaterProductType = "Sweaters";
 
-/** The Add Items tabs from Figma. A dress sits under Jumpsuits, and shoes have no tab. */
+/** The Add Items tabs from Figma, plus Shoes, which Figma leaves out. A dress sits under Jumpsuits. */
 export const catalogTabs: CatalogTab[] = [
   {
     label: "Tops",
@@ -29,6 +39,7 @@ export const catalogTabs: CatalogTab[] = [
   { label: "Bottoms", value: "bottoms", filter: { slot: ["bottom"] } },
   { label: "Jumpsuits", value: "jumpsuits", filter: { slot: ["one_piece"] } },
   { label: "Accessories", value: "accessories", filter: { slot: ["accessory"] } },
+  { label: "Shoes", value: "shoes", filter: { slot: ["shoe"] } },
 ];
 
 /** The owned pieces some tab shows, for the Selected Items count and panel. */

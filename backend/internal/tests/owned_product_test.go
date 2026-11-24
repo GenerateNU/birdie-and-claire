@@ -180,7 +180,7 @@ func TestPiecesListMostRecentlyAddedFirstAcrossPages(t *testing.T) {
 		}
 	}
 
-	page, err := service.ListOwnedProducts(ctx, cursorParams(t, 2, ""))
+	page, err := service.ListOwnedProducts(ctx, models.OwnedProductFilter{}, cursorParams(t, 2, ""))
 	if err != nil {
 		t.Fatalf("list first page: %v", err)
 	}
@@ -188,7 +188,7 @@ func TestPiecesListMostRecentlyAddedFirstAcrossPages(t *testing.T) {
 		t.Fatalf("first page = %v, has_more %v, cursor %v; want [third second] and more", got, page.HasMore, page.NextCursor)
 	}
 
-	page, err = service.ListOwnedProducts(ctx, cursorParams(t, 2, *page.NextCursor))
+	page, err = service.ListOwnedProducts(ctx, models.OwnedProductFilter{}, cursorParams(t, 2, *page.NextCursor))
 	if err != nil {
 		t.Fatalf("list second page: %v", err)
 	}
@@ -197,6 +197,85 @@ func TestPiecesListMostRecentlyAddedFirstAcrossPages(t *testing.T) {
 	}
 	if page.Items[0].AddedAt.IsZero() || page.Items[0].Title != "Test product" {
 		t.Errorf("item = %+v, want the product's fields and when it was added", page.Items[0])
+	}
+}
+
+// Each Add is its own statement, so every list comes in the add order reversed.
+func TestPiecesListByFilterKeepsDemoAndInactiveProducts(t *testing.T) {
+	db := openTestDB(t)
+	userID := insertTestUser(t, db)
+	ctx := auth.WithUserID(context.Background(), userID)
+	service := services.NewOwnedProductService(repository.New(db))
+	now := time.Now()
+	sweaters := "Sweaters"
+	tunics := "Tunics"
+	birdieAndClaire := models.SourceBirdieAndClaire
+	const active, inactive = true, false
+
+	shoe := insertCatalogProduct(t, db, birdieAndClaire, models.SlotShoe, nil, active, now)
+	bottom := insertCatalogProduct(t, db, birdieAndClaire, models.SlotBottom, nil, active, now)
+	sweater := insertCatalogProduct(t, db, birdieAndClaire, models.SlotTop, &sweaters, active, now)
+	untypedTop := insertCatalogProduct(t, db, birdieAndClaire, models.SlotTop, nil, active, now)
+	top := insertCatalogProduct(t, db, birdieAndClaire, models.SlotTop, &tunics, active, now)
+	inactiveTop := insertCatalogProduct(t, db, birdieAndClaire, models.SlotTop, nil, inactive, now)
+	demoTop := insertCatalogProduct(t, db, models.SourceDemo, models.SlotTop, nil, active, now)
+	unownedTop := insertCatalogProduct(t, db, birdieAndClaire, models.SlotTop, nil, active, now)
+
+	for _, productID := range []uuid.UUID{shoe, bottom, sweater, untypedTop, top, inactiveTop, demoTop} {
+		if err := service.AddOwnedProducts(ctx, []uuid.UUID{productID}); err != nil {
+			t.Fatalf("add %s: %v", productID, err)
+		}
+	}
+
+	tops := []models.ProductSlot{models.SlotTop}
+	cases := []struct {
+		name   string
+		filter models.OwnedProductFilter
+		want   []uuid.UUID
+	}{
+		{name: "no filter", filter: models.OwnedProductFilter{}, want: []uuid.UUID{demoTop, inactiveTop, top, untypedTop, sweater, bottom, shoe}},
+		{name: "excluded type", filter: models.OwnedProductFilter{Slots: tops, ProductTypeFilter: models.ProductTypeFilter{ExcludeProductType: sweaters}}, want: []uuid.UUID{demoTop, inactiveTop, top, untypedTop}},
+		{name: "one type", filter: models.OwnedProductFilter{Slots: tops, ProductTypeFilter: models.ProductTypeFilter{ProductType: sweaters}}, want: []uuid.UUID{sweater}},
+		{name: "several slots", filter: models.OwnedProductFilter{Slots: []models.ProductSlot{models.SlotBottom, models.SlotShoe}}, want: []uuid.UUID{bottom, shoe}},
+	}
+	for _, tc := range cases {
+		page, err := service.ListOwnedProducts(ctx, tc.filter, cursorParams(t, 10, ""))
+		if err != nil {
+			t.Fatalf("list %s: %v", tc.name, err)
+		}
+		if got := ownedIDs(page.Items); !slices.Equal(got, tc.want) {
+			t.Errorf("%s = %v, want %v (unowned %v left out)", tc.name, got, tc.want, unownedTop)
+		}
+	}
+}
+
+// The slot enum comes from ProductSlot's Schema rather than a tag, so only the real Huma pipeline checks it.
+func TestListPiecesValidatesSlots(t *testing.T) {
+	_, api := humatest.New(t, server.APIConfig(&config.Configuration{}))
+	huma.Register(api, huma.Operation{
+		OperationID: "list-pieces-probe",
+		Method:      http.MethodGet,
+		Path:        "/probe",
+	}, func(_ context.Context, _ *controllers.ListOwnedProductsInput) (*struct{}, error) {
+		return nil, nil
+	})
+
+	tests := []struct {
+		name       string
+		query      string
+		wantStatus int
+	}{
+		{name: "every slot", query: "?slot=top&slot=one_piece&slot=bottom&slot=shoe&slot=accessory&product_type=Sweaters", wantStatus: http.StatusNoContent},
+		{name: "no slot", query: "", wantStatus: http.StatusNoContent},
+		{name: "unknown slot", query: "?slot=hat", wantStatus: http.StatusUnprocessableEntity},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			response := api.Get("/probe" + test.query)
+			if response.Code != test.wantStatus {
+				t.Fatalf("status = %d, want %d: %s", response.Code, test.wantStatus, response.Body)
+			}
+		})
 	}
 }
 
@@ -210,7 +289,7 @@ func TestPiecesAddIsIdempotentAndScopedToTheUser(t *testing.T) {
 	if err := repo.AddOwnedProducts(ctx, owner, []uuid.UUID{owned}); err != nil {
 		t.Fatalf("add: %v", err)
 	}
-	before, err := repo.ListOwnedProducts(ctx, owner, cursorParams(t, 10, ""))
+	before, err := repo.ListOwnedProducts(ctx, owner, models.OwnedProductFilter{}, cursorParams(t, 10, ""))
 	if err != nil {
 		t.Fatalf("list: %v", err)
 	}
@@ -219,7 +298,7 @@ func TestPiecesAddIsIdempotentAndScopedToTheUser(t *testing.T) {
 	if err := repo.AddOwnedProducts(ctx, owner, []uuid.UUID{owned, alsoOwned}); err != nil {
 		t.Fatalf("add again: %v", err)
 	}
-	after, err := repo.ListOwnedProducts(ctx, owner, cursorParams(t, 10, ""))
+	after, err := repo.ListOwnedProducts(ctx, owner, models.OwnedProductFilter{}, cursorParams(t, 10, ""))
 	if err != nil {
 		t.Fatalf("list: %v", err)
 	}
@@ -230,7 +309,7 @@ func TestPiecesAddIsIdempotentAndScopedToTheUser(t *testing.T) {
 		t.Errorf("re-adding moved added_at from %v to %v", before.Items[0].AddedAt, after.Items[1].AddedAt)
 	}
 
-	otherPieces, err := repo.ListOwnedProducts(ctx, other, cursorParams(t, 10, ""))
+	otherPieces, err := repo.ListOwnedProducts(ctx, other, models.OwnedProductFilter{}, cursorParams(t, 10, ""))
 	if err != nil {
 		t.Fatalf("list other user: %v", err)
 	}
@@ -266,7 +345,7 @@ func TestPiecesAddForeignKeyViolations(t *testing.T) {
 	}
 
 	// One statement, so the known product in the failed request was not added either.
-	pieces, err := repo.ListOwnedProducts(ctx, userID, cursorParams(t, 10, ""))
+	pieces, err := repo.ListOwnedProducts(ctx, userID, models.OwnedProductFilter{}, cursorParams(t, 10, ""))
 	if err != nil {
 		t.Fatalf("list: %v", err)
 	}
@@ -295,7 +374,7 @@ func TestPiecesRemove(t *testing.T) {
 		t.Errorf("removing again: status = %d, want %d", got, http.StatusNotFound)
 	}
 
-	otherPieces, err := repo.ListOwnedProducts(ctx, other, cursorParams(t, 10, ""))
+	otherPieces, err := repo.ListOwnedProducts(ctx, other, models.OwnedProductFilter{}, cursorParams(t, 10, ""))
 	if err != nil {
 		t.Fatalf("list other user: %v", err)
 	}
@@ -318,7 +397,7 @@ func TestPiecesCascadeWithUserAndProduct(t *testing.T) {
 	if _, err := db.ExecContext(ctx, `DELETE FROM products WHERE id = $1`, deletedProduct); err != nil {
 		t.Fatalf("delete product: %v", err)
 	}
-	pieces, err := repo.ListOwnedProducts(ctx, userID, cursorParams(t, 10, ""))
+	pieces, err := repo.ListOwnedProducts(ctx, userID, models.OwnedProductFilter{}, cursorParams(t, 10, ""))
 	if err != nil {
 		t.Fatalf("list: %v", err)
 	}
@@ -422,8 +501,8 @@ func TestBirdieAndClaireProductsListByFilter(t *testing.T) {
 		filter models.BirdieAndClaireProductFilter
 		want   []uuid.UUID
 	}{
-		{"excluded type", models.BirdieAndClaireProductFilter{Slots: []models.ProductSlot{models.SlotTop}, ExcludeProductType: sweaters}, []uuid.UUID{ownedTop, top, untypedTop}},
-		{"one type", models.BirdieAndClaireProductFilter{Slots: []models.ProductSlot{models.SlotTop}, ProductType: sweaters}, []uuid.UUID{sweater}},
+		{"excluded type", models.BirdieAndClaireProductFilter{Slots: []models.ProductSlot{models.SlotTop}, ProductTypeFilter: models.ProductTypeFilter{ExcludeProductType: sweaters}}, []uuid.UUID{ownedTop, top, untypedTop}},
+		{"one type", models.BirdieAndClaireProductFilter{Slots: []models.ProductSlot{models.SlotTop}, ProductTypeFilter: models.ProductTypeFilter{ProductType: sweaters}}, []uuid.UUID{sweater}},
 		{"several slots", models.BirdieAndClaireProductFilter{Slots: []models.ProductSlot{models.SlotBottom, models.SlotOnePiece}}, []uuid.UUID{bottom, onePiece}},
 		{"owned only", models.BirdieAndClaireProductFilter{Slots: []models.ProductSlot{models.SlotTop, models.SlotBottom}, OwnedOnly: true}, []uuid.UUID{ownedTop}},
 	}

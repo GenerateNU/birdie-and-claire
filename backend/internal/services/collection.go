@@ -15,9 +15,16 @@ import (
 // to someone else fails with errs.ErrNotFound.
 type CollectionService interface {
 	Create(ctx context.Context, params models.CreateCollectionParams) (models.CollectionSummaryResponse, error)
-	ListUserCollections(ctx context.Context, params pagination.CursorParams) (pagination.Page[models.CollectionSummaryResponse], error)
+	// ListUserCollections sets each collection's ContainsOutfit when outfitID is non-nil. An outfit that is missing
+	// or someone else's is in none of them.
+	ListUserCollections(ctx context.Context, outfitID *uuid.UUID, params pagination.CursorParams) (pagination.Page[models.CollectionSummaryResponse], error)
 	Get(ctx context.Context, id uuid.UUID) (models.Collection, error)
 	ListCollectionOutfits(ctx context.Context, id uuid.UUID, params pagination.CursorParams) (pagination.Page[models.OutfitResponse], error)
+	// AddOutfit also fails with errs.ErrNotFound for an outfit that is missing or someone else's. Adding an outfit the
+	// collection already holds succeeds.
+	AddOutfit(ctx context.Context, id uuid.UUID, outfitID uuid.UUID) error
+	// RemoveOutfit succeeds when the collection does not hold the outfit.
+	RemoveOutfit(ctx context.Context, id uuid.UUID, outfitID uuid.UUID) error
 	Update(ctx context.Context, id uuid.UUID, params models.UpdateCollectionParams) (models.Collection, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 }
@@ -34,8 +41,8 @@ func (s *collectionService) Create(ctx context.Context, params models.CreateColl
 	return s.repo.Collection.Create(ctx, params, auth.UserID(ctx))
 }
 
-func (s *collectionService) ListUserCollections(ctx context.Context, params pagination.CursorParams) (pagination.Page[models.CollectionSummaryResponse], error) {
-	rows, err := s.repo.Collection.ListByUser(ctx, auth.UserID(ctx), params)
+func (s *collectionService) ListUserCollections(ctx context.Context, outfitID *uuid.UUID, params pagination.CursorParams) (pagination.Page[models.CollectionSummaryResponse], error) {
+	rows, err := s.repo.Collection.ListByUser(ctx, auth.UserID(ctx), outfitID, params)
 	if err != nil {
 		return pagination.Page[models.CollectionSummaryResponse]{}, err
 	}
@@ -93,6 +100,14 @@ func (s *collectionService) ListCollectionOutfits(ctx context.Context, id uuid.U
 	}
 	page.NextCursor = &nextCursor
 	return page, nil
+}
+
+func (s *collectionService) AddOutfit(ctx context.Context, id uuid.UUID, outfitID uuid.UUID) error {
+	return s.repo.Collection.AddOutfit(ctx, id, outfitID, auth.UserID(ctx))
+}
+
+func (s *collectionService) RemoveOutfit(ctx context.Context, id uuid.UUID, outfitID uuid.UUID) error {
+	return s.repo.Collection.RemoveOutfit(ctx, id, outfitID, auth.UserID(ctx))
 }
 
 func (s *collectionService) Update(ctx context.Context, id uuid.UUID, params models.UpdateCollectionParams) (models.Collection, error) {

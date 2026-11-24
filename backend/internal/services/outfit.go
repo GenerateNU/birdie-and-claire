@@ -21,7 +21,9 @@ type OutfitService interface {
 	Create(ctx context.Context, params models.CreateOutfitParams) (models.OutfitDetailResponse, error)
 	Get(ctx context.Context, id uuid.UUID) (models.OutfitDetailResponse, error)
 	Update(ctx context.Context, id uuid.UUID, params models.UpdateOutfitParams) (models.OutfitDetailResponse, error)
-	List(ctx context.Context, params pagination.CursorParams) (models.ListOutfitsResponse, error)
+	// List keeps only the outfits in the collection collectionID names, when it is non-nil. A collection that is
+	// missing or someone else's fails with errs.ErrNotFound.
+	List(ctx context.Context, collectionID *uuid.UUID, params pagination.CursorParams) (models.ListOutfitsResponse, error)
 	Share(ctx context.Context, id uuid.UUID) (models.ShareOutfitResponse, error)
 	Unshare(ctx context.Context, id uuid.UUID) error
 	Delete(ctx context.Context, id uuid.UUID) error
@@ -104,8 +106,14 @@ func (s *outfitService) cartURL(cartItems ...string) string {
 	return s.shopURL + "/cart/" + strings.Join(cartItems, ",")
 }
 
-func (s *outfitService) List(ctx context.Context, params pagination.CursorParams) (models.ListOutfitsResponse, error) {
-	rows, total, err := s.repo.Outfit.List(ctx, auth.UserID(ctx), params)
+func (s *outfitService) List(ctx context.Context, collectionID *uuid.UUID, params pagination.CursorParams) (models.ListOutfitsResponse, error) {
+	userID := auth.UserID(ctx)
+	if collectionID != nil {
+		if _, err := s.repo.Collection.GetByID(ctx, *collectionID, userID); err != nil {
+			return models.ListOutfitsResponse{}, err
+		}
+	}
+	rows, total, err := s.repo.Outfit.List(ctx, userID, collectionID, params)
 	if err != nil {
 		return models.ListOutfitsResponse{}, err
 	}

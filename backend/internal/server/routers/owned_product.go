@@ -19,7 +19,7 @@ func OwnedProductRoutes(api huma.API, params types.RouteParams) {
 		Method:      http.MethodGet,
 		Path:        "/api/v1/users/me/pieces",
 		Summary:     "List the catalog products the authenticated user owns",
-		Description: "Most recently added first.",
+		Description: "Most recently added first, demo and inactive products included. product_type and exclude_product_type work as they do on list-birdie-and-claire-products.",
 		Tags:        []string{"pieces"},
 	}, controller.ListOwnedProducts)
 

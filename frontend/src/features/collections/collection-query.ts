@@ -8,11 +8,14 @@ export function isCollectionNotFound(error: ErrorModel | null): boolean {
   return error?.status === 404 || error?.status === 422;
 }
 
+/** A query `retry` for a request naming a collection: asking again won't make a missing one appear. */
+export function retryUnlessCollectionNotFound(failureCount: number, error: ErrorModel): boolean {
+  return !isCollectionNotFound(error) && failureCount < MAX_RETRIES;
+}
+
 export function collectionQueryOptions(collectionId: string) {
   return {
     ...getCollectionOptions({ path: { id: collectionId } }),
-    // Asking again won't make a missing collection appear.
-    retry: (failureCount: number, error: ErrorModel) =>
-      !isCollectionNotFound(error) && failureCount < MAX_RETRIES,
+    retry: retryUnlessCollectionNotFound,
   };
 }

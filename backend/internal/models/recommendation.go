@@ -42,10 +42,11 @@ func RegisterRecommendationEnums(r huma.Registry) {
 	schemas["RecommendationVibe"] = &huma.Schema{Type: huma.TypeString, Enum: enumValues(RecommendationVibes)}
 }
 
-func enumValues(values []string) []any {
+func enumValues[T ~string](values []T) []any {
 	enum := make([]any, len(values))
 	for i, value := range values {
-		enum[i] = value
+		// Huma compares a request's parsed string to each value with ==, which a named string type never equals.
+		enum[i] = string(value)
 	}
 	return enum
 }
