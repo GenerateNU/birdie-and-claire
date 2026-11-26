@@ -8,7 +8,7 @@ import (
 
 type ProductImage struct {
 	ID        uuid.UUID
-	ShopifyID int64
+	ShopifyID *int64
 	ProductID uuid.UUID
 	URL       string
 	AltText   *string

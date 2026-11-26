@@ -28,6 +28,8 @@ const (
 	SourceBirdieAndClaire ProductSource = "birdie_and_claire"
 	// SourceDemo is the seeded catalog, kept as filler until basics replace it.
 	SourceDemo ProductSource = "demo"
+	// SourceBasic is a plain staple the store does not sell, such as jeans or sneakers. It has no Shopify ID or handle.
+	SourceBasic ProductSource = "basic"
 )
 
 // ProductCategory is a tab of the Birdie & Claire catalog in the Add Items picker. The slots and product types each one
@@ -37,12 +39,12 @@ type ProductCategory string
 // Product represents a row from the products table, without its embedding.
 type Product struct {
 	ID          uuid.UUID     `json:"id"`
-	ShopifyID   int64         `json:"shopify_id"`
-	Handle      string        `json:"handle"`
+	ShopifyID   *int64        `json:"shopify_id" doc:"null for a product the store does not sell"`
+	Handle      *string       `json:"handle" doc:"null for a product the store does not sell"`
 	Title       string        `json:"title"`
 	ProductType *string       `json:"product_type"`
 	Slot        ProductSlot   `json:"slot" enum:"top,bottom,accessory,shoe,one_piece"`
-	Source      ProductSource `json:"source" enum:"birdie_and_claire,demo" doc:"birdie_and_claire for a product sold in the store, demo for seeded filler that is not for sale"`
+	Source      ProductSource `json:"source" enum:"birdie_and_claire,demo,basic" doc:"birdie_and_claire for a product sold in the store, demo for seeded filler and basic for a staple, neither of which is for sale"`
 	Tags        []string      `json:"tags" nullable:"false"`
 	CreatedAt   time.Time     `json:"created_at"`
 	UpdatedAt   time.Time     `json:"updated_at"`
@@ -86,7 +88,7 @@ var (
 	ShoeTypes        = []string{"sneakers", "boots", "sandals", "heels", "flats"}
 	ProductTagValues = ProductTags{
 		Colors: []string{"black", "white", "grey", "charcoal", "navy", "blue", "green", "olive", "red", "pink", "purple",
-			"orange", "yellow", "brown", "beige", "cream", "gold", "silver", "bronze", "multi"},
+			"orange", "yellow", "brown", "beige", "camel", "cream", "gold", "silver", "bronze", "multi"},
 		Formality: []string{"casual", "smart_casual", "semi_formal", "formal"},
 		Occasions: []string{"everyday", "work", "party", "date_night", "wedding_guest", "brunch", "beach", "travel",
 			"workout", "lounge", "funeral"},
@@ -112,6 +114,19 @@ func (a *ProductAttributes) Scan(src any) error {
 		return fmt.Errorf("scan product attributes: unexpected type %T", src)
 	}
 	return json.Unmarshal(raw, a)
+}
+
+// Basic is one entry of data/basics.json: a staple the loader adds as a product with source basic. Its attributes are
+// written by hand, so nothing calls an LLM to load it.
+type Basic struct {
+	ID          uuid.UUID     `json:"id"`
+	Name        string        `json:"name"`
+	ProductType string        `json:"product_type"`
+	Slot        ProductSlot   `json:"slot"`
+	Source      ProductSource `json:"source"`
+	// ImageFile is the transparent PNG's name inside the images folder.
+	ImageFile string `json:"image_file"`
+	ProductAttributes
 }
 
 // ProductPurchaseInfo is what an outfit's detail needs to decide whether a product can be bought.

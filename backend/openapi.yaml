@@ -53,7 +53,10 @@ components:
           format: date-time
           type: string
         handle:
-          type: string
+          description: null for a product the store does not sell
+          type:
+            - string
+            - "null"
         id:
           type: string
         image_url:
@@ -69,8 +72,11 @@ components:
             - string
             - "null"
         shopify_id:
+          description: null for a product the store does not sell
           format: int64
-          type: integer
+          type:
+            - integer
+            - "null"
         slot:
           enum:
             - top
@@ -80,10 +86,11 @@ components:
             - one_piece
           type: string
         source:
-          description: birdie_and_claire for a product sold in the store, demo for seeded filler that is not for sale
+          description: birdie_and_claire for a product sold in the store, demo for seeded filler and basic for a staple, neither of which is for sale
           enum:
             - birdie_and_claire
             - demo
+            - basic
           type: string
         tags:
           items:
@@ -369,7 +376,10 @@ components:
           format: date-time
           type: string
         handle:
-          type: string
+          description: null for a product the store does not sell
+          type:
+            - string
+            - "null"
         id:
           type: string
         image_url:
@@ -385,8 +395,11 @@ components:
             - string
             - "null"
         shopify_id:
+          description: null for a product the store does not sell
           format: int64
-          type: integer
+          type:
+            - integer
+            - "null"
         slot:
           enum:
             - top
@@ -396,10 +409,11 @@ components:
             - one_piece
           type: string
         source:
-          description: birdie_and_claire for a product sold in the store, demo for seeded filler that is not for sale
+          description: birdie_and_claire for a product sold in the store, demo for seeded filler and basic for a staple, neither of which is for sale
           enum:
             - birdie_and_claire
             - demo
+            - basic
           type: string
         tags:
           items:
@@ -540,7 +554,10 @@ components:
           format: date-time
           type: string
         handle:
-          type: string
+          description: null for a product the store does not sell
+          type:
+            - string
+            - "null"
         id:
           type: string
         image_url:
@@ -553,8 +570,11 @@ components:
             - string
             - "null"
         shopify_id:
+          description: null for a product the store does not sell
           format: int64
-          type: integer
+          type:
+            - integer
+            - "null"
         slot:
           enum:
             - top
@@ -564,10 +584,11 @@ components:
             - one_piece
           type: string
         source:
-          description: birdie_and_claire for a product sold in the store, demo for seeded filler that is not for sale
+          description: birdie_and_claire for a product sold in the store, demo for seeded filler and basic for a staple, neither of which is for sale
           enum:
             - birdie_and_claire
             - demo
+            - basic
           type: string
         tags:
           items:
@@ -711,7 +732,10 @@ components:
           format: date-time
           type: string
         handle:
-          type: string
+          description: null for a product the store does not sell
+          type:
+            - string
+            - "null"
         id:
           type: string
         image_url:
@@ -724,8 +748,11 @@ components:
             - string
             - "null"
         shopify_id:
+          description: null for a product the store does not sell
           format: int64
-          type: integer
+          type:
+            - integer
+            - "null"
         slot:
           enum:
             - top
@@ -735,10 +762,11 @@ components:
             - one_piece
           type: string
         source:
-          description: birdie_and_claire for a product sold in the store, demo for seeded filler that is not for sale
+          description: birdie_and_claire for a product sold in the store, demo for seeded filler and basic for a staple, neither of which is for sale
           enum:
             - birdie_and_claire
             - demo
+            - basic
           type: string
         tags:
           items:

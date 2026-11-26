@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -102,6 +103,18 @@ func isNotFound(err error) bool {
 	}
 	code := apiErr.ErrorCode()
 	return code == "NotFound" || code == "NoSuchKey" || code == "404"
+}
+
+func (s *s3Store) PutObject(ctx context.Context, key, contentType string, body []byte) error {
+	if _, err := s.client.PutObject(ctx, &s3.PutObjectInput{
+		Bucket:      aws.String(s.bucket),
+		Key:         aws.String(key),
+		ContentType: aws.String(contentType),
+		Body:        bytes.NewReader(body),
+	}); err != nil {
+		return fmt.Errorf("put object %s: %w", key, err)
+	}
+	return nil
 }
 
 func (s *s3Store) DeleteObject(ctx context.Context, key string) error {

@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"math"
 	"slices"
 	"strings"
 
@@ -197,7 +196,7 @@ func (s *catalogSyncService) refreshEmbedding(ctx context.Context, product shopi
 	if synced.EmbeddingHash != nil && *synced.EmbeddingHash == hash {
 		return nil
 	}
-	embedding, err := s.embedProduct(ctx, text, imageURL)
+	embedding, err := embedder.EmbedProduct(ctx, s.embedder, text, imageURL)
 	if err != nil {
 		return err
 	}
@@ -263,36 +262,4 @@ func isMarketingTag(tag string) bool {
 func hashInputs(inputs ...string) string {
 	sum := sha256.Sum256([]byte(strings.Join(inputs, "\n")))
 	return hex.EncodeToString(sum[:])
-}
-
-// embedProduct sums the text and image vectors and normalizes the result, which
-// is how the seeded products' vectors were built.
-func (s *catalogSyncService) embedProduct(ctx context.Context, text, imageURL string) ([]float32, error) {
-	embedding, err := s.embedder.EmbedText(ctx, text)
-	if err != nil {
-		return nil, err
-	}
-	imageEmbedding, err := s.embedder.EmbedImage(ctx, imageURL)
-	if err != nil {
-		return nil, err
-	}
-	if len(imageEmbedding) != len(embedding) {
-		return nil, fmt.Errorf("text vector has %d values and image vector has %d", len(embedding), len(imageEmbedding))
-	}
-	for i := range embedding {
-		embedding[i] += imageEmbedding[i]
-	}
-
-	var squares float64
-	for _, value := range embedding {
-		squares += float64(value) * float64(value)
-	}
-	norm := float32(math.Sqrt(squares))
-	if norm == 0 {
-		return nil, errors.New("embedding is all zeros")
-	}
-	for i := range embedding {
-		embedding[i] /= norm
-	}
-	return embedding, nil
 }
