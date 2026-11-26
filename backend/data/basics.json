@@ -1,0 +1,658 @@
+[
+  {
+    "id": "22e8e7f2-752b-4744-98c1-4b314b660e79",
+    "name": "Black Jeans",
+    "product_type": "Jeans",
+    "slot": "bottom",
+    "source": "basic",
+    "image_file": "black-jeans.png",
+    "product_target": "women",
+    "bottom_type": "pants",
+    "tags": {
+      "colors": ["black"],
+      "formality": ["casual"],
+      "occasions": ["everyday"],
+      "season": ["spring", "summer", "fall", "winter"],
+      "pattern": ["solid"],
+      "fabric": ["denim"],
+      "fit": ["slim"]
+    }
+  },
+  {
+    "id": "0ba7f70e-29d4-4af9-83c0-91bf0ecc28e1",
+    "name": "White Jeans",
+    "product_type": "Jeans",
+    "slot": "bottom",
+    "source": "basic",
+    "image_file": "white-jeans.png",
+    "product_target": "women",
+    "bottom_type": "pants",
+    "tags": {
+      "colors": ["white"],
+      "formality": ["casual"],
+      "occasions": ["everyday"],
+      "season": ["spring", "summer"],
+      "pattern": ["solid"],
+      "fabric": ["denim"],
+      "fit": ["regular"]
+    }
+  },
+  {
+    "id": "05b9f154-cc1a-4499-9bb9-ed516b593d05",
+    "name": "Denim Jeans",
+    "product_type": "Jeans",
+    "slot": "bottom",
+    "source": "basic",
+    "image_file": "denim-jeans.png",
+    "product_target": "women",
+    "bottom_type": "pants",
+    "tags": {
+      "colors": ["blue"],
+      "formality": ["casual"],
+      "occasions": ["everyday"],
+      "season": ["spring", "summer", "fall", "winter"],
+      "pattern": ["solid"],
+      "fabric": ["denim"],
+      "fit": ["regular"]
+    }
+  },
+  {
+    "id": "66ae0946-5873-4cb6-ace5-cddaf7e6530a",
+    "name": "Camel Jeans",
+    "product_type": "Jeans",
+    "slot": "bottom",
+    "source": "basic",
+    "image_file": "camel-jeans.png",
+    "product_target": "women",
+    "bottom_type": "pants",
+    "tags": {
+      "colors": ["camel"],
+      "formality": ["casual"],
+      "occasions": ["everyday"],
+      "season": ["spring", "fall"],
+      "pattern": ["solid"],
+      "fabric": ["denim"],
+      "fit": ["regular"]
+    }
+  },
+  {
+    "id": "d62180d1-d907-4111-844c-f85705181294",
+    "name": "Grey Jeans",
+    "product_type": "Jeans",
+    "slot": "bottom",
+    "source": "basic",
+    "image_file": "grey-jeans.png",
+    "product_target": "women",
+    "bottom_type": "pants",
+    "tags": {
+      "colors": ["grey"],
+      "formality": ["casual"],
+      "occasions": ["everyday"],
+      "season": ["spring", "summer", "fall", "winter"],
+      "pattern": ["solid"],
+      "fabric": ["denim"],
+      "fit": ["regular"]
+    }
+  },
+  {
+    "id": "2d8a10ad-f37f-4089-9d0a-9bd3eea2c1cf",
+    "name": "Black Trousers",
+    "product_type": "Trousers",
+    "slot": "bottom",
+    "source": "basic",
+    "image_file": "black-trousers.png",
+    "product_target": "women",
+    "bottom_type": "pants",
+    "tags": {
+      "colors": ["black"],
+      "formality": ["formal", "smart_casual"],
+      "occasions": ["work", "everyday"],
+      "season": ["spring", "summer", "fall", "winter"],
+      "pattern": ["solid"],
+      "fabric": ["synthetic"],
+      "fit": ["regular"]
+    }
+  },
+  {
+    "id": "9644f1da-72ae-4e25-b9ec-89ab2eb35618",
+    "name": "Camel Trousers",
+    "product_type": "Trousers",
+    "slot": "bottom",
+    "source": "basic",
+    "image_file": "camel-trousers.png",
+    "product_target": "women",
+    "bottom_type": "pants",
+    "tags": {
+      "colors": ["camel"],
+      "formality": ["formal", "smart_casual"],
+      "occasions": ["work", "everyday"],
+      "season": ["spring", "fall"],
+      "pattern": ["solid"],
+      "fabric": ["synthetic"],
+      "fit": ["regular"]
+    }
+  },
+  {
+    "id": "7869d32b-751f-4f57-8b54-8d82cfff081a",
+    "name": "Grey Trousers",
+    "product_type": "Trousers",
+    "slot": "bottom",
+    "source": "basic",
+    "image_file": "grey-trousers.png",
+    "product_target": "women",
+    "bottom_type": "pants",
+    "tags": {
+      "colors": ["grey"],
+      "formality": ["formal", "smart_casual"],
+      "occasions": ["work", "everyday"],
+      "season": ["spring", "summer", "fall", "winter"],
+      "pattern": ["solid"],
+      "fabric": ["synthetic"],
+      "fit": ["regular"]
+    }
+  },
+  {
+    "id": "79e22676-c780-48a0-8fb2-87d37cd3f236",
+    "name": "Black Skirt",
+    "product_type": "Skirt",
+    "slot": "bottom",
+    "source": "basic",
+    "image_file": "black-skirt.png",
+    "product_target": "women",
+    "bottom_type": "skirt",
+    "tags": {
+      "colors": ["black"],
+      "formality": ["casual", "smart_casual"],
+      "occasions": ["everyday", "work", "party"],
+      "season": ["spring", "summer", "fall", "winter"],
+      "pattern": ["solid"],
+      "fabric": ["synthetic"],
+      "fit": ["regular"]
+    }
+  },
+  {
+    "id": "d791bca6-6b28-4c57-b5b9-8d7e18891004",
+    "name": "Denim Skirt",
+    "product_type": "Skirt",
+    "slot": "bottom",
+    "source": "basic",
+    "image_file": "denim-skirt.png",
+    "product_target": "women",
+    "bottom_type": "skirt",
+    "tags": {
+      "colors": ["blue"],
+      "formality": ["casual"],
+      "occasions": ["everyday"],
+      "season": ["spring", "summer"],
+      "pattern": ["solid"],
+      "fabric": ["denim"],
+      "fit": ["regular"]
+    }
+  },
+  {
+    "id": "b8b410b5-eda5-4c89-b621-b3c255c2e056",
+    "name": "Black Shorts",
+    "product_type": "Shorts",
+    "slot": "bottom",
+    "source": "basic",
+    "image_file": "black-shorts.png",
+    "product_target": "women",
+    "bottom_type": "shorts",
+    "tags": {
+      "colors": ["black"],
+      "formality": ["casual"],
+      "occasions": ["everyday", "beach"],
+      "season": ["summer"],
+      "pattern": ["solid"],
+      "fabric": ["cotton"],
+      "fit": ["regular"]
+    }
+  },
+  {
+    "id": "74d8a509-8bcd-4ca7-9940-fc423905f8b9",
+    "name": "White Shorts",
+    "product_type": "Shorts",
+    "slot": "bottom",
+    "source": "basic",
+    "image_file": "white-shorts.png",
+    "product_target": "women",
+    "bottom_type": "shorts",
+    "tags": {
+      "colors": ["white"],
+      "formality": ["casual"],
+      "occasions": ["everyday", "beach"],
+      "season": ["summer"],
+      "pattern": ["solid"],
+      "fabric": ["linen"],
+      "fit": ["relaxed"]
+    }
+  },
+  {
+    "id": "0730316d-d89c-4438-8300-f3029af60c6f",
+    "name": "White Sneakers",
+    "product_type": "Sneakers",
+    "slot": "shoe",
+    "source": "basic",
+    "image_file": "white-sneakers.png",
+    "product_target": "women",
+    "shoe_type": "sneakers",
+    "tags": {
+      "colors": ["white"],
+      "formality": ["casual"],
+      "occasions": ["everyday", "travel"],
+      "season": ["spring", "summer", "fall"],
+      "pattern": ["solid"],
+      "fabric": ["leather"],
+      "fit": ["regular"]
+    }
+  },
+  {
+    "id": "900500e3-a248-436b-b93c-56016ac778e6",
+    "name": "Black Sneakers",
+    "product_type": "Sneakers",
+    "slot": "shoe",
+    "source": "basic",
+    "image_file": "black-sneakers.png",
+    "product_target": "women",
+    "shoe_type": "sneakers",
+    "tags": {
+      "colors": ["black"],
+      "formality": ["casual"],
+      "occasions": ["everyday", "travel"],
+      "season": ["spring", "summer", "fall", "winter"],
+      "pattern": ["solid"],
+      "fabric": ["synthetic"],
+      "fit": ["regular"]
+    }
+  },
+  {
+    "id": "99bb7041-40c6-4ba6-9e40-38900f4332c7",
+    "name": "Black Boots",
+    "product_type": "Boots",
+    "slot": "shoe",
+    "source": "basic",
+    "image_file": "black-boots.png",
+    "product_target": "women",
+    "shoe_type": "boots",
+    "tags": {
+      "colors": ["black"],
+      "formality": ["casual", "smart_casual"],
+      "occasions": ["everyday"],
+      "season": ["fall", "winter"],
+      "pattern": ["solid"],
+      "fabric": ["leather"],
+      "fit": ["regular"]
+    }
+  },
+  {
+    "id": "33342462-c1dc-4100-bdd1-7d680385cbe5",
+    "name": "Camel Boots",
+    "product_type": "Boots",
+    "slot": "shoe",
+    "source": "basic",
+    "image_file": "camel-boots.png",
+    "product_target": "women",
+    "shoe_type": "boots",
+    "tags": {
+      "colors": ["camel"],
+      "formality": ["casual", "smart_casual"],
+      "occasions": ["everyday"],
+      "season": ["fall", "winter"],
+      "pattern": ["solid"],
+      "fabric": ["leather"],
+      "fit": ["regular"]
+    }
+  },
+  {
+    "id": "5914fcfd-9462-41b3-a98e-3ab248301d4b",
+    "name": "Black Loafers",
+    "product_type": "Loafers",
+    "slot": "shoe",
+    "source": "basic",
+    "image_file": "black-loafers.png",
+    "product_target": "women",
+    "shoe_type": "flats",
+    "tags": {
+      "colors": ["black"],
+      "formality": ["smart_casual", "formal"],
+      "occasions": ["work", "everyday"],
+      "season": ["spring", "summer", "fall", "winter"],
+      "pattern": ["solid"],
+      "fabric": ["leather"],
+      "fit": ["regular"]
+    }
+  },
+  {
+    "id": "27d401ac-f72d-429c-a0fb-15db96ec6190",
+    "name": "Black Flats",
+    "product_type": "Flats",
+    "slot": "shoe",
+    "source": "basic",
+    "image_file": "black-ballet-flats.png",
+    "product_target": "women",
+    "shoe_type": "flats",
+    "tags": {
+      "colors": ["black"],
+      "formality": ["casual", "smart_casual"],
+      "occasions": ["everyday", "work"],
+      "season": ["spring", "summer", "fall"],
+      "pattern": ["solid"],
+      "fabric": ["leather"],
+      "fit": ["regular"]
+    }
+  },
+  {
+    "id": "e2b89e9b-8d7e-4538-9b2a-cc82a434b60b",
+    "name": "Black Pumps",
+    "product_type": "Pumps",
+    "slot": "shoe",
+    "source": "basic",
+    "image_file": "black-pumps.png",
+    "product_target": "women",
+    "shoe_type": "heels",
+    "tags": {
+      "colors": ["black"],
+      "formality": ["formal", "semi_formal"],
+      "occasions": ["work", "party", "date_night"],
+      "season": ["spring", "summer", "fall", "winter"],
+      "pattern": ["solid"],
+      "fabric": ["leather"],
+      "fit": ["regular"]
+    }
+  },
+  {
+    "id": "2ff6a43c-5b79-41a5-b765-7a2ebdfe66ff",
+    "name": "Black Sandals",
+    "product_type": "Sandals",
+    "slot": "shoe",
+    "source": "basic",
+    "image_file": "black-sandals.png",
+    "product_target": "women",
+    "shoe_type": "sandals",
+    "tags": {
+      "colors": ["black"],
+      "formality": ["casual"],
+      "occasions": ["everyday", "beach"],
+      "season": ["summer"],
+      "pattern": ["solid"],
+      "fabric": ["leather"],
+      "fit": ["regular"]
+    }
+  },
+  {
+    "id": "f3f42ab7-03df-4d04-9b58-292151d5e68b",
+    "name": "White Sandals",
+    "product_type": "Sandals",
+    "slot": "shoe",
+    "source": "basic",
+    "image_file": "white-sandals.png",
+    "product_target": "women",
+    "shoe_type": "sandals",
+    "tags": {
+      "colors": ["white"],
+      "formality": ["casual"],
+      "occasions": ["everyday", "beach"],
+      "season": ["summer"],
+      "pattern": ["solid"],
+      "fabric": ["synthetic"],
+      "fit": ["regular"]
+    }
+  },
+  {
+    "id": "8b69e8c9-e8f7-4dee-a105-621ad57d106d",
+    "name": "Camel Sandals",
+    "product_type": "Sandals",
+    "slot": "shoe",
+    "source": "basic",
+    "image_file": "camel-sandals.png",
+    "product_target": "women",
+    "shoe_type": "sandals",
+    "tags": {
+      "colors": ["camel"],
+      "formality": ["casual"],
+      "occasions": ["everyday"],
+      "season": ["summer"],
+      "pattern": ["solid"],
+      "fabric": ["leather"],
+      "fit": ["regular"]
+    }
+  },
+  {
+    "id": "bc4c3644-a093-4c44-9af8-b2b680107ba4",
+    "name": "White Tee",
+    "product_type": "Tee",
+    "slot": "top",
+    "source": "basic",
+    "image_file": "white-tee.png",
+    "product_target": "women",
+    "neckline_type": "modest",
+    "tags": {
+      "colors": ["white"],
+      "formality": ["casual"],
+      "occasions": ["everyday"],
+      "season": ["spring", "summer", "fall"],
+      "pattern": ["solid"],
+      "fabric": ["cotton"],
+      "fit": ["regular"]
+    }
+  },
+  {
+    "id": "94656dcb-40e1-4908-81b0-3cb61cb62e29",
+    "name": "Black Tee",
+    "product_type": "Tee",
+    "slot": "top",
+    "source": "basic",
+    "image_file": "black-tee.png",
+    "product_target": "women",
+    "neckline_type": "modest",
+    "tags": {
+      "colors": ["black"],
+      "formality": ["casual"],
+      "occasions": ["everyday"],
+      "season": ["spring", "summer", "fall"],
+      "pattern": ["solid"],
+      "fabric": ["cotton"],
+      "fit": ["regular"]
+    }
+  },
+  {
+    "id": "b36e0969-c186-4dc4-897c-1bb54a8395d2",
+    "name": "White Button-Down",
+    "product_type": "Button-Down",
+    "slot": "top",
+    "source": "basic",
+    "image_file": "white-button-down.png",
+    "product_target": "women",
+    "neckline_type": "modest",
+    "tags": {
+      "colors": ["white"],
+      "formality": ["smart_casual", "formal"],
+      "occasions": ["work", "everyday"],
+      "season": ["spring", "summer", "fall", "winter"],
+      "pattern": ["solid"],
+      "fabric": ["cotton"],
+      "fit": ["regular"]
+    }
+  },
+  {
+    "id": "e5023bef-c69b-4fc5-8bf3-5f1d18f603d3",
+    "name": "Black Camisole",
+    "product_type": "Camisole",
+    "slot": "top",
+    "source": "basic",
+    "image_file": "black-camisole.png",
+    "product_target": "women",
+    "neckline_type": "low",
+    "tags": {
+      "colors": ["black"],
+      "formality": ["casual", "smart_casual"],
+      "occasions": ["everyday", "date_night", "party"],
+      "season": ["spring", "summer"],
+      "pattern": ["solid"],
+      "fabric": ["silk"],
+      "fit": ["slim"]
+    }
+  },
+  {
+    "id": "9a4567a3-64e8-49b5-93ad-44248b0e5e43",
+    "name": "Camel Trench",
+    "product_type": "Trench",
+    "slot": "top",
+    "source": "basic",
+    "image_file": "camel-trench.png",
+    "product_target": "women",
+    "tags": {
+      "colors": ["camel"],
+      "formality": ["smart_casual", "formal"],
+      "occasions": ["work", "everyday"],
+      "season": ["fall", "spring"],
+      "pattern": ["solid"],
+      "fabric": ["cotton"],
+      "fit": ["regular"]
+    }
+  },
+  {
+    "id": "ef631c08-00c5-480f-8ada-3a440bb10f08",
+    "name": "Black Blazer",
+    "product_type": "Blazer",
+    "slot": "top",
+    "source": "basic",
+    "image_file": "black-blazer.png",
+    "product_target": "women",
+    "tags": {
+      "colors": ["black"],
+      "formality": ["formal", "smart_casual"],
+      "occasions": ["work", "party"],
+      "season": ["spring", "summer", "fall", "winter"],
+      "pattern": ["solid"],
+      "fabric": ["synthetic"],
+      "fit": ["regular"]
+    }
+  },
+  {
+    "id": "0684b7a0-a7f7-40bd-9be3-0b0b5788f1e3",
+    "name": "Denim Jacket",
+    "product_type": "Denim Jacket",
+    "slot": "top",
+    "source": "basic",
+    "image_file": "denim-jacket.png",
+    "product_target": "women",
+    "tags": {
+      "colors": ["blue"],
+      "formality": ["casual"],
+      "occasions": ["everyday", "travel"],
+      "season": ["spring", "summer", "fall"],
+      "pattern": ["solid"],
+      "fabric": ["denim"],
+      "fit": ["regular"]
+    }
+  },
+  {
+    "id": "8b776307-3c6e-4b0b-9b2c-a2c74862c264",
+    "name": "Black Belt",
+    "product_type": "Belt",
+    "slot": "accessory",
+    "source": "basic",
+    "image_file": "black-belt.png",
+    "product_target": "women",
+    "tags": {
+      "colors": ["black"],
+      "formality": ["casual", "formal"],
+      "occasions": ["everyday", "work"],
+      "season": ["spring", "summer", "fall", "winter"],
+      "pattern": ["solid"],
+      "fabric": ["leather"],
+      "fit": ["regular"]
+    }
+  },
+  {
+    "id": "732c5073-0de9-4994-a74a-46730b6b8b4d",
+    "name": "Camel Belt",
+    "product_type": "Belt",
+    "slot": "accessory",
+    "source": "basic",
+    "image_file": "camel-belt.png",
+    "product_target": "women",
+    "tags": {
+      "colors": ["camel"],
+      "formality": ["casual", "formal"],
+      "occasions": ["everyday", "work"],
+      "season": ["spring", "summer", "fall", "winter"],
+      "pattern": ["solid"],
+      "fabric": ["leather"],
+      "fit": ["regular"]
+    }
+  },
+  {
+    "id": "bc34972c-b61c-435c-91b1-a67562766ba7",
+    "name": "Black Bag",
+    "product_type": "Bag",
+    "slot": "accessory",
+    "source": "basic",
+    "image_file": "black-bag.png",
+    "product_target": "women",
+    "tags": {
+      "colors": ["black"],
+      "formality": ["casual", "formal"],
+      "occasions": ["everyday", "work"],
+      "season": ["spring", "summer", "fall", "winter"],
+      "pattern": ["solid"],
+      "fabric": ["leather"],
+      "fit": ["regular"]
+    }
+  },
+  {
+    "id": "634f4a34-2e7e-4491-a7fc-92f1b84ba0ef",
+    "name": "Camel Bag",
+    "product_type": "Bag",
+    "slot": "accessory",
+    "source": "basic",
+    "image_file": "camel-bag.png",
+    "product_target": "women",
+    "tags": {
+      "colors": ["camel"],
+      "formality": ["casual"],
+      "occasions": ["everyday", "travel"],
+      "season": ["spring", "summer", "fall", "winter"],
+      "pattern": ["solid"],
+      "fabric": ["leather"],
+      "fit": ["regular"]
+    }
+  },
+  {
+    "id": "0908cd58-42fd-4300-a1e4-06903e15d458",
+    "name": "Gold Hoops",
+    "product_type": "Earrings",
+    "slot": "accessory",
+    "source": "basic",
+    "image_file": "gold-hoops.png",
+    "product_target": "women",
+    "tags": {
+      "colors": ["gold"],
+      "formality": ["casual", "formal"],
+      "occasions": ["everyday", "party", "date_night"],
+      "season": ["spring", "summer", "fall", "winter"],
+      "pattern": ["solid"],
+      "fabric": ["metal"],
+      "fit": ["regular"]
+    }
+  },
+  {
+    "id": "c3e3db8d-ee94-42e6-a40e-935c481b065b",
+    "name": "Black Sunglasses",
+    "product_type": "Sunglasses",
+    "slot": "accessory",
+    "source": "basic",
+    "image_file": "black-sunglasses.png",
+    "product_target": "women",
+    "tags": {
+      "colors": ["black"],
+      "formality": ["casual"],
+      "occasions": ["everyday", "beach", "travel"],
+      "season": ["spring", "summer"],
+      "pattern": ["solid"],
+      "fabric": ["synthetic"],
+      "fit": ["regular"]
+    }
+  }
+]
