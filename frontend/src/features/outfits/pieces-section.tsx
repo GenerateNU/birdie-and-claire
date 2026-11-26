@@ -89,14 +89,15 @@ export function PiecesSection({ products, addAllToCartUrl }: PiecesSectionProps)
 
 /**
  * A Birdie & Claire piece links to its store page, and to its cart when it can be bought. A demo
- * piece is filler with no page there. A piece the user owns has no cart button.
+ * or basic piece has no page there, so its row is just the image and name. A piece the user owns
+ * has no cart button.
  */
 function OutfitPieceRow({ product }: OutfitPieceRowProps) {
-  const isStoreProduct = product.source === "birdie_and_claire";
+  const storeHandle = product.source === "birdie_and_claire" ? product.handle : null;
 
-  const viewProductLink = (variant: "primary" | "secondary") => (
+  const viewProductLink = (handle: string, variant: "primary" | "secondary") => (
     <ExternalLink
-      href={`${STORE_PRODUCT_URL}/${encodeURIComponent(product.handle)}`}
+      href={`${STORE_PRODUCT_URL}/${encodeURIComponent(handle)}`}
       variant={variant}
       size="sm"
       trailingIcon={ArrowSquareOutIcon}
@@ -112,17 +113,17 @@ function OutfitPieceRow({ product }: OutfitPieceRowProps) {
         name={product.title}
         detail="You own this"
         src={product.image_url}
-        action={isStoreProduct ? viewProductLink("secondary") : undefined}
+        action={storeHandle === null ? undefined : viewProductLink(storeHandle, "secondary")}
       />
     );
   }
 
-  if (!isStoreProduct) {
+  if (storeHandle === null) {
     return (
       <PieceRow
         type="owned"
         name={product.title}
-        // Demo pieces have no brand, so the row names the kind of piece. Some have no type.
+        // Demo and basic pieces have no brand, so the row names the kind of piece. Some have no type.
         detail={product.product_type ?? ""}
         src={product.image_url}
       />
@@ -147,7 +148,7 @@ function OutfitPieceRow({ product }: OutfitPieceRowProps) {
           </ExternalLink>
         )
       }
-      secondaryAction={viewProductLink("primary")}
+      secondaryAction={viewProductLink(storeHandle, "primary")}
     />
   );
 }
