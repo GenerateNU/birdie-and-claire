@@ -406,13 +406,14 @@ func scanOutfitsWithProducts(rows *sql.Rows, extraTargets ...any) ([]models.Outf
 // productColumns scans the p.id through first_image.url columns the outfit queries select. Every column is NULL on
 // the LEFT JOIN's row for an outfit with no products.
 type productColumns struct {
-	id                    uuid.NullUUID
-	shopifyID             sql.NullInt64
-	handle, title         sql.NullString
-	slot, source          sql.NullString
-	productType, imageURL *string
-	tags                  []string
-	createdAt, updatedAt  sql.NullTime
+	id                   uuid.NullUUID
+	shopifyID            *int64
+	title                sql.NullString
+	slot, source         sql.NullString
+	handle, productType  *string
+	imageURL             *string
+	tags                 []string
+	createdAt, updatedAt sql.NullTime
 }
 
 func (c *productColumns) targets() []any {
@@ -427,8 +428,8 @@ func (c *productColumns) response() (models.ProductResponse, bool) {
 	return models.ProductResponse{
 		Product: models.Product{
 			ID:          c.id.UUID,
-			ShopifyID:   c.shopifyID.Int64,
-			Handle:      c.handle.String,
+			ShopifyID:   c.shopifyID,
+			Handle:      c.handle,
 			Title:       c.title.String,
 			ProductType: c.productType,
 			Slot:        models.ProductSlot(c.slot.String),

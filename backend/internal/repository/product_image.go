@@ -16,6 +16,8 @@ type ProductImageRepository interface {
 	// ReplaceShopifyImages makes the product's images match images: it upserts each one on its shopify_id and deletes
 	// the product's images that are not in the list.
 	ReplaceShopifyImages(ctx context.Context, productID uuid.UUID, images []shopify.ShopifyImage) error
+	// UpsertBasicImage inserts or updates an image that has no Shopify ID, on image.ID.
+	UpsertBasicImage(ctx context.Context, image models.ProductImage) error
 }
 
 type productImageRepository struct {
@@ -61,6 +63,26 @@ func (r *productImageRepository) FindByProductID(ctx context.Context, productID 
 		return nil, fmt.Errorf("iterate product images: %w", err)
 	}
 	return images, nil
+}
+
+func (r *productImageRepository) UpsertBasicImage(ctx context.Context, image models.ProductImage) error {
+	_, err := r.db.ExecContext(ctx, `
+		INSERT INTO product_images (id, product_id, url, alt_text, width, height, position)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		ON CONFLICT (id) DO UPDATE SET
+			url = EXCLUDED.url,
+			alt_text = EXCLUDED.alt_text,
+			width = EXCLUDED.width,
+			height = EXCLUDED.height,
+			position = EXCLUDED.position,
+			updated_at = now()
+		WHERE (product_images.url, product_images.alt_text, product_images.width, product_images.height, product_images.position)
+			IS DISTINCT FROM (EXCLUDED.url, EXCLUDED.alt_text, EXCLUDED.width, EXCLUDED.height, EXCLUDED.position)
+	`, image.ID, image.ProductID, image.URL, image.AltText, image.Width, image.Height, image.Position)
+	if err != nil {
+		return fmt.Errorf("upsert basic image %s: %w", image.ID, err)
+	}
+	return nil
 }
 
 func (r *productImageRepository) ReplaceShopifyImages(ctx context.Context, productID uuid.UUID, images []shopify.ShopifyImage) error {

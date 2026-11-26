@@ -26,6 +26,9 @@ type ProductRepository interface {
 	GetEmbedding(ctx context.Context, productID uuid.UUID) ([]float32, models.ProductSlot, error)
 	// UpsertShopifyProduct inserts or updates the product as a Birdie & Claire product and marks it active.
 	UpsertShopifyProduct(ctx context.Context, product shopify.ShopifyProduct, slot models.ProductSlot) (SyncedProduct, error)
+	// UpsertBasic inserts or updates the basic on its fixed ID and marks it active. The embedding hash it returns is nil
+	// until SaveEmbedding has stored a vector for the basic.
+	UpsertBasic(ctx context.Context, basic models.Basic) (SyncedProduct, error)
 	SaveAttributes(ctx context.Context, productID uuid.UUID, attributes models.ProductAttributes, attributesHash string) error
 	SaveEmbedding(ctx context.Context, productID uuid.UUID, embedding []float32, embeddingHash string) error
 	ClearEmbedding(ctx context.Context, productID uuid.UUID) error
@@ -238,6 +241,36 @@ func (r *productRepository) UpsertShopifyProduct(ctx context.Context, product sh
 		&synced.ID, &synced.AttributesHash, &synced.EmbeddingHash)
 	if err != nil {
 		return SyncedProduct{}, fmt.Errorf("upsert shopify product %d: %w", product.ID, err)
+	}
+	return synced, nil
+}
+
+func (r *productRepository) UpsertBasic(ctx context.Context, basic models.Basic) (SyncedProduct, error) {
+	var synced SyncedProduct
+	err := r.db.QueryRowContext(ctx, `
+		WITH upserted AS (
+			INSERT INTO products (id, title, product_type, tags, slot, source, attributes)
+			VALUES ($1, $2, $3, '{}', $4, 'basic', $5)
+			ON CONFLICT (id) DO UPDATE SET
+				title = EXCLUDED.title,
+				product_type = EXCLUDED.product_type,
+				slot = EXCLUDED.slot,
+				attributes = EXCLUDED.attributes,
+				active = true,
+				updated_at = now()
+			-- an unchanged basic keeps its updated_at, so a rerun changes nothing
+			WHERE (products.title, products.product_type, products.slot, products.attributes, products.active)
+				IS DISTINCT FROM (EXCLUDED.title, EXCLUDED.product_type, EXCLUDED.slot, EXCLUDED.attributes, true)
+			RETURNING id, attributes_hash, embedding_hash
+		)
+		SELECT id, attributes_hash, embedding_hash FROM upserted
+		UNION ALL
+		-- the skipped update returns no row, and this select still sees the row as it was before the statement
+		SELECT id, attributes_hash, embedding_hash FROM products WHERE id = $1 AND NOT EXISTS (SELECT 1 FROM upserted)
+	`, basic.ID, basic.Name, basic.ProductType, basic.Slot, basic.ProductAttributes).Scan(
+		&synced.ID, &synced.AttributesHash, &synced.EmbeddingHash)
+	if err != nil {
+		return SyncedProduct{}, fmt.Errorf("upsert basic %s: %w", basic.ID, err)
 	}
 	return synced, nil
 }
