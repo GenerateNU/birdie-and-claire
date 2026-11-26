@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"errors"
+	"flag"
 	"fmt"
+	"io"
 	"net"
 	"net/url"
 	"os"
@@ -266,11 +268,13 @@ func productionDatabaseURL() (string, error) {
 
 func seed(root string, args []string) error {
 	if len(args) == 0 {
-		return errors.New("usage: db seed products")
+		return errors.New("usage: db seed <products|basics>")
 	}
 	switch args[0] {
 	case "products":
 		return seedProducts(root, args[1:])
+	case "basics":
+		return seedBasics(root, args[1:])
 	default:
 		return fmt.Errorf("unknown seed dataset %q", args[0])
 	}
@@ -288,6 +292,39 @@ func seedProducts(root string, args []string) error {
 		return err
 	}
 	_, _ = fmt.Println("synced the products from Shopify")
+	return nil
+}
+
+// seedBasics loads data/basics.json with the PNGs in the -images folder, which it mounts read-only into the container.
+func seedBasics(root string, args []string) error {
+	flags := flag.NewFlagSet("basics", flag.ContinueOnError)
+	flags.SetOutput(io.Discard)
+	imagesDir := flags.String("images", "", "")
+	if err := flags.Parse(args); err != nil || *imagesDir == "" || flags.NArg() != 0 {
+		return errors.New("usage: mise run db:dev:seed:basics -- --images <folder>")
+	}
+	absoluteImagesDir, err := filepath.Abs(*imagesDir)
+	if err != nil {
+		return err
+	}
+	// Docker creates a missing bind-mount source as an empty directory owned by root, which would hide the typo.
+	if info, err := os.Stat(absoluteImagesDir); err != nil || !info.IsDir() {
+		return fmt.Errorf("%s is not a folder", absoluteImagesDir)
+	}
+	if err := requireDatabase(root); err != nil {
+		return err
+	}
+	if err := ensureStorage(root); err != nil {
+		return err
+	}
+
+	const mountedImagesDir = "/basics-images"
+	err = compose(root, "run", "--rm", "--no-deps", "-v", absoluteImagesDir+":"+mountedImagesDir+":ro",
+		"api", "go", "run", "./cmd/basics", "-images", mountedImagesDir).Run()
+	if err != nil {
+		return err
+	}
+	_, _ = fmt.Println("loaded the basics")
 	return nil
 }
 
