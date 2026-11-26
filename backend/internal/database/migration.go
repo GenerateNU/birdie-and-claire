@@ -56,8 +56,10 @@ func Verify(ctx context.Context, database *sql.DB) error {
 	return nil
 }
 
+// Up applies the pending migrations, including one older than the current version. Branches merge to main in a
+// different order than their migrations were created, so a database can lack a migration that sorts before its latest.
 func Up(ctx context.Context, database *sql.DB) error {
-	return goose.UpContext(ctx, database, migrationsDir)
+	return goose.UpContext(ctx, database, migrationsDir, goose.WithAllowMissing())
 }
 
 func Down(ctx context.Context, database *sql.DB) error {
