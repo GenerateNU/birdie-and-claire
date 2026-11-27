@@ -13,7 +13,7 @@ import (
 
 // OwnedProductService keeps the catalog products the authenticated user owns.
 type OwnedProductService interface {
-	ListOwnedProducts(ctx context.Context, params pagination.CursorParams) (pagination.Page[models.OwnedProductResponse], error)
+	ListOwnedProducts(ctx context.Context, filter models.OwnedProductFilter, params pagination.CursorParams) (pagination.Page[models.OwnedProductResponse], error)
 	// AddOwnedProducts fails with errs.ErrConflict when a product is not in the catalog.
 	AddOwnedProducts(ctx context.Context, productIDs []uuid.UUID) error
 	// UpdateOwnedProducts fails with errs.ErrConflict when an added product is not in the catalog.
@@ -29,8 +29,8 @@ func NewOwnedProductService(repo *repository.Repository) OwnedProductService {
 	return &ownedProductService{repo: repo}
 }
 
-func (s *ownedProductService) ListOwnedProducts(ctx context.Context, params pagination.CursorParams) (pagination.Page[models.OwnedProductResponse], error) {
-	return s.repo.OwnedProduct.ListOwnedProducts(ctx, auth.UserID(ctx), params)
+func (s *ownedProductService) ListOwnedProducts(ctx context.Context, filter models.OwnedProductFilter, params pagination.CursorParams) (pagination.Page[models.OwnedProductResponse], error) {
+	return s.repo.OwnedProduct.ListOwnedProducts(ctx, auth.UserID(ctx), filter, params)
 }
 
 func (s *ownedProductService) AddOwnedProducts(ctx context.Context, productIDs []uuid.UUID) error {
