@@ -17,6 +17,7 @@ import {
   EmptyState,
   ErrorState,
   ItemCard,
+  LoadMoreSentinel,
   SearchField,
   SidePanel,
   Skeleton,
@@ -28,7 +29,6 @@ import {
   invalidateBirdieAndClaireCatalog,
   ownedCatalogFilter,
 } from "@/features/pieces/birdie-and-claire-catalog";
-import { LoadMoreSentinel } from "@/features/pieces/load-more-sentinel";
 import {
   hasChanges,
   isAtAddLimit,
@@ -208,7 +208,7 @@ export function PiecePicker({ onSaved }: PiecePickerProps) {
               />
             </li>
           ))}
-          {hasMoreOwned && <LoadMoreSentinel onVisible={loadMoreOwned} />}
+          {hasMoreOwned && <LoadMoreSentinel as="li" onVisible={loadMoreOwned} />}
         </ul>
       </SidePanel>
     </Box>
@@ -310,7 +310,7 @@ function Catalog({ filter, isSelected, onToggle, disabled, atLimit }: CatalogPro
             </li>
           );
         })}
-        {hasNextPage && <LoadMoreSentinel onVisible={loadMore} />}
+        {hasNextPage && <LoadMoreSentinel as="li" onVisible={loadMore} />}
       </ul>
       {isFetchNextPageError && (
         <ErrorState

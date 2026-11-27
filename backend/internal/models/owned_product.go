@@ -12,6 +12,14 @@ type OwnedProductResponse struct {
 	AddedAt time.Time `json:"added_at" doc:"When the user added the product to the pieces they own"`
 }
 
+// OwnedProductFilter picks which owned products a list returns. No Slots means every slot, and an empty ProductType
+// or ExcludeProductType filters nothing.
+type OwnedProductFilter struct {
+	Slots              []ProductSlot
+	ProductType        string
+	ExcludeProductType string
+}
+
 // BirdieAndClaireProductResponse is a store product in the Add Items catalog, with whether the user owns it.
 type BirdieAndClaireProductResponse struct {
 	ProductResponse
