@@ -31,7 +31,7 @@ type OutfitRepository interface {
 	Delete(ctx context.Context, id uuid.UUID, userID uuid.UUID) error
 	Share(ctx context.Context, id uuid.UUID, userID uuid.UUID) error
 	Unshare(ctx context.Context, id uuid.UUID, userID uuid.UUID) error
-	List(ctx context.Context, userID uuid.UUID, params pagination.CursorParams) (outfits []models.OutfitResponse, total int, err error)
+	List(ctx context.Context, userID uuid.UUID, collectionID *uuid.UUID, params pagination.CursorParams) (outfits []models.OutfitResponse, total int, err error)
 	ListByIDs(ctx context.Context, ids []uuid.UUID) ([]models.OutfitResponse, error)
 }
 
@@ -289,8 +289,9 @@ func (r *outfitRepository) Unshare(ctx context.Context, id uuid.UUID, userID uui
 }
 
 // List returns up to params.Limit+1 of the user's outfits with their products, newest first, so the caller can tell
-// if more remain, and how many outfits the user has in all.
-func (r *outfitRepository) List(ctx context.Context, userID uuid.UUID, params pagination.CursorParams) ([]models.OutfitResponse, int, error) {
+// if more remain, and how many outfits the user has in all. A non-nil collectionID keeps only the outfits in that
+// collection, total included, and does not check who owns it.
+func (r *outfitRepository) List(ctx context.Context, userID uuid.UUID, collectionID *uuid.UUID, params pagination.CursorParams) ([]models.OutfitResponse, int, error) {
 	afterCreatedAt, err := params.After().Time("created_at")
 	if err != nil {
 		return nil, 0, fmt.Errorf("list outfits for user %s: after cursor created_at: %w", userID, err)
@@ -307,6 +308,7 @@ func (r *outfitRepository) List(ctx context.Context, userID uuid.UUID, params pa
 			SELECT id, user_id, name, description, tags, shared_at, created_at, updated_at, count(*) OVER () AS total
 			FROM outfits
 			WHERE user_id = $1
+				AND ($5::uuid IS NULL OR id IN (SELECT outfit_id FROM collection_outfits WHERE collection_id = $5::uuid))
 		), outfit_page AS (
 			SELECT id, user_id, name, description, tags, shared_at, created_at, updated_at, total
 			FROM user_outfits
@@ -330,7 +332,7 @@ func (r *outfitRepository) List(ctx context.Context, userID uuid.UUID, params pa
 		-- Outfits stay newest first and together, and each one's products run head to toe, the order its page lists them in.
 		ORDER BY o.created_at DESC, o.id DESC,
 			p.slot, p.id
-	`, userID, afterCreatedAt, afterID, params.Limit+1)
+	`, userID, afterCreatedAt, afterID, params.Limit+1, collectionID)
 	if err != nil {
 		return nil, 0, fmt.Errorf("list outfits for user %s: %w", userID, err)
 	}

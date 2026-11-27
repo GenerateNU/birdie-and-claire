@@ -1410,6 +1410,7 @@ paths:
         - embedder
   /api/v1/outfits:
     get:
+      description: Newest first. With collection_id, only that collection's outfits; someone else's collection and a missing one both return 404.
       operationId: list-outfits
       parameters:
         - description: Max items to return
@@ -1429,6 +1430,13 @@ paths:
           name: cursor
           schema:
             description: Opaque cursor from a previous page's next_cursor
+            type: string
+        - description: Only outfits in this collection; total then counts only those
+          explode: false
+          in: query
+          name: collection_id
+          schema:
+            description: Only outfits in this collection; total then counts only those
             type: string
       responses:
         "200":
