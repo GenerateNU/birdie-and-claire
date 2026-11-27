@@ -2,8 +2,16 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useRef } from "react";
 
 import { listCurrentUserPiecesInfiniteOptions } from "@/api/generated/@tanstack/react-query.gen";
-import { AddTile, Box, EmptyState, ErrorState, Skeleton, Text, TextLink } from "@/design-system";
-import { LoadMoreSentinel } from "@/features/pieces/load-more-sentinel";
+import {
+  AddTile,
+  Box,
+  EmptyState,
+  ErrorState,
+  LoadMoreSentinel,
+  Skeleton,
+  Text,
+  TextLink,
+} from "@/design-system";
 import { OwnedPieceCard } from "@/features/pieces/owned-piece-card";
 import { usePagination } from "@/lib/use-pagination";
 
@@ -93,7 +101,7 @@ function PiecesPage() {
         <li>
           <AddTile label="Add another piece" onClick={() => void navigate({ to: "/pieces/add" })} />
         </li>
-        {hasNextPage && <LoadMoreSentinel onVisible={loadMore} />}
+        {hasNextPage && <LoadMoreSentinel as="li" onVisible={loadMore} />}
       </ul>
       {isFetchNextPageError && (
         <ErrorState

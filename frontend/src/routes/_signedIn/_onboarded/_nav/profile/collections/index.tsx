@@ -1,18 +1,15 @@
 import { PlusIcon } from "@phosphor-icons/react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
-import {
-  createCollectionMutation,
-  listCollectionsOptions,
-  listCollectionsQueryKey,
-} from "@/api/generated/@tanstack/react-query.gen";
+import { listCollectionsOptions } from "@/api/generated/@tanstack/react-query.gen";
 import type { CollectionSummaryResponse } from "@/api/generated/types.gen";
 import { Button, CollectionCard, EmptyState, ErrorState, Spinner, useToast } from "@/design-system";
 import { CollectionFormDialog } from "@/features/collections/collection-form-dialog";
 import { EditCollection } from "@/features/collections/edit-collection";
 import { SavedOutfitsLayout } from "@/features/collections/saved-outfits-layout";
+import { useCreateCollection } from "@/features/collections/use-create-collection";
 
 export const Route = createFileRoute("/_signedIn/_onboarded/_nav/profile/collections/")({
   component: CollectionsPage,
@@ -25,22 +22,12 @@ type Editing = { collection: CollectionSummaryResponse; startWith: "edit" | "del
 
 function CollectionsPage() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const toast = useToast();
   const collectionsQuery = useQuery(listCollectionsOptions());
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<Editing | null>(null);
 
-  const createMutation = useMutation({
-    ...createCollectionMutation(),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: listCollectionsQueryKey() });
-      toast.show({ message: "Collection created" });
-      setCreating(false);
-    },
-    onError: () =>
-      toast.show({ message: "Couldn't create the collection. Try again.", variant: "error" }),
-  });
+  const createMutation = useCreateCollection();
 
   function renderCollections() {
     if (collectionsQuery.isPending) {
@@ -115,7 +102,17 @@ function CollectionsPage() {
           title="New collection"
           saving={createMutation.isPending}
           onCancel={() => setCreating(false)}
-          onSave={(values) => createMutation.mutate({ body: values })}
+          onSave={(values) =>
+            createMutation.mutate(
+              { body: values },
+              {
+                onSuccess: () => {
+                  toast.show({ message: "Collection created" });
+                  setCreating(false);
+                },
+              },
+            )
+          }
         />
       )}
       {editing && (

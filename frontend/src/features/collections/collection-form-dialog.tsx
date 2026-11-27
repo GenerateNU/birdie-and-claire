@@ -4,9 +4,16 @@ import { z } from "zod";
 import { zCreateCollectionInputBody } from "@/api/generated/zod.gen";
 import { Form, Modal, TextArea, TextField } from "@/design-system";
 
+/** A collection's name as a form field: required once trimmed, within the API's limits. */
+export const collectionNameSchema = z
+  .string()
+  .trim()
+  .min(1, "Enter a name")
+  .pipe(zCreateCollectionInputBody.shape.name);
+
 // The body's description is optional because a request can leave it out; the form always sends one.
 const collectionSchema = z.object({
-  name: z.string().trim().min(1, "Enter a name").pipe(zCreateCollectionInputBody.shape.name),
+  name: collectionNameSchema,
   description: z.string().trim().pipe(zCreateCollectionInputBody.shape.description.unwrap()),
 });
 

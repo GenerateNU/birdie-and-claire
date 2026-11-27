@@ -28,7 +28,7 @@ func CollectionRoutes(api huma.API, params types.RouteParams) {
 		Method:      http.MethodGet,
 		Path:        "/api/v1/collections",
 		Summary:     "List the authenticated user's collections",
-		Description: "Newest first, each with its outfit count and up to 4 thumbnails.",
+		Description: "Newest first, each with its outfit count and up to 4 thumbnails. With outfit_id, each also says whether it holds that outfit.",
 		Tags:        []string{"collections"},
 	}, controller.ListUserCollections)
 
@@ -49,6 +49,26 @@ func CollectionRoutes(api huma.API, params types.RouteParams) {
 		Description: "Newest added first. Someone else's collection and a missing one both return 404.",
 		Tags:        []string{"collections"},
 	}, controller.ListCollectionOutfits)
+
+	huma.Register(api, huma.Operation{
+		OperationID:   "add-collection-outfit",
+		Method:        http.MethodPut,
+		Path:          "/api/v1/collections/{id}/outfits/{outfit_id}",
+		DefaultStatus: http.StatusNoContent,
+		Summary:       "Add an outfit to one of the authenticated user's collections",
+		Description:   "Adding an outfit the collection already holds changes nothing. A collection or outfit that is missing or someone else's returns 404.",
+		Tags:          []string{"collections"},
+	}, controller.AddOutfit)
+
+	huma.Register(api, huma.Operation{
+		OperationID:   "remove-collection-outfit",
+		Method:        http.MethodDelete,
+		Path:          "/api/v1/collections/{id}/outfits/{outfit_id}",
+		DefaultStatus: http.StatusNoContent,
+		Summary:       "Remove an outfit from one of the authenticated user's collections",
+		Description:   "The outfit stays saved. Removing an outfit the collection does not hold changes nothing. Someone else's collection and a missing one both return 404.",
+		Tags:          []string{"collections"},
+	}, controller.RemoveOutfit)
 
 	huma.Register(api, huma.Operation{
 		OperationID: "update-collection",
