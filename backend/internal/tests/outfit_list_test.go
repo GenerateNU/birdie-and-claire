@@ -27,7 +27,7 @@ func TestListOutfitsTotalIgnoresCursor(t *testing.T) {
 	// Another user's outfit, which a total of 3 proves is not counted.
 	insertTestOutfit(t, db)
 
-	first, err := service.List(ctx, cursorParams(t, 2, ""))
+	first, err := service.List(ctx, nil, cursorParams(t, 2, ""))
 	if err != nil {
 		t.Fatalf("list first page: %v", err)
 	}
@@ -35,7 +35,7 @@ func TestListOutfitsTotalIgnoresCursor(t *testing.T) {
 		t.Fatalf("first page: %d items, has_more %t, total %d; want 2, true, 3", len(first.Items), first.HasMore, first.Total)
 	}
 
-	second, err := service.List(ctx, cursorParams(t, 2, *first.NextCursor))
+	second, err := service.List(ctx, nil, cursorParams(t, 2, *first.NextCursor))
 	if err != nil {
 		t.Fatalf("list second page: %v", err)
 	}
@@ -49,7 +49,7 @@ func TestListOutfitsWithNoOutfitsHasZeroTotal(t *testing.T) {
 	service := services.NewOutfitService(repository.New(db), "")
 	ctx := auth.WithUserID(context.Background(), insertTestUser(t, db))
 
-	page, err := service.List(ctx, cursorParams(t, 20, ""))
+	page, err := service.List(ctx, nil, cursorParams(t, 20, ""))
 	if err != nil {
 		t.Fatalf("list: %v", err)
 	}
@@ -169,7 +169,7 @@ func TestListOutfitsPagesKeepEveryOutfitWhole(t *testing.T) {
 
 	cursor := ""
 	for page := range pageCount {
-		got, err := service.List(ctx, cursorParams(t, pageSize, cursor))
+		got, err := service.List(ctx, nil, cursorParams(t, pageSize, cursor))
 		if err != nil {
 			t.Fatalf("list page %d: %v", page, err)
 		}
@@ -189,5 +189,52 @@ func TestListOutfitsPagesKeepEveryOutfitWhole(t *testing.T) {
 		if wantMore {
 			cursor = *got.NextCursor
 		}
+	}
+}
+
+// Filtered by a collection, the list keeps the newest-made order of the unfiltered one, and total counts only the
+// collection's outfits.
+func TestListOutfitsInACollectionCountsOnlyThose(t *testing.T) {
+	db := openTestDB(t)
+	service := services.NewOutfitService(repository.New(db), "")
+	userID := insertTestUser(t, db)
+	ctx := auth.WithUserID(context.Background(), userID)
+	collection := createCollection(t, repository.NewCollectionRepository(db), userID, "fits")
+	var madeOldestFirst []uuid.UUID
+	for i := range 3 {
+		outfitID := insertTestOutfitFor(t, db, userID)
+		if _, err := db.Exec(`UPDATE outfits SET created_at = $2 WHERE id = $1`, outfitID, time.Now().Add(time.Duration(i-3)*time.Hour)); err != nil {
+			t.Fatalf("set created_at: %v", err)
+		}
+		madeOldestFirst = append(madeOldestFirst, outfitID)
+	}
+	// The middle outfit stays out of the collection. The oldest is added last, so an order by when each was
+	// added would come out reversed.
+	oldest, newest := madeOldestFirst[0], madeOldestFirst[2]
+	addToCollection(t, db, collection.ID, newest, time.Now().Add(-time.Minute))
+	addToCollection(t, db, collection.ID, oldest, time.Now())
+	inCollectionNewestFirst := []uuid.UUID{newest, oldest}
+
+	page, err := service.List(ctx, &collection.ID, cursorParams(t, 20, ""))
+	if err != nil {
+		t.Fatalf("List: %v", err)
+	}
+	if len(page.Items) != 2 || page.Items[0].ID != inCollectionNewestFirst[0] || page.Items[1].ID != inCollectionNewestFirst[1] || page.Total != 2 {
+		t.Fatalf("got %d items %v, total %d; want %v newest made first, total 2", len(page.Items), page.Items, page.Total, inCollectionNewestFirst)
+	}
+}
+
+func TestListOutfitsInAnotherUsersOrMissingCollectionIsNotFound(t *testing.T) {
+	db := openTestDB(t)
+	service := services.NewOutfitService(repository.New(db), "")
+	ownerID := insertTestUser(t, db)
+	collection := createCollection(t, repository.NewCollectionRepository(db), ownerID, "mine")
+	strangerCtx := auth.WithUserID(context.Background(), insertTestUser(t, db))
+
+	for label, id := range map[string]uuid.UUID{"someone else's": collection.ID, "missing": uuid.New()} {
+		t.Run(label, func(t *testing.T) {
+			_, err := service.List(strangerCtx, &id, cursorParams(t, 20, ""))
+			wantNotFound(t, err)
+		})
 	}
 }

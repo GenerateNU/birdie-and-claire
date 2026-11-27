@@ -2,6 +2,10 @@ import { useCallback } from "react";
 
 import { listOutfitsInfiniteOptions } from "@/api/generated/@tanstack/react-query.gen";
 import type { OutfitResponse } from "@/api/generated/types.gen";
+import {
+  isCollectionNotFound,
+  retryUnlessCollectionNotFound,
+} from "@/features/collections/collection-query";
 import { canFetchNextPage } from "@/features/outfits/saved-outfits";
 import { usePagination } from "@/lib/use-pagination";
 
@@ -21,19 +25,30 @@ type SavedOutfitsLoaded = {
 
 type SavedOutfitsFlow =
   | { status: "loading" }
-  | { status: "error"; message: string; retry: () => void }
+  | {
+      status: "error";
+      message: string;
+      retry: () => void;
+      /** The filter names a collection that is missing or someone else's. */
+      collectionNotFound: boolean;
+    }
   | SavedOutfitsLoaded;
 
-export function useSavedOutfits(): SavedOutfitsFlow {
+/** The user's outfits, newest first, or only those in `collectionId`'s collection. */
+export function useSavedOutfits(collectionId?: string): SavedOutfitsFlow {
   const {
     data,
+    error,
     isPending,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
     isFetchNextPageError,
     refetch,
-  } = usePagination(listOutfitsInfiniteOptions({ query: { limit: PAGE_SIZE } }));
+  } = usePagination({
+    ...listOutfitsInfiniteOptions({ query: { limit: PAGE_SIZE, collection_id: collectionId } }),
+    retry: retryUnlessCollectionNotFound,
+  });
 
   const loadMore = useCallback(() => {
     if (canFetchNextPage({ isFetchingNextPage, isFetchNextPageError })) {
@@ -45,8 +60,23 @@ export function useSavedOutfits(): SavedOutfitsFlow {
     return { status: "loading" };
   }
 
+  // Before the data check: a refetch that finds the collection gone keeps the old pages in data.
+  if (collectionId !== undefined && isCollectionNotFound(error)) {
+    return {
+      status: "error",
+      message: "Couldn't load your outfits.",
+      retry: () => void refetch(),
+      collectionNotFound: true,
+    };
+  }
+
   if (!data) {
-    return { status: "error", message: "Couldn't load your outfits.", retry: () => void refetch() };
+    return {
+      status: "error",
+      message: "Couldn't load your outfits.",
+      retry: () => void refetch(),
+      collectionNotFound: false,
+    };
   }
 
   return {

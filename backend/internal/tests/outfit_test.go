@@ -360,7 +360,7 @@ func TestOutfitDescriptionAndTagsRoundTrip(t *testing.T) {
 			wantDescriptionAndTags(t, "create", created, test.wantDescription, test.wantTags)
 			wantDescriptionAndTags(t, "get", got, test.wantDescription, test.wantTags)
 
-			listed, _, err := outfits.List(ctx, userID, pagination.CursorParams{Limit: 50})
+			listed, _, err := outfits.List(ctx, userID, nil, pagination.CursorParams{Limit: 50})
 			if err != nil {
 				t.Fatalf("list outfits: %v", err)
 			}
