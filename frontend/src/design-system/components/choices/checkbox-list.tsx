@@ -12,11 +12,18 @@ type CheckboxListProps = {
   label: string;
   items: CheckboxListItem[];
   onCheckedChange: (value: string, checked: boolean) => void;
+  disabled?: boolean;
   className?: string;
 };
 
 /** Rows with the label on the left and a checkbox on the right. */
-export function CheckboxList({ label, items, onCheckedChange, className }: CheckboxListProps) {
+export function CheckboxList({
+  label,
+  items,
+  onCheckedChange,
+  disabled = false,
+  className,
+}: CheckboxListProps) {
   return (
     // 20px from Figma; no spacing token matches.
     <Box
@@ -33,6 +40,7 @@ export function CheckboxList({ label, items, onCheckedChange, className }: Check
           <CheckboxBox
             checked={item.checked}
             onCheckedChange={(checked) => onCheckedChange(item.value, checked)}
+            disabled={disabled}
           />
         </label>
       ))}

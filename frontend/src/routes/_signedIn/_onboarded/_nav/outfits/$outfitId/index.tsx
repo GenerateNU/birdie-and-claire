@@ -1,9 +1,10 @@
 import { BookmarkSimpleIcon, NotePencilIcon } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import type { CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
 
 import { Box, Button, EmptyState, ErrorState, Link, Spinner, Text } from "@/design-system";
+import { SaveToCollections } from "@/features/collections/save-to-collections";
 import { ExternalPiecesSection } from "@/features/outfits/external-pieces-section";
 import { OutfitCanvas } from "@/features/outfits/outfit-canvas";
 import { CANVAS_SIZE } from "@/features/outfits/outfit-items";
@@ -25,6 +26,7 @@ function OutfitDetailsPage() {
 
   const outfitQuery = useQuery(outfitQueryOptions(outfitId));
   const navigate = useNavigate();
+  const [savePickerOpen, setSavePickerOpen] = useState(false);
 
   if (outfitQuery.isPending) {
     return <Spinner className="m-lg" />;
@@ -82,16 +84,14 @@ function OutfitDetailsPage() {
             >
               Customize
             </Link>
-            <Box title="Coming soon">
-              <Button
-                label="Save"
-                accessibleLabel="Save the outfit to a collection, coming soon"
-                variant="secondary"
-                size="sm"
-                leadingIcon={BookmarkSimpleIcon}
-                disabled
-              />
-            </Box>
+            <Button
+              label="Save"
+              accessibleLabel="Save the outfit to a collection"
+              variant="secondary"
+              size="sm"
+              leadingIcon={BookmarkSimpleIcon}
+              onClick={() => setSavePickerOpen(true)}
+            />
             <ShareOutfit outfitId={outfitId} />
           </Box>
           <Text variant="display" className="break-words">
@@ -115,6 +115,9 @@ function OutfitDetailsPage() {
           <ExternalPiecesSection />
         </Box>
       </section>
+      {savePickerOpen && (
+        <SaveToCollections outfitId={outfitId} onClose={() => setSavePickerOpen(false)} />
+      )}
     </main>
   );
 }

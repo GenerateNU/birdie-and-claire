@@ -92,6 +92,8 @@ export { EmptyState } from "@/design-system/components/status/empty-state";
 
 export { ErrorState } from "@/design-system/components/status/error";
 
+export { LoadMoreSentinel } from "@/design-system/components/status/load-more-sentinel";
+
 export { ProgressBar } from "@/design-system/components/status/progress-bar";
 
 export { ProgressStepper } from "@/design-system/components/status/progress-stepper";
